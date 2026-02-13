@@ -11,6 +11,7 @@ dist/
 .env.test
 .env.preprod
 .env.production
+.env.sync
 
 # IDE
 .vscode/
