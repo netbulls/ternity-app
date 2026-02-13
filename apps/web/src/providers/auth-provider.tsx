@@ -73,10 +73,24 @@ function LogtoAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthContextType | null>(null);
   const [status, setStatus] = useState<AuthStatus>('init');
 
-  // Effect 1: Detect "SDK finished loading and user is NOT authenticated."
-  // Safe to include isLoading in deps here — this effect never calls getIdToken().
+  // Effect 1: Detect "SDK finished loading." Handles force sign-out on mode switch
+  // and the normal "not authenticated" case. Safe to include isLoading in deps —
+  // this effect never calls getIdToken().
   useEffect(() => {
-    if (!logto.isLoading && !logto.isAuthenticated) {
+    if (logto.isLoading) return;
+
+    // Force sign-out when switching from another mode to logto.
+    // Ends the Logto server session so the user gets a fresh login screen.
+    const forceSignout = localStorage.getItem('ternity_force_signout');
+    if (forceSignout) {
+      localStorage.removeItem('ternity_force_signout');
+      if (logto.isAuthenticated) {
+        logto.signOut(window.location.origin);
+        return;
+      }
+    }
+
+    if (!logto.isAuthenticated) {
       setStatus('done');
     }
   }, [logto.isLoading, logto.isAuthenticated]);
@@ -186,6 +200,24 @@ function LogtoAuthProvider({ children }: { children: ReactNode }) {
 // ── Exported provider (picks mode) ──────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Detect mode changes between stub ↔ logto
+  const modeKey = 'ternity_auth_mode';
+  const prevMode = localStorage.getItem(modeKey);
+  if (prevMode && prevMode !== authMode) {
+    if (authMode === 'logto') {
+      // Switching TO logto — flag for LogtoAuthProvider to force sign-out.
+      // Don't clear Logto tokens yet — signOut() needs them for end-session.
+      localStorage.setItem('ternity_force_signout', '1');
+    } else {
+      // Switching FROM logto — clean up stale tokens
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('logto'))
+        .forEach((k) => localStorage.removeItem(k));
+    }
+    sessionStorage.removeItem('ternity_auth_retry');
+  }
+  localStorage.setItem(modeKey, authMode);
+
   if (authMode === 'logto') {
     return <LogtoAuthProvider>{children}</LogtoAuthProvider>;
   }

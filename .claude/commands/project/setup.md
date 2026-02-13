@@ -37,6 +37,7 @@ Create each file **only if it does not already exist**. If it exists, skip it an
 **`apps/api/.env.local`:**
 ```env
 AUTH_MODE=stub
+DEV_USER_ROLE=admin
 LOGTO_ENDPOINT=http://localhost:3001
 LOGTO_APP_ID=your-logto-app-id
 DATABASE_URL=postgres://ternity:ternity@localhost:5432/ternity
@@ -47,6 +48,7 @@ CORS_ORIGIN=http://localhost:5173
 **`apps/web/.env.local`:**
 ```env
 VITE_AUTH_MODE=stub
+VITE_DEV_USER_ROLE=admin
 VITE_LOGTO_ENDPOINT=http://localhost:3001
 VITE_LOGTO_APP_ID=your-logto-app-id
 VITE_API_URL=http://localhost:3010

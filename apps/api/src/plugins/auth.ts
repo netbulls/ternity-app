@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import type { AuthContext } from '@ternity/shared';
 import { GlobalRole, OrgRole } from '@ternity/shared';
 import { db } from '../db/index.js';
@@ -95,7 +95,17 @@ async function authPlugin(fastify: FastifyInstance) {
         [user] = await db.select().from(users).where(eq(users.id, devUserId)).limit(1);
       }
       if (!user) {
-        [user] = await db.select().from(users).limit(1);
+        const devRole = process.env.DEV_USER_ROLE ?? 'admin';
+        [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.globalRole, devRole))
+          .orderBy(asc(users.createdAt))
+          .limit(1);
+        // Fallback to first user if no match for the role
+        if (!user) {
+          [user] = await db.select().from(users).orderBy(asc(users.createdAt)).limit(1);
+        }
       }
 
       if (!user) {
