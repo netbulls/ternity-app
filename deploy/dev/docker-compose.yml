@@ -77,7 +77,6 @@ networks:
   internal:
   proxy:
     external: true
-    name: docker_frontend
 
 volumes:
   app_data:

@@ -63,22 +63,10 @@ deploy_env() {
 }
 
 update_caddy() {
-  echo "=== Updating Caddy ==="
-  local caddy_dir="/opt/erace-weather/docker"
-
-  # Check if app routes already exist
-  if ssh "$SSH_HOST" "grep -q 'ternity-app' $caddy_dir/Caddyfile 2>/dev/null"; then
-    echo "App routes already in Caddyfile, skipping"
-  else
-    # Append app routes
-    scp "$SCRIPT_DIR/Caddyfile.app" "$SSH_HOST:/tmp/Caddyfile.app.tmp"
-    ssh "$SSH_HOST" "cat /tmp/Caddyfile.app.tmp >> $caddy_dir/Caddyfile && rm /tmp/Caddyfile.app.tmp"
-    echo "App routes appended to Caddyfile"
-  fi
-
-  # Reload Caddy
-  ssh "$SSH_HOST" "docker exec docker-caddy-1 caddy reload --config /etc/caddy/Caddyfile"
-  echo "=== Caddy reloaded ==="
+  echo "=== Updating proxy ==="
+  scp "$SCRIPT_DIR/Caddyfile.app" "$SSH_HOST:/opt/proxy/sites-enabled/ternity-app.caddy"
+  ssh "$SSH_HOST" "docker exec proxy-caddy caddy reload --config /etc/caddy/Caddyfile"
+  echo "=== Proxy reloaded ==="
 }
 
 case "$ENV" in
