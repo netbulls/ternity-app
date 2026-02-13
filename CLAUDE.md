@@ -65,6 +65,7 @@ All SVGs are path-based and self-contained.
 | `/project:build` | Full production build with type checking |
 | `/project:refresh` | Post-pull — install deps, migrate, restart servers |
 | `/project:logs` | Tail Docker container logs (optionally filter by service) |
+| `/project:auth` | Switch auth mode between stub and logto (auto-reloads dev servers) |
 
 ### Shared Claude Config
 
