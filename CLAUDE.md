@@ -52,9 +52,32 @@ All SVGs are path-based and self-contained.
 
 6 themes defined in `THEMES.md`. Default: Ternity Dark. All components use CSS custom properties (`--t-*`).
 
-## Critical Rules
+## Onboarding & Commands
 
-*(project-specific constraints)*
+### Slash Commands
+
+| Command | What it does |
+|---|---|
+| `/project:setup` | First-time setup — prerequisites, install, DB, env files, migrations, dev servers |
+| `/project:start` | Start PostgreSQL + dev servers |
+| `/project:stop` | Stop all services cleanly (data preserved) |
+| `/project:status` | Health check — Docker, DB, env files, dependencies, dev servers |
+| `/project:build` | Full production build with type checking |
+| `/project:refresh` | Post-pull — install deps, migrate, restart servers |
+| `/project:logs` | Tail Docker container logs (optionally filter by service) |
+
+### Shared Claude Config
+
+All Claude Code configuration is committed to the repo so every developer gets the same experience:
+
+- **`.claude/settings.json`** — Pre-approved permissions for standard dev workflows (pnpm, docker, git). No manual approval needed for everyday commands.
+- **`.claude/rules/*.md`** — Project standards (versioning, environments, workflow, stack, directory boundaries). Loaded automatically.
+- **`.claude/commands/*.md`** — Slash commands for common workflows.
+- **`CLAUDE.md`** — Architecture context, design decisions, tech stack.
+
+### Personal Overrides
+
+Machine-specific settings (deploy permissions, template paths, SSH) go in `.claude/settings.local.json` (gitignored). This file merges with the shared settings — your personal additions won't conflict with the team config.
 
 ---
 

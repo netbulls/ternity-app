@@ -91,35 +91,79 @@ Ternity uses [Logto OSS](https://logto.io/) (self-hosted) for authentication.
 
 Login methods: Phone + SMS OTP (primary), Google OAuth (social), Email magic links (recovery).
 
-## Claude Code Setup
+## Working with Claude Code
 
-This project includes Claude Code configuration for consistent AI-assisted development across the team.
+This project ships with full Claude Code configuration so every developer gets a consistent, productive AI experience from the first message.
 
-### First time setup
+### Getting started
 
 1. Install [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 2. Run `claude` in the project root
+3. Type `/project:setup` — Claude walks you through the entire local environment setup
 
-### Template standards
+That's it. No manual env file creation, no guessing at database commands.
 
-The project uses the `base` template from `erace.claude.templates`. If you manage templates locally, add the templates path to your personal settings:
+### Available commands
 
-Create `.claude/settings.local.json` (gitignored):
+| Command | Description |
+|---|---|
+| `/project:setup` | First-time setup — prerequisites, install, DB, env files, migrations, dev servers |
+| `/project:start` | Start PostgreSQL + dev servers (skips what's already running) |
+| `/project:stop` | Stop all services cleanly (data preserved) |
+| `/project:status` | Health check — Docker, DB, env files, dependencies, servers |
+| `/project:build` | Full production build with type checking |
+| `/project:refresh` | Post-pull — install deps, run migrations, restart servers |
+| `/project:logs` | Tail Docker container logs (optionally filter by service) |
+
+### What Claude knows
+
+Claude is ready to help from the first message. The repo includes:
+
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` | Architecture decisions, design context, tech stack |
+| `.claude/rules/*.md` | Project standards — versioning, environments, workflow, stack, directory boundaries |
+| `.claude/settings.json` | Pre-approved permissions for standard dev workflows (pnpm, docker, git) |
+| `.claude/commands/*.md` | Slash commands for local dev workflows |
+
+Common workflows like `pnpm install`, `docker compose up`, and `pnpm dev` are pre-approved — no permission prompts for everyday development.
+
+### Personal settings
+
+Machine-specific overrides go in `.claude/settings.local.json` (gitignored). This merges with the shared settings.
+
+Example — adding the templates path and deploy permissions:
 ```json
 {
   "permissions": {
     "additionalDirectories": [
       "/path/to/your/erace.claude.templates"
+    ],
+    "allow": [
+      "Bash(ssh:*)",
+      "Bash(./deploy/deploy.sh:*)"
     ]
   }
 }
 ```
 
-### What's included
+### What's committed vs gitignored
 
-- `.claude/settings.json` — Shared permissions and tool allowlists
-- `.claude/rules/*.md` — Project standards (versioning, environments, workflow, stack, directory boundaries)
-- `CLAUDE.md` — Project-specific instructions and architecture decisions
+| File | Committed | Purpose |
+|---|---|---|
+| `.claude/settings.json` | Yes | Shared permissions for all developers |
+| `.claude/settings.local.json` | No (gitignored) | Your machine-specific overrides |
+| `.claude/rules/*.md` | Yes | Project standards |
+| `.claude/commands/*.md` | Yes | Slash commands |
+| `CLAUDE.md` | Yes | Project instructions |
+
+### Tips
+
+- **"Explain the auth system"** — Claude knows the full architecture from CLAUDE.md
+- **"Help me add a new API endpoint"** — Claude understands the Fastify + Drizzle stack
+- **"What's the theme system?"** — Claude can reference THEMES.md and BRAND.md
+- **"Run the tests"** — Pre-approved, no permission prompt
+- **"Check why the build is failing"** — Claude can run lint, type-check, and build
 
 ## Project Structure
 
