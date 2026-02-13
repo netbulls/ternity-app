@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "users_external_auth_id_idx" ON "users" USING btree ("external_auth_id");

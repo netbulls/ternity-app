@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: ternity-postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ternity
+      POSTGRES_PASSWORD: ternity
+      POSTGRES_DB: ternity
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

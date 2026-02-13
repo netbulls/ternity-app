@@ -1,0 +1,199 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
+import { useLogto } from '@logto/react';
+import type { AuthContext as AuthContextType } from '@ternity/shared';
+
+interface AuthContextValue {
+  user: AuthContextType | null;
+  isLoading: boolean;
+  error: boolean;
+  signIn: () => void;
+  signOut: () => void;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
+
+// ── Stub mode ───────────────────────────────────────────────────────────────
+
+function StubAuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthContextType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then((res) => res.json())
+      .then((data: AuthContextType) => {
+        setUser(data);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  const signIn = useCallback(() => {
+    // Stub: no-op, user is always signed in
+  }, []);
+
+  const signOut = useCallback(() => {
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, error: false, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// ── Logto mode ──────────────────────────────────────────────────────────────
+//
+// State machine: init → fetching → done | error
+//   init     = SDK still loading or waiting for isAuthenticated
+//   fetching = authenticated, fetching user profile from API
+//   done     = settled (user may or may not be set)
+//   error    = profile fetch failed
+//
+// Key constraint: logto.isLoading MUST NOT appear in the isLoading formula.
+// getIdToken() toggles the SDK's loading flag, which causes re-renders that
+// flash the loading screen.  We isolate isLoading reads into effects only.
+
+type AuthStatus = 'init' | 'fetching' | 'done' | 'error';
+
+function LogtoAuthProvider({ children }: { children: ReactNode }) {
+  const logto = useLogto();
+  const [user, setUser] = useState<AuthContextType | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('init');
+
+  // Effect 1: Detect "SDK finished loading and user is NOT authenticated."
+  // Safe to include isLoading in deps here — this effect never calls getIdToken().
+  useEffect(() => {
+    if (!logto.isLoading && !logto.isAuthenticated) {
+      setStatus('done');
+    }
+  }, [logto.isLoading, logto.isAuthenticated]);
+
+  // Effect 2: When authenticated, fetch user profile.
+  // Only depends on isAuthenticated (transitions once: false→true).
+  // isLoading is deliberately excluded — getIdToken() toggles it.
+  useEffect(() => {
+    if (!logto.isAuthenticated) {
+      // Clear stale user data when session is lost (sign-out or expiry)
+      setUser(null);
+      return;
+    }
+
+    let mounted = true;
+    setStatus('fetching');
+
+    (async () => {
+      try {
+        // Force a token refresh before reading the ID token.
+        // getAccessToken() triggers the refresh flow (using the refresh token),
+        // which also updates the cached ID token as a side effect.
+        // Without this, getIdToken() returns the stale cached token which may
+        // have expired after a few hours.
+        try {
+          await logto.getAccessToken();
+        } catch {
+          // Ignore — we don't use the access token, just want the refresh side effect.
+        }
+
+        const token = await logto.getIdToken();
+        if (!mounted || !token) {
+          if (mounted) setStatus('error');
+          return;
+        }
+
+        const res = await fetch('/api/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!mounted) return;
+
+        if (res.status === 401) {
+          // Token still expired after refresh attempt — re-authenticate.
+          // If the Logto session is still valid, this redirects back immediately
+          // with fresh tokens. Use sessionStorage to prevent infinite loops.
+          const retryKey = 'ternity_auth_retry';
+          if (!sessionStorage.getItem(retryKey)) {
+            sessionStorage.setItem(retryKey, '1');
+            logto.signIn(window.location.origin + '/callback');
+            return;
+          }
+          sessionStorage.removeItem(retryKey);
+          console.error('Token expired and re-auth failed');
+          setStatus('error');
+          return;
+        }
+
+        if (!res.ok) {
+          console.error('Failed to fetch user profile:', res.status, await res.text());
+          setStatus('error');
+          return;
+        }
+
+        // Success — clear any retry flag
+        sessionStorage.removeItem('ternity_auth_retry');
+
+        const data: AuthContextType = await res.json();
+        if (!mounted) return;
+
+        setUser(data);
+        setStatus('done');
+      } catch (err) {
+        if (!mounted) return;
+        console.error('Failed to fetch user profile', err);
+        setStatus('error');
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [logto.isAuthenticated]);
+
+  const handleSignIn = useCallback(() => {
+    logto.signIn(window.location.origin + '/callback');
+  }, [logto]);
+
+  const handleSignOut = useCallback(() => {
+    // Reset to loading state immediately so AppShell doesn't race to call
+    // signIn() before the sign-out redirect actually navigates the browser.
+    setUser(null);
+    setStatus('init');
+    logto.signOut(window.location.origin);
+  }, [logto]);
+
+  // isLoading derived purely from our state machine — immune to SDK's isLoading flicker
+  const isLoading = status === 'init' || status === 'fetching';
+  const error = status === 'error';
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, error, signIn: handleSignIn, signOut: handleSignOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// ── Exported provider (picks mode) ──────────────────────────────────────────
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  if (authMode === 'logto') {
+    return <LogtoAuthProvider>{children}</LogtoAuthProvider>;
+  }
+  return <StubAuthProvider>{children}</StubAuthProvider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

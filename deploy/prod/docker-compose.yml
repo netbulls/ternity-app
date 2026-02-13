@@ -1,0 +1,83 @@
+name: ternity-app-prod
+
+services:
+  api:
+    build:
+      context: ../src
+      dockerfile: deploy/Dockerfile.api
+    container_name: ternity-app-prod-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://ternity:${DB_PASSWORD}@postgres:5432/ternity
+      - AUTH_MODE=logto
+      - LOGTO_ENDPOINT=${LOGTO_ENDPOINT}
+      - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - PORT=3010
+      - CORS_ORIGIN=https://app.ternity.xyz
+    networks:
+      - internal
+      - proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    build:
+      context: ../src
+      dockerfile: deploy/Dockerfile.web
+      args:
+        - VITE_AUTH_MODE=logto
+        - VITE_LOGTO_ENDPOINT=${VITE_LOGTO_ENDPOINT}
+        - VITE_LOGTO_APP_ID=${VITE_LOGTO_APP_ID}
+    container_name: ternity-app-prod-web
+    networks:
+      - proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: ternity-app-prod-db
+    environment:
+      - POSTGRES_DB=ternity
+      - POSTGRES_USER=ternity
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - app_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ternity -d ternity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  internal:
+  proxy:
+    external: true
+    name: docker_frontend
+
+volumes:
+  app_data:

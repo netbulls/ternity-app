@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Theme Proposals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111;
+            color: #ccc;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 40px 24px;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255,255,255,0.15);
+            margin-bottom: 40px;
+        }
+
+        .themes {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .theme-block {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .theme-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .theme-header .name {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+        .theme-header .badge {
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: rgba(0,212,170,0.15);
+            color: #00D4AA;
+        }
+        .theme-header .desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+        }
+        .swatches {
+            display: flex;
+            gap: 6px;
+        }
+        .swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* ---- MOCK UI ---- */
+        .mock-ui {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            min-height: 420px;
+        }
+
+        .mock-sidebar {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .mock-sidebar .logo {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mock-sidebar .logo svg { width: 18px; height: 22px; }
+        .mock-sidebar .nav-item {
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: default;
+        }
+        .mock-sidebar .nav-item.active {
+            font-weight: 600;
+        }
+        .mock-sidebar .nav-spacer { flex: 1; }
+        .mock-sidebar .user-block {
+            font-size: 11px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mock-sidebar .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .mock-main {
+            padding: 20px 24px;
+        }
+        .mock-main .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .mock-main .page-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .mock-main .btn {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: default;
+            text-transform: uppercase;
+        }
+        .mock-main .btn-outline {
+            background: transparent;
+            border: 1px solid;
+            font-size: 11px;
+            padding: 6px 14px;
+        }
+
+        .timer-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .timer-bar .task-name {
+            font-size: 13px;
+            flex: 1;
+        }
+        .timer-bar .timer-display {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        .timer-bar .stop-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timer-bar .stop-btn .sq {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .entries-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+        }
+        .entries-table th {
+            text-align: left;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 8px 12px;
+        }
+        .entries-table td {
+            padding: 10px 12px;
+        }
+        .entries-table tr:not(:last-child) td {
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+        }
+        .entries-table .label-tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .entries-table .duration {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .entries-table .project-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1;
+            padding: 14px 16px;
+            border-radius: 8px;
+        }
+        .stat-card .stat-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .stat-card .stat-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .stat-card .stat-sub {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Theme Proposals</h1>
+<div class="subtitle">Each theme shown with a realistic app mock-up. Click nothing — just compare.</div>
+
+<div class="themes" id="themes"></div>
+
+<script>
+const themes = [
+    {
+        name: "Ternity Dark",
+        badge: "Default",
+        desc: "The signature look — brand-native, immersive, focused",
+        tokens: {
+            bg: "#0a0a0a",
+            surface: "#111111",
+            elevated: "#171717",
+            sidebar: "#0e0e0e",
+            sidebarBorder: "#1a1a1a",
+            text: "#ffffff",
+            textSecondary: "rgba(255,255,255,0.6)",
+            textMuted: "rgba(255,255,255,0.3)",
+            accent: "#00D4AA",
+            accentMuted: "rgba(0,212,170,0.15)",
+            accentText: "#0a0a0a",
+            border: "#1e1e1e",
+            borderSubtle: "#151515",
+            navActive: "rgba(0,212,170,0.1)",
+            navActiveText: "#00D4AA",
+            navHover: "rgba(255,255,255,0.04)",
+            timerBg: "rgba(0,212,170,0.08)",
+            timerBorder: "rgba(0,212,170,0.2)",
+            stopBtn: "#ff4757",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(0,212,170,0.12)",
+            labelText: "#00D4AA",
+            labelBg2: "rgba(99,110,255,0.12)",
+            labelText2: "#8B93FF",
+            statBg: "#141414",
+            avatarBg: "#00D4AA",
+            avatarText: "#0a0a0a",
+            userBg: "rgba(255,255,255,0.03)",
+            projectDot1: "#00D4AA",
+            projectDot2: "#8B93FF",
+            projectDot3: "#FFB347",
+        }
+    },
+    {
+        name: "Ternity Light",
+        badge: "Essential",
+        desc: "Clean and bright — for daylight, offices, and long sessions",
+        tokens: {
+            bg: "#f6f7f9",
+            surface: "#ffffff",
+            elevated: "#ffffff",
+            sidebar: "#ffffff",
+            sidebarBorder: "#e8eaed",
+            text: "#1a1a1a",
+            textSecondary: "rgba(0,0,0,0.55)",
+            textMuted: "rgba(0,0,0,0.3)",
+            accent: "#00B893",
+            accentMuted: "rgba(0,184,147,0.1)",
+            accentText: "#ffffff",
+            border: "#e8eaed",
+            borderSubtle: "#f0f1f3",
+            navActive: "rgba(0,184,147,0.08)",
+            navActiveText: "#00B893",
+            navHover: "rgba(0,0,0,0.03)",
+            timerBg: "rgba(0,184,147,0.06)",
+            timerBorder: "rgba(0,184,147,0.2)",
+            stopBtn: "#ff4757",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(0,184,147,0.1)",
+            labelText: "#00896D",
+            labelBg2: "rgba(99,110,255,0.08)",
+            labelText2: "#5B63E0",
+            statBg: "#ffffff",
+            avatarBg: "#00B893",
+            avatarText: "#ffffff",
+            userBg: "rgba(0,0,0,0.03)",
+            projectDot1: "#00B893",
+            projectDot2: "#5B63E0",
+            projectDot3: "#E8913A",
+        }
+    },
+    {
+        name: "Midnight",
+        badge: null,
+        desc: "Deep blue undertone — calmer than pure black, still dark and focused",
+        tokens: {
+            bg: "#0c1017",
+            surface: "#121722",
+            elevated: "#18202e",
+            sidebar: "#0e131c",
+            sidebarBorder: "#1c2333",
+            text: "#e2e8f0",
+            textSecondary: "rgba(226,232,240,0.6)",
+            textMuted: "rgba(226,232,240,0.3)",
+            accent: "#00D4AA",
+            accentMuted: "rgba(0,212,170,0.12)",
+            accentText: "#0c1017",
+            border: "#1e2736",
+            borderSubtle: "#161d2a",
+            navActive: "rgba(0,212,170,0.1)",
+            navActiveText: "#00D4AA",
+            navHover: "rgba(255,255,255,0.04)",
+            timerBg: "rgba(0,212,170,0.07)",
+            timerBorder: "rgba(0,212,170,0.18)",
+            stopBtn: "#ff4757",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(0,212,170,0.1)",
+            labelText: "#00D4AA",
+            labelBg2: "rgba(120,130,255,0.1)",
+            labelText2: "#9BA2FF",
+            statBg: "#141b28",
+            avatarBg: "#00D4AA",
+            avatarText: "#0c1017",
+            userBg: "rgba(255,255,255,0.03)",
+            projectDot1: "#00D4AA",
+            projectDot2: "#9BA2FF",
+            projectDot3: "#FFBE76",
+        }
+    },
+    {
+        name: "Warm Sand",
+        badge: null,
+        desc: "Neutral warm light — soft on the eyes, earthy, premium feel",
+        tokens: {
+            bg: "#f5f2ed",
+            surface: "#faf8f5",
+            elevated: "#ffffff",
+            sidebar: "#faf8f5",
+            sidebarBorder: "#e6e0d8",
+            text: "#2c2620",
+            textSecondary: "rgba(44,38,32,0.55)",
+            textMuted: "rgba(44,38,32,0.3)",
+            accent: "#00B893",
+            accentMuted: "rgba(0,184,147,0.08)",
+            accentText: "#ffffff",
+            border: "#e6e0d8",
+            borderSubtle: "#ede8e2",
+            navActive: "rgba(0,184,147,0.08)",
+            navActiveText: "#00896D",
+            navHover: "rgba(0,0,0,0.03)",
+            timerBg: "rgba(0,184,147,0.06)",
+            timerBorder: "rgba(0,184,147,0.15)",
+            stopBtn: "#e0503e",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(0,184,147,0.08)",
+            labelText: "#00896D",
+            labelBg2: "rgba(120,100,200,0.08)",
+            labelText2: "#6B5CA5",
+            statBg: "#faf8f5",
+            avatarBg: "#00B893",
+            avatarText: "#ffffff",
+            userBg: "rgba(0,0,0,0.03)",
+            projectDot1: "#00B893",
+            projectDot2: "#6B5CA5",
+            projectDot3: "#D4883A",
+        }
+    },
+    {
+        name: "Carbon",
+        badge: null,
+        desc: "Industrial dark — matte, no glow, all business",
+        tokens: {
+            bg: "#161616",
+            surface: "#1c1c1c",
+            elevated: "#242424",
+            sidebar: "#1a1a1a",
+            sidebarBorder: "#2a2a2a",
+            text: "#e0e0e0",
+            textSecondary: "rgba(224,224,224,0.6)",
+            textMuted: "rgba(224,224,224,0.3)",
+            accent: "#42D9A8",
+            accentMuted: "rgba(66,217,168,0.12)",
+            accentText: "#161616",
+            border: "#2e2e2e",
+            borderSubtle: "#222222",
+            navActive: "rgba(66,217,168,0.1)",
+            navActiveText: "#42D9A8",
+            navHover: "rgba(255,255,255,0.04)",
+            timerBg: "rgba(66,217,168,0.07)",
+            timerBorder: "rgba(66,217,168,0.18)",
+            stopBtn: "#DA4453",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(66,217,168,0.1)",
+            labelText: "#42D9A8",
+            labelBg2: "rgba(130,140,255,0.1)",
+            labelText2: "#A0A8FF",
+            statBg: "#1e1e1e",
+            avatarBg: "#42D9A8",
+            avatarText: "#161616",
+            userBg: "rgba(255,255,255,0.03)",
+            projectDot1: "#42D9A8",
+            projectDot2: "#A0A8FF",
+            projectDot3: "#F0C060",
+        }
+    },
+    {
+        name: "High Contrast",
+        badge: "a11y",
+        desc: "Maximum readability — sharp borders, bold colors, WCAG AAA",
+        tokens: {
+            bg: "#000000",
+            surface: "#0a0a0a",
+            elevated: "#1a1a1a",
+            sidebar: "#050505",
+            sidebarBorder: "#333333",
+            text: "#ffffff",
+            textSecondary: "rgba(255,255,255,0.8)",
+            textMuted: "rgba(255,255,255,0.55)",
+            accent: "#00FFD0",
+            accentMuted: "rgba(0,255,208,0.15)",
+            accentText: "#000000",
+            border: "#444444",
+            borderSubtle: "#2a2a2a",
+            navActive: "rgba(0,255,208,0.15)",
+            navActiveText: "#00FFD0",
+            navHover: "rgba(255,255,255,0.08)",
+            timerBg: "rgba(0,255,208,0.1)",
+            timerBorder: "rgba(0,255,208,0.4)",
+            stopBtn: "#ff4757",
+            stopBtnInner: "#ffffff",
+            labelBg: "rgba(0,255,208,0.15)",
+            labelText: "#00FFD0",
+            labelBg2: "rgba(140,150,255,0.15)",
+            labelText2: "#B0B8FF",
+            statBg: "#111111",
+            avatarBg: "#00FFD0",
+            avatarText: "#000000",
+            userBg: "rgba(255,255,255,0.06)",
+            projectDot1: "#00FFD0",
+            projectDot2: "#B0B8FF",
+            projectDot3: "#FFD060",
+        }
+    },
+];
+
+function renderTheme(theme, idx) {
+    const t = theme.tokens;
+    const badgeHtml = theme.badge ? `<span class="badge">${theme.badge}</span>` : '';
+
+    return `
+    <div class="theme-block">
+        <div class="theme-header">
+            <div>
+                <span class="name">${theme.name}</span> ${badgeHtml}
+                <div class="desc" style="margin-top:4px">${theme.desc}</div>
+            </div>
+            <div class="swatches">
+                <div class="swatch" style="background:${t.bg}" title="bg"></div>
+                <div class="swatch" style="background:${t.surface}" title="surface"></div>
+                <div class="swatch" style="background:${t.elevated}" title="elevated"></div>
+                <div class="swatch" style="background:${t.accent}" title="accent"></div>
+                <div class="swatch" style="background:${t.text};border-color:${t.border}" title="text"></div>
+            </div>
+        </div>
+        <div class="mock-ui" style="background:${t.bg}">
+            <!-- SIDEBAR -->
+            <div class="mock-sidebar" style="background:${t.sidebar};border-right:1px solid ${t.sidebarBorder}">
+                <div class="logo" style="color:${t.text}">
+                    <svg viewBox="0 0 100 120" fill="none">
+                        <path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="${t.accent}" stroke-width="5" fill="none" stroke-linejoin="round"/>
+                        <circle cx="50" cy="32" r="6" fill="${t.accent}"/>
+                        <circle cx="49" cy="52" r="7.5" fill="${t.accent}"/>
+                        <circle cx="54" cy="67" r="5.5" fill="${t.accent}"/>
+                        <circle cx="44" cy="77" r="7" fill="${t.accent}"/>
+                        <circle cx="56" cy="83" r="6" fill="${t.accent}"/>
+                    </svg>
+                    Ternity
+                </div>
+                <div class="nav-item active" style="background:${t.navActive};color:${t.navActiveText}">Timer</div>
+                <div class="nav-item" style="color:${t.textSecondary}">Entries</div>
+                <div class="nav-item" style="color:${t.textSecondary}">Reports</div>
+                <div class="nav-item" style="color:${t.textSecondary}">Calendar</div>
+                <div class="nav-item" style="color:${t.textSecondary}">Leave</div>
+                <div class="nav-spacer"></div>
+                <div class="user-block" style="background:${t.userBg}">
+                    <div class="avatar" style="background:${t.avatarBg};color:${t.avatarText}">PR</div>
+                    <div>
+                        <div style="color:${t.text};font-weight:500;font-size:12px">Przemek R.</div>
+                        <div style="color:${t.textMuted};font-size:10px">Manager</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN -->
+            <div class="mock-main" style="background:${t.bg}">
+                <div class="top-bar">
+                    <span class="page-title" style="color:${t.text}">Today</span>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="btn-outline" style="color:${t.textSecondary};border-color:${t.border};border-radius:6px;font-size:11px;padding:6px 14px">This Week</span>
+                        <span class="btn" style="background:${t.accent};color:${t.accentText};border-radius:6px;font-family:'Oxanium',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;padding:8px 16px;text-transform:uppercase">+ Manual</span>
+                    </div>
+                </div>
+
+                <!-- STATS -->
+                <div class="stats-row">
+                    <div class="stat-card" style="background:${t.statBg};border:1px solid ${t.borderSubtle}">
+                        <div class="stat-label" style="color:${t.textMuted}">Today</div>
+                        <div class="stat-value" style="color:${t.accent}">6h 42m</div>
+                        <div class="stat-sub" style="color:${t.textMuted}">of 8h target</div>
+                    </div>
+                    <div class="stat-card" style="background:${t.statBg};border:1px solid ${t.borderSubtle}">
+                        <div class="stat-label" style="color:${t.textMuted}">This Week</div>
+                        <div class="stat-value" style="color:${t.text}">31h 15m</div>
+                        <div class="stat-sub" style="color:${t.textMuted}">of 40h target</div>
+                    </div>
+                    <div class="stat-card" style="background:${t.statBg};border:1px solid ${t.borderSubtle}">
+                        <div class="stat-label" style="color:${t.textMuted}">Leave Balance</div>
+                        <div class="stat-value" style="color:${t.text}">18</div>
+                        <div class="stat-sub" style="color:${t.textMuted}">days remaining</div>
+                    </div>
+                </div>
+
+                <!-- TIMER -->
+                <div class="timer-bar" style="background:${t.timerBg};border:1px solid ${t.timerBorder}">
+                    <span class="task-name" style="color:${t.text}">TERN-42 Implement timer component</span>
+                    <span class="label-tag" style="background:${t.labelBg};color:${t.labelText}">jira</span>
+                    <span style="color:${t.textMuted};font-size:11px"><span class="project-dot" style="background:${t.projectDot1}"></span>Ternity App</span>
+                    <span class="timer-display" style="color:${t.accent}">01:23:47</span>
+                    <span class="stop-btn" style="background:${t.stopBtn}"><span class="sq" style="background:${t.stopBtnInner}"></span></span>
+                </div>
+
+                <!-- TABLE -->
+                <table class="entries-table">
+                    <thead>
+                        <tr>
+                            <th style="color:${t.textMuted}">Task</th>
+                            <th style="color:${t.textMuted}">Project</th>
+                            <th style="color:${t.textMuted}">Labels</th>
+                            <th style="color:${t.textMuted};text-align:right">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:${t.text}">TERN-38 Auth flow with Keycloak</td>
+                            <td style="color:${t.textSecondary}"><span class="project-dot" style="background:${t.projectDot1}"></span>Ternity App</td>
+                            <td><span class="label-tag" style="background:${t.labelBg};color:${t.labelText}">jira</span></td>
+                            <td style="color:${t.text};text-align:right" class="duration">2h 15m</td>
+                        </tr>
+                        <tr>
+                            <td style="color:${t.text};border-color:${t.borderSubtle}">Design review — dashboard layout</td>
+                            <td style="color:${t.textSecondary};border-color:${t.borderSubtle}"><span class="project-dot" style="background:${t.projectDot2}"></span>Exegy</td>
+                            <td style="border-color:${t.borderSubtle}"><span class="label-tag" style="background:${t.labelBg2};color:${t.labelText2}">meeting</span></td>
+                            <td style="color:${t.text};text-align:right;border-color:${t.borderSubtle}" class="duration">1h 30m</td>
+                        </tr>
+                        <tr>
+                            <td style="color:${t.text};border-color:${t.borderSubtle}">TERN-35 Entry deduplication logic</td>
+                            <td style="color:${t.textSecondary};border-color:${t.borderSubtle}"><span class="project-dot" style="background:${t.projectDot1}"></span>Ternity App</td>
+                            <td style="border-color:${t.borderSubtle}"><span class="label-tag" style="background:${t.labelBg};color:${t.labelText}">jira</span></td>
+                            <td style="color:${t.text};text-align:right;border-color:${t.borderSubtle}" class="duration">1h 45m</td>
+                        </tr>
+                        <tr>
+                            <td style="color:${t.text};border-color:${t.borderSubtle}">Sprint planning</td>
+                            <td style="color:${t.textSecondary};border-color:${t.borderSubtle}"><span class="project-dot" style="background:${t.projectDot3}"></span>Legal500</td>
+                            <td style="border-color:${t.borderSubtle}"><span class="label-tag" style="background:${t.labelBg2};color:${t.labelText2}">meeting</span></td>
+                            <td style="color:${t.text};text-align:right;border-color:${t.borderSubtle}" class="duration">1h 12m</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>`;
+}
+
+document.getElementById('themes').innerHTML = themes.map(renderTheme).join('');
+</script>
+
+</body>
+</html>

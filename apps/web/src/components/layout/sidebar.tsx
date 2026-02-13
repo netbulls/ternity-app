@@ -1,0 +1,102 @@
+import { NavLink } from 'react-router-dom';
+import { Timer, List, BarChart3, Calendar, Palmtree, FolderKanban, Settings, LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/auth-provider';
+import { HourglassLogo } from './hourglass-logo';
+
+const navItems = [
+  { to: '/', label: 'Timer', icon: Timer },
+  { to: '/entries', label: 'Entries', icon: List },
+  { to: '/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/leave', label: 'Leave', icon: Palmtree },
+  { to: '/projects', label: 'Projects', icon: FolderKanban },
+];
+
+export function Sidebar() {
+  const { user, signOut } = useAuth();
+
+  const initials = user?.displayName
+    ? user.displayName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '??';
+
+  return (
+    <aside className="flex h-screen w-[220px] flex-col border-r border-sidebar-border bg-sidebar px-3 py-5">
+      {/* Logo */}
+      <div className="mb-5 flex items-center gap-2 px-2.5">
+        <HourglassLogo className="h-[22px] w-[18px] text-primary" />
+        <span className="font-brand text-[15px] font-semibold uppercase tracking-[3px] text-sidebar-foreground">
+          Ternity
+        </span>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex flex-col gap-0.5">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted-foreground transition-colors',
+                isActive
+                  ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+                  : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              )
+            }
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Settings link */}
+      <NavLink
+        to="/settings"
+        className={({ isActive }) =>
+          cn(
+            'mb-2 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted-foreground transition-colors',
+            isActive
+              ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+              : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+          )
+        }
+      >
+        <Settings className="h-4 w-4" />
+        Settings
+      </NavLink>
+
+      {/* User block */}
+      <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-2.5">
+        <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] text-[11px] font-semibold text-[hsl(var(--t-avatar-text))]">
+          {initials}
+        </div>
+        <div className="flex-1">
+          <div className="text-[12px] font-medium text-sidebar-foreground">
+            {user?.displayName ?? 'Loading...'}
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            {user?.globalRole === 'admin' ? 'Admin' : 'Employee'}
+          </div>
+        </div>
+        <button
+          onClick={signOut}
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          title="Sign out"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </aside>
+  );
+}

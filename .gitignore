@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Environment
+.env.local
+.env.preview
+.env.test
+.env.preprod
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Claude Code (local/session)
+.claude/settings.local.json
+.claude/plans/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Screenshots (dev progress)
+phase0-*.png
