@@ -35,39 +35,65 @@ Ternity has complete product documentation (PRD, brand, themes, tech stack) and 
 
 **Deliverables:**
 
-### 1a. Schema extensions
-- Add sync tracking columns: `external_source`, `external_id` on `time_entries` and `leave_requests`
-- Add `toggl_id`, `timetastic_id` on `users` (a user exists in both systems)
-- Add `sync_runs` table: `id`, `source` (toggl/timetastic), `type` (full/incremental), `started_at`, `finished_at`, `status`, `records_synced`, `errors`
-- Migration for all new columns
+### 1a. Staging schema (landing zone)
 
-### 1b. User matching
-- Pull users from Toggl API (`GET /organizations/{org_id}/users`) and Timetastic API (`GET /users`)
-- Match to Ternity users by email
-- Create unmatched users as Ternity records (no Logto account, `external_auth_id` = null)
-- Validation report: list matched, created, and unresolvable users before proceeding
+Separate tables for raw external data — never pollute Ternity's target tables with sync columns.
 
-### 1c. Toggl sync adapter
-- `apps/api/src/sync/toggl/` — adapter module
-- Pull clients → upsert `clients`
-- Pull projects → upsert `projects` (link to client, preserve color)
-- Pull time entries via Reports API v3 (paginated) → translate to `time_entries` with `entry_labels`
-- Tags → `labels` (create if new)
+**Toggl staging tables:**
+- `sync_toggl_users` — raw user data (id, email, name, etc.)
+- `sync_toggl_clients` — raw clients
+- `sync_toggl_projects` — raw projects (with toggl client_id, color, etc.)
+- `sync_toggl_entries` — raw time entries (with toggl project_id, user_id, tags, etc.)
+
+**Timetastic staging tables:**
+- `sync_tt_users` — raw user data (id, email, name, department, etc.)
+- `sync_tt_leave_types` — raw leave types
+- `sync_tt_absences` — raw absences (with timetastic user_id, leave_type_id, status, etc.)
+- `sync_tt_allowances` — raw allowances (per user, per type, per year)
+
+**Sync infrastructure:**
+- `sync_runs` — `id`, `source`, `type` (full/incremental), `step` (extract/transform), `started_at`, `finished_at`, `status`, `records_processed`, `errors`
+- `sync_mappings` — `source`, `external_id`, `ternity_table`, `ternity_id` (links staged records to target records)
+- `users` table gets `toggl_id`, `timetastic_id` columns (user matching is the bridge between systems)
+
+All staging tables have: `external_id` (PK from source), `raw_data` (JSONB, full API response), `synced_at`, `sync_run_id`.
+
+### 1b. Extract — Toggl
+- `apps/api/src/sync/toggl/extract.ts`
+- Pull users, clients, projects, time entries from Toggl API v9
+- Time entries via Reports API v3 (paginated)
+- Upsert into `sync_toggl_*` staging tables (idempotent by external_id)
 - Incremental mode: use `since` parameter for entries modified after last sync
-- Idempotent: external_id prevents duplicates on re-run
+- Full mode: dump everything
 
-### 1d. Timetastic sync adapter
-- `apps/api/src/sync/timetastic/` — adapter module
-- Pull leave types → upsert `leave_types`
-- Pull absences in 31-day windows → translate to `leave_requests` (status mapping: Approved/Pending/Declined)
-- Pull allowances → upsert `leave_allowances` (per-user, per-type, per-year)
-- Incremental mode: re-pull rolling 60-day window, compare and upsert
-- Departments stored as user metadata for reference
+### 1c. Extract — Timetastic
+- `apps/api/src/sync/timetastic/extract.ts`
+- Pull users, leave types, absences (31-day windows), allowances
+- Upsert into `sync_tt_*` staging tables (idempotent by external_id)
+- Incremental mode: re-pull rolling 60-day window
+- Full mode: walk entire history
 
-### 1e. CLI commands
-- `pnpm sync:toggl [--full]` — incremental by default, `--full` for historical dump
-- `pnpm sync:timetastic [--full]` — same
-- `pnpm sync:all` — run both sequentially
+### 1d. User matching
+- `apps/api/src/sync/users.ts`
+- Match staged users (`sync_toggl_users`, `sync_tt_users`) to Ternity `users` by email
+- Create unmatched users as Ternity records (no Logto account, `external_auth_id` = null)
+- Write `toggl_id` / `timetastic_id` to the `users` table
+- Validation report: list matched, created, and unresolvable users before proceeding
+- Must run before transform step (entries reference users)
+
+### 1e. Transform — staging → target
+- `apps/api/src/sync/transform.ts`
+- Read from staging tables, write to Ternity target tables
+- **Toggl:** `sync_toggl_clients` → `clients`, `sync_toggl_projects` → `projects`, `sync_toggl_entries` → `time_entries` + `entry_labels`
+- **Timetastic:** `sync_tt_leave_types` → `leave_types`, `sync_tt_absences` → `leave_requests`, `sync_tt_allowances` → `leave_allowances`
+- Tags → `labels` (create if new, flat tags become Ternity labels)
+- Write `sync_mappings` entries to track which staging record produced which target record
+- Idempotent: check mappings before inserting, update if source data changed
+
+### 1f. CLI commands
+- `pnpm sync:extract [toggl|timetastic|all] [--full]` — extract step only
+- `pnpm sync:transform` — transform staged data into target tables
+- `pnpm sync:run [--full]` — full pipeline: extract → user match → transform
 - `pnpm sync:users` — user matching report only (dry run)
 - Reads credentials from `.env.sync` (gitignored)
 
@@ -77,7 +103,12 @@ Ternity has complete product documentation (PRD, brand, themes, tech stack) and 
 - Web: flag available via context for UI phases to disable edit controls
 - Prod deploys with `VIEWER_MODE=true` until native features replace sync
 
-**Verify:** Run `pnpm sync:all --full` → DB contains real team data (clients, projects, entries, leave). Run again → no duplicates. Check `sync_runs` table for status.
+**Verify:**
+1. `pnpm sync:extract all --full` → staging tables populated with raw data from both APIs
+2. `pnpm sync:users` → user matching report shows all users matched by email
+3. `pnpm sync:transform` → target tables populated with clean Ternity records
+4. `pnpm sync:run --full` again → no duplicates, `sync_mappings` intact
+5. Check `sync_runs` table for status of each step
 
 **API rate limits:** Toggl 240 req/hr (comfortable), Timetastic 1 req/sec on absences (comfortable for ~75 users).
 
@@ -202,16 +233,27 @@ leave_allowances (id, user_id FK, leave_type_id FK, year, total_days, used_days)
 leave_requests (id, user_id FK, project_id FK, leave_type_id FK, start_date, end_date, days_count, note, status, reviewed_by FK, reviewed_at)
 ```
 
-### Sync extensions (Phase 1 — pending)
+### Sync layer (Phase 1 — pending)
 
 ```
--- New columns on existing tables
-users          + toggl_id, timetastic_id
-time_entries   + external_source, external_id
-leave_requests + external_source, external_id
+-- User matching (columns on existing table)
+users + toggl_id, timetastic_id
 
--- New table
-sync_runs (id, source, type, started_at, finished_at, status, records_synced, errors)
+-- Toggl staging (landing zone)
+sync_toggl_users    (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_toggl_clients  (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_toggl_projects (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_toggl_entries  (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+
+-- Timetastic staging (landing zone)
+sync_tt_users       (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_tt_leave_types (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_tt_absences    (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+sync_tt_allowances  (external_id PK, raw_data JSONB, synced_at, sync_run_id)
+
+-- Sync infrastructure
+sync_runs     (id, source, type, step, started_at, finished_at, status, records_processed, errors)
+sync_mappings (source, external_id, ternity_table, ternity_id)
 ```
 
 ---

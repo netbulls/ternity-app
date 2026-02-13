@@ -147,16 +147,36 @@ The team currently uses Toggl Track for time tracking and Timetastic for leave m
 
 **One-way only:** External tools → Ternity. Ternity never pushes data back to Toggl or Timetastic. This keeps the sync simple and avoids conflicts.
 
+### Architecture: ELT with Staging Tables
+
+The sync follows an **ELT (Extract, Load, Transform)** pattern with a clear separation between raw external data and Ternity's own model:
+
+1. **Extract** — pull data from Toggl/Timetastic APIs
+2. **Load** — store raw data in **staging tables** (the "landing zone") that mirror the external schema
+3. **Transform** — translate staged data into Ternity's clean target tables
+
+```
+Toggl API  →  sync_toggl_*  (staging)   ─┐
+                                          ├─  transform  →  Ternity tables (target)
+Timetastic API  →  sync_tt_*  (staging)  ─┘
+```
+
+**Why staging tables?**
+- **Target tables stay clean** — no sync columns (`external_id`, `external_source`) polluting Ternity's model
+- **Raw data preserved** — if transform logic changes, re-process from staging without re-fetching from APIs
+- **Clear audit trail** — compare raw vs. transformed to debug sync issues
+- **Clean cut-over** — when the team stops using Toggl/Timetastic, drop the staging tables; target tables are untouched
+
 ### Data Model Philosophy
 
-Ternity has its own data model, designed for Ternity's needs — not a mirror of Toggl or Timetastic schemas. The sync layer is a **translation adapter** that interprets external data and fits it into Ternity's model. Where the external model is limited or awkward, Ternity's model should be smarter:
+Ternity has its own data model, designed for Ternity's needs — not a mirror of Toggl or Timetastic schemas. The staging tables preserve external data as-is. The transform step interprets and adapts it into Ternity's smarter model:
 
 - Toggl has flat tags → Ternity has structured labels (potentially hierarchical, typed, with colors)
 - Toggl has no client→project→entry enforcement → Ternity has a strict hierarchy
 - Timetastic has basic absence records → Ternity has richer leave requests with approval workflows, notes, and project context
 - Both tools have separate user pools → Ternity unifies identity across time tracking and leave
 
-The sync adapters normalize, enrich, and validate incoming data. They don't preserve quirks of the source systems — they produce clean Ternity records.
+The transform step normalizes, enriches, and validates. It doesn't preserve quirks of the source systems — it produces clean Ternity records.
 
 ### Data Sources
 
@@ -208,11 +228,12 @@ Users are matched across systems by **email address**. The sync process:
 
 ### External ID Tracking
 
-Each synced record stores its external source and ID to support idempotent upserts and detect changes:
+External IDs and source metadata live on the **staging tables**, not on Ternity's target tables. This keeps the target model clean:
 
-- `time_entries`: `external_source` (toggl), `external_id` (Toggl entry ID)
-- `leave_requests`: `external_source` (timetastic), `external_id` (Timetastic absence ID)
-- `users`: `toggl_id`, `timetastic_id` (separate columns since a user exists in both systems)
+- **Staging tables** have `external_id` (source system's primary key) for idempotent upserts and change detection
+- **Target tables** have no sync-specific columns — they are pure Ternity records
+- **Mapping** between staging and target is maintained via a `sync_mappings` table: `(source, external_id) → ternity_table, ternity_id`
+- **Users** are the bridge: `toggl_id` and `timetastic_id` on the `users` table (since a user exists in both systems and user matching is the foundation of all other syncs)
 
 ### Prod vs Dev Behavior
 
