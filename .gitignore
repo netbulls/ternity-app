@@ -30,8 +30,9 @@ Thumbs.db
 .claude/settings.local.json
 .claude/plans/
 
-# Playwright MCP logs
+# Playwright MCP
 .playwright-mcp/
+archive/screenshots/
 
-# Screenshots (dev progress)
-phase0-*.png
+# Screenshots (dev artifacts at repo root)
+/*.png
