@@ -24,6 +24,13 @@ export const router = createBrowserRouter([
             return { Component: DevPage };
           },
         },
+        {
+          path: '/dev/flair',
+          lazy: async () => {
+            const { DevFlairPage } = await import('@/pages/dev-flair');
+            return { Component: DevFlairPage };
+          },
+        },
       ]
     : []),
   {

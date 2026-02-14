@@ -7,7 +7,7 @@ import {
   type SortingState,
   type RowSelectionState,
 } from '@tanstack/react-table';
-import { Search, UserCheck, UserX, X } from 'lucide-react';
+import { Search, UserCheck, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { StatCard } from '@/components/ui/stat-card';
@@ -21,6 +21,7 @@ import {
 } from '@/hooks/use-admin-users';
 import { getUserColumns } from '@/pages/user-management-columns';
 import { DataTable } from '@/components/ui/data-table';
+import { DataTableBulkActions } from '@/components/ui/data-table-bulk-actions';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -37,7 +38,7 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 const PAGE_SIZE = 10;
 
 export function UserManagementPage() {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -67,19 +68,40 @@ export function UserManagementPage() {
     setRowSelection({});
   }, [statusFilter, debouncedSearch]);
 
-  const { data: users, isLoading } = useAdminUsers(statusFilter, debouncedSearch);
+  // Fetch ALL users once — stats computed from full list, filtered client-side
+  const { data: allUsers, isLoading } = useAdminUsers('all', '');
   const activateUser = useActivateUser();
   const deactivateUser = useDeactivateUser();
   const bulkActivate = useBulkActivate();
   const bulkDeactivate = useBulkDeactivate();
 
-  // Stats from current data
+  // Stats always reflect the full dataset
   const stats = useMemo(() => {
-    if (!users) return { total: 0, active: 0, inactive: 0 };
-    const total = users.length;
-    const active = users.filter((u) => u.active).length;
+    if (!allUsers) return { total: 0, active: 0, inactive: 0 };
+    const total = allUsers.length;
+    const active = allUsers.filter((u) => u.active).length;
     return { total, active, inactive: total - active };
-  }, [users]);
+  }, [allUsers]);
+
+  // Client-side filtering by status + search
+  const users = useMemo(() => {
+    if (!allUsers) return [];
+    let filtered = allUsers;
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((u) =>
+        statusFilter === 'active' ? u.active : !u.active,
+      );
+    }
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(
+        (u) =>
+          u.displayName.toLowerCase().includes(q) ||
+          (u.email && u.email.toLowerCase().includes(q)),
+      );
+    }
+    return filtered;
+  }, [allUsers, statusFilter, debouncedSearch]);
 
   // Single row actions
   const handleSingleActivate = useCallback(
@@ -132,12 +154,12 @@ export function UserManagementPage() {
   }, [selectedIds, bulkActivate, clearSelection]);
 
   const handleBulkDeactivate = useCallback(() => {
-    if (!users) return;
-    const names = users
+    if (!allUsers) return;
+    const names = allUsers
       .filter((u) => selectedIds.includes(u.id))
       .map((u) => u.displayName);
     setConfirmDialog({ action: 'deactivate', userIds: selectedIds, names });
-  }, [selectedIds, users]);
+  }, [selectedIds, allUsers]);
 
   const executeConfirm = useCallback(() => {
     if (!confirmDialog) return;
@@ -179,13 +201,6 @@ export function UserManagementPage() {
       {/* Stat Cards */}
       <div className="mb-5 grid grid-cols-3 gap-3">
         <StatCard
-          label="All Users"
-          value={stats.total}
-          subtitle="synced from Toggl & Timetastic"
-          onClick={() => setStatusFilter('all')}
-          selected={statusFilter === 'all'}
-        />
-        <StatCard
           label="Active"
           value={stats.active}
           subtitle="can log in and track time"
@@ -199,6 +214,13 @@ export function UserManagementPage() {
           subtitle="data preserved, no access"
           onClick={() => setStatusFilter('inactive')}
           selected={statusFilter === 'inactive'}
+        />
+        <StatCard
+          label="All Users"
+          value={stats.total}
+          subtitle="synced from Toggl & Timetastic"
+          onClick={() => setStatusFilter('all')}
+          selected={statusFilter === 'all'}
         />
       </div>
 
@@ -220,7 +242,7 @@ export function UserManagementPage() {
 
         {/* Filter Tabs */}
         <div className="flex overflow-hidden rounded-md border border-border">
-          {(['all', 'active', 'inactive'] as StatusFilter[]).map((tab) => {
+          {(['active', 'inactive', 'all'] as StatusFilter[]).map((tab) => {
             const label = tab === 'all' ? 'All' : tab === 'active' ? 'Active' : 'Inactive';
             const count =
               tab === 'all' ? stats.total : tab === 'active' ? stats.active : stats.inactive;
@@ -229,7 +251,7 @@ export function UserManagementPage() {
                 key={tab}
                 onClick={() => setStatusFilter(tab)}
                 className={cn(
-                  'font-brand border-r border-border px-3 py-1.5 text-muted-foreground transition-colors last:border-r-0',
+                  'font-brand min-w-[5.5rem] border-r border-border px-3 py-1.5 text-center text-muted-foreground transition-colors last:border-r-0',
                   statusFilter === tab
                     ? 'bg-primary/[0.08] font-semibold text-foreground'
                     : 'hover:bg-muted/30',
@@ -242,7 +264,7 @@ export function UserManagementPage() {
               >
                 {label}
                 <span
-                  className="ml-1 rounded-full bg-muted/50 px-1.5 py-px font-brand text-muted-foreground"
+                  className="ml-1 inline-block min-w-[1.25rem] rounded-full bg-muted/50 px-1.5 py-px font-brand text-muted-foreground"
                   style={{ fontSize: scaled(10) }}
                 >
                   {count}
@@ -271,40 +293,24 @@ export function UserManagementPage() {
       />
 
       {/* Bulk Action Bar */}
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-7 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur-xl">
-          <span
-            className="px-2 font-brand font-medium text-foreground"
-            style={{ fontSize: scaled(12), letterSpacing: '0.5px' }}
-          >
-            {selectedIds.length} selected
-          </span>
-          <div className="h-6 w-px bg-border" />
-          <button
-            onClick={handleBulkActivate}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[hsl(152_60%_50%/0.12)] px-2.5 py-1.5 font-medium text-[hsl(152,60%,50%)] transition-colors hover:bg-[hsl(152_60%_50%/0.2)]"
-            style={{ fontSize: '12px' }}
-          >
-            <UserCheck className="h-3.5 w-3.5" />
-            Activate
-          </button>
-          <button
-            onClick={handleBulkDeactivate}
-            className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 font-medium text-destructive transition-colors hover:bg-destructive/20"
-            style={{ fontSize: '12px' }}
-          >
-            <UserX className="h-3.5 w-3.5" />
-            Deactivate
-          </button>
-          <div className="h-6 w-px bg-border" />
-          <button
-            onClick={clearSelection}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      <DataTableBulkActions table={table} entityName="user">
+        <button
+          onClick={handleBulkActivate}
+          className="inline-flex items-center gap-1.5 rounded-md bg-[hsl(152_60%_50%/0.12)] px-2.5 py-1.5 font-medium text-[hsl(152,60%,50%)] transition-colors hover:bg-[hsl(152_60%_50%/0.2)]"
+          style={{ fontSize: scaled(12) }}
+        >
+          <UserCheck className="h-3.5 w-3.5" />
+          Activate
+        </button>
+        <button
+          onClick={handleBulkDeactivate}
+          className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 font-medium text-destructive transition-colors hover:bg-destructive/20"
+          style={{ fontSize: scaled(12) }}
+        >
+          <UserX className="h-3.5 w-3.5" />
+          Deactivate
+        </button>
+      </DataTableBulkActions>
 
       {/* Confirmation Dialog — NOT using AlertDialogAction to avoid auto-close race */}
       <AlertDialog
@@ -315,14 +321,11 @@ export function UserManagementPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle
-              className="font-brand font-semibold text-foreground"
-              style={{ fontSize: '15px' }}
-            >
+            <AlertDialogTitle>
               Deactivate {confirmDialog?.userIds.length ?? 0} user
               {(confirmDialog?.userIds.length ?? 0) === 1 ? '' : 's'}?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] leading-relaxed text-muted-foreground">
+            <AlertDialogDescription>
               This will prevent{' '}
               {(confirmDialog?.userIds.length ?? 0) === 1 ? 'this user' : 'these users'}{' '}
               from logging in:

@@ -71,11 +71,9 @@ export function getUserColumns(opts: {
               <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
                 {user.displayName}
               </span>
-              {user.email && (
-                <span className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-                  {user.email}
-                </span>
-              )}
+              <span className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+                {user.email || '\u00A0'}
+              </span>
             </div>
           </div>
         );
