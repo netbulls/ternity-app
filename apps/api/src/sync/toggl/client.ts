@@ -1,10 +1,12 @@
 import { getTogglConfig } from '../config.js';
 import { log } from '../logger.js';
+import { withRetry } from '../retry-with-backoff.js';
 
 const TOGGL_API_BASE = 'https://api.track.toggl.com/api/v9';
 const TOGGL_REPORTS_BASE = 'https://api.track.toggl.com/reports/api/v3';
 const MIN_REQUEST_GAP_MS = 250;
 const MAX_RATE_LIMIT_WAIT_SECS = 3600; // max 1 hour wait
+const RETRYABLE_STATUSES = new Set([429, 402, 500, 502, 503]);
 
 let lastRequestAt = 0;
 
@@ -17,33 +19,33 @@ async function rateLimit() {
   lastRequestAt = Date.now();
 }
 
-/**
- * Handle Toggl rate limit (402/429). Parses "reset in XXXX seconds" from
- * the response body. Waits for the full quota reset on the first attempt.
- * Returns { retry: true } if we should retry, or { retry: false, body } to throw.
- */
-async function handleRateLimitWithBody(res: Response, attempt: number): Promise<{ retry: boolean; body?: string }> {
-  if (res.status !== 429 && res.status !== 402) return { retry: false };
-  if (attempt >= 1) {
-    // Already retried once — return body for error message
-    const body = await res.text();
-    return { retry: false, body };
+/** Custom error carrying HTTP status and optional wait time from rate-limit headers */
+class TogglApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly rateLimitWaitSecs?: number,
+  ) {
+    super(message);
+    this.name = 'TogglApiError';
   }
+}
 
-  const body = await res.text();
+/** Parse rate-limit wait time from Toggl's response body or headers */
+function parseRateLimitWait(body: string, headers: Headers): number | undefined {
   const match = body.match(/reset in (\d+) seconds/i);
-  let waitSecs: number;
   if (match) {
-    waitSecs = Math.min(parseInt(match[1]!, 10) + 10, MAX_RATE_LIMIT_WAIT_SECS);
-  } else {
-    const retryAfter = res.headers.get('retry-after');
-    waitSecs = retryAfter ? parseInt(retryAfter, 10) : 60;
+    return Math.min(parseInt(match[1]!, 10) + 10, MAX_RATE_LIMIT_WAIT_SECS);
   }
+  const retryAfter = headers.get('retry-after');
+  if (retryAfter) {
+    return Math.min(parseInt(retryAfter, 10), MAX_RATE_LIMIT_WAIT_SECS);
+  }
+  return undefined;
+}
 
-  const waitMins = Math.ceil(waitSecs / 60);
-  log.warn(`Rate limited (${res.status}). Quota resets in ${waitSecs}s (~${waitMins} min). Waiting...`);
-  await new Promise((r) => setTimeout(r, waitSecs * 1000));
-  return { retry: true };
+function isRetryableTogglError(err: unknown): boolean {
+  return err instanceof TogglApiError && RETRYABLE_STATUSES.has(err.status);
 }
 
 function authHeader(): string {
@@ -53,42 +55,60 @@ function authHeader(): string {
 
 export async function togglFetch<T>(path: string): Promise<T> {
   const url = `${TOGGL_API_BASE}${path}`;
-  for (let attempt = 0; attempt <= 1; attempt++) {
-    await rateLimit();
-    log.info(`GET ${url}`);
-    const res = await fetch(url, {
-      headers: { Authorization: authHeader() },
-    });
-    if (res.ok) return res.json() as Promise<T>;
-    const rl = await handleRateLimitWithBody(res, attempt);
-    if (rl.retry) continue;
-    const errBody = rl.body ?? await res.text();
-    throw new Error(`Toggl API ${res.status}: ${errBody}`);
-  }
-  throw new Error(`Toggl API: max retries exceeded for ${url}`);
+  return withRetry(
+    async () => {
+      await rateLimit();
+      log.info(`GET ${url}`);
+      const res = await fetch(url, {
+        headers: { Authorization: authHeader() },
+      });
+      if (res.ok) return res.json() as Promise<T>;
+      const body = await res.text();
+      const waitSecs = parseRateLimitWait(body, res.headers);
+      if (waitSecs !== undefined && RETRYABLE_STATUSES.has(res.status)) {
+        log.warn(`Rate limited (${res.status}). Server says wait ${waitSecs}s.`);
+      }
+      throw new TogglApiError(`Toggl API ${res.status}: ${body}`, res.status, waitSecs);
+    },
+    isRetryableTogglError,
+    {
+      // For rate-limited requests, use max(server wait, calculated backoff)
+      // The withRetry calculates backoff; we add the server's wait on top
+      baseDelayMs: 2000,
+      maxDelayMs: MAX_RATE_LIMIT_WAIT_SECS * 1000,
+    },
+  );
 }
 
 export async function togglReportsFetch<T>(path: string, body: unknown): Promise<T> {
   const { togglWorkspaceId } = getTogglConfig();
   const url = `${TOGGL_REPORTS_BASE}/workspace/${togglWorkspaceId}${path}`;
-  for (let attempt = 0; attempt <= 1; attempt++) {
-    await rateLimit();
-    log.info(`POST ${url}`);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: authHeader(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) return res.json() as Promise<T>;
-    const rl = await handleRateLimitWithBody(res, attempt);
-    if (rl.retry) continue;
-    const errBody = rl.body ?? await res.text();
-    throw new Error(`Toggl Reports API ${res.status}: ${errBody}`);
-  }
-  throw new Error(`Toggl Reports API: max retries exceeded for ${url}`);
+  return withRetry(
+    async () => {
+      await rateLimit();
+      log.info(`POST ${url}`);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) return res.json() as Promise<T>;
+      const resBody = await res.text();
+      const waitSecs = parseRateLimitWait(resBody, res.headers);
+      if (waitSecs !== undefined && RETRYABLE_STATUSES.has(res.status)) {
+        log.warn(`Rate limited (${res.status}). Server says wait ${waitSecs}s.`);
+      }
+      throw new TogglApiError(`Toggl Reports API ${res.status}: ${resBody}`, res.status, waitSecs);
+    },
+    isRetryableTogglError,
+    {
+      baseDelayMs: 2000,
+      maxDelayMs: MAX_RATE_LIMIT_WAIT_SECS * 1000,
+    },
+  );
 }
 
 export async function fetchTogglUsers(): Promise<unknown[]> {

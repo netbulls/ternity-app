@@ -1,9 +1,11 @@
 import { getTimetasticConfig } from '../config.js';
 import { log } from '../logger.js';
+import { withRetry } from '../retry-with-backoff.js';
 
 const TT_API_BASE = 'https://app.timetastic.co.uk/api';
 const DEFAULT_GAP_MS = 200;
 const ABSENCES_GAP_MS = 1000;
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503]);
 
 let lastRequestAt = 0;
 
@@ -16,6 +18,20 @@ async function rateLimit(gapMs: number) {
   lastRequestAt = Date.now();
 }
 
+class TimetasticApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'TimetasticApiError';
+  }
+}
+
+function isRetryableTtError(err: unknown): boolean {
+  return err instanceof TimetasticApiError && RETRYABLE_STATUSES.has(err.status);
+}
+
 function authHeaders(): Record<string, string> {
   const { timetasticApiToken } = getTimetasticConfig();
   return {
@@ -25,15 +41,19 @@ function authHeaders(): Record<string, string> {
 }
 
 async function ttFetch<T>(path: string, gapMs = DEFAULT_GAP_MS): Promise<T> {
-  await rateLimit(gapMs);
-  const url = `${TT_API_BASE}${path}`;
-  log.info(`GET ${url}`);
-  const res = await fetch(url, { headers: authHeaders() });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Timetastic API ${res.status}: ${body}`);
-  }
-  return res.json() as Promise<T>;
+  return withRetry(
+    async () => {
+      await rateLimit(gapMs);
+      const url = `${TT_API_BASE}${path}`;
+      log.info(`GET ${url}`);
+      const res = await fetch(url, { headers: authHeaders() });
+      if (res.ok) return res.json() as Promise<T>;
+      const body = await res.text();
+      throw new TimetasticApiError(`Timetastic API ${res.status}: ${body}`, res.status);
+    },
+    isRetryableTtError,
+    { baseDelayMs: 2000 },
+  );
 }
 
 export async function fetchTtUsers(): Promise<unknown[]> {

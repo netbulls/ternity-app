@@ -9,6 +9,7 @@ import { entriesRoutes } from './routes/entries.js';
 import { referenceRoutes } from './routes/reference.js';
 import { statsRoutes } from './routes/stats.js';
 import { adminUsersRoutes } from './routes/admin-users.js';
+import { syncStatusRoutes } from './routes/sync-status.js';
 
 const fastify = Fastify({
   logger: {
@@ -33,6 +34,7 @@ await fastify.register(entriesRoutes);
 await fastify.register(referenceRoutes);
 await fastify.register(statsRoutes);
 await fastify.register(adminUsersRoutes);
+await fastify.register(syncStatusRoutes);
 
 // Start
 const port = Number(process.env.PORT ?? 3010);

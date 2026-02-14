@@ -18,7 +18,8 @@
     "sync:transform": "tsx --env-file=../../.env.sync src/cli/sync-transform.ts",
     "sync:run": "tsx --env-file=../../.env.sync src/cli/sync-run.ts",
     "sync:users": "tsx --env-file=../../.env.sync src/cli/sync-users.ts",
-    "sync:verify": "tsx --env-file=../../.env.sync src/cli/sync-verify.ts"
+    "sync:verify": "tsx --env-file=../../.env.sync src/cli/sync-verify.ts",
+    "sync:service": "tsx --env-file=../../.env.sync src/sync-service.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",

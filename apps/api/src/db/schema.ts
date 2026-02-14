@@ -175,6 +175,12 @@ export const leaveRequests = pgTable('leave_requests', {
 
 // ── Sync Infrastructure ────────────────────────────────────────────────────
 
+export const syncScheduleTriggerEnum = pgEnum('sync_schedule_trigger', [
+  'frequent',
+  'daily',
+  'manual',
+]);
+
 export const syncRuns = pgTable('sync_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
   source: syncSourceEnum('source').notNull(),
@@ -182,6 +188,8 @@ export const syncRuns = pgTable('sync_runs', {
   status: syncRunStatusEnum('status').notNull().default('running'),
   recordCount: integer('record_count'),
   errorMessage: text('error_message'),
+  retryCount: integer('retry_count').notNull().default(0),
+  scheduleTrigger: syncScheduleTriggerEnum('schedule_trigger').notNull().default('manual'),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
@@ -275,4 +283,16 @@ export const stgTtAbsences = pgTable('stg_tt_absences', {
   rawData: jsonb('raw_data').notNull(),
   syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
   syncRunId: uuid('sync_run_id').references(() => syncRuns.id),
+});
+
+// ── Sync Scheduler State ──────────────────────────────────────────────────
+
+export const syncScheduleState = pgTable('sync_schedule_state', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  lastFrequentRunAt: timestamp('last_frequent_run_at', { withTimezone: true }),
+  lastDailyRunAt: timestamp('last_daily_run_at', { withTimezone: true }),
+  nextFrequentRunAt: timestamp('next_frequent_run_at', { withTimezone: true }),
+  nextDailyRunAt: timestamp('next_daily_run_at', { withTimezone: true }),
+  schedulerStartedAt: timestamp('scheduler_started_at', { withTimezone: true }).notNull().defaultNow(),
+  schedulerHeartbeatAt: timestamp('scheduler_heartbeat_at', { withTimezone: true }).notNull().defaultNow(),
 });
