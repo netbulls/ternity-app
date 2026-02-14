@@ -223,3 +223,8 @@ Environment configs: `deploy/dev/.env.example` and `deploy/prod/.env.example`.
 - **Auth:** Logto OSS (`@logto/react` + JWT validation)
 - **Type sharing:** Zod schemas in `packages/shared`
 - **Monorepo:** pnpm workspaces
+
+## Development Notes
+
+- Default auth mode is `stub` — no external services needed for local dev
+- Theme system uses CSS custom properties (`--t-*`) — see `THEMES.md` for details
