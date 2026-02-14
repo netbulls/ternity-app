@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — User Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111;
+            color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* Page header */
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        /* Theme & scale switchers */
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .theme-nav { display: contents; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        /* Scale levels — applied to .theme-container */
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* Theme container */
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* ---- APP LAYOUT ---- */
+        .app {
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: calc(14px * var(--t-scale, 1));
+            min-height: 720px; display: grid;
+            grid-template-columns: 220px 1fr;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: hsl(var(--sidebar-background));
+            border-right: 1px solid hsl(var(--sidebar-border));
+            padding: 20px 12px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .sidebar .logo {
+            font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: 15px;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar .logo svg { width: 18px; height: 22px; }
+        .sidebar .nav-section {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1)); letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            padding: 12px 10px 4px; margin-top: 4px;
+        }
+        .sidebar .nav-item {
+            font-size: calc(13px * var(--t-scale, 1)); padding: 8px 10px;
+            border-radius: calc(var(--radius) - 2px);
+            color: hsl(var(--muted-foreground)); cursor: default; transition: background 0.1s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar .nav-item:hover {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+        }
+        .sidebar .nav-item.active {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+            font-weight: 600;
+        }
+        .sidebar .nav-item i,
+        .sidebar .nav-item [data-lucide] {
+            width: 16px; height: 16px; font-size: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sidebar .nav-item svg { width: 16px; height: 16px; }
+        .sidebar .spacer { flex: 1; }
+        .sidebar .user-block {
+            display: flex; align-items: center; gap: 8px; padding: 10px;
+            border-radius: calc(var(--radius)); background: hsl(var(--muted) / 0.5);
+        }
+        .sidebar .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600;
+        }
+        .sidebar .user-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .sidebar .user-role { font-size: 10px; color: hsl(var(--muted-foreground)); }
+
+        /* Main */
+        .main { padding: 24px; overflow: auto; }
+        .top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .page-title {
+            font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600;
+            letter-spacing: 1px; color: hsl(var(--foreground));
+        }
+        .page-subtitle {
+            font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); margin-top: 2px;
+        }
+
+        /* Buttons — Inter for readability at small sizes */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 500;
+            padding: 8px 16px; border-radius: calc(var(--radius));
+            border: none; cursor: default; transition: opacity 0.15s; white-space: nowrap;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .btn-outline { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); }
+        .btn-ghost { background: transparent; color: hsl(var(--muted-foreground)); }
+        .btn-destructive { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+        .btn-sm { font-size: calc(12px * var(--t-scale, 1)); padding: 5px 10px; }
+        .btn-xs { font-size: calc(11px * var(--t-scale, 1)); padding: 3px 8px; }
+        .btn-icon { padding: 6px; width: 30px; height: 30px; }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: calc(11px * var(--t-scale, 1)); font-weight: 500; padding: 2px 8px; border-radius: 9999px;
+        }
+        .badge-active {
+            background: hsl(152 60% 50% / 0.12);
+            color: hsl(152 60% 50%);
+        }
+        .badge-inactive {
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+        }
+        .badge-role {
+            background: transparent;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--muted-foreground));
+            font-size: calc(10px * var(--t-scale, 1));
+            padding: 1px 7px;
+        }
+        .badge-count {
+            font-family: 'Oxanium', sans-serif;
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+            font-size: calc(10px * var(--t-scale, 1));
+            padding: 1px 6px;
+            margin-left: 4px;
+        }
+        .badge-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .badge-active .badge-dot { background: hsl(152 60% 50%); }
+        .badge-inactive .badge-dot { background: hsl(var(--muted-foreground)); opacity: 0.5; }
+
+        /* Stat cards */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card {
+            background: hsl(var(--t-stat-bg)); border: 1px solid hsl(var(--t-border-subtle));
+            border-radius: calc(var(--radius)); padding: 14px 16px;
+            cursor: default; transition: border-color 0.15s;
+        }
+        .stat-card:hover { border-color: hsl(var(--border)); }
+        .stat-card.active-filter { border-color: hsl(var(--primary)); }
+        .stat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1)); letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin-bottom: 4px;
+        }
+        .stat-value {
+            font-family: 'Oxanium', sans-serif; font-size: calc(22px * var(--t-scale, 1)); font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+        .stat-value.accent { color: hsl(var(--primary)); }
+        .stat-sub { font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--t-text-muted)); margin-top: 2px; }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 12px;
+        }
+        .search-input {
+            flex: 1; max-width: 280px;
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 12px; border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--input)); background: transparent;
+        }
+        .search-input svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+        .search-input input {
+            flex: 1; background: transparent; border: none; font-size: calc(12px * var(--t-scale, 1));
+            font-family: 'Inter', sans-serif; color: hsl(var(--foreground)); outline: none;
+        }
+        .search-input input::placeholder { color: hsl(var(--muted-foreground)); }
+
+        .filter-tabs {
+            display: flex; gap: 0; border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border)); overflow: hidden;
+        }
+        .filter-tab {
+            font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 6px 12px; background: transparent;
+            color: hsl(var(--muted-foreground)); cursor: default; transition: all 0.15s;
+            border: none; border-right: 1px solid hsl(var(--border));
+        }
+        .filter-tab:last-child { border-right: none; }
+        .filter-tab:hover { background: hsl(var(--muted) / 0.3); }
+        .filter-tab.active {
+            background: hsl(var(--primary) / 0.08);
+            color: hsl(var(--foreground));
+            font-weight: 600;
+        }
+
+        .toolbar-spacer { flex: 1; }
+
+        /* Data table */
+        .table-wrapper {
+            border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius)); overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--t-scale, 1)); }
+        thead th {
+            font-family: 'Oxanium', sans-serif;
+            text-align: left; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600;
+            letter-spacing: 0.5px;
+            color: hsl(var(--muted-foreground)); padding: 10px 14px;
+            background: hsl(var(--muted) / 0.3); border-bottom: 1px solid hsl(var(--border));
+            white-space: nowrap;
+        }
+        thead th.sortable { cursor: default; }
+        thead th.sortable:hover { color: hsl(var(--foreground)); }
+        thead th .sort-icon { margin-left: 4px; opacity: 0.4; }
+        thead th.sorted .sort-icon { opacity: 1; color: hsl(var(--primary)); }
+        tbody td {
+            padding: 10px 14px; border-bottom: 1px solid hsl(var(--border) / 0.5);
+            color: hsl(var(--foreground)); vertical-align: middle;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: hsl(var(--muted) / 0.3); }
+        tbody tr.inactive td { opacity: 0.5; }
+        tbody tr.inactive:hover td { opacity: 0.7; }
+        tbody tr.selected { background: hsl(var(--primary) / 0.05); }
+        tbody tr.selected td { opacity: 1; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Checkbox */
+        .checkbox {
+            width: 16px; height: 16px; border-radius: 3px;
+            border: 1.5px solid hsl(var(--border)); background: transparent;
+            display: flex; align-items: center; justify-content: center;
+            cursor: default; transition: all 0.15s; flex-shrink: 0;
+        }
+        .checkbox.checked {
+            background: hsl(var(--primary)); border-color: hsl(var(--primary));
+        }
+        .checkbox.indeterminate {
+            background: hsl(var(--primary)); border-color: hsl(var(--primary));
+        }
+        .checkbox svg { width: 12px; height: 12px; color: hsl(var(--primary-foreground)); }
+
+        /* User cell */
+        .user-cell {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .user-cell .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; flex-shrink: 0;
+        }
+        .user-cell .user-info { display: flex; flex-direction: column; }
+        .user-cell .user-name { font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; color: hsl(var(--foreground)); }
+        .user-cell .user-email { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); }
+
+        /* Number cells */
+        .num-cell {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(13px * var(--t-scale, 1)); letter-spacing: 0.5px;
+        }
+        .num-zero { opacity: 0.3; }
+
+        /* Time muted */
+        .time-muted { color: hsl(var(--muted-foreground)); font-size: calc(12px * var(--t-scale, 1)); }
+        .time-never { color: hsl(var(--muted-foreground)); opacity: 0.4; font-size: calc(12px * var(--t-scale, 1)); font-style: italic; }
+
+        /* Row actions */
+        .row-actions {
+            display: flex; align-items: center; justify-content: center;
+        }
+        .row-actions-btn {
+            width: 28px; height: 28px; border-radius: calc(var(--radius) - 2px);
+            border: none; background: transparent; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: default; transition: background 0.15s;
+        }
+        .row-actions-btn:hover { background: hsl(var(--muted) / 0.5); color: hsl(var(--foreground)); }
+        .row-actions-btn svg { width: 16px; height: 16px; }
+
+        /* Pagination */
+        .pagination {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-top: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.15);
+        }
+        .pagination-info { font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); }
+        .pagination-controls { display: flex; align-items: center; gap: 4px; }
+        .pagination-btn {
+            width: 28px; height: 28px; border-radius: calc(var(--radius) - 2px);
+            border: 1px solid hsl(var(--border)); background: transparent;
+            color: hsl(var(--muted-foreground)); display: flex; align-items: center;
+            justify-content: center; cursor: default; font-size: 12px;
+        }
+        .pagination-btn:hover { background: hsl(var(--muted) / 0.3); color: hsl(var(--foreground)); }
+        .pagination-btn.active { background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); border-color: hsl(var(--primary) / 0.3); }
+        .pagination-btn.disabled { opacity: 0.3; }
+
+        /* Floating bulk action bar */
+        .bulk-bar {
+            position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; border-radius: calc(var(--radius) + 2px);
+            background: hsl(var(--card) / 0.95); border: 1px solid hsl(var(--border));
+            backdrop-filter: blur(12px); box-shadow: 0 8px 32px hsl(var(--background) / 0.5);
+            z-index: 50;
+        }
+        .bulk-bar .bulk-count {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1)); font-weight: 500; color: hsl(var(--foreground));
+            padding: 0 8px; letter-spacing: 0.5px;
+        }
+        .bulk-bar .sep { width: 1px; height: 24px; background: hsl(var(--border)); }
+        .bulk-bar .bulk-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            padding: 5px 10px; border-radius: calc(var(--radius) - 2px);
+            border: none; cursor: default; transition: all 0.15s;
+        }
+        .bulk-bar .bulk-btn svg { width: 14px; height: 14px; }
+        .bulk-btn-activate {
+            background: hsl(152 60% 50% / 0.12); color: hsl(152 60% 50%);
+        }
+        .bulk-btn-activate:hover { background: hsl(152 60% 50% / 0.2); }
+        .bulk-btn-deactivate {
+            background: hsl(var(--destructive) / 0.1); color: hsl(var(--destructive));
+        }
+        .bulk-btn-deactivate:hover { background: hsl(var(--destructive) / 0.2); }
+        .bulk-btn-close {
+            background: transparent; color: hsl(var(--muted-foreground));
+            padding: 5px;
+        }
+        .bulk-btn-close:hover { color: hsl(var(--foreground)); }
+        .bulk-btn-close svg { width: 16px; height: 16px; }
+
+        /* Dropdown menu (shown statically for mockup) */
+        .dropdown-menu {
+            position: absolute; right: 0; top: 100%; margin-top: 4px;
+            min-width: 180px; padding: 4px;
+            background: hsl(var(--popover)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius)); box-shadow: 0 4px 16px hsl(var(--background) / 0.3);
+            z-index: 20;
+        }
+        .dropdown-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 10px; border-radius: calc(var(--radius) - 2px);
+            font-size: 12px; color: hsl(var(--popover-foreground));
+            cursor: default; transition: background 0.1s;
+        }
+        .dropdown-item:hover { background: hsl(var(--muted) / 0.5); }
+        .dropdown-item svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+        .dropdown-item.destructive { color: hsl(var(--destructive)); }
+        .dropdown-item.destructive svg { color: hsl(var(--destructive)); }
+        .dropdown-sep { height: 1px; background: hsl(var(--border)); margin: 4px 0; }
+
+        /* Confirmation dialog overlay */
+        .dialog-overlay {
+            position: fixed; inset: 0;
+            background: hsl(var(--background) / 0.6);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+        }
+        .dialog {
+            width: 400px; padding: 24px;
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            box-shadow: 0 16px 48px hsl(var(--background) / 0.5);
+        }
+        .dialog h3 {
+            font-family: 'Oxanium', sans-serif; font-size: 15px; font-weight: 600;
+            color: hsl(var(--foreground)); margin-bottom: 8px;
+        }
+        .dialog p {
+            font-size: 13px; color: hsl(var(--muted-foreground)); line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 80px; right: 24px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; border-radius: calc(var(--radius));
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            box-shadow: 0 4px 16px hsl(var(--background) / 0.3);
+            font-size: 13px; color: hsl(var(--foreground)); z-index: 90;
+        }
+        .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .toast-success svg { color: hsl(152 60% 50%); }
+        .toast .undo-link {
+            font-size: 12px; font-weight: 500; color: hsl(var(--primary));
+            margin-left: 8px; text-decoration: underline; cursor: default;
+        }
+
+        /* State tabs for showing different mockup states */
+        .state-nav {
+            display: flex; justify-content: center; gap: 4px;
+            margin-bottom: 12px;
+        }
+        .state-nav button {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+            padding: 5px 12px; border-radius: 6px;
+            border: 1px solid #2a2a2a; background: #1a1a1a;
+            color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s;
+        }
+        .state-nav button:hover { border-color: #444; }
+        .state-nav button.active {
+            background: #00D4AA; border-color: #00D4AA;
+            color: #0a0a0a; font-weight: 600;
+        }
+
+        /* Hide/show states */
+        .state { display: none; }
+        .state.visible { display: block; }
+        .bulk-bar { display: none; }
+        .state-bulk .bulk-bar { display: flex; }
+        .dialog-overlay { display: none; }
+        .toast { display: none; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>User Management</h1>
+        <p>Admin page — license activation, status, and activity overview</p>
+    </div>
+
+    <!-- Theme & scale switchers -->
+    <div class="switcher-row">
+        <span class="switcher-label">Theme</span>
+        <div class="switcher-group" id="themeNav">
+            <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+            <button onclick="setTheme('ternity-light')">Ternity Light</button>
+            <button onclick="setTheme('midnight')">Midnight</button>
+            <button onclick="setTheme('warm-sand')">Warm Sand</button>
+            <button onclick="setTheme('carbon')">Carbon</button>
+            <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+        <span class="switcher-label">Scale</span>
+        <div class="switcher-group" id="scaleNav">
+            <button onclick="setScale('compact')">Compact</button>
+            <button class="active" onclick="setScale('default')">Default</button>
+            <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+    </div>
+
+    <!-- State switcher -->
+    <div class="state-nav" id="stateNav">
+        <button class="active" onclick="setState('default')">Default View</button>
+        <button onclick="setState('bulk')">Bulk Selection</button>
+        <button onclick="setState('dialog')">Confirmation Dialog</button>
+        <button onclick="setState('toast')">Success Toast</button>
+    </div>
+
+    <div class="theme-container" data-theme="ternity-dark" data-scale="default">
+
+        <!-- ===== DEFAULT STATE ===== -->
+        <div class="state state-default visible" id="state-default">
+            <div class="app">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 24 30" fill="none">
+                            <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                            <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                        </svg>
+                        TERNITY
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Admin</div>
+                    <div class="nav-item active"><i data-lucide="users"></i> Users</div>
+                    <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="spacer"></div>
+                    <div class="user-block">
+                        <div class="avatar">SW</div>
+                        <div>
+                            <div class="user-name">Sam Whitford</div>
+                            <div class="user-role">Admin</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main content -->
+                <div class="main">
+                    <div class="top-bar">
+                        <div>
+                            <div class="page-title">Users</div>
+                            <div class="page-subtitle">Manage team access and licenses</div>
+                        </div>
+                    </div>
+
+                    <!-- Stat cards -->
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-label">All Users</div>
+                            <div class="stat-value">85</div>
+                            <div class="stat-sub">synced from Toggl & Timetastic</div>
+                        </div>
+                        <div class="stat-card active-filter">
+                            <div class="stat-label">Active</div>
+                            <div class="stat-value accent">23</div>
+                            <div class="stat-sub">can log in and track time</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Inactive</div>
+                            <div class="stat-value">62</div>
+                            <div class="stat-sub">data preserved, no access</div>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="toolbar">
+                        <div class="search-input">
+                            <svg><use href="#search-icon"/></svg>
+                            <i data-lucide="search"></i>
+                            <input type="text" placeholder="Search by name or email...">
+                        </div>
+                        <div class="filter-tabs">
+                            <button class="filter-tab active">All <span class="badge-count">85</span></button>
+                            <button class="filter-tab">Active <span class="badge-count">23</span></button>
+                            <button class="filter-tab">Inactive <span class="badge-count">62</span></button>
+                        </div>
+                        <div class="toolbar-spacer"></div>
+                        <button class="btn btn-ghost btn-sm" title="Column settings">
+                            <i data-lucide="sliders-horizontal" style="width:14px;height:14px"></i>
+                        </button>
+                    </div>
+
+                    <!-- Data table -->
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px"><div class="checkbox"><svg style="display:none"><use href="#check"/></svg></div></th>
+                                    <th class="sortable sorted">User <span class="sort-icon">↑</span></th>
+                                    <th class="sortable">Status</th>
+                                    <th class="sortable">Role</th>
+                                    <th class="sortable">Last Active</th>
+                                    <th class="sortable text-right">Entries</th>
+                                    <th style="width:44px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">EM</div><div class="user-info"><span class="user-name">Elena Marsh</span><span class="user-email">elena.marsh@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">Admin</span></td>
+                                    <td>2 hours ago</td>
+                                    <td class="text-right"><span class="num-cell">2,847</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">JO</div><div class="user-info"><span class="user-name">James Oakley</span><span class="user-email">james.oakley@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td>5 hours ago</td>
+                                    <td class="text-right"><span class="num-cell">1,523</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">NF</div><div class="user-info"><span class="user-name">Nora Fielding</span><span class="user-email">nora.fielding@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td>1 day ago</td>
+                                    <td class="text-right"><span class="num-cell">4,102</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">LT</div><div class="user-info"><span class="user-name">Leo Tanner</span><span class="user-email">leo.tanner@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td>3 days ago</td>
+                                    <td class="text-right"><span class="num-cell">3,891</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">SW</div><div class="user-info"><span class="user-name">Sam Whitford</span><span class="user-email">sam.whitford@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">Admin</span></td>
+                                    <td>Just now</td>
+                                    <td class="text-right"><span class="num-cell">5,234</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">MC</div><div class="user-info"><span class="user-name">Mia Corrigan</span><span class="user-email">mia.corrigan@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td>6 hours ago</td>
+                                    <td class="text-right"><span class="num-cell">2,103</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <!-- Inactive users -->
+                                <tr class="inactive">
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">TG</div><div class="user-info"><span class="user-name">Tom Greyson</span><span class="user-email">tom.greyson@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Jan 15, 2024</td>
+                                    <td class="text-right"><span class="num-cell">342</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive">
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">ZH</div><div class="user-info"><span class="user-name">Zara Hollis</span><span class="user-email">zara.hollis@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Mar 8, 2023</td>
+                                    <td class="text-right"><span class="num-cell">89</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive">
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">IP</div><div class="user-info"><span class="user-name">Ivy Pendleton</span><span class="user-email">ivy.pendleton@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-never">Never</td>
+                                    <td class="text-right"><span class="num-cell num-zero">0</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive">
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">OB</div><div class="user-info"><span class="user-name">Owen Blackwell</span><span class="user-email">owen.blackwell@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Sep 20, 2022</td>
+                                    <td class="text-right"><span class="num-cell">1,247</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <div class="pagination-info">Showing 1–10 of 85 users</div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn disabled"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+                                <button class="pagination-btn active">1</button>
+                                <button class="pagination-btn">2</button>
+                                <button class="pagination-btn">3</button>
+                                <button class="pagination-btn">…</button>
+                                <button class="pagination-btn">9</button>
+                                <button class="pagination-btn"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== BULK SELECTION STATE ===== -->
+        <div class="state state-bulk" id="state-bulk">
+            <div class="app">
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 24 30" fill="none">
+                            <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                            <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                        </svg>
+                        TERNITY
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Admin</div>
+                    <div class="nav-item active"><i data-lucide="users"></i> Users</div>
+                    <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="spacer"></div>
+                    <div class="user-block">
+                        <div class="avatar">SW</div>
+                        <div>
+                            <div class="user-name">Sam Whitford</div>
+                            <div class="user-role">Admin</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main">
+                    <div class="top-bar">
+                        <div>
+                            <div class="page-title">Users</div>
+                            <div class="page-subtitle">Manage team access and licenses</div>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-card"><div class="stat-label">All Users</div><div class="stat-value">85</div><div class="stat-sub">synced from Toggl & Timetastic</div></div>
+                        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value accent">23</div><div class="stat-sub">can log in and track time</div></div>
+                        <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value">62</div><div class="stat-sub">data preserved, no access</div></div>
+                    </div>
+                    <div class="toolbar">
+                        <div class="search-input"><i data-lucide="search"></i><input type="text" placeholder="Search by name or email..."></div>
+                        <div class="filter-tabs">
+                            <button class="filter-tab">All <span class="badge-count">85</span></button>
+                            <button class="filter-tab">Active <span class="badge-count">23</span></button>
+                            <button class="filter-tab active">Inactive <span class="badge-count">62</span></button>
+                        </div>
+                        <div class="toolbar-spacer"></div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px"><div class="checkbox indeterminate"><svg viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="2"/></svg></div></th>
+                                    <th class="sortable sorted">User <span class="sort-icon">↑</span></th>
+                                    <th class="sortable">Status</th>
+                                    <th class="sortable">Role</th>
+                                    <th class="sortable">Last Active</th>
+                                    <th class="sortable text-right">Entries</th>
+                                    <th style="width:44px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="inactive selected">
+                                    <td><div class="checkbox checked"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></td>
+                                    <td><div class="user-cell"><div class="avatar">TG</div><div class="user-info"><span class="user-name">Tom Greyson</span><span class="user-email">tom.greyson@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Jan 15, 2024</td>
+                                    <td class="text-right"><span class="num-cell">342</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive">
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">ZH</div><div class="user-info"><span class="user-name">Zara Hollis</span><span class="user-email">zara.hollis@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Mar 8, 2023</td>
+                                    <td class="text-right"><span class="num-cell">89</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive selected">
+                                    <td><div class="checkbox checked"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></td>
+                                    <td><div class="user-cell"><div class="avatar">IP</div><div class="user-info"><span class="user-name">Ivy Pendleton</span><span class="user-email">ivy.pendleton@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-never">Never</td>
+                                    <td class="text-right"><span class="num-cell num-zero">0</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr class="inactive selected">
+                                    <td><div class="checkbox checked"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></td>
+                                    <td><div class="user-cell"><div class="avatar">OB</div><div class="user-info"><span class="user-name">Owen Blackwell</span><span class="user-email">owen.blackwell@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Sep 20, 2022</td>
+                                    <td class="text-right"><span class="num-cell">1,247</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <div class="pagination-info">Showing 1–10 of 62 inactive users</div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn disabled"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+                                <button class="pagination-btn active">1</button>
+                                <button class="pagination-btn">2</button>
+                                <button class="pagination-btn">…</button>
+                                <button class="pagination-btn">7</button>
+                                <button class="pagination-btn"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Floating bulk action bar -->
+            <div class="bulk-bar">
+                <span class="bulk-count">3 users selected</span>
+                <div class="sep"></div>
+                <button class="bulk-btn bulk-btn-activate"><i data-lucide="user-check"></i> Activate</button>
+                <button class="bulk-btn bulk-btn-deactivate"><i data-lucide="user-x"></i> Deactivate</button>
+                <div class="sep"></div>
+                <button class="bulk-btn bulk-btn-close"><i data-lucide="x"></i></button>
+            </div>
+        </div>
+
+        <!-- ===== DIALOG STATE ===== -->
+        <div class="state state-dialog" id="state-dialog">
+            <div class="app" style="filter: blur(1px); opacity: 0.5;">
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 24 30" fill="none">
+                            <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                            <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                        </svg>
+                        TERNITY
+                    </div>
+                    <div class="spacer"></div>
+                </div>
+                <div class="main">
+                    <div class="top-bar"><div><div class="page-title">Users</div></div></div>
+                </div>
+            </div>
+            <div class="dialog-overlay" style="display: flex;">
+                <div class="dialog">
+                    <h3>Activate 3 users?</h3>
+                    <p>The following users will be able to log in and track time:<br><br>
+                        <strong>Tom Greyson</strong>, <strong>Ivy Pendleton</strong>, <strong>Owen Blackwell</strong></p>
+                    <div class="dialog-actions">
+                        <button class="btn btn-outline btn-sm">Cancel</button>
+                        <button class="btn btn-primary btn-sm">Activate 3 users</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TOAST STATE ===== -->
+        <div class="state state-toast" id="state-toast">
+            <div class="app">
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 24 30" fill="none">
+                            <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                            <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                        </svg>
+                        TERNITY
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Admin</div>
+                    <div class="nav-item active"><i data-lucide="users"></i> Users</div>
+                    <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="spacer"></div>
+                    <div class="user-block">
+                        <div class="avatar">SW</div>
+                        <div>
+                            <div class="user-name">Sam Whitford</div>
+                            <div class="user-role">Admin</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main">
+                    <div class="top-bar">
+                        <div>
+                            <div class="page-title">Users</div>
+                            <div class="page-subtitle">Manage team access and licenses</div>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-card"><div class="stat-label">All Users</div><div class="stat-value">85</div><div class="stat-sub">synced from Toggl & Timetastic</div></div>
+                        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value accent">26</div><div class="stat-sub">can log in and track time</div></div>
+                        <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value">59</div><div class="stat-sub">data preserved, no access</div></div>
+                    </div>
+                    <div class="toolbar">
+                        <div class="search-input"><i data-lucide="search"></i><input type="text" placeholder="Search by name or email..."></div>
+                        <div class="filter-tabs">
+                            <button class="filter-tab active">All <span class="badge-count">85</span></button>
+                            <button class="filter-tab">Active <span class="badge-count">26</span></button>
+                            <button class="filter-tab">Inactive <span class="badge-count">59</span></button>
+                        </div>
+                        <div class="toolbar-spacer"></div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px"><div class="checkbox"></div></th>
+                                    <th class="sortable sorted">User <span class="sort-icon">↑</span></th>
+                                    <th class="sortable">Status</th>
+                                    <th class="sortable">Role</th>
+                                    <th class="sortable">Last Active</th>
+                                    <th class="sortable text-right">Entries</th>
+                                    <th style="width:44px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Newly activated users now appear as active -->
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">TG</div><div class="user-info"><span class="user-name">Tom Greyson</span><span class="user-email">tom.greyson@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Jan 15, 2024</td>
+                                    <td class="text-right"><span class="num-cell">342</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">IP</div><div class="user-info"><span class="user-name">Ivy Pendleton</span><span class="user-email">ivy.pendleton@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-never">Never</td>
+                                    <td class="text-right"><span class="num-cell num-zero">0</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">EM</div><div class="user-info"><span class="user-name">Elena Marsh</span><span class="user-email">elena.marsh@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">Admin</span></td>
+                                    <td>2 hours ago</td>
+                                    <td class="text-right"><span class="num-cell">2,847</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="checkbox"></div></td>
+                                    <td><div class="user-cell"><div class="avatar">OB</div><div class="user-info"><span class="user-name">Owen Blackwell</span><span class="user-email">owen.blackwell@acme.io</span></div></div></td>
+                                    <td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td>
+                                    <td><span class="badge badge-role">User</span></td>
+                                    <td class="time-muted">Sep 20, 2022</td>
+                                    <td class="text-right"><span class="num-cell">1,247</span></td>
+                                    <td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <div class="pagination-info">Showing 1–10 of 85 users</div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn disabled"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+                                <button class="pagination-btn active">1</button>
+                                <button class="pagination-btn">2</button>
+                                <button class="pagination-btn">…</button>
+                                <button class="pagination-btn">9</button>
+                                <button class="pagination-btn"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Toast -->
+            <div class="toast toast-success" style="display: flex;">
+                <i data-lucide="check-circle"></i>
+                <span>3 users activated</span>
+                <span class="undo-link">Undo</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function setTheme(theme) {
+            document.querySelector('.theme-container').setAttribute('data-theme', theme);
+            document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setScale(scale) {
+            document.querySelector('.theme-container').setAttribute('data-scale', scale);
+            document.querySelectorAll('#scaleNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setState(state) {
+            document.querySelectorAll('.state').forEach(s => s.classList.remove('visible'));
+            document.getElementById('state-' + state).classList.add('visible');
+            document.querySelectorAll('.state-nav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

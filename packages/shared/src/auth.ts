@@ -15,6 +15,10 @@ export const AuthContextSchema = z.object({
   globalRole: z.nativeEnum(GlobalRole),
   /** Organization (project) roles — key is projectId */
   orgRoles: z.record(z.string(), z.nativeEnum(OrgRole)),
+  /** True when an admin is impersonating another user */
+  impersonating: z.boolean().optional(),
+  /** The admin's real userId when impersonating */
+  realUserId: z.string().optional(),
 });
 
 export type AuthContext = z.infer<typeof AuthContextSchema>;

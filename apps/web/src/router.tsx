@@ -7,6 +7,7 @@ import { CalendarPage } from '@/pages/calendar';
 import { LeavePage } from '@/pages/leave';
 import { ProjectsPage } from '@/pages/projects';
 import { SettingsPage } from '@/pages/settings';
+import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
 
 export const router = createBrowserRouter([
@@ -14,6 +15,17 @@ export const router = createBrowserRouter([
     path: '/callback',
     element: <CallbackPage />,
   },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev',
+          lazy: async () => {
+            const { DevPage } = await import('@/pages/dev');
+            return { Component: DevPage };
+          },
+        },
+      ]
+    : []),
   {
     element: <AppShell />,
     children: [
@@ -23,6 +35,7 @@ export const router = createBrowserRouter([
       { path: '/calendar', element: <CalendarPage /> },
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },
+      { path: '/users', element: <UserManagementPage /> },
       { path: '/settings', element: <SettingsPage /> },
     ],
   },

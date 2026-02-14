@@ -1,0 +1,71 @@
+/**
+ * Central API fetch wrapper.
+ * Handles auth headers (stub vs logto) and impersonation.
+ */
+
+// Module-level state for auth token (set by auth-provider)
+let _getToken: (() => Promise<string | null>) | null = null;
+
+export function setTokenGetter(fn: () => Promise<string | null>) {
+  _getToken = fn;
+}
+
+// Module-level state for impersonation (set by impersonation-provider)
+let _impersonateUserId: string | null = null;
+
+export function setImpersonateUserId(userId: string | null) {
+  _impersonateUserId = userId;
+}
+
+export function getImpersonateUserId() {
+  return _impersonateUserId;
+}
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public body: string,
+  ) {
+    super(`API ${status}: ${body}`);
+    this.name = 'ApiError';
+  }
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options?: RequestInit,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  // Only set Content-Type for requests with a body
+  if (options?.body) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  // Auth header (logto mode — stub mode doesn't need one)
+  if (_getToken) {
+    const token = await _getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  // Impersonation header
+  if (_impersonateUserId) {
+    headers['X-Impersonate-User-Id'] = _impersonateUserId;
+  }
+
+  const res = await fetch(`/api${path}`, {
+    ...options,
+    headers: { ...headers, ...options?.headers },
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text());
+  }
+
+  // Handle 204 No Content
+  if (res.status === 204) return undefined as T;
+
+  return res.json();
+}

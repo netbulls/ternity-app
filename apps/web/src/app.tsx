@@ -2,8 +2,10 @@ import { type ReactNode } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LogtoProvider, LogtoConfig } from '@logto/react';
+import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { ImpersonationProvider } from '@/providers/impersonation-provider';
 import { router } from '@/router';
 
 const queryClient = new QueryClient({
@@ -38,7 +40,10 @@ export function App() {
       <ThemeProvider>
         <LogtoWrapper>
           <AuthProvider>
-            <RouterProvider router={router} />
+            <ImpersonationProvider>
+              <RouterProvider router={router} />
+              <Toaster />
+            </ImpersonationProvider>
           </AuthProvider>
         </LogtoWrapper>
       </ThemeProvider>

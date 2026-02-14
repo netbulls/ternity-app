@@ -13,7 +13,12 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "sync:extract": "tsx --env-file=../../.env.sync src/cli/sync-extract.ts",
+    "sync:transform": "tsx --env-file=../../.env.sync src/cli/sync-transform.ts",
+    "sync:run": "tsx --env-file=../../.env.sync src/cli/sync-run.ts",
+    "sync:users": "tsx --env-file=../../.env.sync src/cli/sync-users.ts",
+    "sync:verify": "tsx --env-file=../../.env.sync src/cli/sync-verify.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",

@@ -10,7 +10,12 @@
     "test": "pnpm -r test",
     "db:generate": "pnpm --filter @ternity/api db:generate",
     "db:migrate": "pnpm --filter @ternity/api db:migrate",
-    "db:seed": "pnpm --filter @ternity/api db:seed"
+    "db:seed": "pnpm --filter @ternity/api db:seed",
+    "sync:extract": "pnpm --filter @ternity/api sync:extract",
+    "sync:transform": "pnpm --filter @ternity/api sync:transform",
+    "sync:run": "pnpm --filter @ternity/api sync:run",
+    "sync:users": "pnpm --filter @ternity/api sync:users",
+    "sync:verify": "pnpm --filter @ternity/api sync:verify"
   },
   "engines": {
     "node": ">=22.0.0"
