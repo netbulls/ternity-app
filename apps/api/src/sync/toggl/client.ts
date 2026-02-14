@@ -92,8 +92,8 @@ export async function togglReportsFetch<T>(path: string, body: unknown): Promise
 }
 
 export async function fetchTogglUsers(): Promise<unknown[]> {
-  const { togglOrganizationId } = getTogglConfig();
-  return togglFetch<unknown[]>(`/organizations/${togglOrganizationId}/users`);
+  const { togglWorkspaceId } = getTogglConfig();
+  return togglFetch<unknown[]>(`/workspaces/${togglWorkspaceId}/users`);
 }
 
 export async function fetchTogglClients(): Promise<unknown[]> {

@@ -4,6 +4,11 @@ import { users, stgTogglUsers, stgTtUsers } from '../../db/schema.js';
 import { log } from '../logger.js';
 import { upsertMapping } from './mappings.js';
 
+/** Emails to skip during user matching (known bad data in external systems) */
+const IGNORED_EMAILS = new Set([
+  'bartosz.klak@netbulls.lio', // Typo in Toggl — real user is bartosz.klak@netbulls.io
+]);
+
 interface MatchReport {
   matched: { email: string; userId: string; togglId?: string; timetasticId?: string }[];
   created: { email: string; userId: string; source: string }[];
@@ -40,6 +45,11 @@ export async function matchUsers(apply: boolean): Promise<MatchReport> {
   }
 
   for (const [email, sources] of emailMap) {
+    if (IGNORED_EMAILS.has(email)) {
+      log.info(`  Skipping ignored email: ${email}`);
+      continue;
+    }
+
     // Use user_id (Toggl account ID) — this is what the Reports API uses in time entries.
     // The top-level `id` is the organization-level ID, which is different.
     const togglId = sources.togglData
