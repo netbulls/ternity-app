@@ -36,3 +36,6 @@ archive/screenshots/
 
 # Screenshots (dev artifacts at repo root)
 /*.png
+
+# Inbox (shared files for Claude sessions)
+inbox/
