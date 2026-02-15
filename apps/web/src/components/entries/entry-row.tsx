@@ -3,7 +3,7 @@ import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, Chevro
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry } from '@/hooks/use-entries';
-import { useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
+import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { formatTime, formatDuration } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { useProjects } from '@/hooks/use-reference-data';
@@ -28,6 +28,7 @@ interface Props {
 }
 
 export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
+  const { data: timerState } = useTimer();
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
   const resumeTimer = useResumeTimer();
@@ -50,7 +51,9 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
     if (autoEdit && onAutoEditConsumed) onAutoEditConsumed();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isRunning = !entry.stoppedAt;
+  // Derive running state from timer query (single source of truth)
+  // rather than entry.stoppedAt which can be stale during query refetch
+  const isRunning = timerState?.running === true && timerState.entry?.id === entry.id;
   const elapsed = useElapsedSeconds(entry.startedAt, isRunning);
   const noProject = !entry.projectId;
   const noDesc = !entry.description;
@@ -365,9 +368,10 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
         {durationStr}
       </span>
 
-      {/* Play/Stop button */}
+      {/* Play/Stop button — key forces fresh DOM node so inline styles don't leak */}
       {isRunning ? (
         <motion.button
+          key={`stop-${entry.id}`}
           className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
           style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}
           whileHover={{ backgroundColor: 'hsl(var(--destructive) / 0.2)' }}
@@ -381,6 +385,7 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
         </motion.button>
       ) : (
         <motion.button
+          key={`play-${entry.id}`}
           className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
           whileHover={{
             color: 'hsl(var(--primary))',
