@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Play, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
+import { getDefaultProjectId } from '@/hooks/use-default-project';
 import { formatTimer } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
@@ -18,7 +19,7 @@ export function TimerBar() {
 
   // Local state for the "next timer" description/project/labels
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(getDefaultProjectId);
   const [labelIds, setLabelIds] = useState<string[]>([]);
 
   // When timer data loads or entry changes, sync local state from running entry
@@ -53,7 +54,7 @@ export function TimerBar() {
     stopTimer.mutate(undefined, {
       onSuccess: () => {
         setDescription('');
-        setProjectId(null);
+        setProjectId(getDefaultProjectId());
         setLabelIds([]);
       },
     });

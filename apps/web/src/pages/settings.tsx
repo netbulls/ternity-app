@@ -1,11 +1,14 @@
 import { THEMES, type ThemeId } from '@ternity/shared';
 import { useTheme } from '@/providers/theme-provider';
 import { SCALES, useScale } from '@/providers/scale-provider';
+import { useDefaultProject } from '@/hooks/use-default-project';
+import { ProjectSelector } from '@/components/timer/project-selector';
 import { cn } from '@/lib/utils';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { scale, setScale } = useScale();
+  const { defaultProjectId, setDefaultProject } = useDefaultProject();
 
   return (
     <div>
@@ -65,6 +68,14 @@ export function SettingsPage() {
             This week
           </p>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Default Project</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Pre-fills the project when starting a new timer or creating an entry.
+        </p>
+        <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
       </div>
     </div>
   );
