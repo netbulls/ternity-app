@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { users, stgTogglUsers, stgTtUsers } from '../../db/schema.js';
+import { users, stgTogglUsers, stgTtUsers, stgTtAbsences } from '../../db/schema.js';
 import { log } from '../logger.js';
 import { upsertMapping } from './mappings.js';
 
@@ -8,6 +8,28 @@ import { upsertMapping } from './mappings.js';
 const IGNORED_EMAILS = new Set([
   'bartosz.klak@netbulls.lio', // Typo in Toggl — real user is bartosz.klak@netbulls.io
 ]);
+
+/** TT user names to skip (test accounts) */
+const IGNORED_TT_NAMES = new Set(['Test User', 'Tester Tester']);
+
+/** Strip Polish diacritics to ASCII */
+function stripDiacritics(s: string): string {
+  const map: Record<string, string> = {
+    ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z',
+    Ą: 'A', Ć: 'C', Ę: 'E', Ł: 'L', Ń: 'N', Ó: 'O', Ś: 'S', Ź: 'Z', Ż: 'Z',
+  };
+  return s.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, (ch) => map[ch] ?? ch);
+}
+
+/** Build email from TT display name: "Artur Adam Dzadz" → "artur.dzadz" (drop middle names) */
+function nameToLocalPart(name: string): string {
+  const parts = stripDiacritics(name).toLowerCase().split(/\s+/);
+  if (parts.length < 2) return parts[0] ?? '';
+  return `${parts[0]}.${parts[parts.length - 1]}`;
+}
+
+/** Email domains to try when matching TT names to users */
+const EMAIL_DOMAINS = ['netbulls.io', 'yosensi.io'];
 
 interface MatchReport {
   matched: { email: string; userId: string; togglId?: string; timetasticId?: string }[];
@@ -117,6 +139,73 @@ export async function matchUsers(apply: boolean): Promise<MatchReport> {
           .join('+'),
       });
     }
+  }
+
+  // ── Phase 2: Name-based matching for TT users found in absences ──────────
+  // The TT /users API only returns active users. Absences reference all users
+  // including deactivated ones. Match them by building email from name.
+
+  const matchedTtIds = new Set<string>();
+  for (const m of report.matched) {
+    if (m.timetasticId) matchedTtIds.add(m.timetasticId);
+  }
+  // Also collect already-mapped TT IDs from the users table
+  const existingTtUsers = await db.select({ timetasticId: users.timetasticId }).from(users);
+  for (const u of existingTtUsers) {
+    if (u.timetasticId) matchedTtIds.add(u.timetasticId);
+  }
+
+  // Extract unique (userId, userName) pairs from absences
+  const absenceUsers = await db
+    .selectDistinct({
+      userId: sql<string>`raw_data->>'userId'`,
+      userName: sql<string>`raw_data->>'userName'`,
+    })
+    .from(stgTtAbsences);
+
+  let nameMatched = 0;
+  let nameSkipped = 0;
+  for (const { userId: ttUserId, userName } of absenceUsers) {
+    if (!ttUserId || !userName) continue;
+    if (matchedTtIds.has(ttUserId)) continue;
+    if (IGNORED_TT_NAMES.has(userName)) continue;
+
+    const localPart = nameToLocalPart(userName);
+    if (!localPart || !localPart.includes('.')) {
+      log.warn(`  Cannot build email from TT name "${userName}" (id ${ttUserId})`);
+      nameSkipped++;
+      continue;
+    }
+
+    // Try each domain until we find a match
+    let found = false;
+    for (const domain of EMAIL_DOMAINS) {
+      const candidateEmail = `${localPart}@${domain}`;
+      const [existing] = await db.select().from(users).where(eq(users.email, candidateEmail)).limit(1);
+      if (existing) {
+        if (apply && !existing.timetasticId) {
+          await db
+            .update(users)
+            .set({ timetasticId: ttUserId, updatedAt: new Date() })
+            .where(eq(users.id, existing.id));
+          await upsertMapping('timetastic', 'users', ttUserId, 'users', existing.id);
+          log.info(`  Name-matched TT "${userName}" (${ttUserId}) → ${candidateEmail}`);
+        }
+        matchedTtIds.add(ttUserId);
+        nameMatched++;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      log.warn(`  No user found for TT "${userName}" (${ttUserId}) — tried ${localPart}@{${EMAIL_DOMAINS.join(',')}}`);
+      nameSkipped++;
+    }
+  }
+
+  if (nameMatched > 0 || nameSkipped > 0) {
+    log.info(`  Name-based TT matching: ${nameMatched} matched, ${nameSkipped} unmatched`);
   }
 
   return report;

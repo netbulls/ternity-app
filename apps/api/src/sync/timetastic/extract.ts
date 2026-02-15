@@ -82,9 +82,26 @@ export async function extractTtAbsences(from?: string, to?: string) {
 
 export async function extractAllTimetastic(from?: string, to?: string) {
   const counts: Record<string, number> = {};
-  counts.users = await extractTtUsers();
-  counts.departments = await extractTtDepartments();
-  counts.leave_types = await extractTtLeaveTypes();
-  counts.absences = await extractTtAbsences(from, to);
+  const failures: string[] = [];
+
+  const steps: [string, () => Promise<number>][] = [
+    ['users', () => extractTtUsers()],
+    ['departments', () => extractTtDepartments()],
+    ['leave_types', () => extractTtLeaveTypes()],
+    ['absences', () => extractTtAbsences(from, to)],
+  ];
+
+  for (const [entity, fn] of steps) {
+    try {
+      counts[entity] = await fn();
+    } catch {
+      failures.push(entity);
+      // Error already logged by extractEntity — continue with remaining entities
+    }
+  }
+
+  if (failures.length > 0) {
+    log.warn(`Timetastic extract: ${failures.length}/${steps.length} entities failed: ${failures.join(', ')}`);
+  }
   return counts;
 }
