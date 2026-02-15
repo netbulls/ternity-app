@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Timer, List, BarChart3, Calendar, Palmtree, FolderKanban, Settings, LogOut, Users, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, FolderKanban, Settings, LogOut, Users, X, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { useImpersonation } from '@/providers/impersonation-provider';
@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/command';
 
 const navItems = [
-  { to: '/', label: 'Timer', icon: Timer },
-  { to: '/entries', label: 'Entries', icon: List },
+  { to: '/', label: 'Timer & Entries', icon: Timer },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/leave', label: 'Leave', icon: Palmtree },

@@ -63,6 +63,21 @@ export function useStartTimer() {
   });
 }
 
+export function useResumeTimer() {
+  const queryClient = useQueryClient();
+  const { effectiveUserId } = useImpersonation();
+
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      apiFetch<TimerState>(`/timer/resume/${entryId}`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
+      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+}
+
 export function useStopTimer() {
   const queryClient = useQueryClient();
   const { effectiveUserId } = useImpersonation();

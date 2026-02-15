@@ -129,6 +129,58 @@ export async function timerRoutes(fastify: FastifyInstance) {
     return { running: true, entry };
   });
 
+  /** POST /api/timer/resume/:id — resume an existing stopped entry */
+  fastify.post('/api/timer/resume/:id', async (request, reply) => {
+    const userId = request.auth.userId;
+    const { id } = request.params as { id: string };
+
+    // Verify ownership
+    const [target] = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, id))
+      .limit(1);
+
+    if (!target) {
+      return reply.code(404).send({ error: 'Entry not found' });
+    }
+    if (target.userId !== userId) {
+      return reply.code(403).send({ error: 'Not your entry' });
+    }
+    if (!target.stoppedAt) {
+      // Already running — just return it
+      const entry = await buildEntryResponse(id);
+      return { running: true, entry };
+    }
+
+    // Stop any currently running entry first
+    const now = new Date();
+    const [running] = await db
+      .select()
+      .from(timeEntries)
+      .where(and(eq(timeEntries.userId, userId), isNull(timeEntries.stoppedAt)))
+      .limit(1);
+
+    if (running) {
+      const duration = Math.round(
+        (now.getTime() - running.startedAt.getTime()) / 1000,
+      );
+      await db
+        .update(timeEntries)
+        .set({ stoppedAt: now, durationSeconds: duration })
+        .where(eq(timeEntries.id, running.id));
+    }
+
+    // Resume: clear stoppedAt and durationSeconds, update startedAt to now
+    await db
+      .update(timeEntries)
+      .set({ startedAt: now, stoppedAt: null, durationSeconds: null })
+      .where(eq(timeEntries.id, id));
+
+    const entry = await buildEntryResponse(id);
+    return { running: true, entry };
+  });
+
   /** POST /api/timer/stop — stop the running timer */
   fastify.post('/api/timer/stop', async (request, reply) => {
     const userId = request.auth.userId;

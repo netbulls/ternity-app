@@ -8,6 +8,7 @@ import { timerRoutes } from './routes/timer.js';
 import { entriesRoutes } from './routes/entries.js';
 import { referenceRoutes } from './routes/reference.js';
 import { statsRoutes } from './routes/stats.js';
+import { dashboardRoutes } from './routes/dashboard.js';
 import { adminUsersRoutes } from './routes/admin-users.js';
 import { syncStatusRoutes } from './routes/sync-status.js';
 
@@ -33,6 +34,7 @@ await fastify.register(timerRoutes);
 await fastify.register(entriesRoutes);
 await fastify.register(referenceRoutes);
 await fastify.register(statsRoutes);
+await fastify.register(dashboardRoutes);
 await fastify.register(adminUsersRoutes);
 await fastify.register(syncStatusRoutes);
 

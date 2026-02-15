@@ -1,7 +1,6 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/app-shell';
 import { TimerPage } from '@/pages/timer';
-import { EntriesPage } from '@/pages/entries';
 import { ReportsPage } from '@/pages/reports';
 import { CalendarPage } from '@/pages/calendar';
 import { LeavePage } from '@/pages/leave';
@@ -9,6 +8,7 @@ import { ProjectsPage } from '@/pages/projects';
 import { SettingsPage } from '@/pages/settings';
 import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
+import { DashboardPage } from '@/pages/dashboard';
 
 export const router = createBrowserRouter([
   {
@@ -37,7 +37,8 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: '/', element: <TimerPage /> },
-      { path: '/entries', element: <EntriesPage /> },
+      { path: '/entries', element: <Navigate to="/" replace /> },
+      { path: '/dashboard', element: <DashboardPage /> },
       { path: '/reports', element: <ReportsPage /> },
       { path: '/calendar', element: <CalendarPage /> },
       { path: '/leave', element: <LeavePage /> },

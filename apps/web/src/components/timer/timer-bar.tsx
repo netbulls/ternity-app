@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react';
 import { Play, Square } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { formatTimer } from '@/lib/format';
+import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
-import { LabelSelector } from './label-selector';
+import { AnimatedDigit } from '@/components/ui/animated-digit';
+import { LiquidEdge, LiquidEdgeKeyframes } from '@/components/ui/liquid-edge';
 
 export function TimerBar() {
   const { data: timerState } = useTimer();
@@ -35,6 +38,9 @@ export function TimerBar() {
     running,
   );
 
+  const display = formatTimer(running ? elapsed : 0);
+  const digits = display.split('');
+
   const handleStart = useCallback(() => {
     startTimer.mutate({
       description,
@@ -60,51 +66,85 @@ export function TimerBar() {
   };
 
   return (
-    <div
-      className={`mb-5 flex items-center gap-3 rounded-lg border px-4 py-3 ${
-        running
-          ? 'border-primary/50 bg-[hsl(var(--t-timer-bg))]'
-          : 'border-[hsl(var(--t-timer-border))] bg-[hsl(var(--t-timer-bg))]'
-      }`}
-    >
-      <input
-        className="flex-1 border-none bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
-        placeholder="What are you working on?"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+    <div>
+      {running && <LiquidEdgeKeyframes />}
+      <motion.div
+        className="relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3"
+        animate={{
+          borderColor: running
+            ? 'hsl(var(--primary) / 0.3)'
+            : 'hsl(var(--t-timer-border))',
+          backgroundColor: 'hsl(var(--t-timer-bg))',
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* F3c Liquid Edge — two fluid blobs along the bottom */}
+        {running && <LiquidEdge />}
 
-      <ProjectSelector
-        value={projectId}
-        onChange={(id) => setProjectId(id)}
-      />
+        <input
+          className="relative z-10 flex-1 border-none bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+          style={{ fontSize: scaled(13) }}
+          placeholder="What are you working on?"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
 
-      <LabelSelector value={labelIds} onChange={setLabelIds} />
+        <div className="relative z-10">
+          <ProjectSelector
+            value={projectId}
+            onChange={(id) => setProjectId(id)}
+          />
+        </div>
 
-      <span className="font-brand text-xl font-semibold tracking-wider text-primary tabular-nums">
-        {formatTimer(running ? elapsed : 0)}
-      </span>
+        {/* Animated digits when running, static when idle */}
+        <div className="relative z-10 font-brand text-xl font-semibold tracking-wider text-primary tabular-nums">
+          {running ? (
+            <span className="inline-flex">
+              {digits.map((d, i) => (
+                <AnimatedDigit key={i} char={d} />
+              ))}
+            </span>
+          ) : (
+            <span style={{ opacity: 0.4 }}>0:00:00</span>
+          )}
+        </div>
 
-      {running ? (
-        <button
-          onClick={handleStop}
-          disabled={stopTimer.isPending}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-stop))] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-          title="Stop timer"
-        >
-          <Square className="h-3.5 w-3.5 fill-current" />
-        </button>
-      ) : (
-        <button
-          onClick={handleStart}
-          disabled={startTimer.isPending}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-          title="Start timer"
-        >
-          <Play className="h-3.5 w-3.5 fill-current" />
-        </button>
-      )}
+        {/* Start/Stop button with spring transitions */}
+        <AnimatePresence mode="wait">
+          {running ? (
+            <motion.button
+              key="stop"
+              initial={{ scale: 0.5, opacity: 0, rotate: -90 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
+              transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+              whileTap={{ scale: 0.85 }}
+              onClick={handleStop}
+              disabled={stopTimer.isPending}
+              className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-destructive text-white disabled:opacity-50"
+              title="Stop timer"
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+            </motion.button>
+          ) : (
+            <motion.button
+              key="start"
+              initial={{ scale: 0.5, opacity: 0, rotate: 90 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.5, opacity: 0, rotate: -90 }}
+              transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+              whileTap={{ scale: 0.85 }}
+              onClick={handleStart}
+              disabled={startTimer.isPending}
+              className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
+              title="Start timer"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
