@@ -21,16 +21,16 @@ export function TimerBar() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [labelIds, setLabelIds] = useState<string[]>([]);
 
-  // When timer data loads, sync local state from running entry
-  const syncedRef = useState(false);
-  if (running && currentEntry && !syncedRef[0]) {
+  // When timer data loads or entry changes, sync local state from running entry
+  const [syncedEntryId, setSyncedEntryId] = useState<string | null>(null);
+  if (running && currentEntry && syncedEntryId !== currentEntry.id) {
     setDescription(currentEntry.description);
     setProjectId(currentEntry.projectId);
     setLabelIds(currentEntry.labels.map((l) => l.id));
-    syncedRef[1](true);
+    setSyncedEntryId(currentEntry.id);
   }
-  if (!running && syncedRef[0]) {
-    syncedRef[1](false);
+  if (!running && syncedEntryId !== null) {
+    setSyncedEntryId(null);
   }
 
   const elapsed = useElapsedSeconds(

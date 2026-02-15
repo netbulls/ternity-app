@@ -33,27 +33,30 @@ export function DayGroup({ group }: Props) {
 
   return (
     <div className="group/day mb-4">
-      {/* Date header */}
-      <div className="mb-1.5 flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] font-semibold text-foreground">
-            {formatDateLabel(group.date)}
-          </span>
-          <button
-            className="flex h-5 w-5 items-center justify-center rounded border border-dashed border-border text-muted-foreground opacity-0 transition-all hover:border-primary hover:bg-primary/5 hover:text-primary group-hover/day:opacity-100"
-            onClick={handleAdd}
-            title="Add entry"
-          >
-            <Plus className="h-3 w-3" />
-          </button>
-        </div>
-        <span className="font-brand text-[12px] font-semibold text-muted-foreground tabular-nums">
-          {formatDuration(group.totalSeconds)}
-        </span>
-      </div>
-
-      {/* Entries */}
       <div className="rounded-lg border border-border">
+        {/* Date header */}
+        <div
+          className="flex items-center justify-between rounded-t-lg border-b border-border px-4 py-2"
+          style={{ background: 'hsl(var(--muted) / 0.3)' }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-brand text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {formatDateLabel(group.date)}
+            </span>
+            <button
+              className="flex h-5 w-5 items-center justify-center rounded border border-dashed border-border text-muted-foreground opacity-0 transition-all hover:border-primary hover:bg-primary/5 hover:text-primary group-hover/day:opacity-100"
+              onClick={handleAdd}
+              title="Add entry"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+          <span className="font-brand text-xs font-semibold tabular-nums text-foreground">
+            {formatDuration(group.totalSeconds)}
+          </span>
+        </div>
+
+        {/* Entries */}
         {group.entries.map((entry) => (
           <EntryRow
             key={entry.id}

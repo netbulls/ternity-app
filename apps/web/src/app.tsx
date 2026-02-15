@@ -22,7 +22,7 @@ const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
 const logtoConfig: LogtoConfig = {
   endpoint: import.meta.env.VITE_LOGTO_ENDPOINT,
   appId: import.meta.env.VITE_LOGTO_APP_ID,
-  scopes: ['openid', 'profile', 'phone', 'email'],
+  scopes: ['openid', 'profile', 'phone', 'email', 'urn:logto:scope:roles'],
   prompt: Prompt.Login,
   // Ternity API is set as Default API in Logto — no need to pass resource here.
   // Logto will use the default resource for token exchange automatically.

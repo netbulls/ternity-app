@@ -171,10 +171,13 @@ export async function timerRoutes(fastify: FastifyInstance) {
         .where(eq(timeEntries.id, running.id));
     }
 
-    // Resume: clear stoppedAt and durationSeconds, update startedAt to now
+    // Resume: adjust startedAt to include previously accumulated duration,
+    // so elapsed = (now - adjustedStart) naturally includes prior time.
+    const previousDuration = target.durationSeconds ?? 0;
+    const adjustedStart = new Date(now.getTime() - previousDuration * 1000);
     await db
       .update(timeEntries)
-      .set({ startedAt: now, stoppedAt: null, durationSeconds: null })
+      .set({ startedAt: adjustedStart, stoppedAt: null, durationSeconds: null })
       .where(eq(timeEntries.id, id));
 
     const entry = await buildEntryResponse(id);

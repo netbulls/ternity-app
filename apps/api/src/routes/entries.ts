@@ -89,7 +89,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           lte(timeEntries.startedAt, toTimestamp),
         ),
       )
-      .orderBy(desc(timeEntries.startedAt));
+      .orderBy(desc(timeEntries.createdAt));
 
     // Build full entries with project + labels
     const entries: Entry[] = [];
