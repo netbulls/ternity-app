@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Impersonation Exploration (4a1c)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active { background: #333; border-color: #555; color: rgba(255,255,255,0.8); }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* APP LAYOUT */
+        .app {
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: calc(14px * var(--t-scale, 1));
+            min-height: 720px; display: grid;
+            grid-template-columns: 220px 1fr;
+        }
+        .app.with-top-banner { grid-template-rows: auto 1fr; grid-template-columns: 1fr; }
+        .app.with-top-banner .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
+        .app.with-bottom-banner { grid-template-rows: 1fr auto; grid-template-columns: 1fr; }
+        .app.with-bottom-banner .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
+
+        /* Sidebar */
+        .sidebar {
+            background: hsl(var(--sidebar-background));
+            border-right: 1px solid hsl(var(--sidebar-border));
+            padding: 20px 12px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .sidebar .logo {
+            font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: 15px;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar .logo svg { width: 18px; height: 22px; }
+        .sidebar .nav-section {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1)); letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            padding: 12px 10px 4px; margin-top: 4px;
+        }
+        .sidebar .nav-item {
+            font-size: calc(13px * var(--t-scale, 1)); padding: 8px 10px;
+            border-radius: calc(var(--radius) - 2px);
+            color: hsl(var(--muted-foreground)); cursor: default; transition: background 0.1s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar .nav-item:hover { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); }
+        .sidebar .nav-item.active { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 600; }
+        .sidebar .nav-item svg { width: 16px; height: 16px; }
+        .sidebar .spacer { flex: 1; }
+        .sidebar .user-block {
+            display: flex; align-items: center; gap: 8px; padding: 10px;
+            border-radius: calc(var(--radius)); background: hsl(var(--muted) / 0.5);
+        }
+        .sidebar .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600;
+        }
+        .sidebar .user-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .sidebar .user-role { font-size: 10px; color: hsl(var(--muted-foreground)); }
+
+        .main { padding: 24px; overflow: auto; }
+        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .page-title { font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600; letter-spacing: 1px; color: hsl(var(--foreground)); }
+        .page-subtitle { font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; padding: 8px 16px; border-radius: calc(var(--radius)); border: none; cursor: default; white-space: nowrap; }
+        .btn-sm { font-size: calc(12px * var(--t-scale, 1)); padding: 5px 10px; }
+
+        .badge { display: inline-flex; align-items: center; gap: 5px; font-size: calc(11px * var(--t-scale, 1)); font-weight: 500; padding: 2px 8px; border-radius: 9999px; }
+        .badge-active { background: hsl(152 60% 50% / 0.12); color: hsl(152 60% 50%); }
+        .badge-inactive { background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground)); }
+        .badge-role { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .badge-active .badge-dot { background: hsl(152 60% 50%); }
+        .badge-inactive .badge-dot { background: hsl(var(--muted-foreground)); opacity: 0.5; }
+        .badge-count { font-family: 'Oxanium', sans-serif; background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground)); font-size: calc(10px * var(--t-scale, 1)); padding: 1px 6px; border-radius: 9999px; margin-left: 4px; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: hsl(var(--t-stat-bg)); border: 1px solid hsl(var(--t-border-subtle)); border-radius: calc(var(--radius)); padding: 14px 16px; }
+        .stat-label { font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-bottom: 4px; }
+        .stat-value { font-family: 'Oxanium', sans-serif; font-size: calc(22px * var(--t-scale, 1)); font-weight: 700; color: hsl(var(--foreground)); }
+        .stat-value.accent { color: hsl(var(--primary)); }
+        .stat-sub { font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--t-text-muted)); margin-top: 2px; }
+
+        .table-wrapper { border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius)); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--t-scale, 1)); }
+        thead th { font-family: 'Oxanium', sans-serif; text-align: left; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600; letter-spacing: 0.5px; color: hsl(var(--muted-foreground)); padding: 10px 14px; background: hsl(var(--muted) / 0.3); border-bottom: 1px solid hsl(var(--border)); white-space: nowrap; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid hsl(var(--border) / 0.5); color: hsl(var(--foreground)); vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: hsl(var(--muted) / 0.3); }
+        tbody tr.inactive td { opacity: 0.5; }
+        .text-right { text-align: right; }
+
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-cell .avatar { width: 32px; height: 32px; border-radius: 50%; background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+        .user-cell .user-info { display: flex; flex-direction: column; }
+        .user-cell .user-name { font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; }
+        .user-cell .user-email { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); }
+        .num-cell { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(13px * var(--t-scale, 1)); letter-spacing: 0.5px; }
+        .time-muted { color: hsl(var(--muted-foreground)); font-size: calc(12px * var(--t-scale, 1)); }
+
+        .row-actions { display: flex; align-items: center; justify-content: center; position: relative; }
+        .row-actions-btn { width: 28px; height: 28px; border-radius: calc(var(--radius) - 2px); border: none; background: transparent; color: hsl(var(--muted-foreground)); display: flex; align-items: center; justify-content: center; cursor: default; }
+        .row-actions-btn:hover { background: hsl(var(--muted) / 0.5); color: hsl(var(--foreground)); }
+        .row-actions-btn svg { width: 16px; height: 16px; }
+
+        .dropdown-menu { position: absolute; right: 0; top: 100%; margin-top: 4px; min-width: 200px; padding: 4px; background: hsl(var(--popover)); border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius)); box-shadow: 0 4px 16px hsl(var(--background) / 0.3); z-index: 20; }
+        .dropdown-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: calc(var(--radius) - 2px); font-size: 12px; color: hsl(var(--popover-foreground)); cursor: default; transition: background 0.1s; }
+        .dropdown-item:hover { background: hsl(var(--muted) / 0.5); }
+        .dropdown-item svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+        .dropdown-item.highlight { color: hsl(var(--primary)); }
+        .dropdown-item.highlight svg { color: hsl(var(--primary)); }
+        .dropdown-item.destructive { color: hsl(var(--destructive)); }
+        .dropdown-item.destructive svg { color: hsl(var(--destructive)); }
+        .dropdown-sep { height: 1px; background: hsl(var(--border)); margin: 4px 0; }
+
+        .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .search-input { flex: 1; max-width: 280px; display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: calc(var(--radius)); border: 1px solid hsl(var(--input)); background: transparent; }
+        .search-input svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+        .search-input input { flex: 1; background: transparent; border: none; font-size: calc(12px * var(--t-scale, 1)); font-family: 'Inter', sans-serif; color: hsl(var(--foreground)); outline: none; }
+        .toolbar-spacer { flex: 1; }
+        .filter-tabs { display: flex; gap: 0; border-radius: calc(var(--radius)); border: 1px solid hsl(var(--border)); overflow: hidden; }
+        .filter-tab { font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 500; letter-spacing: 0.5px; padding: 6px 12px; background: transparent; color: hsl(var(--muted-foreground)); cursor: default; border: none; border-right: 1px solid hsl(var(--border)); }
+        .filter-tab:last-child { border-right: none; }
+        .filter-tab.active { background: hsl(var(--primary) / 0.08); color: hsl(var(--foreground)); font-weight: 600; }
+        .checkbox { width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid hsl(var(--border)); background: transparent; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-top: 1px solid hsl(var(--border)); background: hsl(var(--muted) / 0.15); }
+        .pagination-info { font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); }
+
+        /* Entry rows */
+        .timer-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: calc(var(--radius)); background: hsl(var(--t-timer-bg)); border: 1px solid hsl(var(--t-timer-border)); margin-bottom: 20px; }
+        .timer-input { flex: 1; background: transparent; border: none; font-size: calc(14px * var(--t-scale, 1)); font-family: 'Inter', sans-serif; color: hsl(var(--foreground)); outline: none; }
+        .timer-duration { font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600; color: hsl(var(--primary)); letter-spacing: 1px; }
+        .timer-btn { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: default; }
+        .timer-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .timer-btn svg { width: 16px; height: 16px; }
+        .day-group { margin-bottom: 16px; }
+        .day-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; margin-bottom: 4px; }
+        .day-label { font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+        .day-total { font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; color: hsl(var(--foreground)); letter-spacing: 0.5px; }
+        .entry-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 16px; padding: 10px 14px; border-radius: calc(var(--radius)); border: 1px solid hsl(var(--t-border-subtle)); margin-bottom: 4px; }
+        .entry-desc { font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; color: hsl(var(--foreground)); }
+        .entry-project { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+        .entry-project-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .entry-labels { display: flex; gap: 4px; }
+        .entry-label { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; font-weight: 500; }
+        .entry-label-1 { background: hsl(var(--t-label-1-bg)); color: hsl(var(--t-label-1-text)); }
+        .entry-label-2 { background: hsl(var(--t-label-2-bg)); color: hsl(var(--t-label-2-text)); }
+        .entry-time { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); white-space: nowrap; }
+        .entry-duration { font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 600; color: hsl(var(--foreground)); letter-spacing: 0.5px; min-width: 52px; text-align: right; }
+        .chart-placeholder { background: hsl(var(--t-stat-bg)); border: 1px solid hsl(var(--t-border-subtle)); border-radius: calc(var(--radius)); padding: 20px; height: 180px; display: flex; align-items: center; justify-content: center; color: hsl(var(--muted-foreground)); font-size: calc(12px * var(--t-scale, 1)); }
+
+        /* State nav */
+        .state-nav { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+        .state-nav button { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 6px; border: 1px solid #2a2a2a; background: #1a1a1a; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s; }
+        .state-nav button:hover { border-color: #444; }
+        .state-nav button.active { background: #00D4AA; border-color: #00D4AA; color: #0a0a0a; font-weight: 600; }
+        .state { display: none; }
+        .state.visible { display: block; }
+
+        /* IMPERSONATION BANNER — simple top bar */
+        .imp-banner-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 20px;
+            background: hsl(35 100% 50% / 0.12);
+            border-bottom: 1px solid hsl(35 100% 50% / 0.25);
+            font-size: calc(12px * var(--t-scale, 1));
+        }
+        .imp-banner-top .banner-left { display: flex; align-items: center; gap: 10px; }
+        .imp-banner-top .banner-icon { width: 18px; height: 18px; color: hsl(35 100% 60%); }
+        .imp-banner-top .banner-text { color: hsl(35 100% 70%); font-weight: 500; }
+        .imp-banner-top .banner-user { color: hsl(var(--foreground)); font-weight: 600; }
+        .imp-banner-top .banner-role { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; border: 1px solid hsl(35 100% 50% / 0.3); color: hsl(35 100% 65%); margin-left: 4px; }
+        .imp-banner-top .banner-exit {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600;
+            padding: 4px 12px; border-radius: calc(var(--radius) - 2px);
+            border: 1px solid hsl(35 100% 50% / 0.3); background: hsl(35 100% 50% / 0.1);
+            color: hsl(35 100% 65%); cursor: default; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .imp-banner-top .banner-exit svg { width: 12px; height: 12px; }
+
+        /* IMPERSONATION BANNER — simple bottom bar */
+        .imp-banner-bottom {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 20px;
+            background: hsl(35 100% 50% / 0.1);
+            border-top: 1px solid hsl(35 100% 50% / 0.25);
+            font-size: calc(12px * var(--t-scale, 1));
+        }
+        .imp-banner-bottom .banner-left { display: flex; align-items: center; gap: 10px; }
+        .imp-banner-bottom .banner-icon { width: 16px; height: 16px; color: hsl(35 100% 60%); }
+        .imp-banner-bottom .banner-text { color: hsl(35 100% 70%); font-weight: 500; }
+        .imp-banner-bottom .banner-user { color: hsl(var(--foreground)); font-weight: 600; }
+        .imp-banner-bottom .banner-role { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; border: 1px solid hsl(35 100% 50% / 0.3); color: hsl(35 100% 65%); margin-left: 4px; }
+        .imp-banner-bottom .banner-exit {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600;
+            padding: 3px 10px; border-radius: calc(var(--radius) - 2px);
+            border: 1px solid hsl(35 100% 50% / 0.3); background: hsl(35 100% 50% / 0.1);
+            color: hsl(35 100% 65%); cursor: default; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .imp-banner-bottom .banner-exit svg { width: 12px; height: 12px; }
+
+        /* SIDEBAR ACCENT variant */
+        .app.with-sidebar-accent .sidebar { border-left: 3px solid hsl(35 100% 55%); }
+        .imp-sidebar-block {
+            display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+            border-radius: calc(var(--radius));
+            background: hsl(35 100% 50% / 0.1); border: 1px solid hsl(35 100% 50% / 0.2);
+            margin-bottom: 8px;
+        }
+        .imp-sidebar-block .imp-icon { width: 16px; height: 16px; color: hsl(35 100% 60%); flex-shrink: 0; }
+        .imp-sidebar-block .imp-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(35 100% 65%); font-weight: 600; }
+        .imp-sidebar-block .imp-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .imp-sidebar-block .imp-exit {
+            margin-left: auto; width: 20px; height: 20px; border-radius: 4px;
+            border: none; background: transparent; color: hsl(35 100% 60%); cursor: default;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .imp-sidebar-block .imp-exit svg { width: 14px; height: 14px; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Impersonation</h1>
+        <p>First iteration (4a1c) — safe, functional exploration of trigger + banner placement</p>
+    </div>
+
+    <div class="switcher-row">
+        <span class="switcher-label">Theme</span>
+        <div class="switcher-group" id="themeNav">
+            <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+            <button onclick="setTheme('ternity-light')">Ternity Light</button>
+            <button onclick="setTheme('midnight')">Midnight</button>
+            <button onclick="setTheme('warm-sand')">Warm Sand</button>
+            <button onclick="setTheme('carbon')">Carbon</button>
+            <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+        <span class="switcher-label">Scale</span>
+        <div class="switcher-group" id="scaleNav">
+            <button onclick="setScale('compact')">Compact</button>
+            <button class="active" onclick="setScale('default')">Default</button>
+            <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+    </div>
+
+    <div class="state-nav" id="stateNav">
+        <button class="active" onclick="setState('trigger')">1. Trigger (Row Menu)</button>
+        <button onclick="setState('top-entries')">2a. Top Banner — Entries</button>
+        <button onclick="setState('top-dashboard')">2b. Top Banner — Dashboard</button>
+        <button onclick="setState('bottom-entries')">3. Bottom Banner</button>
+        <button onclick="setState('sidebar-entries')">4. Sidebar Accent</button>
+    </div>
+
+    <div class="theme-container" data-theme="ternity-dark" data-scale="default">
+
+        <!-- 1. TRIGGER -->
+        <div class="state state-trigger visible" id="state-trigger">
+            <div class="app">
+                <div class="sidebar">
+                    <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Insights</div>
+                    <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                    <div class="nav-section">Admin</div>
+                    <div class="nav-item active"><i data-lucide="users"></i> Users</div>
+                    <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="spacer"></div>
+                    <div class="user-block"><div class="avatar">SW</div><div><div class="user-name">Sam Whitford</div><div class="user-role">Admin</div></div></div>
+                </div>
+                <div class="main">
+                    <div class="top-bar"><div><div class="page-title">Users</div><div class="page-subtitle">Manage team access and licenses</div></div></div>
+                    <div class="toolbar">
+                        <div class="search-input"><i data-lucide="search"></i><input type="text" placeholder="Search by name or email..."></div>
+                        <div class="filter-tabs"><button class="filter-tab active">All <span class="badge-count">85</span></button><button class="filter-tab">Active <span class="badge-count">23</span></button><button class="filter-tab">Inactive <span class="badge-count">62</span></button></div>
+                        <div class="toolbar-spacer"></div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table><thead><tr><th style="width:40px"><div class="checkbox"></div></th><th>User</th><th>Status</th><th>Role</th><th>Last Active</th><th class="text-right">Entries</th><th style="width:44px"></th></tr></thead>
+                        <tbody>
+                            <tr><td><div class="checkbox"></div></td><td><div class="user-cell"><div class="avatar">EM</div><div class="user-info"><span class="user-name">Elena Marsh</span><span class="user-email">elena.marsh@acme.io</span></div></div></td><td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td><td><span class="badge badge-role">Admin</span></td><td>2 hours ago</td><td class="text-right"><span class="num-cell">2,847</span></td><td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td></tr>
+                            <tr style="background: hsl(var(--muted) / 0.3);"><td><div class="checkbox"></div></td><td><div class="user-cell"><div class="avatar">JO</div><div class="user-info"><span class="user-name">James Oakley</span><span class="user-email">james.oakley@acme.io</span></div></div></td><td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td><td><span class="badge badge-role">User</span></td><td>5 hours ago</td><td class="text-right"><span class="num-cell">1,523</span></td><td><div class="row-actions"><button class="row-actions-btn" style="background: hsl(var(--muted) / 0.5); color: hsl(var(--foreground));"><i data-lucide="more-horizontal"></i></button><div class="dropdown-menu" style="display:block"><div class="dropdown-item highlight"><i data-lucide="eye"></i> View as this user</div><div class="dropdown-sep"></div><div class="dropdown-item"><i data-lucide="pencil"></i> Edit details</div><div class="dropdown-item"><i data-lucide="shield"></i> Change role</div><div class="dropdown-sep"></div><div class="dropdown-item destructive"><i data-lucide="user-x"></i> Deactivate</div></div></div></td></tr>
+                            <tr><td><div class="checkbox"></div></td><td><div class="user-cell"><div class="avatar">NF</div><div class="user-info"><span class="user-name">Nora Fielding</span><span class="user-email">nora.fielding@acme.io</span></div></div></td><td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td><td><span class="badge badge-role">User</span></td><td>1 day ago</td><td class="text-right"><span class="num-cell">4,102</span></td><td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td></tr>
+                            <tr><td><div class="checkbox"></div></td><td><div class="user-cell"><div class="avatar">LT</div><div class="user-info"><span class="user-name">Leo Tanner</span><span class="user-email">leo.tanner@acme.io</span></div></div></td><td><span class="badge badge-active"><span class="badge-dot"></span> Active</span></td><td><span class="badge badge-role">User</span></td><td>3 days ago</td><td class="text-right"><span class="num-cell">3,891</span></td><td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td></tr>
+                            <tr class="inactive"><td><div class="checkbox"></div></td><td><div class="user-cell"><div class="avatar">TG</div><div class="user-info"><span class="user-name">Tom Greyson</span><span class="user-email">tom.greyson@acme.io</span></div></div></td><td><span class="badge badge-inactive"><span class="badge-dot"></span> Inactive</span></td><td><span class="badge badge-role">User</span></td><td class="time-muted">Jan 15, 2024</td><td class="text-right"><span class="num-cell">342</span></td><td><div class="row-actions"><button class="row-actions-btn"><i data-lucide="more-horizontal"></i></button></div></td></tr>
+                        </tbody></table>
+                        <div class="pagination"><div class="pagination-info">Showing 1–10 of 85 users</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2a. TOP BANNER — Entries -->
+        <div class="state state-top-entries" id="state-top-entries">
+            <div class="app with-top-banner">
+                <div class="imp-banner-top">
+                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
+                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
+                </div>
+                <div class="app-body">
+                    <div class="sidebar">
+                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                        <div class="nav-section">Tracking</div>
+                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                        <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                        <div class="nav-section">Insights</div>
+                        <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                        <div class="spacer"></div>
+                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                    </div>
+                    <div class="main">
+                        <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                        <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                        <div class="day-group">
+                            <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2b. TOP BANNER — Dashboard -->
+        <div class="state state-top-dashboard" id="state-top-dashboard">
+            <div class="app with-top-banner">
+                <div class="imp-banner-top">
+                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
+                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
+                </div>
+                <div class="app-body">
+                    <div class="sidebar">
+                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                        <div class="nav-section">Tracking</div>
+                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                        <div class="nav-item"><i data-lucide="list"></i> Entries</div>
+                        <div class="nav-section">Insights</div>
+                        <div class="nav-item active"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                        <div class="spacer"></div>
+                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                    </div>
+                    <div class="main">
+                        <div class="top-bar"><div><div class="page-title">Dashboard</div><div class="page-subtitle">Weekly overview</div></div></div>
+                        <div class="stats-row">
+                            <div class="stat-card"><div class="stat-label">This Week</div><div class="stat-value accent">34h 12m</div><div class="stat-sub">Mon – Fri (5 days tracked)</div></div>
+                            <div class="stat-card"><div class="stat-label">Avg per Day</div><div class="stat-value">6h 50m</div><div class="stat-sub">across 5 working days</div></div>
+                            <div class="stat-card"><div class="stat-label">Projects</div><div class="stat-value">3</div><div class="stat-sub">Acme Platform, Internal Ops, Widget Suite</div></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="chart-placeholder">Weekly hours bar chart</div>
+                            <div class="chart-placeholder">Project breakdown pie chart</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. BOTTOM BANNER -->
+        <div class="state state-bottom-entries" id="state-bottom-entries">
+            <div class="app with-bottom-banner">
+                <div class="app-body">
+                    <div class="sidebar">
+                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                        <div class="nav-section">Tracking</div>
+                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                        <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                        <div class="nav-section">Insights</div>
+                        <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                        <div class="spacer"></div>
+                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                    </div>
+                    <div class="main">
+                        <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                        <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                        <div class="day-group">
+                            <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="imp-banner-bottom">
+                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
+                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SIDEBAR ACCENT -->
+        <div class="state state-sidebar-entries" id="state-sidebar-entries">
+            <div class="app with-sidebar-accent">
+                <div class="sidebar">
+                    <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                    <div class="imp-sidebar-block">
+                        <i data-lucide="eye" class="imp-icon"></i>
+                        <div><div class="imp-label">Viewing as</div><div class="imp-name">James Oakley</div></div>
+                        <button class="imp-exit" title="Exit impersonation"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Insights</div>
+                    <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                    <div class="spacer"></div>
+                    <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                </div>
+                <div class="main">
+                    <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                    <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                    <div class="day-group">
+                        <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function setTheme(theme) {
+            document.querySelector('.theme-container').setAttribute('data-theme', theme);
+            document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        function setScale(scale) {
+            document.querySelector('.theme-container').setAttribute('data-scale', scale);
+            document.querySelectorAll('#scaleNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        function setState(state) {
+            document.querySelectorAll('.state').forEach(s => s.classList.remove('visible'));
+            document.getElementById('state-' + state).classList.add('visible');
+            document.querySelectorAll('.state-nav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>

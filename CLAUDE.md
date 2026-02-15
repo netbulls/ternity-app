@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**Ternity** is a time tracking and holiday scheduling platform for small organizations. It combines Toggl-style start/stop time logging with Timetastic-style leave management under a unified Client → Project → Entry hierarchy. Built with Node/TypeScript for a small team. See `PRD.md` for full product requirements.
+**Ternity** is a time tracking and holiday scheduling platform for small organizations. It combines Toggl-style start/stop time logging with Timetastic-style leave management under a unified Client → Project → Entry hierarchy. Built with Node/TypeScript for a small team. See `docs/prd/_overview.md` for product overview and `docs/prd/` for per-feature requirements.
 
 ### Ternity Ecosystem
 

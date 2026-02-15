@@ -12,6 +12,12 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'explorations',
     label: 'Explorations',
+    children: [
+      { id: 'impersonation-explorations', label: 'Impersonation' },
+      { id: 'entries-explorations', label: 'Entries' },
+      { id: 'user-management-explorations', label: 'User Mgmt' },
+      { id: 'general-explorations', label: 'General' },
+    ],
   },
   {
     id: 'primitives',
