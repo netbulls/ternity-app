@@ -14,7 +14,7 @@
 | `netbulls.ternity.auth` | Auth service (Logto OSS) | auth.ternity.xyz |
 | `netbulls.ternity.www` | Marketing website + brand | ternity.xyz |
 
-**VPS infrastructure** (shared proxy, network, VPS manifest) lives in `erace.vps.01` (`~/Projects/erace.vps.01`). Each project only manages its own Caddy fragment and compose files.
+**VPS infrastructure** (shared proxy, network, VPS manifest) lives in `erace.vps.01` (`~/Projects/erace.vps.01`). **Before deploying, read the Deployment Standards section in `VPS.md`** — it covers compose naming (required `name:` field), container naming, volume naming, and network rules. Each project only manages its own Caddy fragment and compose files.
 
 ## Key Design Decisions
 
