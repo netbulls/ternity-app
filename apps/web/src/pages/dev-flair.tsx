@@ -94,7 +94,7 @@ function SmoothCounter({ value, className }: { value: number; className?: string
 // LEVEL 1: CLEAN — current design + smooth polish
 // ============================================================
 function TimerBarClean() {
-  const { running, elapsed, display, start, stop } = useFakeTimer();
+  const { running, elapsed, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -171,7 +171,7 @@ function TimerBarClean() {
 // LEVEL 2: ALIVE — pulse, glow, animated digits
 // ============================================================
 function TimerBarAlive() {
-  const { running, elapsed, digits, start, stop } = useFakeTimer();
+  const { running, digits, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -269,7 +269,7 @@ function TimerBarAlive() {
 // LEVEL 3: ELECTRIC — animated border, gradient bg, spark
 // ============================================================
 function TimerBarElectric() {
-  const { running, elapsed, digits, start, stop } = useFakeTimer();
+  const { running, digits, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -449,7 +449,7 @@ function TimerBarElectric() {
 // LEVEL 3a: EMBER GLOW — one slow color wash, nothing else
 // ============================================================
 function TimerBarEmberGlow() {
-  const { running, elapsed, digits, start, stop } = useFakeTimer();
+  const { running, digits, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -577,7 +577,7 @@ function TimerBarEmberGlow() {
 // LEVEL 3b: HEARTBEAT — still most of the time, periodic pulse
 // ============================================================
 function TimerBarHeartbeat() {
-  const { running, elapsed, digits, start, stop } = useFakeTimer();
+  const { running, digits, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -730,7 +730,7 @@ function TimerBarHeartbeat() {
 // LEVEL 3c: LIQUID EDGE — fluid blob drifts along bottom edge
 // ============================================================
 function TimerBarLiquidEdge() {
-  const { running, elapsed, digits, start, stop } = useFakeTimer();
+  const { running, digits, start, stop } = useFakeTimer();
 
   return (
     <div>
@@ -968,7 +968,6 @@ function InlineEditorAlive() {
         const isEditingProject = editing?.entryId === entry.id && editing.field === 'project';
         const isEditing = isEditingDesc || isEditingTime || isEditingProject;
         const justSaved = savedFlash === entry.id;
-        const noProject = !entry.project;
         const noDesc = !entry.description;
 
         return (
@@ -1042,7 +1041,7 @@ function InlineEditorAlive() {
                         onChange={(e) =>
                           setValues((v) => ({
                             ...v,
-                            [entry.id]: { ...v[entry.id], description: e.target.value },
+                            [entry.id]: { ...v[entry.id]!, description: e.target.value },
                           }))
                         }
                         autoFocus
@@ -1202,7 +1201,7 @@ function InlineEditorAlive() {
                             onClick={() => {
                               setValues((v) => ({
                                 ...v,
-                                [entry.id]: { ...v[entry.id], project: '', projectColor: '', client: '' },
+                                [entry.id]: { ...v[entry.id]!, project: '', projectColor: '', client: '' },
                               }));
                               setEditing(null);
                               setProjectSearch('');
@@ -1264,7 +1263,7 @@ function InlineEditorAlive() {
                     onChange={(e) =>
                       setValues((v) => ({
                         ...v,
-                        [entry.id]: { ...v[entry.id], startTime: e.target.value },
+                        [entry.id]: { ...v[entry.id]!, startTime: e.target.value },
                       }))
                     }
                     autoFocus
@@ -1285,7 +1284,7 @@ function InlineEditorAlive() {
                     onChange={(e) =>
                       setValues((v) => ({
                         ...v,
-                        [entry.id]: { ...v[entry.id], endTime: e.target.value },
+                        [entry.id]: { ...v[entry.id]!, endTime: e.target.value },
                       }))
                     }
                     onKeyDown={(e) => {
@@ -1376,9 +1375,7 @@ function InlineEditorLiquidEdge() {
         const isEditingDesc = editing?.entryId === entry.id && editing.field === 'description';
         const isEditingTime = editing?.entryId === entry.id && editing.field === 'time';
         const isEditingProject = editing?.entryId === entry.id && editing.field === 'project';
-        const isEditing = isEditingDesc || isEditingTime || isEditingProject;
         const justSaved = savedFlash === entry.id;
-        const noProject = !entry.project;
         const noDesc = !entry.description;
 
         return (
@@ -1427,7 +1424,7 @@ function InlineEditorLiquidEdge() {
                         onChange={(e) =>
                           setValues((v) => ({
                             ...v,
-                            [entry.id]: { ...v[entry.id], description: e.target.value },
+                            [entry.id]: { ...v[entry.id]!, description: e.target.value },
                           }))
                         }
                         autoFocus
@@ -1560,7 +1557,7 @@ function InlineEditorLiquidEdge() {
                       onChange={(e) =>
                         setValues((v) => ({
                           ...v,
-                          [entry.id]: { ...v[entry.id], startTime: e.target.value },
+                          [entry.id]: { ...v[entry.id]!, startTime: e.target.value },
                         }))
                       }
                       autoFocus
@@ -1584,7 +1581,7 @@ function InlineEditorLiquidEdge() {
                       onChange={(e) =>
                         setValues((v) => ({
                           ...v,
-                          [entry.id]: { ...v[entry.id], endTime: e.target.value },
+                          [entry.id]: { ...v[entry.id]!, endTime: e.target.value },
                         }))
                       }
                       onKeyDown={(e) => {
@@ -2278,10 +2275,8 @@ function ConfirmColorSweep() {
   );
 }
 
-// ============================================================
-// FINAL INLINE EDITOR — E2 Alive + P1 Dropdown + C1 Pill Pop
-// ============================================================
-function FinalInlineEditor() {
+// FinalInlineEditor — superseded by FinalSetDemo, kept for reference
+export function FinalInlineEditor() {
   const [editing, setEditing] = useState<EditingField>(null);
   const [values, setValues] = useState<Record<string, MockEntry>>(
     () => Object.fromEntries(MOCK_ENTRIES.map((e) => [e.id, { ...e }])),
@@ -2298,18 +2293,10 @@ function FinalInlineEditor() {
 
   const handleCancel = () => { setEditing(null); setProjectSearch(''); };
 
-  const filteredProjects = MOCK_PROJECTS_PICKER.map((group) => ({
-    ...group,
-    projects: group.projects.filter((p) =>
-      p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
-      group.client.toLowerCase().includes(projectSearch.toLowerCase()),
-    ),
-  })).filter((g) => g.projects.length > 0);
-
   const handleSelectProject = (entryId: string, project: { name: string; color: string }, client: string) => {
     setValues((v) => ({
       ...v,
-      [entryId]: { ...v[entryId], project: project.name, projectColor: project.color, client },
+      [entryId]: { ...v[entryId]!, project: project.name, projectColor: project.color, client },
     }));
     setEditing(null);
     setProjectSearch('');
@@ -2340,7 +2327,6 @@ function FinalInlineEditor() {
         const isEditing = isEditingDesc || isEditingTime || isEditingProject;
         const justSaved = savedFlash === entry.id;
         const isPillPop = pillPop === entry.id;
-        const noProject = !entry.project;
         const noDesc = !entry.description;
 
         return (
@@ -2414,7 +2400,7 @@ function FinalInlineEditor() {
                         onChange={(e) =>
                           setValues((v) => ({
                             ...v,
-                            [entry.id]: { ...v[entry.id], description: e.target.value },
+                            [entry.id]: { ...v[entry.id]!, description: e.target.value },
                           }))
                         }
                         autoFocus
@@ -2500,7 +2486,7 @@ function FinalInlineEditor() {
                       onClear={() => {
                         setValues((v) => ({
                           ...v,
-                          [entry.id]: { ...v[entry.id], project: '', projectColor: '', client: '' },
+                          [entry.id]: { ...v[entry.id]!, project: '', projectColor: '', client: '' },
                         }));
                         setEditing(null);
                         setProjectSearch('');
@@ -2585,7 +2571,7 @@ function FinalInlineEditor() {
                     onChange={(e) =>
                       setValues((v) => ({
                         ...v,
-                        [entry.id]: { ...v[entry.id], startTime: e.target.value },
+                        [entry.id]: { ...v[entry.id]!, startTime: e.target.value },
                       }))
                     }
                     autoFocus
@@ -2606,7 +2592,7 @@ function FinalInlineEditor() {
                     onChange={(e) =>
                       setValues((v) => ({
                         ...v,
-                        [entry.id]: { ...v[entry.id], endTime: e.target.value },
+                        [entry.id]: { ...v[entry.id]!, endTime: e.target.value },
                       }))
                     }
                     onKeyDown={(e) => {
@@ -2707,18 +2693,10 @@ function FinalSetDemo() {
 
   const handleCancel = () => { setEditing(null); setProjectSearch(''); };
 
-  const filteredProjects = MOCK_PROJECTS_PICKER.map((group) => ({
-    ...group,
-    projects: group.projects.filter((p) =>
-      p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
-      group.client.toLowerCase().includes(projectSearch.toLowerCase()),
-    ),
-  })).filter((g) => g.projects.length > 0);
-
   const handleSelectProject = (entryId: string, project: { name: string; color: string }, client: string) => {
     setValues((v) => ({
       ...v,
-      [entryId]: { ...v[entryId], project: project.name, projectColor: project.color, client },
+      [entryId]: { ...v[entryId]!, project: project.name, projectColor: project.color, client },
     }));
     setEditing(null);
     setProjectSearch('');
@@ -2867,7 +2845,6 @@ function FinalSetDemo() {
           const isEditing = isEditingDesc || isEditingTime || isEditingProject;
           const justSaved = savedFlash === entry.id;
           const isPillPop = pillPop === entry.id;
-          const noProject = !entry.project;
           const noDesc = !entry.description;
           const isRunning = runningEntryId === entry.id && running;
 
@@ -2955,7 +2932,7 @@ function FinalSetDemo() {
                           onChange={(e) =>
                             setValues((v) => ({
                               ...v,
-                              [entry.id]: { ...v[entry.id], description: e.target.value },
+                              [entry.id]: { ...v[entry.id]!, description: e.target.value },
                             }))
                           }
                           autoFocus
@@ -3040,7 +3017,7 @@ function FinalSetDemo() {
                         onClear={() => {
                           setValues((v) => ({
                             ...v,
-                            [entry.id]: { ...v[entry.id], project: '', projectColor: '', client: '' },
+                            [entry.id]: { ...v[entry.id]!, project: '', projectColor: '', client: '' },
                           }));
                           setEditing(null);
                           setProjectSearch('');
@@ -3124,7 +3101,7 @@ function FinalSetDemo() {
                       onChange={(e) =>
                         setValues((v) => ({
                           ...v,
-                          [entry.id]: { ...v[entry.id], startTime: e.target.value },
+                          [entry.id]: { ...v[entry.id]!, startTime: e.target.value },
                         }))
                       }
                       autoFocus
@@ -3145,7 +3122,7 @@ function FinalSetDemo() {
                       onChange={(e) =>
                         setValues((v) => ({
                           ...v,
-                          [entry.id]: { ...v[entry.id], endTime: e.target.value },
+                          [entry.id]: { ...v[entry.id]!, endTime: e.target.value },
                         }))
                       }
                       onKeyDown={(e) => {
