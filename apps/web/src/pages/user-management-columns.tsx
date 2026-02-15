@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, UserCheck, UserX, List } from 'lucide-react';
+import { MoreHorizontal, UserCheck, UserX, List, Eye } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ function getInitials(name: string) {
 export function getUserColumns(opts: {
   onActivate: (user: AdminUser) => void;
   onDeactivate: (user: AdminUser) => void;
+  onImpersonate?: (user: AdminUser) => void;
 }): ColumnDef<AdminUser>[] {
   return [
     // Select
@@ -181,6 +182,18 @@ export function getUserColumns(opts: {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[180px]">
+                {opts.onImpersonate && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => opts.onImpersonate!(user)}
+                      className="text-primary focus:text-primary"
+                    >
+                      <Eye className="mr-2 h-3.5 w-3.5" />
+                      View as this user
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 {user.active ? (
                   <DropdownMenuItem
                     onClick={() => opts.onDeactivate(user)}

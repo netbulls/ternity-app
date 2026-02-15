@@ -25,6 +25,13 @@ export const router = createBrowserRouter([
           },
         },
         {
+          path: '/dev/lab',
+          lazy: async () => {
+            const { DevLabPage } = await import('@/pages/dev-lab');
+            return { Component: DevLabPage };
+          },
+        },
+        {
           path: '/dev/flair',
           lazy: async () => {
             const { DevFlairPage } = await import('@/pages/dev-flair');
