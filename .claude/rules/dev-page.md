@@ -111,7 +111,3 @@ HTML design snapshots live in `apps/web/public/explorations/`. Served by Vite at
 - Every exploration file is **immutable** — once created, never modified. New iterations get new files.
 - Multiple explorations for the same feature coexist (e.g., `impersonation-4a1c.html`, `impersonation-8f3d.html`)
 
-### Explorations vs Mockups
-
-- **`public/explorations/`** — design iterations, work-in-progress, multiple variants per feature. Browsed via the overlay on `/dev`.
-- **`assets/mockups/`** — approved final designs. The permanent record of design intent before implementation. See `design-workflow.md` for the full process.

@@ -23,6 +23,7 @@ const EXPLORATION_GROUPS: ExplorationGroup[] = [
     name: 'Entries',
     id: 'entries-explorations',
     explorations: [
+      { title: 'Entries v2 — 110c', file: 'entries-110c.html', description: 'Approved entries design with day groups and timer bar' },
       { title: 'Entries', file: 'entries.html', description: 'Time entries page with day groups and timer bar' },
       { title: 'Entries — v1', file: 'entries-v1.html', description: 'Earlier entries layout iteration' },
     ],

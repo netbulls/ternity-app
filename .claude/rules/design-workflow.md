@@ -10,7 +10,7 @@ How UI work is done in Ternity. Design freely, standardize later — the registr
 - **Scale as user preference.** Three levels via `--t-scale` CSS variable: compact (0.9), default (1.1), comfortable (1.2). Stored alongside theme preference.
 - **Real components in `/dev`, not clones.** Every component in the `/dev` catalog must be the actual production component with mock data. No static copies.
 - **Primitives reflect actual usage, not library defaults.** Never show generic library examples when the app has its own established pattern.
-- **Mockups are the design intent record.** Approved HTML mockups are kept permanently in `assets/mockups/`. They serve as the reference for what was intended before implementation pragmatics.
+- **Explorations are the design record.** Iterations live in `public/explorations/` as immutable HTML snapshots, browsed via the `/dev` overlay.
 
 ## Workflow Steps
 
@@ -21,15 +21,15 @@ How UI work is done in Ternity. Design freely, standardize later — the registr
 - Output: brief with candidate patterns and components
 
 ### 2. Design
-- HTML mockup using actual theme CSS (`themes.css`)
+- HTML exploration using actual theme CSS (`themes.css`)
 - Design freely — best possible design for this specific view
 - Don't constrain to existing components. Go for it.
 - Include multiple states (default, selection, dialog, success feedback)
 - Theme switcher + scale toggle for validation across themes
-- Save approved mockup to `assets/mockups/` as permanent design intent record
+- Save as immutable exploration in `public/explorations/` (see `dev-page.md` for naming convention)
 
 ### 3. Review
-- User reviews the mockup
+- User reviews the exploration
 - Naturally spots: "we have this already", "I like this better than what we had", "this doesn't feel right"
 - Human pattern matching — not checking every piece, just what jumps out
 - Iterate until approved
@@ -52,7 +52,7 @@ Get the building blocks right before assembling the feature:
 
 - Build new components or adjust existing ones
 - Fine-tune in `/dev` with mock data — verify across all 6 themes and 3 scale levels
-- Compare against the design intent mockup (is the component matching the approved design?)
+- Compare against the approved exploration (is the component matching the approved design?)
 - New components that proved useful → add to local registry
 - Improved versions of existing components → update registry
 
@@ -61,12 +61,8 @@ This step ends when all components look right in `/dev` and match the approved d
 ### 6. Implement
 - Plan the feature page — mostly composition of tuned components
 - Build in React, assembling from the components prepared in step 5
-- Match the approved mockup
+- Match the approved exploration
 - Feature-specific wiring (data fetching, mutations, navigation) goes here
-
-## Design Intent Archive
-
-Approved HTML mockups live permanently in `assets/mockups/`. They are the record of what was approved before implementation. Use them to detect unintended drift — if a live component looks different from the mockup, it should be a conscious decision, not accidental.
 
 ## Component Registry
 
