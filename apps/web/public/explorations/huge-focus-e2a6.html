@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUGE — The Focus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0a; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 16px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 12px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .theme-nav { display: contents; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* State toggle for demo */
+        .state-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .state-toggle button {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            padding: 6px 16px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .state-toggle button.active {
+            background: hsl(168, 100%, 42%, 0.15);
+            border-color: hsl(168, 100%, 42%, 0.4);
+            color: hsl(168, 100%, 42%);
+        }
+
+        /* ========================================
+           THE FOCUS — Context-Aware Single Panel
+           Two states: TRACKING and IDLE.
+           The entire screen transforms based on state.
+           ======================================== */
+        .focus {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 88vh;
+            position: relative;
+        }
+
+        /* Minimal nav — just identity */
+        .focus-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 10;
+        }
+        .focus-logo {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: hsl(var(--primary) / 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .focus-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: hsl(var(--muted-foreground));
+        }
+        .focus-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: hsl(var(--t-avatar-bg));
+            color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+        }
+
+        /* ========================
+           STATE: TRACKING
+           Timer IS the screen.
+           ======================== */
+        .state-tracking {
+            display: flex;
+            flex-direction: column;
+            min-height: 88vh;
+        }
+        .state-idle { display: none; }
+
+        .focus.idle .state-tracking { display: none; }
+        .focus.idle .state-idle { display: flex; }
+
+        /* Timer hero — takes 60% of the screen */
+        .timer-hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 48px 32px;
+            position: relative;
+        }
+        .timer-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .focus-timer-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(96px * var(--t-scale, 1));
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .focus-timer-project {
+            font-size: calc(20px * var(--t-scale, 1));
+            color: hsl(var(--primary));
+            font-weight: 500;
+            margin-top: 16px;
+            position: relative;
+            z-index: 1;
+        }
+        .focus-timer-desc {
+            font-size: calc(14px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .focus-stop-btn {
+            margin-top: 32px;
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: hsl(var(--t-stop));
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+            z-index: 1;
+        }
+        .focus-stop-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 32px hsl(var(--t-stop) / 0.4);
+        }
+
+        /* Today's entries — minimal strip at bottom */
+        .focus-entries-strip {
+            background: hsl(var(--card));
+            border-top: 1px solid hsl(var(--border));
+            padding: 16px 32px;
+        }
+        .strip-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .strip-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1));
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+        }
+        .strip-total {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(14px * var(--t-scale, 1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .strip-entries {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+        }
+        .strip-entry {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border) / 0.5);
+            min-width: 200px;
+        }
+        .strip-entry-desc {
+            font-size: calc(12px * var(--t-scale, 1));
+            font-weight: 500;
+            color: hsl(var(--foreground));
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .strip-entry-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: calc(10px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+        }
+        .strip-project-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+        }
+        .strip-entry-duration {
+            margin-left: auto;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ========================
+           STATE: IDLE
+           Quick-start launchpad.
+           ======================== */
+        .state-idle {
+            flex-direction: column;
+            min-height: 88vh;
+        }
+
+        .idle-hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 48px 32px;
+        }
+
+        .idle-greeting {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(28px * var(--t-scale, 1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 8px;
+        }
+        .idle-summary {
+            font-size: calc(15px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 40px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        .idle-summary .num {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Quick-start grid */
+        .quick-start {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 700px;
+            width: 100%;
+        }
+        .quick-start-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        .quick-start-card:hover {
+            border-color: hsl(var(--primary) / 0.4);
+            background: hsl(var(--primary) / 0.04);
+            transform: translateY(-2px);
+        }
+        .qs-project-bar {
+            width: 100%;
+            height: 3px;
+            border-radius: 2px;
+            margin-bottom: 12px;
+        }
+        .qs-project-name {
+            font-size: calc(14px * var(--t-scale, 1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 2px;
+        }
+        .qs-client {
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 12px;
+        }
+        .qs-last {
+            font-size: calc(10px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground) / 0.7);
+        }
+        .qs-last-desc {
+            font-weight: 500;
+            color: hsl(var(--muted-foreground));
+        }
+        .qs-hours {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(18px * var(--t-scale, 1));
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+            margin-top: 8px;
+        }
+        .qs-hours-label {
+            font-size: calc(9px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* New timer input */
+        .new-timer {
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .new-timer-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1));
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .new-timer-input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+        .new-timer-input:focus {
+            border-color: hsl(var(--primary));
+        }
+        .new-timer-start {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: hsl(var(--primary));
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            color: hsl(var(--primary-foreground));
+            transition: transform 0.15s;
+            flex-shrink: 0;
+        }
+        .new-timer-start:hover {
+            transform: scale(1.1);
+        }
+
+        /* Idle bottom stats */
+        .idle-stats {
+            background: hsl(var(--card));
+            border-top: 1px solid hsl(var(--border));
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+        .idle-stat {
+            text-align: center;
+        }
+        .idle-stat-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(22px * var(--t-scale, 1));
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .idle-stat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1));
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            margin-top: 2px;
+        }
+        .idle-stat-divider {
+            width: 1px;
+            height: 32px;
+            background: hsl(var(--border));
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>HUGE / The Focus</h1>
+    <p>Context-aware. Tracking = timer IS the screen. Idle = quick-start launchpad. Nothing else.</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group theme-nav">
+        <button onclick="setTheme('ternity-dark')" class="active">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button onclick="setScale('default')" class="active">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+    </div>
+</div>
+
+<!-- State toggle for demo purposes -->
+<div class="state-toggle">
+    <button class="active" onclick="setState('tracking')">Tracking State</button>
+    <button onclick="setState('idle')">Idle State</button>
+</div>
+
+<div class="focus" id="focusApp" data-theme="ternity-dark" data-scale="default">
+
+    <!-- Floating nav — always visible but minimal -->
+    <div class="focus-nav">
+        <div class="focus-logo">
+            <svg viewBox="0 0 24 24" width="14" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14M5 3v4l4.5 5L5 17v4h14v-4l-4.5-5L19 7V3"/></svg>
+            TERNITY
+        </div>
+        <div class="focus-user-info">
+            <span>Elena Marsh</span>
+            <div class="focus-avatar">EM</div>
+        </div>
+    </div>
+
+    <!-- STATE: TRACKING -->
+    <div class="state-tracking">
+        <div class="timer-hero">
+            <div class="focus-timer-value">03:47:12</div>
+            <div class="focus-timer-project">Acme Redesign</div>
+            <div class="focus-timer-desc">Homepage wireframe iteration</div>
+            <button class="focus-stop-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            </button>
+        </div>
+
+        <div class="focus-entries-strip">
+            <div class="strip-header">
+                <div class="strip-label">Earlier Today</div>
+                <div class="strip-total">2h 55m + 3:47 running</div>
+            </div>
+            <div class="strip-entries">
+                <div class="strip-entry">
+                    <div class="strip-entry-desc">Sprint planning notes</div>
+                    <div class="strip-entry-meta">
+                        <span class="strip-project-dot" style="background: hsl(var(--t-project-2));"></span>
+                        <span>Internal</span>
+                        <span class="strip-entry-duration">0:40</span>
+                    </div>
+                </div>
+                <div class="strip-entry">
+                    <div class="strip-entry-desc">Client feedback review</div>
+                    <div class="strip-entry-meta">
+                        <span class="strip-project-dot" style="background: hsl(var(--t-project-1));"></span>
+                        <span>Acme Redesign</span>
+                        <span class="strip-entry-duration">0:40</span>
+                    </div>
+                </div>
+                <div class="strip-entry">
+                    <div class="strip-entry-desc">Email + Slack catchup</div>
+                    <div class="strip-entry-meta">
+                        <span class="strip-project-dot" style="background: hsl(var(--t-project-3));"></span>
+                        <span>Admin</span>
+                        <span class="strip-entry-duration">0:40</span>
+                    </div>
+                </div>
+                <div class="strip-entry">
+                    <div class="strip-entry-desc">Morning standup</div>
+                    <div class="strip-entry-meta">
+                        <span class="strip-project-dot" style="background: hsl(var(--t-project-2));"></span>
+                        <span>Internal</span>
+                        <span class="strip-entry-duration">0:15</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATE: IDLE -->
+    <div class="state-idle">
+        <div class="idle-hero">
+            <div class="idle-greeting">Good afternoon, Elena</div>
+            <div class="idle-summary">
+                You logged <span class="num">2h 55m</span> today so far.
+                <br>
+                <span class="num">5h 05m</span> to go to hit your 8h target.
+                <br>
+                Pick up where you left off, or start something new.
+            </div>
+
+            <div class="quick-start">
+                <div class="quick-start-card">
+                    <div class="qs-project-bar" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="qs-project-name">Acme Redesign</div>
+                    <div class="qs-client">Acme Corp</div>
+                    <div class="qs-last">Last: <span class="qs-last-desc">Client feedback review</span></div>
+                    <div class="qs-hours">18:20 <span class="qs-hours-label">this week</span></div>
+                </div>
+                <div class="quick-start-card">
+                    <div class="qs-project-bar" style="background: hsl(var(--t-project-2));"></div>
+                    <div class="qs-project-name">Internal</div>
+                    <div class="qs-client">Netbulls</div>
+                    <div class="qs-last">Last: <span class="qs-last-desc">Sprint planning notes</span></div>
+                    <div class="qs-hours">8:15 <span class="qs-hours-label">this week</span></div>
+                </div>
+                <div class="quick-start-card">
+                    <div class="qs-project-bar" style="background: hsl(var(--t-project-3));"></div>
+                    <div class="qs-project-name">Admin</div>
+                    <div class="qs-client">Netbulls</div>
+                    <div class="qs-last">Last: <span class="qs-last-desc">Email + Slack catchup</span></div>
+                    <div class="qs-hours">5:40 <span class="qs-hours-label">this week</span></div>
+                </div>
+            </div>
+
+            <div class="new-timer">
+                <input type="text" class="new-timer-input" placeholder="What are you working on?">
+                <button class="new-timer-start">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="idle-stats">
+            <div class="idle-stat">
+                <div class="idle-stat-value">2h 55m</div>
+                <div class="idle-stat-label">Today</div>
+            </div>
+            <div class="idle-stat-divider"></div>
+            <div class="idle-stat">
+                <div class="idle-stat-value">28:30</div>
+                <div class="idle-stat-label">This Week</div>
+            </div>
+            <div class="idle-stat-divider"></div>
+            <div class="idle-stat">
+                <div class="idle-stat-value">18</div>
+                <div class="idle-stat-label">Leave Days</div>
+            </div>
+            <div class="idle-stat-divider"></div>
+            <div class="idle-stat">
+                <div class="idle-stat-value" style="color: hsl(var(--primary));">5/8</div>
+                <div class="idle-stat-label">Team Online</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function setTheme(t) {
+        document.getElementById('focusApp').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+    function setScale(s) {
+        document.getElementById('focusApp').setAttribute('data-scale', s);
+        document.querySelectorAll('.switcher-group:last-child button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+    function setState(state) {
+        const app = document.getElementById('focusApp');
+        if (state === 'idle') {
+            app.classList.add('idle');
+        } else {
+            app.classList.remove('idle');
+        }
+        document.querySelectorAll('.state-toggle button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+</script>
+
+</body>
+</html>

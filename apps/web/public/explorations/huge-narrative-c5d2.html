@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUGE — The Narrative</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0a; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 16px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 12px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .theme-nav { display: contents; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* ========================================
+           THE NARRATIVE — Anti-Dashboard
+           Story flow. Situation → Progress → Actions.
+           No cards grid. Sequential narrative.
+           ======================================== */
+        .narrative {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 90vh;
+        }
+
+        /* Minimal header */
+        .nar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .nar-logo {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 12px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--primary));
+            display: flex; align-items: center; gap: 6px;
+        }
+        .nar-user {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 12px; color: hsl(var(--muted-foreground));
+        }
+        .nar-avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg));
+            color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+        }
+
+        /* Story content */
+        .story {
+            padding: 40px 32px;
+        }
+
+        /* Section: NOW */
+        .story-section {
+            margin-bottom: 48px;
+        }
+        .story-eyebrow {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1));
+            font-weight: 400;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 12px;
+        }
+
+        /* NOW block — the hero */
+        .now-block {
+            background: hsl(var(--t-timer-bg));
+            border: 1px solid hsl(var(--t-timer-border));
+            border-radius: 16px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .now-block::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: hsl(var(--primary));
+            animation: nowPulse 2s ease-in-out infinite;
+        }
+        @keyframes nowPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+        .now-timer {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(56px * var(--t-scale, 1));
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 8px;
+        }
+        .now-context {
+            font-size: calc(16px * var(--t-scale, 1));
+            color: hsl(var(--primary));
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .now-desc {
+            font-size: calc(14px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+        }
+        .now-action {
+            margin-top: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: hsl(var(--t-stop));
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Insight block — prose with embedded data */
+        .insight {
+            padding: 24px 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .insight:last-child { border-bottom: none; }
+        .insight-text {
+            font-size: calc(15px * var(--t-scale, 1));
+            line-height: 1.7;
+            color: hsl(var(--foreground) / 0.85);
+        }
+        .insight-text strong {
+            color: hsl(var(--foreground));
+            font-weight: 600;
+        }
+        .insight-text .num {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--primary));
+        }
+        .insight-text .warn {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700;
+            color: hsl(var(--chart-3));
+        }
+        .insight-text .negative {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700;
+            color: hsl(var(--destructive));
+        }
+
+        /* Inline progress in narrative */
+        .inline-progress {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .inline-bar {
+            width: 200px;
+            height: 8px;
+            border-radius: 4px;
+            background: hsl(var(--muted));
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .inline-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: hsl(var(--primary));
+        }
+        .inline-pct {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1));
+            font-weight: 600;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Action card — embedded in narrative */
+        .action-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .action-card-info {
+            flex: 1;
+        }
+        .action-card-title {
+            font-size: calc(13px * var(--t-scale, 1));
+            font-weight: 500;
+            color: hsl(var(--foreground));
+        }
+        .action-card-meta {
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 2px;
+        }
+        .action-btn {
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+        .action-btn.primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+
+        /* Entry list — compact in narrative */
+        .entry-list {
+            margin: 12px 0;
+        }
+        .entry-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.2);
+            font-size: calc(13px * var(--t-scale, 1));
+        }
+        .entry-item:last-child { border-bottom: none; }
+        .entry-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .entry-item-desc {
+            flex: 1;
+            color: hsl(var(--foreground) / 0.8);
+        }
+        .entry-item-project {
+            color: hsl(var(--muted-foreground));
+            font-size: calc(11px * var(--t-scale, 1));
+        }
+        .entry-item-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--foreground));
+        }
+
+        /* Divider with label */
+        .story-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 8px 0 24px;
+        }
+        .story-divider::before,
+        .story-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: hsl(var(--border) / 0.3);
+        }
+        .story-divider span {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+
+        /* Team heads-up */
+        .team-heads {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .team-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            font-size: calc(12px * var(--t-scale, 1));
+        }
+        .team-head-avatar {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; font-weight: 600;
+        }
+        .team-head.alert .team-head-avatar {
+            background: hsl(var(--destructive) / 0.15);
+            color: hsl(var(--destructive));
+        }
+        .team-head.warn .team-head-avatar {
+            background: hsl(var(--chart-3) / 0.15);
+            color: hsl(var(--chart-3));
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>HUGE / The Narrative</h1>
+    <p>Anti-dashboard. Your day told as a story. Situation &rarr; Progress &rarr; Actions.</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group theme-nav">
+        <button onclick="setTheme('ternity-dark')" class="active">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button onclick="setScale('default')" class="active">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+    </div>
+</div>
+
+<div class="narrative" data-theme="ternity-dark" data-scale="default">
+
+    <div class="nar-header">
+        <div class="nar-logo">
+            <svg viewBox="0 0 24 24" width="16" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14M5 3v4l4.5 5L5 17v4h14v-4l-4.5-5L19 7V3"/></svg>
+            TERNITY
+        </div>
+        <div class="nar-user">
+            Elena Marsh
+            <div class="nar-avatar">EM</div>
+        </div>
+    </div>
+
+    <div class="story">
+
+        <!-- RIGHT NOW -->
+        <div class="story-section">
+            <div class="story-eyebrow">Right Now &bull; Friday 15 Feb, 13:47</div>
+            <div class="now-block">
+                <div class="now-timer">03:47:12</div>
+                <div class="now-context">Acme Redesign</div>
+                <div class="now-desc">Homepage wireframe iteration</div>
+                <button class="now-action">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                    Stop Timer
+                </button>
+            </div>
+        </div>
+
+        <!-- TODAY'S PROGRESS -->
+        <div class="story-section">
+            <div class="story-eyebrow">Your Day</div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    You've logged <span class="num">6h 42m</span> today across <strong>4 entries</strong>.
+                    <br>
+                    <div class="inline-progress">
+                        <span class="inline-bar"><span class="inline-bar-fill" style="width: 84%;"></span></span>
+                        <span class="inline-pct">84%</span>
+                        of your 8h target
+                    </div>
+                    <br>
+                    At your current pace, you'll finish around <span class="num">14:45</span> — roughly an hour from now.
+                </div>
+            </div>
+
+            <div class="entry-list">
+                <div class="entry-item" style="background: hsl(var(--primary) / 0.04); margin: 0 -20px; padding: 8px 20px; border-left: 2px solid hsl(var(--primary));">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="entry-item-desc">Homepage wireframe iteration</div>
+                    <div class="entry-item-project">Acme Redesign</div>
+                    <div class="entry-item-duration" style="color: hsl(var(--primary));">3:47:12</div>
+                </div>
+                <div class="entry-item">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                    <div class="entry-item-desc">Sprint planning notes</div>
+                    <div class="entry-item-project">Internal</div>
+                    <div class="entry-item-duration">0:40:00</div>
+                </div>
+                <div class="entry-item">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="entry-item-desc">Client feedback review</div>
+                    <div class="entry-item-project">Acme Redesign</div>
+                    <div class="entry-item-duration">0:40:00</div>
+                </div>
+                <div class="entry-item">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                    <div class="entry-item-desc">Email + Slack catchup</div>
+                    <div class="entry-item-project">Admin</div>
+                    <div class="entry-item-duration">0:40:00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THIS WEEK -->
+        <div class="story-section">
+            <div class="story-divider"><span>This Week</span></div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    Week 7 so far: <span class="num">32h 15m</span> of <span class="num">40h</span>.
+                    <br>
+                    <div class="inline-progress">
+                        <span class="inline-bar"><span class="inline-bar-fill" style="width: 81%;"></span></span>
+                        <span class="inline-pct">81%</span>
+                    </div>
+                    <br>
+                    You're <span class="warn">7h 45m short</span> with <strong>no working days remaining</strong> this week.
+                    This week's logged time will close at <span class="num">32h 15m</span> unless you extend today's session.
+                </div>
+            </div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    <strong>Where your time went:</strong>
+                    <br><br>
+                    <span class="num">18h 20m</span> on <strong>Acme Redesign</strong> (57%) — mostly wireframing and client reviews.
+                    <br>
+                    <span class="num">8h 15m</span> on <strong>Internal</strong> (26%) — sprint planning, 1:1s, retro.
+                    <br>
+                    <span class="num">5h 40m</span> on <strong>Admin</strong> (17%) — email, Slack, misc.
+                </div>
+            </div>
+        </div>
+
+        <!-- NEEDS ATTENTION -->
+        <div class="story-section">
+            <div class="story-divider"><span>Needs Attention</span></div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    <strong>3 team members</strong> haven't hit their daily target yet:
+                </div>
+                <div class="team-heads">
+                    <div class="team-head alert">
+                        <div class="team-head-avatar">MW</div>
+                        <div>
+                            <div style="font-weight: 500; color: hsl(var(--foreground));">Marcus Webb</div>
+                            <div style="font-size: 10px; color: hsl(var(--muted-foreground));">3h 10m — idle 2h</div>
+                        </div>
+                    </div>
+                    <div class="team-head alert">
+                        <div class="team-head-avatar">SC</div>
+                        <div>
+                            <div style="font-weight: 500; color: hsl(var(--foreground));">Sofia Chen</div>
+                            <div style="font-size: 10px; color: hsl(var(--muted-foreground));">4h 20m — idle 47m</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    <strong>Tom Baker</strong> is on leave until <span class="warn">Feb 18</span> (back Monday).
+                    Team coverage is at <span class="warn">87%</span> — no critical gaps.
+                </div>
+            </div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    You have a <strong>leave request pending review</strong>:
+                </div>
+                <div class="action-card">
+                    <div class="action-card-info">
+                        <div class="action-card-title">Marta Nowak — Sick Leave</div>
+                        <div class="action-card-meta">Today only (Feb 15). Team coverage: 75%</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="action-btn primary">Approve</button>
+                        <button class="action-btn">Decline</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMING UP -->
+        <div class="story-section">
+            <div class="story-divider"><span>Coming Up</span></div>
+
+            <div class="insight">
+                <div class="insight-text">
+                    <strong>Next week (Week 8):</strong>
+                    <br><br>
+                    &bull; Lena Petrov is out <span class="warn">Wed &ndash; Fri</span> (3 days, conference).
+                    <br>
+                    &bull; Acme Redesign milestone deadline is <strong>Thursday Feb 20</strong> — <span class="num">42h</span> estimated, <span class="num">38h</span> logged. Close but not done.
+                    <br>
+                    &bull; Your leave balance: <span class="num">18 days</span> remaining.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function setTheme(t) {
+        document.querySelector('.narrative').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+    function setScale(s) {
+        document.querySelector('.narrative').setAttribute('data-scale', s);
+        document.querySelectorAll('.switcher-group:last-child button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+</script>
+
+</body>
+</html>

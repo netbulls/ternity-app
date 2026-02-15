@@ -46,6 +46,18 @@ export function timeAgo(isoDate: string): string {
 
 export const LAB_GROUPS: LabFeatureGroup[] = [
   {
+    name: 'huge-theme',
+    id: 'huge-theme-lab',
+    date: '2026-02-15T22:00:00',
+    items: [
+      { kind: 'exploration', title: 'huge-cockpit-a1f7', file: 'huge-cockpit-a1f7.html', description: 'The Cockpit — Bento grid, no sidebar, timer as hero, everything on one screen', date: '2026-02-15T22:00:00' },
+      { kind: 'exploration', title: 'huge-pulse-b3e9', file: 'huge-pulse-b3e9.html', description: 'The Pulse — Team-first scoreboard, each person is a large live tile', date: '2026-02-15T22:10:00' },
+      { kind: 'exploration', title: 'huge-narrative-c5d2', file: 'huge-narrative-c5d2.html', description: 'The Narrative — Anti-dashboard, story flow, situation → progress → actions', date: '2026-02-15T22:20:00' },
+      { kind: 'exploration', title: 'huge-wall-d8f4', file: 'huge-wall-d8f4.html', description: 'The Wall — Ambient TV display, huge numbers, live clock, activity ticker', date: '2026-02-15T22:30:00' },
+      { kind: 'exploration', title: 'huge-focus-e2a6', file: 'huge-focus-e2a6.html', description: 'The Focus — Context-aware: tracking = timer IS the screen, idle = quick-start launchpad', date: '2026-02-15T22:40:00' },
+    ],
+  },
+  {
     name: 'entries',
     id: 'entries-lab',
     date: '2026-02-15T18:38:00',
