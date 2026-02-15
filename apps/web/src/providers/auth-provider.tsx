@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useLogto } from '@logto/react';
 import type { AuthContext as AuthContextType } from '@ternity/shared';
+import { setTokenGetter } from '@/lib/api';
 
 interface AuthContextValue {
   user: AuthContextType | null;
@@ -104,6 +105,9 @@ function LogtoAuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
+
+    // Register token getter so apiFetch includes the Bearer token
+    setTokenGetter(async () => (await logto.getIdToken()) ?? null);
 
     let mounted = true;
     setStatus('fetching');
