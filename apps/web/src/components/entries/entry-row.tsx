@@ -219,12 +219,18 @@ export function EntryRow({ entry }: Props) {
       </AnimatePresence>
 
       {/* Incomplete entry indicator — amber left border */}
-      {!isRunning && (noProject || noDesc) && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
-          style={{ background: 'hsl(35 100% 60%)' }}
-        />
-      )}
+      <AnimatePresence>
+        {!isRunning && (noProject || noDesc) && (
+          <motion.div
+            className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
+            style={{ background: 'hsl(35 100% 60%)' }}
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            exit={{ scaleY: 0 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* E2 Alive — breathing glow on editing row */}
       {isEditing && <BreathingGlow />}

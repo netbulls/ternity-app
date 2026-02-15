@@ -10,6 +10,7 @@ import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -19,6 +20,7 @@ export function TimerPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [view, setView] = useState<DateView>('week');
   const [anchor, setAnchor] = useState(todayStr);
+  const [onlyIncomplete, setOnlyIncomplete] = useState(false);
 
   // Compute from/to based on view + anchor
   const { from, to } = useMemo(() => {
@@ -48,10 +50,24 @@ export function TimerPage() {
 
   const { data: dayGroups, isLoading } = useEntries(from, to);
 
+  // Client-side incomplete filter
+  const filteredGroups = useMemo(() => {
+    if (!dayGroups || !onlyIncomplete) return dayGroups ?? [];
+    const result: DayGroupType[] = [];
+    for (const group of dayGroups) {
+      const filtered = group.entries.filter((e) => !e.projectId || !e.description);
+      if (filtered.length > 0) {
+        const totalSec = filtered.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
+        result.push({ date: group.date, totalSeconds: totalSec, entries: filtered });
+      }
+    }
+    return result;
+  }, [dayGroups, onlyIncomplete]);
+
   // Total seconds across all groups
   const totalSeconds = useMemo(
-    () => (dayGroups ?? []).reduce((sum, g) => sum + g.totalSeconds, 0),
-    [dayGroups],
+    () => filteredGroups.reduce((sum, g) => sum + g.totalSeconds, 0),
+    [filteredGroups],
   );
 
   return (
@@ -85,6 +101,8 @@ export function TimerPage() {
         onNext={handleNext}
         onToday={handleToday}
         totalSeconds={totalSeconds}
+        onlyIncomplete={onlyIncomplete}
+        onToggleIncomplete={() => setOnlyIncomplete((v) => !v)}
       />
 
       {/* Entries grouped by day */}
@@ -92,11 +110,11 @@ export function TimerPage() {
         <div className="py-10 text-center text-sm text-muted-foreground">
           Loading entries...
         </div>
-      ) : dayGroups && dayGroups.length > 0 ? (
+      ) : filteredGroups.length > 0 ? (
         <ActiveEditProvider>
           <DraftEntryProvider>
             <div>
-              {dayGroups.map((group) => (
+              {filteredGroups.map((group) => (
                 <DayGroup key={group.date} group={group} />
               ))}
             </div>
@@ -105,7 +123,9 @@ export function TimerPage() {
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">
-            No entries for this period. Start the timer to begin tracking.
+            {onlyIncomplete
+              ? 'No incomplete entries for this period.'
+              : 'No entries for this period. Start the timer to begin tracking.'}
           </div>
         </div>
       )}

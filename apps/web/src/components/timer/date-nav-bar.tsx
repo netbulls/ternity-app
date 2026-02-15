@@ -15,6 +15,8 @@ interface Props {
   onNext: () => void;
   onToday: () => void;
   totalSeconds: number;
+  onlyIncomplete?: boolean;
+  onToggleIncomplete?: () => void;
 }
 
 export function DateNavBar({
@@ -26,6 +28,8 @@ export function DateNavBar({
   onNext,
   onToday,
   totalSeconds,
+  onlyIncomplete,
+  onToggleIncomplete,
 }: Props) {
   const label = formatDateRange(from, to);
 
@@ -69,6 +73,21 @@ export function DateNavBar({
           <ChevronRight className="h-3.5 w-3.5" />
         </NavButton>
       </div>
+
+      {/* Incomplete filter */}
+      {onToggleIncomplete && (
+        <button
+          className={cn(
+            'rounded-md px-2.5 py-1 font-brand text-[11px] font-semibold uppercase tracking-wider transition-colors',
+            onlyIncomplete
+              ? 'bg-amber-500/10 text-amber-500'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          onClick={onToggleIncomplete}
+        >
+          Incomplete
+        </button>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
