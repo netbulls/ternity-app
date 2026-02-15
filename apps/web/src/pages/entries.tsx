@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useEntries } from '@/hooks/use-entries';
 import { useImpersonation } from '@/providers/impersonation-provider';
 import { DayGroup } from '@/components/entries/day-group';
+import { ActiveEditProvider } from '@/components/entries/active-edit-context';
 import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { Button } from '@/components/ui/button';
 import { ProjectSelector } from '@/components/timer/project-selector';
@@ -226,11 +227,13 @@ export function EntriesPage() {
           Loading entries...
         </div>
       ) : filteredGroups.length > 0 ? (
-        <div>
-          {filteredGroups.map((group) => (
-            <DayGroup key={group.date} group={group} />
-          ))}
-        </div>
+        <ActiveEditProvider>
+          <div>
+            {filteredGroups.map((group) => (
+              <DayGroup key={group.date} group={group} />
+            ))}
+          </div>
+        </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">

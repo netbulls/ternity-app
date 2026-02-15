@@ -4,6 +4,7 @@ import { StatsRow } from '@/components/stats/stats-row';
 import { TimerBar } from '@/components/timer/timer-bar';
 import { DateNavBar, type DateView } from '@/components/timer/date-nav-bar';
 import { DayGroup } from '@/components/entries/day-group';
+import { ActiveEditProvider } from '@/components/entries/active-edit-context';
 import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
@@ -91,11 +92,13 @@ export function TimerPage() {
           Loading entries...
         </div>
       ) : dayGroups && dayGroups.length > 0 ? (
-        <div>
-          {dayGroups.map((group) => (
-            <DayGroup key={group.date} group={group} />
-          ))}
-        </div>
+        <ActiveEditProvider>
+          <div>
+            {dayGroups.map((group) => (
+              <DayGroup key={group.date} group={group} />
+            ))}
+          </div>
+        </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">

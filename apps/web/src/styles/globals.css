@@ -19,3 +19,27 @@
     scroll-margin-top: 4rem;
   }
 }
+
+/* Pill-pop confirmation animation — runs on compositor thread, immune to React re-renders */
+@keyframes pill-pop {
+  0% {
+    transform: scale(1);
+    border-color: hsl(142 71% 45% / 0.8);
+    box-shadow: 0 0 8px hsl(142 71% 45% / 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    border-color: hsl(142 71% 45% / 0.4);
+    box-shadow: 0 0 4px hsl(142 71% 45% / 0.1);
+  }
+  100% {
+    transform: scale(1);
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.pill-pop {
+  animation: pill-pop 0.45s ease-out;
+  will-change: transform, border-color, box-shadow;
+}

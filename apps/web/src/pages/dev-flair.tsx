@@ -3228,7 +3228,7 @@ function FlairPageContent() {
     <div className="min-h-screen bg-background">
       <DevToolbar activeScale={activeScale} onScaleChange={handleScaleChange} />
 
-      <div className="mx-auto max-w-3xl px-6 py-8" style={{ zoom }}>
+      <div className="mx-auto max-w-3xl px-6 py-8 pb-32" style={{ zoom }}>
         <h1 className="font-brand mb-1 text-2xl font-bold tracking-wider text-foreground">
           Timer Bar — Flair Exploration
         </h1>

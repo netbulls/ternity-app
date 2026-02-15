@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, ChevronDown, Search } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, Search, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry } from '@/hooks/use-entries';
@@ -9,7 +9,6 @@ import { scaled } from '@/lib/scaled';
 import { useProjects } from '@/hooks/use-reference-data';
 import type { ProjectOption } from '@ternity/shared';
 import { BreathingGlow, SaveFlash, breathingBorderAnimation, breathingBorderTransition } from '@/components/ui/breathing-glow';
-import { pillPopActiveAnimation, pillPopIdleAnimation, pillPopActiveTransition, pillPopIdleTransition } from '@/components/ui/pill-pop';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +17,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AuditPanel } from './audit-panel';
 import type { Entry } from '@ternity/shared';
+import { useActiveEdit } from './active-edit-context';
 
 type EditingField = 'description' | 'time' | 'project' | null;
+
+/* Pill-pop uses a CSS keyframe animation (globals.css) — runs on compositor thread,
+   immune to React Query re-render jitter that breaks framer motion keyframes. */
 
 interface Props {
   entry: Entry;
@@ -44,12 +47,33 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
   const [pillPop, setPillPop] = useState(false);
   const [projectSearch, setProjectSearch] = useState('');
   const [auditOpen, setAuditOpen] = useState(false);
+  const [optimisticProject, setOptimisticProject] = useState<{
+    name: string;
+    color: string;
+    clientName: string;
+  } | null>(null);
   const { data: allProjects } = useProjects();
+  const { activeEntryId, claim, release } = useActiveEdit();
+  const editingFieldRef = useRef(editingField);
+  editingFieldRef.current = editingField;
 
   // Signal that autoEdit has been consumed so parent can clear state
   useEffect(() => {
     if (autoEdit && onAutoEditConsumed) onAutoEditConsumed();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-cancel when another entry claims the active edit
+  useEffect(() => {
+    if (activeEntryId !== null && activeEntryId !== entry.id && editingFieldRef.current !== null) {
+      setEditingField(null);
+      setProjectSearch('');
+    }
+  }, [activeEntryId, entry.id]);
+
+  // Clear optimistic project when server data catches up
+  useEffect(() => {
+    if (optimisticProject) setOptimisticProject(null);
+  }, [entry.projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive running state from timer query (single source of truth)
   // rather than entry.stoppedAt which can be stale during query refetch
@@ -79,34 +103,40 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
   };
 
   const handleEditDescription = () => {
+    claim(entry.id);
     setEditDesc(entry.description);
     setEditingField('description');
   };
 
   const handleEditTime = () => {
+    claim(entry.id);
     setEditStartTime(formatTime(entry.startedAt));
     setEditEndTime(entry.stoppedAt ? formatTime(entry.stoppedAt) : '');
     setEditingField('time');
   };
 
   const handleEditProject = () => {
+    claim(entry.id);
     setEditingField('project');
   };
 
   const handleCancel = () => {
+    release(entry.id);
     setEditingField(null);
     setProjectSearch('');
   };
 
   const handleSaveDescription = useCallback(() => {
+    release(entry.id);
     setEditingField(null);
     if (editDesc !== entry.description) {
       updateEntry.mutate({ id: entry.id, description: editDesc });
     }
     triggerSaveFlash();
-  }, [editDesc, entry.description, entry.id, updateEntry]);
+  }, [editDesc, entry.description, entry.id, updateEntry, release]);
 
   const handleSaveTime = useCallback(() => {
+    release(entry.id);
     setEditingField(null);
     // Build ISO dates from time strings (keep same date)
     const dateStr = entry.startedAt.slice(0, 10); // YYYY-MM-DD
@@ -120,16 +150,34 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
     }
     updateEntry.mutate(update);
     triggerSaveFlash();
-  }, [editStartTime, editEndTime, entry.startedAt, entry.id, isRunning, updateEntry]);
+  }, [editStartTime, editEndTime, entry.startedAt, entry.id, isRunning, updateEntry, release]);
 
   const handleProjectChange = useCallback(
     (projectId: string | null) => {
+      release(entry.id);
       setEditingField(null);
       setProjectSearch('');
-      updateEntry.mutate({ id: entry.id, projectId });
+      // Optimistic display: show new project name immediately (like flair)
+      if (projectId) {
+        const selected = allProjects?.find((p) => p.id === projectId);
+        if (selected) {
+          setOptimisticProject({
+            name: selected.name,
+            color: selected.color ?? '#00D4AA',
+            clientName: selected.clientName ?? '',
+          });
+        }
+      } else {
+        setOptimisticProject(null);
+      }
       triggerPillPop();
+      // Delay mutation until after pill-pop animation completes.
+      // Prevents React Query refetch from re-rendering all rows mid-animation.
+      setTimeout(() => {
+        updateEntry.mutate({ id: entry.id, projectId });
+      }, 500);
     },
-    [entry.id, updateEntry],
+    [entry.id, updateEntry, release, allProjects],
   );
 
   const handlePlay = () => {
@@ -142,6 +190,11 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
 
   const isEditing = editingField !== null;
   const isEditingProject = editingField === 'project';
+
+  // Use optimistic project data for display (syncs pill pop with name change)
+  const displayProjectName = optimisticProject?.name ?? entry.projectName;
+  const displayProjectColor = optimisticProject?.color ?? entry.projectColor;
+  const displayClientName = optimisticProject?.clientName ?? entry.clientName;
 
   return (
     <motion.div
@@ -192,116 +245,141 @@ export function EntryRow({ entry, autoEdit, onAutoEditConsumed }: Props) {
       <div className="relative z-10 flex-1 min-w-0">
         {/* Description — fixed height */}
         <div className="flex h-5 items-center">
-          <AnimatePresence mode="wait">
-            {editingField === 'description' ? (
-              <motion.div
-                key="editing"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="flex w-full items-center gap-2"
+          {editingField === 'description' ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex w-full items-center gap-2"
+            >
+              <motion.input
+                className="flex-1 rounded-md bg-muted/40 px-2 text-[13px] leading-5 text-foreground outline-none"
+                style={{ height: '20px', border: '1px solid hsl(var(--primary) / 0.4)' }}
+                animate={breathingBorderAnimation}
+                transition={breathingBorderTransition}
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveDescription();
+                  if (e.key === 'Escape') handleCancel();
+                }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={handleSaveDescription}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
               >
-                <motion.input
-                  className="flex-1 rounded-md bg-muted/40 px-2 text-[13px] leading-5 text-foreground outline-none"
-                  style={{ height: '20px', border: '1px solid hsl(var(--primary) / 0.4)' }}
-                  animate={breathingBorderAnimation}
-                  transition={breathingBorderTransition}
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveDescription();
-                    if (e.key === 'Escape') handleCancel();
-                  }}
-                />
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={handleSaveDescription}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                >
-                  <Check className="h-2.5 w-2.5" />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={handleCancel}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </motion.button>
-              </motion.div>
-            ) : (
-              <motion.span
-                key="display"
-                initial={false}
-                className={cn(
-                  'cursor-pointer truncate text-[13px] leading-5 hover:text-primary',
-                  noDesc ? 'italic text-muted-foreground' : isRunning ? 'text-primary' : 'text-foreground',
-                )}
-                onClick={handleEditDescription}
-                whileHover={{ x: 2 }}
-                transition={{ duration: 0.1 }}
+                <Check className="h-2.5 w-2.5" />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={handleCancel}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
               >
-                {entry.description || 'No description'}
-              </motion.span>
-            )}
-          </AnimatePresence>
+                <X className="h-2.5 w-2.5" />
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.span
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+              className={cn(
+                'cursor-pointer truncate text-[13px] leading-5 hover:text-primary',
+                noDesc ? 'italic text-muted-foreground' : isRunning ? 'text-primary' : 'text-foreground',
+              )}
+              onClick={handleEditDescription}
+            >
+              {entry.description || 'No description'}
+            </motion.span>
+          )}
         </div>
 
         {/* Project line — fixed height */}
         <div className="relative mt-1 flex h-[18px] items-center gap-1.5">
-          <motion.span
-            className={cn(
-              'flex cursor-pointer items-center gap-1.5 hover:text-primary',
-              entry.projectName ? 'text-muted-foreground' : 'text-amber-500/70 hover:text-amber-400',
-            )}
-            style={{ fontSize: scaled(11) }}
-            animate={pillPop ? pillPopActiveAnimation : pillPopIdleAnimation}
-            transition={pillPop ? pillPopActiveTransition : pillPopIdleTransition}
-            onClick={() => {
-              if (isEditingProject) {
-                handleCancel();
-              } else {
-                handleEditProject();
-              }
-            }}
-          >
-            {entry.projectName ? (
-              <>
-                <span
-                  className="h-2 w-2 rounded-full transition-colors"
-                  style={{ backgroundColor: entry.projectColor ?? '#00D4AA' }}
-                />
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={entry.projectName}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    {entry.clientName ? `${entry.clientName} · ` : ''}{entry.projectName}
-                  </motion.span>
-                </AnimatePresence>
-              </>
-            ) : (
-              '+ Add project'
-            )}
-            <ChevronDown className={cn('h-3 w-3 transition-transform', isEditingProject && 'rotate-180')} />
-          </motion.span>
+          {isEditingProject ? (
+            /* ---- Editing state: breathing pill + X + dropdown ---- */
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-1.5"
+              >
+                <motion.div
+                  className="flex h-[18px] cursor-pointer items-center gap-1.5 rounded-full bg-muted/40 px-2.5"
+                  style={{ border: '1px solid hsl(var(--primary) / 0.4)', fontSize: scaled(11) }}
+                  animate={{
+                    borderColor: [
+                      'hsl(var(--primary) / 0.3)',
+                      'hsl(var(--primary) / 0.6)',
+                      'hsl(var(--primary) / 0.3)',
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  onClick={handleCancel}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: entry.projectColor ?? '#00D4AA' }}
+                  />
+                  <span className="text-foreground">{entry.projectName || 'Select project'}</span>
+                  <ChevronDown className="h-3 w-3 rotate-180 text-muted-foreground" />
+                </motion.div>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={handleCancel}
+                  className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </motion.button>
+              </motion.div>
 
-          {/* Inline project dropdown */}
-          <AnimatePresence>
-            {isEditingProject && (
-              <InlineProjectDropdown
-                projects={allProjects ?? []}
-                selectedId={entry.projectId}
-                search={projectSearch}
-                onSearchChange={setProjectSearch}
-                onSelect={handleProjectChange}
+              <AnimatePresence>
+                <InlineProjectDropdown
+                  projects={allProjects ?? []}
+                  selectedId={entry.projectId}
+                  search={projectSearch}
+                  onSearchChange={setProjectSearch}
+                  onSelect={handleProjectChange}
+                  onCancel={handleCancel}
+                />
+              </AnimatePresence>
+            </>
+          ) : displayProjectName ? (
+            /* ---- Display state: client · project with CSS pill-pop on confirm ---- */
+            <span
+              className={cn(
+                'flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-muted-foreground hover:text-primary',
+                pillPop && 'pill-pop',
+              )}
+              style={{ fontSize: scaled(11), border: '1px solid transparent' }}
+              onClick={handleEditProject}
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: displayProjectColor ?? '#00D4AA' }}
               />
-            )}
-          </AnimatePresence>
+              <motion.span
+                key={displayProjectName}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {displayClientName
+                  ? `${displayClientName} · ${displayProjectName}`
+                  : displayProjectName}
+              </motion.span>
+            </span>
+          ) : (
+            /* ---- No project state ---- */
+            <span
+              className="flex cursor-pointer items-center gap-1 text-amber-500/70 hover:text-amber-400"
+              style={{ fontSize: scaled(11) }}
+              onClick={handleEditProject}
+            >
+              + Add project
+            </span>
+          )}
         </div>
       </div>
 
@@ -451,6 +529,7 @@ interface InlineProjectDropdownProps {
   search: string;
   onSearchChange: (s: string) => void;
   onSelect: (projectId: string | null) => void;
+  onCancel: () => void;
 }
 
 function InlineProjectDropdown({
@@ -459,6 +538,7 @@ function InlineProjectDropdown({
   search,
   onSearchChange,
   onSelect,
+  onCancel,
 }: InlineProjectDropdownProps) {
   const grouped = groupByClient(projects);
   const filtered = search
@@ -494,6 +574,9 @@ function InlineProjectDropdown({
             placeholder="Search projects..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') onCancel();
+            }}
             autoFocus
           />
         </div>
