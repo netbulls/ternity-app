@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import type { AuthContext } from '@ternity/shared';
 import { GlobalRole, OrgRole } from '@ternity/shared';
 import { db } from '../db/index.js';
@@ -95,7 +95,17 @@ async function authPlugin(fastify: FastifyInstance) {
         [user] = await db.select().from(users).where(eq(users.id, devUserId)).limit(1);
       }
       if (!user) {
-        [user] = await db.select().from(users).limit(1);
+        const devRole = (process.env.DEV_USER_ROLE ?? 'admin') as 'admin' | 'user';
+        [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.globalRole, devRole))
+          .orderBy(asc(users.createdAt))
+          .limit(1);
+        // Fallback to first user if no match for the role
+        if (!user) {
+          [user] = await db.select().from(users).orderBy(asc(users.createdAt)).limit(1);
+        }
       }
 
       if (!user) {
@@ -184,6 +194,52 @@ async function authPlugin(fastify: FastifyInstance) {
   } else {
     throw new Error(`Unknown AUTH_MODE: ${authMode}`);
   }
+
+  // ── Impersonation hook (runs after auth resolves the real user) ──
+  fastify.addHook('onRequest', async (request, reply) => {
+    if (request.url === '/health') return;
+    if (!request.auth || request.auth.userId === 'unknown') return;
+
+    const targetUserId = request.headers['x-impersonate-user-id'] as
+      | string
+      | undefined;
+    if (!targetUserId) return;
+
+    // Only admins may impersonate
+    if (request.auth.globalRole !== GlobalRole.Admin) {
+      return reply
+        .code(403)
+        .send({ error: 'Only admins can impersonate users' });
+    }
+
+    // Cannot impersonate yourself
+    if (targetUserId === request.auth.userId) return;
+
+    const [target] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .limit(1);
+
+    if (!target) {
+      return reply.code(404).send({ error: 'Impersonation target not found' });
+    }
+
+    const realUserId = request.auth.userId;
+    const orgRoles = await buildOrgRoles(target.id);
+
+    request.auth = {
+      userId: target.id,
+      displayName: target.displayName,
+      email: target.email,
+      phone: target.phone,
+      avatarUrl: target.avatarUrl,
+      globalRole: target.globalRole as GlobalRole,
+      orgRoles,
+      impersonating: true,
+      realUserId,
+    };
+  });
 }
 
 export default fp(authPlugin, { name: 'auth' });

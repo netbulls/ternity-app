@@ -10,6 +10,9 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  optimizeDeps: {
+    include: ['motion/react'],
+  },
   server: {
     port: 5173,
     proxy: {

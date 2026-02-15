@@ -17,14 +17,14 @@ async function seed() {
     .insert(users)
     .values([
       {
-        displayName: 'Przemek R.',
+        displayName: 'Przemyslaw Rudzki',
         email: 'przemek@ternity.xyz',
         phone: '+48123456789',
         globalRole: 'admin',
       },
       {
-        displayName: 'Anna K.',
-        email: 'anna@ternity.xyz',
+        displayName: 'John Smith',
+        email: 'john@ternity.xyz',
         phone: '+48987654321',
         globalRole: 'user',
       },

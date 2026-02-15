@@ -48,6 +48,34 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  sync:
+    build:
+      context: ../src
+      dockerfile: deploy/Dockerfile.api
+    container_name: ternity-app-dev-sync
+    command: ["node", "apps/api/dist/sync-service.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://ternity:${DB_PASSWORD}@postgres:5432/ternity
+      - TOGGL_API_TOKEN=${TOGGL_API_TOKEN}
+      - TOGGL_WORKSPACE_ID=${TOGGL_WORKSPACE_ID}
+      - TOGGL_ORGANIZATION_ID=${TOGGL_ORGANIZATION_ID}
+      - TIMETASTIC_API_TOKEN=${TIMETASTIC_API_TOKEN}
+      - SYNC_FREQUENT_HOURS=${SYNC_FREQUENT_HOURS:-4}
+      - SYNC_DAILY_HOUR_UTC=${SYNC_DAILY_HOUR_UTC:-3}
+    networks:
+      - internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
   postgres:
     image: postgres:17-alpine
     container_name: ternity-app-dev-db
@@ -77,7 +105,6 @@ networks:
   internal:
   proxy:
     external: true
-    name: docker_frontend
 
 volumes:
   app_data:

@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Phase 2 Design Options</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="themes.css">
+    <!-- Icon libraries -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111;
+            color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* Page header */
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        /* Option tabs */
+        .option-nav {
+            display: flex; justify-content: center; gap: 4px;
+            margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .option-nav button {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+            padding: 7px 16px; border-radius: 6px;
+            border: 1px solid #2a2a2a; background: #1a1a1a;
+            color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s;
+        }
+        .option-nav button:hover { border-color: #444; }
+        .option-nav button.active {
+            background: #00D4AA; border-color: #00D4AA;
+            color: #0a0a0a; font-weight: 600;
+        }
+
+        /* Option description */
+        .option-desc {
+            text-align: center; margin-bottom: 12px; padding: 0 20px;
+        }
+        .option-desc h2 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px; font-weight: 600; letter-spacing: 2px;
+            color: rgba(255,255,255,0.6); margin-bottom: 4px;
+        }
+        .option-desc p {
+            font-size: 12px; color: rgba(255,255,255,0.25);
+            max-width: 600px; margin: 0 auto;
+        }
+
+        /* Secondary nav (theme + icons) */
+        .secondary-nav {
+            display: flex; justify-content: center; gap: 4px;
+            margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .secondary-nav button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .secondary-nav button:hover { border-color: #444; }
+        .secondary-nav button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+        .nav-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .nav-row .nav-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+
+        /* Sidebar icon sizing */
+        .sidebar .nav-item i,
+        .sidebar .nav-item [data-lucide] {
+            width: 16px; height: 16px; font-size: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sidebar .nav-item svg {
+            width: 16px; height: 16px;
+        }
+
+        /* Theme container */
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* ---- SHARED COMPONENT STYLES ---- */
+        .app {
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 640px; display: grid;
+            grid-template-columns: 220px 1fr;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: hsl(var(--sidebar-background));
+            border-right: 1px solid hsl(var(--sidebar-border));
+            padding: 20px 12px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .sidebar .logo {
+            font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: 15px;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar .logo svg { width: 18px; height: 22px; }
+        .sidebar .nav-item {
+            font-size: 13px; padding: 8px 10px;
+            border-radius: calc(var(--radius) - 2px);
+            color: hsl(var(--muted-foreground)); cursor: default; transition: background 0.1s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar .nav-item:hover {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+        }
+        .sidebar .nav-item.active {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+            font-weight: 600;
+        }
+        .sidebar .spacer { flex: 1; }
+        .sidebar .user-block {
+            display: flex; align-items: center; gap: 8px; padding: 10px;
+            border-radius: calc(var(--radius)); background: hsl(var(--muted) / 0.5);
+        }
+        .sidebar .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600;
+        }
+        .sidebar .user-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .sidebar .user-role { font-size: 10px; color: hsl(var(--muted-foreground)); }
+        .sidebar .timer-badge {
+            margin-left: auto; font-size: 9px; padding: 2px 6px;
+            background: hsl(var(--primary) / 0.15); color: hsl(var(--primary));
+            border-radius: 9999px; font-family: 'Oxanium', sans-serif;
+            letter-spacing: 1px; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Main */
+        .main { padding: 24px; overflow: auto; }
+        .top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .page-title {
+            font-family: 'Oxanium', sans-serif; font-size: 18px; font-weight: 600;
+            letter-spacing: 1px; color: hsl(var(--foreground));
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+            padding: 8px 16px; border-radius: calc(var(--radius));
+            border: none; cursor: default; transition: opacity 0.15s; white-space: nowrap;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .btn-outline { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); }
+        .btn-ghost { background: transparent; color: hsl(var(--muted-foreground)); }
+        .btn-sm { font-size: 12px; padding: 5px 10px; }
+        .btn-xs { font-size: 11px; padding: 3px 8px; }
+        .btn-icon { padding: 6px; width: 30px; height: 30px; }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; align-items: center;
+            font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 9999px;
+        }
+        .badge-primary { background: hsl(var(--t-label-1-bg)); color: hsl(var(--t-label-1-text)); }
+        .badge-secondary { background: hsl(var(--t-label-2-bg)); color: hsl(var(--t-label-2-text)); }
+        .badge-outline { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); }
+        .badge-muted { background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground)); font-size: 10px; }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card {
+            background: hsl(var(--t-stat-bg)); border: 1px solid hsl(var(--t-border-subtle));
+            border-radius: calc(var(--radius)); padding: 14px 16px;
+        }
+        .stat-label {
+            font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin-bottom: 4px;
+        }
+        .stat-value {
+            font-family: 'Oxanium', sans-serif; font-size: 22px; font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+        .stat-value.accent { color: hsl(var(--primary)); }
+        .stat-sub { font-size: 10px; color: hsl(var(--t-text-muted)); margin-top: 2px; }
+
+        /* Timer bar */
+        .timer-bar {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: calc(var(--radius));
+            background: hsl(var(--t-timer-bg)); border: 1px solid hsl(var(--t-timer-border));
+            margin-bottom: 20px;
+        }
+        .timer-bar .task-input {
+            flex: 1; background: transparent; border: none; font-size: 13px;
+            color: hsl(var(--foreground)); outline: none; font-family: 'Inter', sans-serif;
+        }
+        .timer-bar .task-input::placeholder { color: hsl(var(--muted-foreground)); }
+        .timer-display {
+            font-family: 'Oxanium', sans-serif; font-size: 20px; font-weight: 600;
+            letter-spacing: 2px; color: hsl(var(--primary));
+        }
+        .timer-display.sm { font-size: 14px; letter-spacing: 1px; }
+        .stop-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: hsl(var(--t-stop)); cursor: default;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .stop-btn .sq { width: 12px; height: 12px; border-radius: 2px; background: white; }
+        .play-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: hsl(var(--primary)); cursor: default;
+            display: flex; align-items: center; justify-content: center;
+            color: hsl(var(--primary-foreground));
+        }
+
+        /* Project dot */
+        .project-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .project-text { color: hsl(var(--muted-foreground)); font-size: 12px; }
+
+        /* Table */
+        .table-wrapper {
+            border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius)); overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th {
+            text-align: left; font-size: 11px; font-weight: 600;
+            color: hsl(var(--muted-foreground)); padding: 10px 14px;
+            background: hsl(var(--muted) / 0.3); border-bottom: 1px solid hsl(var(--border));
+        }
+        tbody td {
+            padding: 10px 14px; border-bottom: 1px solid hsl(var(--border) / 0.5);
+            color: hsl(var(--foreground));
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: hsl(var(--muted) / 0.3); }
+        .duration {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            letter-spacing: 1px; text-align: right;
+        }
+
+        /* Day header */
+        .day-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; margin-top: 8px;
+        }
+        .day-header .day-title {
+            font-size: 12px; font-weight: 600; color: hsl(var(--muted-foreground));
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .day-header .day-total {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            color: hsl(var(--foreground)); letter-spacing: 1px;
+        }
+
+        /* Entry row (list style) */
+        .entry-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            border-radius: calc(var(--radius) - 2px);
+            transition: background 0.1s; cursor: default;
+        }
+        .entry-row:hover { background: hsl(var(--muted) / 0.3); }
+        .entry-row .entry-desc { flex: 1; font-size: 13px; color: hsl(var(--foreground)); }
+        .entry-row .entry-project { font-size: 12px; color: hsl(var(--muted-foreground)); min-width: 120px; }
+        .entry-row .entry-duration {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            color: hsl(var(--foreground)); letter-spacing: 1px; min-width: 50px; text-align: right;
+        }
+        .entry-row .entry-play {
+            width: 24px; height: 24px; border-radius: 50%; border: 1px solid hsl(var(--border));
+            background: transparent; color: hsl(var(--muted-foreground)); font-size: 10px;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .entry-row:hover .entry-play { opacity: 1; }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%; height: 6px; border-radius: 3px;
+            background: hsl(var(--muted) / 0.5); overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%; border-radius: 3px; background: hsl(var(--primary));
+            transition: width 0.3s;
+        }
+
+        /* Card */
+        .card {
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px); overflow: hidden;
+        }
+        .card-header { padding: 14px 16px; border-bottom: 1px solid hsl(var(--border)); }
+        .card-title { font-size: 13px; font-weight: 600; color: hsl(var(--card-foreground)); }
+        .card-content { padding: 14px 16px; }
+
+        /* Input */
+        .input {
+            width: 100%; padding: 8px 12px; font-size: 13px; font-family: 'Inter', sans-serif;
+            border-radius: calc(var(--radius)); border: 1px solid hsl(var(--input));
+            background: transparent; color: hsl(var(--foreground)); outline: none;
+        }
+        .input::placeholder { color: hsl(var(--muted-foreground)); }
+
+        /* Separator */
+        .sep { height: 1px; background: hsl(var(--border) / 0.5); margin: 4px 0; }
+
+        /* ---- OPTION-SPECIFIC STYLES ---- */
+
+        /* Option 2: Linear Clean */
+        .dense-row {
+            display: flex; align-items: center; gap: 10px; padding: 7px 12px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+            font-size: 13px; transition: background 0.1s;
+        }
+        .dense-row:hover { background: hsl(var(--muted) / 0.3); }
+        .dense-row:last-child { border-bottom: none; }
+        .dense-row .check {
+            width: 14px; height: 14px; border-radius: 3px;
+            border: 1px solid hsl(var(--border)); flex-shrink: 0;
+        }
+        .dense-row .desc { flex: 1; color: hsl(var(--foreground)); }
+        .dense-row .proj { color: hsl(var(--muted-foreground)); font-size: 12px; min-width: 80px; }
+        .dense-row .dur {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            letter-spacing: 1px; min-width: 50px; text-align: right;
+        }
+
+        /* Command palette */
+        .cmd-hint {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            padding: 2px 6px; border: 1px solid hsl(var(--border));
+            border-radius: 4px; font-family: 'Inter', sans-serif;
+        }
+
+        /* Option 3: Dashboard bento grid */
+        .bento { display: grid; gap: 12px; margin-bottom: 20px; }
+        .bento-2x2 { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+        .bento-chart {
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px); padding: 16px;
+        }
+        .mini-bar {
+            display: flex; align-items: flex-end; gap: 4px; height: 60px; padding-top: 8px;
+        }
+        .mini-bar .bar {
+            flex: 1; border-radius: 3px 3px 0 0;
+            background: hsl(var(--primary)); min-height: 4px;
+        }
+        .mini-bar .bar.muted { background: hsl(var(--muted) / 0.5); }
+        .mini-bar-labels {
+            display: flex; gap: 4px; margin-top: 6px;
+        }
+        .mini-bar-labels span {
+            flex: 1; text-align: center; font-size: 9px;
+            color: hsl(var(--muted-foreground));
+        }
+        .donut-container { display: flex; align-items: center; gap: 16px; }
+        .donut-legend { font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
+        .donut-legend .legend-item { display: flex; align-items: center; gap: 6px; }
+        .donut-legend .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .donut-legend .legend-pct { color: hsl(var(--muted-foreground)); }
+
+        /* Option 4: Timeline */
+        .timeline-container { position: relative; margin-bottom: 20px; }
+        .timeline-axis {
+            display: flex; justify-content: space-between; padding: 0 0 6px 0;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+        }
+        .timeline-track {
+            position: relative; height: 44px;
+            background: hsl(var(--muted) / 0.2); border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border) / 0.5);
+        }
+        .timeline-block {
+            position: absolute; top: 6px; height: 32px;
+            border-radius: calc(var(--radius) - 2px);
+            display: flex; align-items: center; padding: 0 8px;
+            font-size: 11px; font-weight: 500; overflow: hidden; white-space: nowrap;
+            cursor: default;
+        }
+
+        /* Option 5: Split view */
+        .split-layout { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: 500px; }
+        .split-left { border-right: 1px solid hsl(var(--border)); padding-right: 20px; }
+        .split-right { padding-left: 20px; }
+        .detail-field { margin-bottom: 14px; }
+        .detail-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: hsl(var(--muted-foreground)); margin-bottom: 4px;
+        }
+        .detail-value { font-size: 13px; color: hsl(var(--foreground)); }
+        .detail-value.lg {
+            font-family: 'Oxanium', sans-serif; font-size: 28px; font-weight: 700;
+            color: hsl(var(--primary));
+        }
+        .entry-row.selected { background: hsl(var(--primary) / 0.08); border-left: 2px solid hsl(var(--primary)); }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>Phase 2 — Design Options</h1>
+    <p>5 layout approaches for timer &amp; time entries · all themes supported</p>
+</div>
+
+<div class="option-nav" id="optionNav"></div>
+<div class="option-desc" id="optionDesc"></div>
+<div class="nav-row">
+    <span class="nav-label">Theme</span>
+    <div class="secondary-nav" id="themeNav"></div>
+    <span class="nav-label">Icons</span>
+    <div class="secondary-nav" id="iconNav"></div>
+</div>
+<div class="theme-container" id="themeContainer"></div>
+
+<script>
+const themes = [
+    { id: 'ternity-dark', name: 'Dark' },
+    { id: 'ternity-light', name: 'Light' },
+    { id: 'midnight', name: 'Midnight' },
+    { id: 'warm-sand', name: 'Sand' },
+    { id: 'carbon', name: 'Carbon' },
+    { id: 'high-contrast', name: 'Hi-Con' },
+];
+
+const iconSets = [
+    { id: 'lucide', name: 'Lucide (shadcn)' },
+    { id: 'phosphor', name: 'Phosphor' },
+    { id: 'tabler', name: 'Tabler' },
+];
+
+// Icon name maps per library
+const iconMap = {
+    lucide: {
+        timer:    '<i data-lucide="timer"></i>',
+        entries:  '<i data-lucide="list"></i>',
+        reports:  '<i data-lucide="chart-no-axes-column-increasing"></i>',
+        calendar: '<i data-lucide="calendar-days"></i>',
+        leave:    '<i data-lucide="palm-tree"></i>',
+        projects: '<i data-lucide="folder-open"></i>',
+        settings: '<i data-lucide="settings"></i>',
+    },
+    phosphor: {
+        timer:    '<i class="ph ph-timer"></i>',
+        entries:  '<i class="ph ph-list-bullets"></i>',
+        reports:  '<i class="ph ph-chart-bar"></i>',
+        calendar: '<i class="ph ph-calendar-blank"></i>',
+        leave:    '<i class="ph ph-palm-tree"></i>',
+        projects: '<i class="ph ph-folder-open"></i>',
+        settings: '<i class="ph ph-gear-six"></i>',
+    },
+    tabler: {
+        timer:    '<i class="ti ti-clock-play"></i>',
+        entries:  '<i class="ti ti-list"></i>',
+        reports:  '<i class="ti ti-chart-bar"></i>',
+        calendar: '<i class="ti ti-calendar"></i>',
+        leave:    '<i class="ti ti-beach"></i>',
+        projects: '<i class="ti ti-folder"></i>',
+        settings: '<i class="ti ti-settings"></i>',
+    },
+};
+
+const options = [
+    { id: 1, name: '1. Toggl Evolved', desc: 'Familiar Toggl layout, polished. Sticky timer bar with @project/#tag shortcuts, day-grouped entry list, 3 stat cards.' },
+    { id: 2, name: '2. Linear Clean', desc: 'Minimal chrome, keyboard-first. Dense rows, progress bar, Cmd+K palette, configurable columns.' },
+    { id: 3, name: '3. Dashboard First', desc: 'Charts and stats prominent. Bento grid with bar chart + donut, compact entry list in card.' },
+    { id: 4, name: '4. Timeline', desc: 'Visual time blocks on a horizontal axis. See your day as colored blocks, table below for editing.' },
+    { id: 5, name: '5. Split View', desc: 'Two-panel layout. Entry list left, detail panel right. No modals — click to see/edit.' },
+];
+
+const hg = `<svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round" style="color:hsl(var(--primary))"/><circle cx="50" cy="32" r="6" fill="hsl(var(--primary))"/><circle cx="49" cy="52" r="7.5" fill="hsl(var(--primary))"/><circle cx="54" cy="67" r="5.5" fill="hsl(var(--primary))"/><circle cx="44" cy="77" r="7" fill="hsl(var(--primary))"/><circle cx="56" cy="83" r="6" fill="hsl(var(--primary))"/></svg>`;
+
+function sidebar(active) {
+    const ic = iconMap[currentIconSet];
+    return `<div class="sidebar">
+        <div class="logo">${hg} Ternity</div>
+        <div class="nav-item ${active==='timer'?'active':''}">${ic.timer} Timer ${active==='timer'?'<span class="timer-badge">1:23</span>':''}</div>
+        <div class="nav-item ${active==='entries'?'active':''}">${ic.entries} Entries</div>
+        <div class="nav-item">${ic.reports} Reports</div>
+        <div class="nav-item">${ic.calendar} Calendar</div>
+        <div class="nav-item">${ic.leave} Leave</div>
+        <div class="nav-item">${ic.projects} Projects</div>
+        <div class="spacer"></div>
+        <div class="nav-item" style="font-size:12px">${ic.settings} Settings</div>
+        <div class="user-block">
+            <div class="avatar">AM</div>
+            <div><div class="user-name">Alex M.</div><div class="user-role">Admin</div></div>
+        </div>
+    </div>`;
+}
+
+const entries = [
+    { desc: 'TERN-42 Implement timer component', proj: 'Ternity App', projColor: '--t-project-1', tags: ['jira'], dur: '2:15' },
+    { desc: 'Design review — dashboard layout', proj: 'Exegy Platform', projColor: '--t-project-2', tags: ['meeting'], dur: '1:30' },
+    { desc: 'TERN-35 Entry dedup logic', proj: 'Ternity App', projColor: '--t-project-1', tags: ['jira', 'backend'], dur: '1:45' },
+    { desc: 'Sprint planning Q1', proj: 'Legal500', projColor: '--t-project-3', tags: ['meeting'], dur: '1:12' },
+];
+
+const yesterday = [
+    { desc: 'TERN-40 Auth flow with Logto', proj: 'Ternity App', projColor: '--t-project-1', tags: ['jira'], dur: '3:00' },
+    { desc: 'Client onboarding call', proj: 'Exegy Platform', projColor: '--t-project-2', tags: ['meeting'], dur: '0:45' },
+    { desc: 'Database migration scripts', proj: 'Legal500', projColor: '--t-project-3', tags: [], dur: '2:15' },
+];
+
+function tagBadge(tag) {
+    if (tag === 'jira' || tag === 'backend' || tag === 'development') return `<span class="badge badge-primary">${tag}</span>`;
+    if (tag === 'meeting') return `<span class="badge badge-secondary">${tag}</span>`;
+    return `<span class="badge badge-outline">${tag}</span>`;
+}
+
+/* ── OPTION 1: Toggl Evolved ── */
+function renderOption1() {
+    return `<div class="app">${sidebar('timer')}
+    <div class="main">
+        <div class="top-bar">
+            <span class="page-title">Today</span>
+            <div style="display:flex;gap:8px">
+                <span class="btn btn-outline btn-sm">This Week</span>
+                <span class="btn btn-primary btn-sm">+ Manual Entry</span>
+            </div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value accent">6h 42m</div><div class="stat-sub">of 8h target</div></div>
+            <div class="stat-card"><div class="stat-label">This Week</div><div class="stat-value">31h 15m</div><div class="stat-sub">of 40h target</div></div>
+            <div class="stat-card"><div class="stat-label">Leave Balance</div><div class="stat-value">18</div><div class="stat-sub">days remaining</div></div>
+        </div>
+        <div class="timer-bar">
+            <input class="task-input" value="TERN-42 Implement timer component" readonly>
+            <span class="badge badge-primary">jira</span>
+            <span class="project-text"><span class="project-dot" style="background:hsl(var(--t-project-1))"></span>Ternity App</span>
+            <span class="timer-display">01:23:47</span>
+            <span class="stop-btn"><span class="sq"></span></span>
+        </div>
+        <div style="font-size:10px;color:hsl(var(--muted-foreground));margin-bottom:8px;letter-spacing:1px">TIP: Type <span style="color:hsl(var(--primary))">@</span> for project, <span style="color:hsl(var(--primary))">#</span> for tags</div>
+
+        <div class="day-header"><span class="day-title">Today — Mon, Feb 10</span><span class="day-total">6h 42m</span></div>
+        <div class="sep"></div>
+        ${entries.map(e => `<div class="entry-row">
+            <span class="entry-play">▶</span>
+            <span class="entry-desc">${e.desc}</span>
+            <span class="entry-project"><span class="project-dot" style="background:hsl(var(${e.projColor}))"></span>${e.proj}</span>
+            <span>${e.tags.map(tagBadge).join(' ')}</span>
+            <span class="entry-duration">${e.dur}</span>
+        </div>`).join('')}
+
+        <div class="day-header"><span class="day-title">Yesterday — Sun, Feb 9</span><span class="day-total">6h 00m</span></div>
+        <div class="sep"></div>
+        ${yesterday.map(e => `<div class="entry-row">
+            <span class="entry-play">▶</span>
+            <span class="entry-desc">${e.desc}</span>
+            <span class="entry-project"><span class="project-dot" style="background:hsl(var(${e.projColor}))"></span>${e.proj}</span>
+            <span>${e.tags.map(tagBadge).join(' ')}</span>
+            <span class="entry-duration">${e.dur}</span>
+        </div>`).join('')}
+    </div></div>`;
+}
+
+/* ── OPTION 2: Linear Clean ── */
+function renderOption2() {
+    return `<div class="app">${sidebar('entries')}
+    <div class="main">
+        <div class="top-bar">
+            <span class="page-title">Time Entries</span>
+            <div style="display:flex;gap:8px;align-items:center">
+                <span class="cmd-hint">⌘K</span>
+                <span class="btn btn-outline btn-sm">Day ▾</span>
+                <span class="btn btn-outline btn-sm">View ▾</span>
+            </div>
+        </div>
+
+        <div class="timer-bar" style="padding:8px 12px;margin-bottom:16px;gap:8px">
+            <span class="play-btn" style="width:26px;height:26px;font-size:10px">▶</span>
+            <input class="task-input" placeholder="Start tracking... (or press S)" readonly style="font-size:13px">
+            <span class="timer-display sm">00:00</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <span style="font-size:13px;font-weight:600;color:hsl(var(--foreground))">Today</span>
+            <span style="font-family:'Oxanium';font-size:13px;color:hsl(var(--primary));font-weight:600;letter-spacing:1px">6h 42m</span>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;color:hsl(var(--muted-foreground))">3 of 8h</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:20px"><div class="fill" style="width:84%"></div></div>
+
+        <div style="border:1px solid hsl(var(--border) / 0.5);border-radius:calc(var(--radius));overflow:hidden">
+        ${entries.map(e => `<div class="dense-row">
+            <div class="check"></div>
+            <span class="desc">${e.desc}</span>
+            <span class="proj"><span class="project-dot" style="background:hsl(var(${e.projColor}))"></span>${e.proj.split(' ')[0]}</span>
+            <span class="dur">${e.dur}</span>
+        </div>`).join('')}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-top:20px;margin-bottom:8px">
+            <span style="font-size:13px;font-weight:600;color:hsl(var(--foreground))">Yesterday</span>
+            <span style="font-family:'Oxanium';font-size:13px;color:hsl(var(--muted-foreground));font-weight:600;letter-spacing:1px">6h 00m</span>
+        </div>
+        <div style="border:1px solid hsl(var(--border) / 0.5);border-radius:calc(var(--radius));overflow:hidden">
+        ${yesterday.map(e => `<div class="dense-row">
+            <div class="check"></div>
+            <span class="desc">${e.desc}</span>
+            <span class="proj"><span class="project-dot" style="background:hsl(var(${e.projColor}))"></span>${e.proj.split(' ')[0]}</span>
+            <span class="dur">${e.dur}</span>
+        </div>`).join('')}
+        </div>
+
+        <div style="margin-top:20px;padding:8px 12px;border:1px solid hsl(var(--border) / 0.3);border-radius:calc(var(--radius));display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:hsl(var(--muted-foreground))">Shortcuts:</span>
+            <span class="cmd-hint">S</span><span style="font-size:10px;color:hsl(var(--muted-foreground))">start</span>
+            <span class="cmd-hint">C</span><span style="font-size:10px;color:hsl(var(--muted-foreground))">create</span>
+            <span class="cmd-hint">J/K</span><span style="font-size:10px;color:hsl(var(--muted-foreground))">navigate</span>
+            <span class="cmd-hint">E</span><span style="font-size:10px;color:hsl(var(--muted-foreground))">edit</span>
+        </div>
+    </div></div>`;
+}
+
+/* ── OPTION 3: Dashboard First ── */
+function renderOption3() {
+    return `<div class="app">${sidebar('timer')}
+    <div class="main">
+        <div class="top-bar">
+            <span class="page-title">Dashboard</span>
+            <div style="display:flex;gap:8px">
+                <span class="btn btn-outline btn-sm">◀</span>
+                <span class="btn btn-outline btn-sm">This Week</span>
+                <span class="btn btn-outline btn-sm">▶</span>
+            </div>
+        </div>
+
+        <div class="timer-bar" style="padding:10px 14px;margin-bottom:16px">
+            <input class="task-input" value="Design review — dashboard layout" readonly>
+            <span class="project-text"><span class="project-dot" style="background:hsl(var(--t-project-2))"></span>Exegy</span>
+            <span class="timer-display sm">01:45:22</span>
+            <span class="stop-btn" style="width:28px;height:28px"><span class="sq" style="width:10px;height:10px"></span></span>
+        </div>
+
+        <div class="bento bento-2x2">
+            <div class="stat-card">
+                <div class="stat-label">Today</div>
+                <div class="stat-value accent">6h 42m</div>
+                <div class="stat-sub">of 8h target · 84%</div>
+                <div class="progress-bar" style="margin-top:8px"><div class="fill" style="width:84%"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Week</div>
+                <div class="stat-value">31h 15m</div>
+                <div class="stat-sub">of 40h target · 78%</div>
+                <div class="progress-bar" style="margin-top:8px"><div class="fill" style="width:78%"></div></div>
+            </div>
+            <div class="bento-chart" style="grid-column:1/2">
+                <div class="stat-label">Hours by Day</div>
+                <div class="mini-bar">
+                    <div class="bar" style="height:85%"></div>
+                    <div class="bar" style="height:70%"></div>
+                    <div class="bar" style="height:95%"></div>
+                    <div class="bar" style="height:60%"></div>
+                    <div class="bar" style="height:84%"></div>
+                    <div class="bar muted" style="height:20%"></div>
+                    <div class="bar muted" style="height:10%"></div>
+                </div>
+                <div class="mini-bar-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+            </div>
+            <div class="bento-chart" style="grid-column:2/3">
+                <div class="stat-label">By Project</div>
+                <div class="donut-container">
+                    <svg width="80" height="80" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--t-project-1))" stroke-width="4" stroke-dasharray="57 43" stroke-dashoffset="25"/>
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--t-project-2))" stroke-width="4" stroke-dasharray="28 72" stroke-dashoffset="68"/>
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--t-project-3))" stroke-width="4" stroke-dasharray="15 85" stroke-dashoffset="40"/>
+                    </svg>
+                    <div class="donut-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:hsl(var(--t-project-1))"></div> Ternity <span class="legend-pct">65%</span></div>
+                        <div class="legend-item"><div class="legend-dot" style="background:hsl(var(--t-project-2))"></div> Exegy <span class="legend-pct">25%</span></div>
+                        <div class="legend-item"><div class="legend-dot" style="background:hsl(var(--t-project-3))"></div> Legal500 <span class="legend-pct">10%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:4px">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+                <span class="card-title">Recent Entries</span>
+                <span class="btn btn-ghost btn-xs">View all →</span>
+            </div>
+            <div class="card-content" style="padding:0">
+                ${entries.slice(0,3).map(e => `<div class="entry-row" style="padding:10px 16px;border-bottom:1px solid hsl(var(--border) / 0.3)">
+                    <span class="entry-desc">${e.desc}</span>
+                    <span class="entry-project"><span class="project-dot" style="background:hsl(var(${e.projColor}))"></span>${e.proj}</span>
+                    <span class="entry-duration">${e.dur}</span>
+                </div>`).join('')}
+            </div>
+        </div>
+    </div></div>`;
+}
+
+/* ── OPTION 4: Timeline ── */
+function renderOption4() {
+    return `<div class="app">${sidebar('timer')}
+    <div class="main">
+        <div class="top-bar">
+            <div style="display:flex;align-items:center;gap:12px">
+                <span class="btn btn-outline btn-sm">◀</span>
+                <span class="page-title">Mon, Feb 10</span>
+                <span class="btn btn-outline btn-sm">▶</span>
+            </div>
+            <div style="display:flex;gap:8px">
+                <span class="btn btn-outline btn-sm">Day</span>
+                <span class="btn btn-primary btn-sm">+ Entry</span>
+            </div>
+        </div>
+
+        <div class="timer-bar">
+            <span class="play-btn" style="font-size:10px">▶</span>
+            <input class="task-input" placeholder="What are you working on?" readonly>
+            <span class="timer-display sm">00:00</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-family:'Oxanium';font-size:18px;font-weight:700;color:hsl(var(--primary))">6h 42m</span>
+            <span style="font-size:11px;color:hsl(var(--muted-foreground))">today</span>
+            <div style="flex:1"></div>
+            <div class="progress-bar" style="width:120px"><div class="fill" style="width:84%"></div></div>
+            <span style="font-size:11px;color:hsl(var(--muted-foreground))">84%</span>
+        </div>
+
+        <div class="timeline-container">
+            <div class="timeline-axis">
+                <span>8:00</span><span>9:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span><span>17:00</span><span>18:00</span>
+            </div>
+            <div class="timeline-track">
+                <div class="timeline-block" style="left:0%;width:22%;background:hsl(var(--t-project-1) / 0.8);color:hsl(var(--primary-foreground))">TERN-42 Timer</div>
+                <div class="timeline-block" style="left:24%;width:15%;background:hsl(var(--t-project-2) / 0.8);color:hsl(var(--primary-foreground))">Design review</div>
+                <div class="timeline-block" style="left:42%;width:12%;background:hsl(var(--t-project-3) / 0.8);color:hsl(var(--primary-foreground))">Sprint plan</div>
+                <div class="timeline-block" style="left:56%;width:18%;background:hsl(var(--t-project-1) / 0.8);color:hsl(var(--primary-foreground))">TERN-35 Dedup</div>
+            </div>
+        </div>
+
+        <div class="day-header"><span class="day-title">Entries</span><span class="day-total">4 entries</span></div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Task</th><th>Project</th><th>Start</th><th>End</th><th style="text-align:right">Duration</th></tr></thead>
+                <tbody>
+                    <tr><td>TERN-42 Implement timer</td><td><span class="project-dot" style="background:hsl(var(--t-project-1))"></span>Ternity App</td><td style="font-size:12px">08:00</td><td style="font-size:12px">10:15</td><td class="duration">2:15</td></tr>
+                    <tr><td>Design review</td><td><span class="project-dot" style="background:hsl(var(--t-project-2))"></span>Exegy Platform</td><td style="font-size:12px">10:25</td><td style="font-size:12px">11:55</td><td class="duration">1:30</td></tr>
+                    <tr><td>Sprint planning Q1</td><td><span class="project-dot" style="background:hsl(var(--t-project-3))"></span>Legal500</td><td style="font-size:12px">12:15</td><td style="font-size:12px">13:27</td><td class="duration">1:12</td></tr>
+                    <tr><td>TERN-35 Entry dedup</td><td><span class="project-dot" style="background:hsl(var(--t-project-1))"></span>Ternity App</td><td style="font-size:12px">13:45</td><td style="font-size:12px">15:30</td><td class="duration">1:45</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div></div>`;
+}
+
+/* ── OPTION 5: Split View ── */
+function renderOption5() {
+    return `<div class="app">${sidebar('entries')}
+    <div class="main">
+        <div class="top-bar">
+            <span class="page-title">Entries</span>
+            <div style="display:flex;gap:8px">
+                <span class="btn btn-outline btn-sm">◀ Feb 10 ▶</span>
+                <span class="btn btn-primary btn-sm">+ New</span>
+            </div>
+        </div>
+
+        <div class="timer-bar" style="padding:8px 12px;margin-bottom:16px;gap:8px">
+            <input class="task-input" value="TERN-42 Implement timer component" readonly style="font-size:13px">
+            <span class="badge badge-primary" style="font-size:10px">jira</span>
+            <span class="project-text"><span class="project-dot" style="background:hsl(var(--t-project-1))"></span>Ternity</span>
+            <span class="timer-display sm">01:23:47</span>
+            <span class="stop-btn" style="width:26px;height:26px"><span class="sq" style="width:9px;height:9px"></span></span>
+        </div>
+
+        <div class="split-layout">
+            <div class="split-left">
+                <div class="day-header"><span class="day-title">Today</span><span class="day-total">6h 42m</span></div>
+                <div class="sep"></div>
+                ${entries.map((e,i) => `<div class="entry-row ${i===0?'selected':''}">
+                    <span class="entry-play">▶</span>
+                    <span class="entry-desc">${e.desc}</span>
+                    <span class="entry-duration">${e.dur}</span>
+                </div>`).join('')}
+
+                <div class="day-header"><span class="day-title">Yesterday</span><span class="day-total">6h 00m</span></div>
+                <div class="sep"></div>
+                ${yesterday.slice(0,2).map(e => `<div class="entry-row">
+                    <span class="entry-play">▶</span>
+                    <span class="entry-desc">${e.desc}</span>
+                    <span class="entry-duration">${e.dur}</span>
+                </div>`).join('')}
+            </div>
+
+            <div class="split-right">
+                <div style="margin-bottom:20px">
+                    <div style="font-size:15px;font-weight:600;color:hsl(var(--foreground));margin-bottom:4px">TERN-42 Implement timer component</div>
+                    <span class="badge badge-primary">jira</span>
+                </div>
+
+                <div class="detail-field">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value lg">2h 15m</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="detail-field">
+                        <div class="detail-label">Started</div>
+                        <div class="detail-value">08:00</div>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Stopped</div>
+                        <div class="detail-value">10:15</div>
+                    </div>
+                </div>
+
+                <div class="detail-field">
+                    <div class="detail-label">Project</div>
+                    <div class="detail-value"><span class="project-dot" style="background:hsl(var(--t-project-1))"></span>Ternity App</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">Client</div>
+                    <div class="detail-value">Netbulls</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">Labels</div>
+                    <div style="display:flex;gap:4px;margin-top:4px">
+                        <span class="badge badge-primary">jira</span>
+                        <span class="badge badge-outline">frontend</span>
+                    </div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">Notes</div>
+                    <div class="detail-value" style="font-size:12px;color:hsl(var(--muted-foreground));line-height:1.5">Implemented the timer bar component with start/stop functionality. Added elapsed time display with Oxanium font.</div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid hsl(var(--border) / 0.5)">
+                    <span class="btn btn-outline btn-sm" style="flex:1">Duplicate</span>
+                    <span class="btn btn-outline btn-sm" style="flex:1;color:hsl(var(--destructive))">Delete</span>
+                </div>
+            </div>
+        </div>
+    </div></div>`;
+}
+
+const renderers = { 1: renderOption1, 2: renderOption2, 3: renderOption3, 4: renderOption4, 5: renderOption5 };
+let currentOption = 1;
+let currentTheme = 'ternity-dark';
+let currentIconSet = 'lucide';
+
+// Build option nav
+document.getElementById('optionNav').innerHTML = options.map(o =>
+    `<button data-opt="${o.id}" onclick="switchOption(${o.id})">${o.name}</button>`
+).join('');
+
+// Build theme nav
+document.getElementById('themeNav').innerHTML = themes.map(t =>
+    `<button data-theme="${t.id}" onclick="switchTheme('${t.id}')">${t.name}</button>`
+).join('');
+
+// Build icon nav
+document.getElementById('iconNav').innerHTML = iconSets.map(s =>
+    `<button data-icons="${s.id}" onclick="switchIcons('${s.id}')">${s.name}</button>`
+).join('');
+
+const container = document.getElementById('themeContainer');
+const descEl = document.getElementById('optionDesc');
+
+function render() {
+    container.innerHTML = renderers[currentOption]();
+    container.setAttribute('data-theme', currentTheme);
+    const opt = options.find(o => o.id === currentOption);
+    descEl.innerHTML = `<h2>${opt.name}</h2><p>${opt.desc}</p>`;
+    // Activate Lucide icons after DOM update
+    if (currentIconSet === 'lucide' && window.lucide) {
+        lucide.createIcons({ nameAttr: 'data-lucide' });
+    }
+}
+
+function switchOption(id) {
+    currentOption = id;
+    document.querySelectorAll('.option-nav button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.option-nav [data-opt="${id}"]`).classList.add('active');
+    render();
+}
+
+function switchTheme(id) {
+    currentTheme = id;
+    document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`#themeNav [data-theme="${id}"]`).classList.add('active');
+    render();
+}
+
+function switchIcons(id) {
+    currentIconSet = id;
+    document.querySelectorAll('#iconNav button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`#iconNav [data-icons="${id}"]`).classList.add('active');
+    render();
+}
+
+// Initial
+switchOption(1);
+switchTheme('ternity-dark');
+switchIcons('lucide');
+</script>
+
+</body>
+</html>

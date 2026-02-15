@@ -1,9 +1,11 @@
 import { type ReactNode } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LogtoProvider, LogtoConfig } from '@logto/react';
+import { LogtoProvider, LogtoConfig, Prompt } from '@logto/react';
+import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { ImpersonationProvider } from '@/providers/impersonation-provider';
 import { router } from '@/router';
 
 const queryClient = new QueryClient({
@@ -20,7 +22,8 @@ const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
 const logtoConfig: LogtoConfig = {
   endpoint: import.meta.env.VITE_LOGTO_ENDPOINT,
   appId: import.meta.env.VITE_LOGTO_APP_ID,
-  scopes: ['openid', 'profile', 'phone', 'email'],
+  scopes: ['openid', 'profile', 'phone', 'email', 'urn:logto:scope:roles'],
+  prompt: Prompt.Login,
   // Ternity API is set as Default API in Logto — no need to pass resource here.
   // Logto will use the default resource for token exchange automatically.
 };
@@ -38,7 +41,10 @@ export function App() {
       <ThemeProvider>
         <LogtoWrapper>
           <AuthProvider>
-            <RouterProvider router={router} />
+            <ImpersonationProvider>
+              <RouterProvider router={router} />
+              <Toaster />
+            </ImpersonationProvider>
           </AuthProvider>
         </LogtoWrapper>
       </ThemeProvider>

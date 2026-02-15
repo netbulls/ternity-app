@@ -6,13 +6,13 @@ Time tracking and holiday scheduling platform for small organizations. Combines 
 
 | Project | Purpose | URL (prod) |
 |---|---|---|
-| `netbulls/ternity` | Main app (this repo) | app.ternity.xyz |
+| `netbulls/ternity-app` | Main app (this repo) | app.ternity.xyz |
 | `netbulls/ternity-auth` | Auth service (Logto OSS) | auth.ternity.xyz |
 | `netbulls/ternity-www` | Marketing website + brand | ternity.xyz |
 
 ## Prerequisites
 
-- **Node.js** 22.x LTS
+- **Node.js** 22.x LTS (see `.node-version`)
 - **pnpm** 9.x (`corepack enable && corepack prepare pnpm@9.15.4 --activate`)
 - **Docker** (for local PostgreSQL and optional Logto)
 - **PostgreSQL** 17+ (via Docker or local install)
@@ -22,7 +22,7 @@ Time tracking and holiday scheduling platform for small organizations. Combines 
 ### 1. Clone and install
 
 ```bash
-git clone git@github.com:netbulls/ternity.git
+git clone git@github.com:netbulls/ternity-app.git
 cd ternity
 pnpm install
 ```
@@ -57,7 +57,7 @@ VITE_LOGTO_APP_ID=your-logto-app-id
 VITE_API_URL=http://localhost:3010
 ```
 
-Set `AUTH_MODE=stub` / `VITE_AUTH_MODE=stub` to bypass Logto during development. Switch to `logto` when you have a Logto instance configured.
+Set `AUTH_MODE=stub` / `VITE_AUTH_MODE=stub` to bypass Logto during development. Use `/project:auth` to switch between modes — it updates both env files and dev servers auto-reload.
 
 ### 4. Run migrations and seed
 
@@ -114,6 +114,7 @@ That's it. No manual env file creation, no guessing at database commands.
 | `/project:build` | Full production build with type checking |
 | `/project:refresh` | Post-pull — install deps, run migrations, restart servers |
 | `/project:logs` | Tail Docker container logs (optionally filter by service) |
+| `/project:auth` | Switch auth mode between `stub` and `logto` (auto-reloads dev servers) |
 
 ### What Claude knows
 
@@ -124,7 +125,7 @@ Claude is ready to help from the first message. The repo includes:
 | `CLAUDE.md` | Architecture decisions, design context, tech stack |
 | `.claude/rules/*.md` | Project standards — versioning, environments, workflow, stack, directory boundaries |
 | `.claude/settings.json` | Pre-approved permissions for standard dev workflows (pnpm, docker, git) |
-| `.claude/commands/*.md` | Slash commands for local dev workflows |
+| `.claude/commands/project/*.md` | Slash commands for local dev workflows |
 
 Common workflows like `pnpm install`, `docker compose up`, and `pnpm dev` are pre-approved — no permission prompts for everyday development.
 
@@ -154,7 +155,7 @@ Example — adding the templates path and deploy permissions:
 | `.claude/settings.json` | Yes | Shared permissions for all developers |
 | `.claude/settings.local.json` | No (gitignored) | Your machine-specific overrides |
 | `.claude/rules/*.md` | Yes | Project standards |
-| `.claude/commands/*.md` | Yes | Slash commands |
+| `.claude/commands/project/*.md` | Yes | Slash commands |
 | `CLAUDE.md` | Yes | Project instructions |
 
 ### Tips
@@ -222,3 +223,8 @@ Environment configs: `deploy/dev/.env.example` and `deploy/prod/.env.example`.
 - **Auth:** Logto OSS (`@logto/react` + JWT validation)
 - **Type sharing:** Zod schemas in `packages/shared`
 - **Monorepo:** pnpm workspaces
+
+## Development Notes
+
+- Default auth mode is `stub` — no external services needed for local dev
+- Theme system uses CSS custom properties (`--t-*`) — see `THEMES.md` for details

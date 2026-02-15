@@ -8,8 +8,8 @@ Walk the developer through a fully working local environment. Run each step sequ
 
 Check that required tools are installed and meet version requirements:
 
-- **Node.js 22.x** — run `node --version` and verify major version is 22. If missing or wrong version, suggest using `nvm install 22` or `corepack enable`.
-- **pnpm 9.x** — run `pnpm --version` and verify major version is 9. If missing, suggest `corepack enable && corepack prepare pnpm@9.15.4 --activate`.
+- **Node.js** — read `.node-version` from the repo root to get the required major version. Run `node --version` and verify the major version matches. If wrong, suggest `fnm install` (which reads `.node-version` automatically) or `nvm install` with the version from the file.
+- **pnpm** — read `packageManager` from root `package.json` to get the required version. Run `pnpm --version` and verify the major version matches. If missing, suggest `corepack enable && corepack prepare` with the version from `package.json`.
 - **Docker running** — run `docker info` (suppress output, check exit code). If Docker is not running, tell the user to start Docker Desktop or the Docker daemon.
 
 If any prerequisite fails, stop and explain how to fix it before continuing.
@@ -37,6 +37,7 @@ Create each file **only if it does not already exist**. If it exists, skip it an
 **`apps/api/.env.local`:**
 ```env
 AUTH_MODE=stub
+DEV_USER_ROLE=admin
 LOGTO_ENDPOINT=http://localhost:3001
 LOGTO_APP_ID=your-logto-app-id
 DATABASE_URL=postgres://ternity:ternity@localhost:5432/ternity
@@ -47,6 +48,7 @@ CORS_ORIGIN=http://localhost:5173
 **`apps/web/.env.local`:**
 ```env
 VITE_AUTH_MODE=stub
+VITE_DEV_USER_ROLE=admin
 VITE_LOGTO_ENDPOINT=http://localhost:3001
 VITE_LOGTO_APP_ID=your-logto-app-id
 VITE_API_URL=http://localhost:3010
