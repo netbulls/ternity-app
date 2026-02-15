@@ -1,3 +1,4 @@
+import { Link, useLocation } from 'react-router-dom';
 import { THEMES, type ThemeId } from '@ternity/shared';
 import { useTheme } from '@/providers/theme-provider';
 
@@ -14,9 +15,33 @@ interface DevToolbarProps {
 
 export function DevToolbar({ activeScale, onScaleChange }: DevToolbarProps) {
   const { theme, setTheme } = useTheme();
+  const { pathname } = useLocation();
 
   return (
     <div className="sticky top-0 z-50 flex flex-wrap items-center gap-4 border-b border-border bg-background/95 px-6 py-3 backdrop-blur-sm">
+      <div className="flex items-center gap-1">
+        <Link
+          to="/dev"
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            pathname === '/dev'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          Catalog
+        </Link>
+        <Link
+          to="/dev/lab"
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            pathname === '/dev/lab'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          Lab
+        </Link>
+      </div>
+      <div className="h-5 w-px bg-border" />
       <div className="flex items-center gap-2">
         <span className="font-brand text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Theme

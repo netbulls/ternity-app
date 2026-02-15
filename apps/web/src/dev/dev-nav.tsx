@@ -2,73 +2,26 @@ import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { List } from 'lucide-react';
 
-interface NavItem {
+export interface NavItem {
   id: string;
   label: string;
   children?: { id: string; label: string }[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: 'explorations',
-    label: 'Explorations',
-    children: [
-      { id: 'impersonation-explorations', label: 'Impersonation' },
-      { id: 'entries-explorations', label: 'Entries' },
-      { id: 'user-management-explorations', label: 'User Mgmt' },
-      { id: 'general-explorations', label: 'General' },
-    ],
-  },
-  {
-    id: 'primitives',
-    label: 'Primitives',
-    children: [
-      { id: 'typography', label: 'Typography' },
-      { id: 'button-variants', label: 'Buttons' },
-      { id: 'input', label: 'Input' },
-      { id: 'badge', label: 'Badge' },
-      { id: 'stat-card', label: 'Stat Card' },
-      { id: 'checkbox', label: 'Checkbox' },
-      { id: 'dialog', label: 'Dialog' },
-      { id: 'toast-sonner', label: 'Toast' },
-    ],
-  },
-  {
-    id: 'patterns',
-    label: 'Patterns',
-    children: [
-      { id: 'stat-cards', label: 'Stat Cards' },
-      { id: 'data-table-basic', label: 'Table Basic' },
-      { id: 'data-table-with-selection-bulk-actions', label: 'Table Selection' },
-      { id: 'timer-bar-idle', label: 'Timer Bar' },
-      { id: 'entry-rows', label: 'Entry Rows' },
-      { id: 'day-groups', label: 'Day Groups' },
-      { id: 'sidebar', label: 'Sidebar' },
-      { id: 'manual-entry-dialog', label: 'Manual Entry' },
-    ],
-  },
-  {
-    id: 'pages',
-    label: 'Pages',
-    children: [
-      { id: 'user-management', label: 'User Mgmt' },
-      { id: 'entries', label: 'Entries' },
-    ],
-  },
-];
-
 function NavTree({
+  items,
   activeId,
   activeParent,
   scrollTo,
 }: {
+  items: NavItem[];
   activeId: string;
   activeParent: string | undefined;
   scrollTo: (id: string) => void;
 }) {
   return (
     <ul className="space-y-1 text-xs">
-      {NAV_ITEMS.map((item) => (
+      {items.map((item) => (
         <li key={item.id}>
           <button
             onClick={() => scrollTo(item.id)}
@@ -106,7 +59,7 @@ function NavTree({
   );
 }
 
-export function DevNav() {
+export function DevNav({ items }: { items: NavItem[] }) {
   const [activeId, setActiveId] = useState('');
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -135,7 +88,7 @@ export function DevNav() {
       { rootMargin: '-80px 0px -60% 0px', threshold: 0 },
     );
 
-    const allIds = NAV_ITEMS.flatMap((item) => [
+    const allIds = items.flatMap((item) => [
       item.id,
       ...(item.children?.map((c) => c.id) ?? []),
     ]);
@@ -145,7 +98,7 @@ export function DevNav() {
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [items]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -169,7 +122,7 @@ export function DevNav() {
     }
   };
 
-  const activeParent = NAV_ITEMS.find(
+  const activeParent = items.find(
     (item) =>
       item.id === activeId || item.children?.some((c) => c.id === activeId),
   )?.id;
@@ -178,14 +131,14 @@ export function DevNav() {
     <>
       {/* Wide screens: fixed side TOC */}
       <nav className="fixed right-4 top-16 z-40 hidden w-40 xl:block">
-        <NavTree activeId={activeId} activeParent={activeParent} scrollTo={scrollTo} />
+        <NavTree items={items} activeId={activeId} activeParent={activeParent} scrollTo={scrollTo} />
       </nav>
 
       {/* Narrow screens: floating toggle + dropdown */}
       <div className="fixed bottom-4 right-4 z-40 xl:hidden" ref={dropdownRef}>
         {open && (
           <div className="absolute bottom-12 right-0 mb-1 w-48 rounded-lg border border-border bg-card p-3 shadow-lg">
-            <NavTree activeId={activeId} activeParent={activeParent} scrollTo={scrollTo} />
+            <NavTree items={items} activeId={activeId} activeParent={activeParent} scrollTo={scrollTo} />
           </div>
         )}
         <button
