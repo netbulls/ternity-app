@@ -94,33 +94,44 @@ async function setNextRunTimes(stateId: string) {
 
 // ── Sync Operations ───────────────────────────────────────────────────────
 
+/** Run a named step, catching errors so the pipeline continues. Returns true if OK. */
+async function runStep(name: string, fn: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await fn();
+    return true;
+  } catch (err) {
+    log.error(`  ✗ ${name}: ${err instanceof Error ? err.message : String(err)}`);
+    return false;
+  }
+}
+
 /** Frequent sync: time entries + absences + user match + transform all */
 async function runFrequentSync() {
   log.info('── Frequent Sync: Start ──');
   const start = Date.now();
+  const failures: string[] = [];
 
-  try {
-    // Extract only time entries and absences (incremental)
-    await extractTogglTimeEntries();
-    await extractTtAbsences();
+  const steps: [string, () => Promise<unknown>][] = [
+    ['extract toggl/time_entries', () => extractTogglTimeEntries()],
+    ['extract timetastic/absences', () => extractTtAbsences()],
+    ['match users', () => matchUsers(true)],
+    ['transform clients', () => transformClients()],
+    ['transform projects', () => transformProjects()],
+    ['transform labels', () => transformLabels()],
+    ['transform leave_types', () => transformLeaveTypes()],
+    ['transform time_entries', () => transformTimeEntries()],
+    ['transform absences', () => transformAbsences()],
+  ];
 
-    // User matching
-    await matchUsers(true);
+  for (const [name, fn] of steps) {
+    if (!(await runStep(name, fn))) failures.push(name);
+  }
 
-    // Transform all (dependency order)
-    await transformClients();
-    await transformProjects();
-    await transformLabels();
-    await transformLeaveTypes();
-    await transformTimeEntries();
-    await transformAbsences();
-
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  if (failures.length === 0) {
     log.info(`── Frequent Sync: Complete (${elapsed}s) ──`);
-  } catch (err) {
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    log.error(`── Frequent Sync: Failed after ${elapsed}s ──`);
-    log.error(`  ${err instanceof Error ? err.message : String(err)}`);
+  } else {
+    log.warn(`── Frequent Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`);
   }
 }
 
@@ -128,29 +139,29 @@ async function runFrequentSync() {
 async function runFullSync() {
   log.info('── Full Sync: Start ──');
   const start = Date.now();
+  const failures: string[] = [];
 
-  try {
-    // Extract everything
-    await extractAllToggl();
-    await extractAllTimetastic();
+  const steps: [string, () => Promise<unknown>][] = [
+    ['extract all toggl', () => extractAllToggl()],
+    ['extract all timetastic', () => extractAllTimetastic()],
+    ['match users', () => matchUsers(true)],
+    ['transform clients', () => transformClients()],
+    ['transform projects', () => transformProjects()],
+    ['transform labels', () => transformLabels()],
+    ['transform leave_types', () => transformLeaveTypes()],
+    ['transform time_entries', () => transformTimeEntries()],
+    ['transform absences', () => transformAbsences()],
+  ];
 
-    // User matching
-    await matchUsers(true);
+  for (const [name, fn] of steps) {
+    if (!(await runStep(name, fn))) failures.push(name);
+  }
 
-    // Transform all (dependency order)
-    await transformClients();
-    await transformProjects();
-    await transformLabels();
-    await transformLeaveTypes();
-    await transformTimeEntries();
-    await transformAbsences();
-
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  if (failures.length === 0) {
     log.info(`── Full Sync: Complete (${elapsed}s) ──`);
-  } catch (err) {
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    log.error(`── Full Sync: Failed after ${elapsed}s ──`);
-    log.error(`  ${err instanceof Error ? err.message : String(err)}`);
+  } else {
+    log.warn(`── Full Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`);
   }
 }
 

@@ -218,8 +218,17 @@ const ENTITY_EXTRACTORS: Record<TogglEntity, (from?: string, to?: string) => Pro
 export async function extractAllToggl(from?: string, to?: string, entities?: TogglEntity[]) {
   const toRun = entities ?? (['users', 'clients', 'projects', 'tags', 'time_entries'] as TogglEntity[]);
   const counts: Record<string, number> = {};
+  const failures: string[] = [];
   for (const entity of toRun) {
-    counts[entity] = await ENTITY_EXTRACTORS[entity](from, to);
+    try {
+      counts[entity] = await ENTITY_EXTRACTORS[entity](from, to);
+    } catch (err) {
+      failures.push(entity);
+      // Error already logged by extractEntity — continue with remaining entities
+    }
+  }
+  if (failures.length > 0) {
+    log.warn(`Toggl extract: ${failures.length}/${toRun.length} entities failed: ${failures.join(', ')}`);
   }
   return counts;
 }
