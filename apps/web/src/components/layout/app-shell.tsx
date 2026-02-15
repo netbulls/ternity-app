@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './sidebar';
+import { ImpersonationBanner } from './impersonation-banner';
+import { IdentityShift } from './identity-shift';
 import { useAuth } from '@/providers/auth-provider';
 
 const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
@@ -56,11 +58,15 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <Sidebar />
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
-      </main>
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <ImpersonationBanner />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto p-6">
+          <Outlet />
+        </main>
+      </div>
+      <IdentityShift />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -19,6 +20,7 @@ import {
   useBulkDeactivate,
   type AdminUser,
 } from '@/hooks/use-admin-users';
+import { useImpersonation } from '@/providers/impersonation-provider';
 import { getUserColumns } from '@/pages/user-management-columns';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableBulkActions } from '@/components/ui/data-table-bulk-actions';
@@ -38,6 +40,9 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 const PAGE_SIZE = 10;
 
 export function UserManagementPage() {
+  const navigate = useNavigate();
+  const { canImpersonate, setTarget } = useImpersonation();
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -117,14 +122,23 @@ export function UserManagementPage() {
     });
   }, []);
 
+  const handleImpersonate = useCallback(
+    (user: AdminUser) => {
+      setTarget(user.id, user.displayName, user.globalRole);
+      navigate('/');
+    },
+    [setTarget, navigate],
+  );
+
   // Column definitions (stable unless callbacks change)
   const columns = useMemo(
     () =>
       getUserColumns({
         onActivate: handleSingleActivate,
         onDeactivate: handleSingleDeactivate,
+        onImpersonate: canImpersonate ? handleImpersonate : undefined,
       }),
-    [handleSingleActivate, handleSingleDeactivate],
+    [handleSingleActivate, handleSingleDeactivate, canImpersonate, handleImpersonate],
   );
 
   // TanStack Table instance — owned by the page for selection access

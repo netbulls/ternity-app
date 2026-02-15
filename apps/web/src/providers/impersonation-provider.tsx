@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -11,12 +12,18 @@ import { useAuth } from '@/providers/auth-provider';
 import { setImpersonateUserId } from '@/lib/api';
 import { GlobalRole } from '@ternity/shared';
 
+const TRANSITION_DURATION = 2500;
+
 interface ImpersonationContextValue {
   /** The user being viewed (null = viewing as yourself) */
   targetUserId: string | null;
   targetDisplayName: string | null;
+  /** The impersonated user's role (for banner display) */
+  targetRole: string | null;
+  /** True during the identity shift animation */
+  isTransitioning: boolean;
   /** Set impersonation target */
-  setTarget: (userId: string, displayName: string) => void;
+  setTarget: (userId: string, displayName: string, role?: string) => void;
   /** Clear impersonation (back to real user) */
   clearImpersonation: () => void;
   /** Whether current user can impersonate */
@@ -32,6 +39,9 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [targetDisplayName, setTargetDisplayName] = useState<string | null>(null);
+  const [targetRole, setTargetRole] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canImpersonate = user?.globalRole === GlobalRole.Admin;
 
@@ -45,18 +55,36 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     if (!canImpersonate && targetUserId) {
       setTargetUserId(null);
       setTargetDisplayName(null);
+      setTargetRole(null);
       setImpersonateUserId(null);
     }
   }, [canImpersonate, targetUserId]);
 
+  // Cleanup transition timer on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    };
+  }, []);
+
   const setTarget = useCallback(
-    (userId: string, displayName: string) => {
+    (userId: string, displayName: string, role?: string) => {
       if (!canImpersonate) return;
+
+      // Start transition animation
+      setIsTransitioning(true);
       setTargetUserId(userId);
       setTargetDisplayName(displayName);
+      setTargetRole(role ?? null);
       // Set module-level header synchronously BEFORE invalidating queries
       setImpersonateUserId(userId);
-      queryClient.invalidateQueries();
+
+      // Delay query invalidation until after animation completes
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+      transitionTimer.current = setTimeout(() => {
+        setIsTransitioning(false);
+        queryClient.invalidateQueries();
+      }, TRANSITION_DURATION);
     },
     [canImpersonate, queryClient],
   );
@@ -64,6 +92,9 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const clearImpersonation = useCallback(() => {
     setTargetUserId(null);
     setTargetDisplayName(null);
+    setTargetRole(null);
+    setIsTransitioning(false);
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
     // Set module-level header synchronously BEFORE invalidating queries
     setImpersonateUserId(null);
     queryClient.invalidateQueries();
@@ -76,6 +107,8 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
       value={{
         targetUserId,
         targetDisplayName,
+        targetRole,
+        isTransitioning,
         setTarget,
         clearImpersonation,
         canImpersonate,

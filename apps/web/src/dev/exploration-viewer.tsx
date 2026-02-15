@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ChevronUp, ChevronDown, X, Maximize } from 'lucide-react';
 
@@ -6,6 +6,7 @@ export interface Exploration {
   title: string;
   file: string;
   description: string;
+  date: string;
 }
 
 interface ExplorationViewerProps {
@@ -34,20 +35,43 @@ export function ExplorationViewer({
     onIndexChange((activeIndex + 1) % total);
   }, [activeIndex, total, onIndexChange]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Keyboard handler shared between parent and iframe
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goPrev();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         goNext();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onOpenChange(false);
       }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, goPrev, goNext]);
+    },
+    [goPrev, goNext, onOpenChange],
+  );
+
+  // Listen on parent document
+  useEffect(() => {
+    if (!open) return;
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleKeyDown]);
+
+  // Also listen inside the iframe (same-origin) so arrows work even when iframe has focus
+  const handleIframeLoad = useCallback(() => {
+    try {
+      const iframeDoc = iframeRef.current?.contentWindow;
+      if (iframeDoc) {
+        iframeDoc.addEventListener('keydown', handleKeyDown as EventListener);
+      }
+    } catch {
+      // Cross-origin — ignore
+    }
+  }, [handleKeyDown]);
 
   if (!current) return null;
 
@@ -66,10 +90,12 @@ export function ExplorationViewer({
 
           {/* iframe fills the entire overlay */}
           <iframe
+            ref={iframeRef}
             key={current.file}
             src={`/explorations/${current.file}`}
             className="h-full w-full rounded-lg border border-red-500/15"
             title={current.title}
+            onLoad={handleIframeLoad}
           />
 
           {/* Floating side rail */}

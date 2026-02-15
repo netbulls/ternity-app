@@ -1,7 +1,9 @@
-<!-- rule-version: 1.0 -->
+<!-- rule-version: 1.2 -->
 # Design Workflow
 
 How UI work is done in Ternity. Design freely, standardize later — the registry is extracted from great designs, not imposed on them.
+
+Three phases — **Experimentation**, **Prototyping**, **Implementation**. Each phase is an iterative loop (work ↔ review) with a clear exit gate. Not every feature needs all phases (a simple form might skip Prototyping), but the sequence is always the same.
 
 ## Principles
 
@@ -10,59 +12,47 @@ How UI work is done in Ternity. Design freely, standardize later — the registr
 - **Scale as user preference.** Three levels via `--t-scale` CSS variable: compact (0.9), default (1.1), comfortable (1.2). Stored alongside theme preference.
 - **Real components in `/dev`, not clones.** Every component in the `/dev` catalog must be the actual production component with mock data. No static copies.
 - **Primitives reflect actual usage, not library defaults.** Never show generic library examples when the app has its own established pattern.
-- **Explorations are the design record.** Iterations live in `public/explorations/` as immutable HTML snapshots, browsed via the `/dev` overlay.
+- **Explorations are the design record.** Static iterations live in `public/explorations/` as immutable HTML snapshots, browsed via the `/dev` overlay.
+- **Prototypes are the interaction record.** Interactive iterations live as standalone pages under `/dev/*` (e.g., `/dev/flair`), built in React with real animation libraries and mock data.
 
-## Workflow Steps
+## Phase 1: Experimentation
 
-### 1. Research
-- Search UX patterns for the specific view type
-- Browse shadcn base components, blocks, directory (127 community registries)
-- Look at how comparable tools handle this (Toggl, Linear, Slack, etc.)
-- Output: brief with candidate patterns and components
+*What should it look like?*
 
-### 2. Design
-- HTML exploration using actual theme CSS (`themes.css`)
-- Design freely — best possible design for this specific view
-- Don't constrain to existing components. Go for it.
-- Include multiple states (default, selection, dialog, success feedback)
-- Theme switcher + scale toggle for validation across themes
-- Save as immutable exploration in `public/explorations/` (see `dev-page.md` for naming convention)
+Explore the design space. Static HTML — layout, visual hierarchy, component choices, states.
 
-### 3. Review
-- User reviews the exploration
-- Naturally spots: "we have this already", "I like this better than what we had", "this doesn't feel right"
-- Human pattern matching — not checking every piece, just what jumps out
-- Iterate until approved
+- **Research** — Search UX patterns, browse shadcn base/directory/community registries, study comparable tools (Toggl, Linear, Slack, etc.). Output: brief with candidate patterns and components.
+- **Design** — HTML exploration using actual theme CSS (`themes.css`). Design freely — don't constrain to existing components. Include multiple states (default, selection, dialog, success feedback). Theme switcher + scale toggle for validation. Save as immutable exploration in `public/explorations/` (see `dev-page.md` for naming convention).
+- **Review** ↔ iterate — User reviews, spots what works and what doesn't. Human pattern matching. Iterate until approved.
 
-### 4. Reconcile
-After design approval, systematically source each component:
+**Exit gate:** Approved visual direction — layout, structure, visual style settled.
 
-**Priority order:**
-1. **Our local registry** — already standardized and proven. Use as-is, or flag if the new design improved it (propose registry update).
-2. **shadcn base** — maintained, accessible, well-tested primitives
-3. **shadcn directory / community registries** — broader ecosystem, curated blocks
-4. **Custom build** — last resort, only when nothing suitable exists
+## Phase 2: Prototyping
 
-Output: component plan — what exists, what to reuse, what to build, what to source. Iterate with user until agreed.
+*How should it feel?*
 
-If the new design introduces a better version of an existing registry component, propose updating the standard rather than keeping the old one.
+Take the approved visual direction and make it interactive. Anything static HTML can't capture: motion and animation timing, interaction feedback and transitions, complex interconnected flows, loading and error states, responsive behavior, multi-step workflows. Build it real enough to experience — mock data, no real API, but actual React with actual interactions.
 
-### 5. Component Prep
-Get the building blocks right before assembling the feature:
+- **Prototype** — Build interactive variants in React with real animation libraries (motion/react, CSS keyframes, etc.). Multiple labeled treatments side by side for comparison. Mock data and fake hooks — no real API wiring. Each variant described (what it does, how it differs). Lives as a standalone dev page under `/dev/*` (e.g., `/dev/flair`).
+- **Review** ↔ iterate — User interacts with the prototypes — clicks, types, starts/stops, watches transitions. Decides on the winning combination. May request new variants or adjustments. End with a "final set" combining the winners. Iterate until approved.
 
-- Build new components or adjust existing ones
-- Fine-tune in `/dev` with mock data — verify across all 6 themes and 3 scale levels
-- Compare against the approved exploration (is the component matching the approved design?)
-- New components that proved useful → add to local registry
-- Improved versions of existing components → update registry
+**Exit gate:** Approved interaction design — the "final set" is the reference for implementation.
 
-This step ends when all components look right in `/dev` and match the approved design.
+## Phase 3: Implementation
 
-### 6. Implement
-- Plan the feature page — mostly composition of tuned components
-- Build in React, assembling from the components prepared in step 5
-- Match the approved exploration
-- Feature-specific wiring (data fetching, mutations, navigation) goes here
+*Build it into the app.*
+
+- **Plan** — Systematically prepare for implementation:
+  - **Reconcile:** Inventory every component and pattern from the approved exploration + prototype. For each piece, determine the source:
+    1. **Our local registry** — already standardized and proven. Use as-is, or flag if the new design improved it (propose registry update).
+    2. **shadcn base** — maintained, accessible, well-tested primitives
+    3. **shadcn directory / community registries** — broader ecosystem, curated blocks
+    4. **Custom build** — last resort, only when nothing suitable exists
+  - **Animation patterns:** What libraries are needed, what can be CSS-only, what needs shared hooks
+  - **File plan:** Which files to create, modify, where components live
+  - If the new design introduces a better version of an existing registry component, propose updating the standard rather than keeping the old one.
+  - Iterate with user until the plan is agreed.
+- **Build** ↔ verify — Build components first, fine-tune in `/dev` with mock data across all 6 themes and 3 scale levels. Compare against both the approved exploration (visual) and the approved prototype (interaction). Assemble the feature page from tuned components. Feature-specific wiring (data fetching, mutations, navigation). New components that proved useful → add to local registry.
 
 ## Component Registry
 
