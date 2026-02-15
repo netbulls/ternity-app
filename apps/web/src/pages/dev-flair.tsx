@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { ScaleProvider, useScale } from '@/providers/scale-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { Play, Square, Check, X, ChevronDown, Search } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
@@ -3215,18 +3216,12 @@ function FlairLabel({ id, title, desc }: { id: string; title: string; desc: stri
 // Page
 // ============================================================
 function FlairPageContent() {
-  const [activeScale, setActiveScale] = useState(1.1);
-
-  const handleScaleChange = (scale: number) => {
-    setActiveScale(scale);
-    document.documentElement.style.setProperty('--t-scale', String(scale));
-  };
-
-  const zoom = activeScale / 1.1;
+  const { scale } = useScale();
+  const zoom = scale / 1.1;
 
   return (
     <div className="min-h-screen bg-background">
-      <DevToolbar activeScale={activeScale} onScaleChange={handleScaleChange} />
+      <DevToolbar />
 
       <div className="mx-auto max-w-3xl px-6 py-8 pb-32" style={{ zoom }}>
         <h1 className="font-brand mb-1 text-2xl font-bold tracking-wider text-foreground">
@@ -3393,7 +3388,9 @@ export function DevFlairPage() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <FlairPageContent />
+        <ScaleProvider>
+          <FlairPageContent />
+        </ScaleProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

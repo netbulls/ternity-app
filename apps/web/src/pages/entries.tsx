@@ -10,6 +10,7 @@ import { useEntries } from '@/hooks/use-entries';
 import { useImpersonation } from '@/providers/impersonation-provider';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
+import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
 import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { Button } from '@/components/ui/button';
 import { ProjectSelector } from '@/components/timer/project-selector';
@@ -228,11 +229,13 @@ export function EntriesPage() {
         </div>
       ) : filteredGroups.length > 0 ? (
         <ActiveEditProvider>
-          <div>
-            {filteredGroups.map((group) => (
-              <DayGroup key={group.date} group={group} />
-            ))}
-          </div>
+          <DraftEntryProvider>
+            <div>
+              {filteredGroups.map((group) => (
+                <DayGroup key={group.date} group={group} />
+              ))}
+            </div>
+          </DraftEntryProvider>
         </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">

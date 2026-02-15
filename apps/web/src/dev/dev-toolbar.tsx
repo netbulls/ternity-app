@@ -1,20 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { THEMES, type ThemeId } from '@ternity/shared';
 import { useTheme } from '@/providers/theme-provider';
+import { SCALES, useScale } from '@/providers/scale-provider';
 
-export const SCALES = [
-  { label: 'Compact', value: 0.9 },
-  { label: 'Default', value: 1.1 },
-  { label: 'Comfortable', value: 1.2 },
-] as const;
-
-interface DevToolbarProps {
-  activeScale: number;
-  onScaleChange: (scale: number) => void;
-}
-
-export function DevToolbar({ activeScale, onScaleChange }: DevToolbarProps) {
+export function DevToolbar() {
   const { theme, setTheme } = useTheme();
+  const { scale: activeScale, setScale: onScaleChange } = useScale();
   const { pathname } = useLocation();
 
   return (

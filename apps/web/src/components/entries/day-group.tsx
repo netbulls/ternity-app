@@ -1,35 +1,31 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Plus } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { formatDateLabel, formatDuration } from '@/lib/format';
-import { useCreateEntry } from '@/hooks/use-entries';
 import { EntryRow } from './entry-row';
-import type { DayGroup as DayGroupType, Entry } from '@ternity/shared';
+import { DraftEntryRow } from './draft-entry-row';
+import { useDraftEntry } from './draft-entry-context';
+import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 interface Props {
   group: DayGroupType;
 }
 
 export function DayGroup({ group }: Props) {
-  const [newEntryId, setNewEntryId] = useState<string | null>(null);
-  const createEntry = useCreateEntry();
+  const { draft, openDraft, savedEntryId } = useDraftEntry();
 
   const handleAdd = useCallback(() => {
-    const timestamp = `${group.date}T09:00:00`;
-    createEntry.mutate(
-      {
-        description: '',
-        projectId: null,
-        labelIds: [],
-        startedAt: timestamp,
-        stoppedAt: timestamp,
-      },
-      {
-        onSuccess: (entry: Entry) => {
-          setNewEntryId(entry.id);
-        },
-      },
-    );
-  }, [createEntry, group.date]);
+    openDraft(group.date);
+  }, [openDraft, group.date]);
+
+  // While the draft is transitioning to a saved entry, filter out the new entry
+  // from the entries list to prevent a double-row (draft + entry simultaneously)
+  const visibleEntries = useMemo(() => {
+    if (savedEntryId && draft) {
+      return group.entries.filter((e) => e.id !== savedEntryId);
+    }
+    return group.entries;
+  }, [group.entries, savedEntryId, draft]);
 
   return (
     <div className="group/day mb-4">
@@ -56,14 +52,14 @@ export function DayGroup({ group }: Props) {
           </span>
         </div>
 
+        {/* Draft row (if draft belongs to this day) */}
+        <AnimatePresence>
+          {draft?.date === group.date && <DraftEntryRow key="draft" />}
+        </AnimatePresence>
+
         {/* Entries */}
-        {group.entries.map((entry) => (
-          <EntryRow
-            key={entry.id}
-            entry={entry}
-            autoEdit={entry.id === newEntryId}
-            onAutoEditConsumed={() => setNewEntryId(null)}
-          />
+        {visibleEntries.map((entry) => (
+          <EntryRow key={entry.id} entry={entry} />
         ))}
       </div>
     </div>

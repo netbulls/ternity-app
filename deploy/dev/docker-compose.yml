@@ -14,6 +14,8 @@ services:
       - AUTH_MODE=logto
       - LOGTO_ENDPOINT=${LOGTO_ENDPOINT}
       - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - LOGTO_M2M_APP_ID=${LOGTO_M2M_APP_ID}
+      - LOGTO_M2M_APP_SECRET=${LOGTO_M2M_APP_SECRET}
       - PORT=3010
       - CORS_ORIGIN=https://dev.app.ternity.xyz
     networks:

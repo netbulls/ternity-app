@@ -5,6 +5,7 @@ import { TimerBar } from '@/components/timer/timer-bar';
 import { DateNavBar, type DateView } from '@/components/timer/date-nav-bar';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
+import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
 import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
@@ -93,11 +94,13 @@ export function TimerPage() {
         </div>
       ) : dayGroups && dayGroups.length > 0 ? (
         <ActiveEditProvider>
-          <div>
-            {dayGroups.map((group) => (
-              <DayGroup key={group.date} group={group} />
-            ))}
-          </div>
+          <DraftEntryProvider>
+            <div>
+              {dayGroups.map((group) => (
+                <DayGroup key={group.date} group={group} />
+              ))}
+            </div>
+          </DraftEntryProvider>
         </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">

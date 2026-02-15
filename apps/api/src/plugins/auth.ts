@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { eq, asc } from 'drizzle-orm';
+import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { AuthContext } from '@ternity/shared';
 import { GlobalRole, OrgRole } from '@ternity/shared';
 import { db } from '../db/index.js';
@@ -27,18 +27,61 @@ async function buildOrgRoles(userId: string): Promise<Record<string, OrgRole>> {
   return orgRoles;
 }
 
+/** Obtain a Management API access token from the Logto M2M app. */
+let mgmtTokenCache: { token: string; expiresAt: number } | null = null;
+
+async function getManagementToken(logtoEndpoint: string): Promise<string | null> {
+  // Return cached token if still valid (with 60s margin)
+  if (mgmtTokenCache && Date.now() < mgmtTokenCache.expiresAt - 60_000) {
+    return mgmtTokenCache.token;
+  }
+
+  const clientId = process.env.LOGTO_M2M_APP_ID;
+  const clientSecret = process.env.LOGTO_M2M_APP_SECRET;
+  if (!clientId || !clientSecret) {
+    console.warn('JIT: LOGTO_M2M_APP_ID/SECRET not set — email auto-match disabled');
+    return null;
+  }
+
+  const tokenUrl = new URL('/oidc/token', logtoEndpoint).toString();
+  const res = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret,
+      resource: 'https://default.logto.app/api',
+      scope: 'all',
+    }),
+  });
+
+  if (!res.ok) {
+    console.warn('JIT: Failed to get Management API token:', res.status, await res.text());
+    return null;
+  }
+
+  const data = (await res.json()) as { access_token: string; expires_in: number };
+  mgmtTokenCache = {
+    token: data.access_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  };
+  return data.access_token;
+}
+
 /**
  * JIT (just-in-time) user provisioning from Logto JWT claims.
- * Creates user on first login, updates profile on subsequent logins.
- * Returns the local DB user.
+ * Access tokens only carry sub + roles/scopes (no profile fields).
+ *
+ * Auto-match flow: if no user row has this `sub` yet, fetch the user's
+ * email from the Logto Management API and look for an unlinked synced
+ * profile with a matching email. This prevents duplicate rows when
+ * synced users (Toggl/Timetastic) sign in via Logto for the first time.
  */
 async function jitProvision(claims: {
   sub: string;
-  name?: string;
-  phone_number?: string;
-  email?: string;
-  picture?: string;
   roles?: string[];
+  logtoEndpoint: string;
 }) {
   const [existing] = await db
     .select()
@@ -49,14 +92,10 @@ async function jitProvision(claims: {
   const globalRole = claims.roles?.includes('admin') ? GlobalRole.Admin : GlobalRole.User;
 
   if (existing) {
-    // Update profile fields from Logto
+    // Update global role from token claims (profile fields untouched)
     const [updated] = await db
       .update(users)
       .set({
-        displayName: claims.name ?? existing.displayName,
-        email: claims.email ?? existing.email,
-        phone: claims.phone_number ?? existing.phone,
-        avatarUrl: claims.picture ?? existing.avatarUrl,
         globalRole,
         updatedAt: new Date(),
       })
@@ -65,15 +104,82 @@ async function jitProvision(claims: {
     return updated;
   }
 
-  // Create new user
+  // --- Email auto-match: try to link to an existing synced profile ---
+  try {
+    const mgmtToken = await getManagementToken(claims.logtoEndpoint);
+    if (mgmtToken) {
+      const userUrl = new URL(`/api/users/${claims.sub}`, claims.logtoEndpoint).toString();
+      const res = await fetch(userUrl, {
+        headers: { Authorization: `Bearer ${mgmtToken}` },
+      });
+
+      if (res.ok) {
+        const logtoUser = (await res.json()) as {
+          primaryEmail?: string;
+          primaryPhone?: string;
+          name?: string;
+        };
+
+        if (logtoUser.primaryEmail) {
+          // Find unlinked user rows with this email
+          const candidates = await db
+            .select()
+            .from(users)
+            .where(
+              and(
+                eq(users.email, logtoUser.primaryEmail),
+                isNull(users.externalAuthId),
+              ),
+            );
+
+          const match =
+            candidates.find((c) => c.togglId != null) ?? candidates[0];
+
+          if (match) {
+            const [linked] = await db
+              .update(users)
+              .set({
+                externalAuthId: claims.sub,
+                globalRole,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, match.id))
+              .returning();
+
+            console.log(
+              `JIT: Auto-linked user ${claims.sub} to existing profile ${match.id} via email ${logtoUser.primaryEmail}`,
+            );
+            return linked;
+          }
+
+          // No match — create new row but store the email
+          const [created] = await db
+            .insert(users)
+            .values({
+              externalAuthId: claims.sub,
+              displayName: logtoUser.name || 'New User',
+              email: logtoUser.primaryEmail,
+              phone: logtoUser.primaryPhone ?? null,
+              globalRole,
+            })
+            .returning();
+          return created;
+        } else {
+          console.warn('JIT: Logto user has no primaryEmail for', claims.sub);
+        }
+      }
+    }
+  } catch (err) {
+    // Non-fatal — fall through to create a new row without email
+    console.warn('JIT: Failed to fetch user from Management API:', err);
+  }
+
+  // Fallback: new user — minimal record
   const [created] = await db
     .insert(users)
     .values({
       externalAuthId: claims.sub,
-      displayName: claims.name ?? 'User',
-      email: claims.email ?? null,
-      phone: claims.phone_number ?? null,
-      avatarUrl: claims.picture ?? null,
+      displayName: 'New User',
       globalRole,
     })
     .returning();
@@ -135,10 +241,9 @@ async function authPlugin(fastify: FastifyInstance) {
     });
   } else if (authMode === 'logto') {
     const endpoint = process.env.LOGTO_ENDPOINT;
-    const appId = process.env.LOGTO_APP_ID;
+    const apiResource = process.env.LOGTO_API_RESOURCE ?? 'https://api.ternity.xyz';
 
     if (!endpoint) throw new Error('LOGTO_ENDPOINT is required when AUTH_MODE=logto');
-    if (!appId) throw new Error('LOGTO_APP_ID is required when AUTH_MODE=logto');
 
     const issuer = new URL('/oidc', endpoint).toString();
     const jwksUrl = new URL('/oidc/jwks', endpoint);
@@ -156,21 +261,28 @@ async function authPlugin(fastify: FastifyInstance) {
       const token = authHeader.slice(7);
 
       try {
+        // Validate JWT access token scoped to the Ternity API resource
         const { payload } = await jwtVerify(token, jwks, {
           issuer,
-          audience: appId,
+          audience: apiResource,
         });
 
-        const claims = {
-          sub: payload.sub!,
-          name: payload.name as string | undefined,
-          phone_number: payload.phone_number as string | undefined,
-          email: payload.email as string | undefined,
-          picture: payload.picture as string | undefined,
-          roles: payload.roles as string[] | undefined,
-        };
+        // Access token has: sub, scope, roles (if urn:logto:scope:roles requested)
+        // Profile fields (name, email, phone) are NOT in access tokens —
+        // they come from the DB (populated during previous logins or sync).
+        const scopes = ((payload.scope as string) ?? '').split(' ').filter(Boolean);
+        const roles = (payload.roles as string[]) ?? [];
 
-        const user = await jitProvision(claims);
+        // Determine global role from token scopes/roles
+        const isAdmin = scopes.includes('admin') || roles.includes('admin');
+        const globalRole = isAdmin ? GlobalRole.Admin : GlobalRole.User;
+
+        // Look up or create user by Logto sub (with email auto-match)
+        const user = await jitProvision({
+          sub: payload.sub!,
+          roles: isAdmin ? ['admin'] : [],
+          logtoEndpoint: endpoint,
+        });
         if (!user) {
           return reply.code(500).send({ error: 'Failed to provision user' });
         }

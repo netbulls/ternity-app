@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { ScaleProvider, useScale } from '@/providers/scale-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { DevNav, type NavItem } from '@/dev/dev-nav';
@@ -16,18 +17,12 @@ const LAB_NAV_ITEMS: NavItem[] = [
 ];
 
 function DevLabContent() {
-  const [activeScale, setActiveScale] = useState(1.1);
-
-  const handleScaleChange = (scale: number) => {
-    setActiveScale(scale);
-    document.documentElement.style.setProperty('--t-scale', String(scale));
-  };
-
-  const zoom = activeScale / 1.1;
+  const { scale } = useScale();
+  const zoom = scale / 1.1;
 
   return (
     <div className="min-h-screen bg-background">
-      <DevToolbar activeScale={activeScale} onScaleChange={handleScaleChange} />
+      <DevToolbar />
 
       <div className="mx-auto max-w-5xl px-6 py-8" style={{ zoom }}>
         <h1 className="font-brand mb-2 text-2xl font-bold tracking-wider text-foreground">
@@ -60,8 +55,10 @@ export function DevLabPage() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <DevLabContent />
-        <Toaster />
+        <ScaleProvider>
+          <DevLabContent />
+          <Toaster />
+        </ScaleProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

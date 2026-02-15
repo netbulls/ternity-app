@@ -64,7 +64,7 @@ function StubAuthProvider({ children }: { children: ReactNode }) {
 //   error    = profile fetch failed
 //
 // Key constraint: logto.isLoading MUST NOT appear in the isLoading formula.
-// getIdToken() toggles the SDK's loading flag, which causes re-renders that
+// SDK token methods toggle the loading flag, which causes re-renders that
 // flash the loading screen.  We isolate isLoading reads into effects only.
 
 type AuthStatus = 'init' | 'fetching' | 'done' | 'error';
@@ -98,7 +98,7 @@ function LogtoAuthProvider({ children }: { children: ReactNode }) {
 
   // Effect 2: When authenticated, fetch user profile.
   // Only depends on isAuthenticated (transitions once: false→true).
-  // isLoading is deliberately excluded — getIdToken() toggles it.
+  // isLoading is deliberately excluded — SDK token methods toggle it.
   useEffect(() => {
     if (!logto.isAuthenticated) {
       // Clear stale user data when session is lost (sign-out or expiry)
@@ -106,26 +106,17 @@ function LogtoAuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Register token getter so apiFetch includes the Bearer token
-    setTokenGetter(async () => (await logto.getIdToken()) ?? null);
+    // Register token getter so apiFetch includes the Bearer token.
+    // Uses JWT access token scoped to the Ternity API resource.
+    const apiResource = 'https://api.ternity.xyz';
+    setTokenGetter(async () => (await logto.getAccessToken(apiResource)) ?? null);
 
     let mounted = true;
     setStatus('fetching');
 
     (async () => {
       try {
-        // Force a token refresh before reading the ID token.
-        // getAccessToken() triggers the refresh flow (using the refresh token),
-        // which also updates the cached ID token as a side effect.
-        // Without this, getIdToken() returns the stale cached token which may
-        // have expired after a few hours.
-        try {
-          await logto.getAccessToken();
-        } catch {
-          // Ignore — we don't use the access token, just want the refresh side effect.
-        }
-
-        const token = await logto.getIdToken();
+        const token = await logto.getAccessToken(apiResource);
         if (!mounted || !token) {
           if (mounted) setStatus('error');
           return;
