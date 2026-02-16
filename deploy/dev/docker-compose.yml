@@ -38,6 +38,7 @@ services:
         - VITE_AUTH_MODE=logto
         - VITE_LOGTO_ENDPOINT=${VITE_LOGTO_ENDPOINT}
         - VITE_LOGTO_APP_ID=${VITE_LOGTO_APP_ID}
+        - VITE_SHOW_DEV_PAGES=true
     container_name: ternity-app-dev-web
     networks:
       - proxy

@@ -58,6 +58,15 @@ export const LAB_GROUPS: LabFeatureGroup[] = [
     ],
   },
   {
+    name: 'timer-mission',
+    id: 'timer-mission-lab',
+    date: '2026-02-16T12:00:00',
+    items: [
+      { kind: 'exploration', title: 'timer-mission-d7f3', file: 'timer-mission-d7f3.html', description: 'Mission Center — 3 visual directions (Dock, Stage, Strip) for reimagining the timer bar', date: '2026-02-16T12:00:00' },
+      { kind: 'prototype', title: 'Mission Center', route: '/dev/mission', description: 'Interactive prototype: Dock, Stage, Strip variants with state transitions, recent entries, smart-default picker, todo state', date: '2026-02-16T12:30:00' },
+    ],
+  },
+  {
     name: 'entries',
     id: 'entries-lab',
     date: '2026-02-15T18:38:00',

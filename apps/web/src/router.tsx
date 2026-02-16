@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
     path: '/callback',
     element: <CallbackPage />,
   },
-  ...(import.meta.env.DEV
+  ...(import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_PAGES === 'true'
     ? [
         {
           path: '/dev',
@@ -36,6 +36,13 @@ export const router = createBrowserRouter([
           lazy: async () => {
             const { DevFlairPage } = await import('@/pages/dev-flair');
             return { Component: DevFlairPage };
+          },
+        },
+        {
+          path: '/dev/mission',
+          lazy: async () => {
+            const { DevMissionPage } = await import('@/pages/dev-mission');
+            return { Component: DevMissionPage };
           },
         },
       ]
