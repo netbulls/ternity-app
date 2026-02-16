@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Check, ChevronDown, FolderKanban, Search, X } from 'lucide-react';
+import { Check, ChevronDown, FolderKanban, Search, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useProjects } from '@/hooks/use-reference-data';
+import { getRecentProjectIds, trackRecentProject } from '@/hooks/use-recent-projects';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { ProjectOption } from '@ternity/shared';
 
@@ -23,8 +24,13 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
 
   const selected = projects?.find((p) => p.id === value) ?? null;
 
-  // Group projects by client
-  const grouped = groupByClient(projects ?? []);
+  // Group projects by client, with recent projects on top
+  const allProjects = projects ?? [];
+  const grouped = groupByClient(allProjects);
+  const recentIds = getRecentProjectIds();
+  const recentProjects = recentIds
+    .map((id) => allProjects.find((p) => p.id === id))
+    .filter((p): p is ProjectOption => p != null);
 
   // Filter by search
   const filtered = search
@@ -38,7 +44,12 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
           ),
         }))
         .filter((g) => g.projects.length > 0)
-    : grouped;
+    : [
+        ...(recentProjects.length > 0
+          ? [{ client: 'Recent', projects: recentProjects }]
+          : []),
+        ...grouped,
+      ];
 
   // Focus search on open
   useEffect(() => {
@@ -56,6 +67,7 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
   };
 
   const handleSelect = (projectId: string | null) => {
+    if (projectId) trackRecentProject(projectId);
     onChange(projectId);
     setOpen(false);
   };
@@ -118,9 +130,10 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
             filtered.map((group, gi) => (
               <div key={group.client}>
                 <div
-                  className="px-2.5 pb-1 pt-2.5 font-brand text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
+                  className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
                   style={{ letterSpacing: '1.5px', opacity: 0.6 }}
                 >
+                  {group.client === 'Recent' && <Clock className="h-2.5 w-2.5" />}
                   {group.client}
                 </div>
                 {group.projects.map((p, pi) => {

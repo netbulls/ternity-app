@@ -194,8 +194,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       ? (body.stoppedAt ? new Date(body.stoppedAt) : null)
       : existing.stoppedAt;
     if (startedAt && stoppedAt) {
-      updateSet.durationSeconds = Math.round(
-        (stoppedAt.getTime() - startedAt.getTime()) / 1000,
+      updateSet.durationSeconds = Math.max(
+        0,
+        Math.round((stoppedAt.getTime() - startedAt.getTime()) / 1000),
       );
     } else if (stoppedAt === null) {
       updateSet.durationSeconds = null;

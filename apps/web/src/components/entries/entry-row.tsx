@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry } from '@/hooks/use-entries';
 import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
-import { formatTime, formatDuration } from '@/lib/format';
+import { formatTime, formatDuration, getOrgDateParts, orgTimeToISO } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { useProjects } from '@/hooks/use-reference-data';
 import { BreathingGlow, SaveFlash, breathingBorderAnimation, breathingBorderTransition } from '@/components/ui/breathing-glow';
@@ -21,6 +21,68 @@ import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
 
 type EditingField = 'description' | 'time' | 'project' | null;
+
+/* ---- Split HH:MM input ---- */
+interface TimeInputProps {
+  value: string; // "HH:MM"
+  onChange: (v: string) => void;
+  autoFocus?: boolean;
+  onEnter?: () => void;
+  onEscape?: () => void;
+}
+
+function TimeInput({ value, onChange, autoFocus, onEnter, onEscape }: TimeInputProps) {
+  const [hh, mm] = value.split(':');
+  const mRef = useRef<HTMLInputElement>(null);
+
+  const set = (h: string, m: string) => onChange(`${h}:${m}`);
+
+  const handleHChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+    set(v, mm ?? '00');
+    if (v.length === 2) mRef.current?.focus();
+  };
+
+  const handleMChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+    set(hh ?? '00', v);
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') onEnter?.();
+    if (e.key === 'Escape') onEscape?.();
+  };
+
+  const inputClass =
+    'h-5 w-[22px] rounded bg-transparent px-0 text-center text-[11px] tabular-nums text-foreground outline-none border-none';
+
+  return (
+    <motion.div
+      className="flex h-5 items-center rounded-md px-1"
+      style={{ background: 'hsl(var(--primary) / 0.08)', border: '1px solid hsl(var(--primary) / 0.25)' }}
+      animate={{ borderColor: ['hsl(var(--primary) / 0.15)', 'hsl(var(--primary) / 0.4)', 'hsl(var(--primary) / 0.15)'] }}
+      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+    >
+      <input
+        className={inputClass}
+        value={hh ?? ''}
+        onChange={handleHChange}
+        onKeyDown={handleKey}
+        autoFocus={autoFocus}
+        placeholder="HH"
+      />
+      <span className="text-[11px] text-muted-foreground">:</span>
+      <input
+        ref={mRef}
+        className={inputClass}
+        value={mm ?? ''}
+        onChange={handleMChange}
+        onKeyDown={handleKey}
+        placeholder="MM"
+      />
+    </motion.div>
+  );
+}
 
 /* Pill-pop uses a CSS keyframe animation (globals.css) — runs on compositor thread,
    immune to React Query re-render jitter that breaks framer motion keyframes. */
@@ -131,15 +193,22 @@ export function EntryRow({ entry }: Props) {
   const handleSaveTime = useCallback(() => {
     release(entry.id);
     setEditingField(null);
-    // Build ISO dates from time strings (keep same date)
-    const dateStr = entry.startedAt.slice(0, 10); // YYYY-MM-DD
-    const startISO = `${dateStr}T${editStartTime}:00`;
+    // Get the entry's date in the org timezone (not browser local)
+    const { year, month, day } = getOrgDateParts(entry.startedAt);
+    const startParts = editStartTime.split(':').map(Number);
+    const startH = startParts[0] ?? 0;
+    const startM = startParts[1] ?? 0;
     const update: { id: string; startedAt?: string; stoppedAt?: string | null } = {
       id: entry.id,
-      startedAt: startISO,
+      startedAt: orgTimeToISO(year, month, day, startH, startM),
     };
     if (editEndTime && !isRunning) {
-      update.stoppedAt = `${dateStr}T${editEndTime}:00`;
+      const endParts = editEndTime.split(':').map(Number);
+      const endH = endParts[0] ?? 0;
+      const endM = endParts[1] ?? 0;
+      // Cross-midnight: if end time < start time, end is next day
+      const endDay = editEndTime < editStartTime ? day + 1 : day;
+      update.stoppedAt = orgTimeToISO(year, month, endDay, endH, endM);
     }
     updateEntry.mutate(update);
     triggerSaveFlash();
@@ -390,28 +459,36 @@ export function EntryRow({ entry }: Props) {
             animate={{ opacity: 1 }}
             className="flex items-center gap-1"
           >
-            <motion.input
-              className="h-5 w-[48px] rounded-md bg-muted/40 px-1 text-center text-[11px] tabular-nums text-foreground outline-none"
-              style={{ border: '1px solid hsl(var(--primary) / 0.4)' }}
-              animate={breathingBorderAnimation}
-              transition={breathingBorderTransition}
+            <TimeInput
               value={editStartTime}
-              onChange={(e) => setEditStartTime(e.target.value)}
+              onChange={setEditStartTime}
               autoFocus
+              onEnter={handleSaveTime}
+              onEscape={handleCancel}
             />
             <span className="text-[11px] text-muted-foreground">–</span>
-            <motion.input
-              className="h-5 w-[48px] rounded-md bg-muted/40 px-1 text-center text-[11px] tabular-nums text-foreground outline-none"
-              style={{ border: '1px solid hsl(var(--primary) / 0.4)' }}
-              animate={breathingBorderAnimation}
-              transition={breathingBorderTransition}
-              value={editEndTime}
-              onChange={(e) => setEditEndTime(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveTime();
-                if (e.key === 'Escape') handleCancel();
-              }}
-            />
+            {isRunning ? (
+              <motion.span
+                className="flex h-5 w-[48px] items-center justify-center gap-1 rounded-md text-[11px] font-medium text-primary"
+                style={{ background: 'hsl(var(--primary) / 0.08)', border: '1px solid hsl(var(--primary) / 0.25)' }}
+                animate={{ borderColor: ['hsl(var(--primary) / 0.15)', 'hsl(var(--primary) / 0.4)', 'hsl(var(--primary) / 0.15)'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full bg-primary"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                now
+              </motion.span>
+            ) : (
+              <TimeInput
+                value={editEndTime}
+                onChange={setEditEndTime}
+                onEnter={handleSaveTime}
+                onEscape={handleCancel}
+              />
+            )}
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

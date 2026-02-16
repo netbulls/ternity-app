@@ -1,7 +1,9 @@
-import { THEMES, type ThemeId } from '@ternity/shared';
+import { Globe } from 'lucide-react';
+import { THEMES, ORG_TIMEZONE, type ThemeId } from '@ternity/shared';
 import { useTheme } from '@/providers/theme-provider';
 import { SCALES, useScale } from '@/providers/scale-provider';
 import { useDefaultProject } from '@/hooks/use-default-project';
+import { getTimezoneAbbr } from '@/lib/format';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +78,18 @@ export function SettingsPage() {
           Pre-fills the project when starting a new timer or creating an entry.
         </p>
         <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Timezone</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          All times are recorded and displayed in the organization timezone.
+        </p>
+        <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3.5 py-2 text-[12px] text-muted-foreground">
+          <Globe className="h-3.5 w-3.5" />
+          <span>{ORG_TIMEZONE}</span>
+          <span className="text-[10px] opacity-60">({getTimezoneAbbr()})</span>
+        </div>
       </div>
     </div>
   );

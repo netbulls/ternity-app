@@ -13,7 +13,7 @@ import { ProjectSelector } from '@/components/timer/project-selector';
 import { LabelSelector } from '@/components/timer/label-selector';
 import { useCreateEntry } from '@/hooks/use-entries';
 import { getDefaultProjectId } from '@/hooks/use-default-project';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, orgTimeToISO } from '@/lib/format';
 
 interface Props {
   open: boolean;
@@ -31,8 +31,16 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
 
-  const startIso = `${date}T${startTime}:00.000Z`;
-  const endIso = `${date}T${endTime}:00.000Z`;
+  const dateParts = date.split('-').map(Number);
+  const year = dateParts[0] ?? 2026;
+  const month = (dateParts[1] ?? 1) - 1;
+  const day = dateParts[2] ?? 1;
+  const sp = startTime.split(':').map(Number);
+  const ep = endTime.split(':').map(Number);
+  const startIso = orgTimeToISO(year, month, day, sp[0] ?? 0, sp[1] ?? 0);
+  // Cross-midnight: if end time < start time, end is next day
+  const endDay = endTime < startTime ? day + 1 : day;
+  const endIso = orgTimeToISO(year, month, endDay, ep[0] ?? 0, ep[1] ?? 0);
   const durationSec = Math.max(
     0,
     (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000,

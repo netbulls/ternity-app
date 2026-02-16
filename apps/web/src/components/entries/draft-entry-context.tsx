@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, useMemo, useRef, type
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateEntry } from '@/hooks/use-entries';
 import { getDefaultProjectId } from '@/hooks/use-default-project';
+import { ORG_TIMEZONE } from '@ternity/shared';
+import { orgTimeToISO } from '@/lib/format';
 import { useActiveEdit } from './active-edit-context';
 
 const DRAFT_SENTINEL = '__draft__';
@@ -39,8 +41,11 @@ const DraftEntryContext = createContext<DraftEntryContextValue>({
 });
 
 function nowHHMM(): string {
-  const d = new Date();
-  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: ORG_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date());
 }
 
 export function DraftEntryProvider({ children }: { children: ReactNode }) {
@@ -76,8 +81,16 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
 
   const saveDraft = useCallback(async () => {
     if (!draft) return;
-    const startISO = `${draft.date}T${draft.startTime}:00`;
-    const endISO = `${draft.date}T${draft.endTime}:00`;
+    const dateParts = draft.date.split('-').map(Number);
+    const year = dateParts[0] ?? 2026;
+    const month = (dateParts[1] ?? 1) - 1;
+    const day = dateParts[2] ?? 1;
+    const sp = draft.startTime.split(':').map(Number);
+    const ep = draft.endTime.split(':').map(Number);
+    const startISO = orgTimeToISO(year, month, day, sp[0] ?? 0, sp[1] ?? 0);
+    // Cross-midnight: if end time < start time, end is next day
+    const endDay = draft.endTime < draft.startTime ? day + 1 : day;
+    const endISO = orgTimeToISO(year, month, endDay, ep[0] ?? 0, ep[1] ?? 0);
     try {
       // Create entry and get back the new ID
       const newEntry = await createEntry.mutateAsync({

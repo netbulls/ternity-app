@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Play, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
+import { useUpdateEntry } from '@/hooks/use-entries';
 import { getDefaultProjectId } from '@/hooks/use-default-project';
-import { formatTimer } from '@/lib/format';
+import { formatTimer, getTimezoneLabel } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
 import { AnimatedDigit } from '@/components/ui/animated-digit';
@@ -13,6 +14,7 @@ export function TimerBar() {
   const { data: timerState } = useTimer();
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
+  const updateEntry = useUpdateEntry();
 
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
@@ -33,6 +35,19 @@ export function TimerBar() {
   if (!running && syncedEntryId !== null) {
     setSyncedEntryId(null);
   }
+
+  // Debounced description save while running (800ms after typing stops)
+  const descriptionRef = useRef(description);
+  descriptionRef.current = description;
+  useEffect(() => {
+    if (!running || !currentEntry) return;
+    const timer = setTimeout(() => {
+      if (descriptionRef.current !== currentEntry.description) {
+        updateEntry.mutate({ id: currentEntry.id, description: descriptionRef.current });
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [description, running, currentEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const elapsed = useElapsedSeconds(
     currentEntry?.startedAt ?? null,
@@ -94,21 +109,31 @@ export function TimerBar() {
         <div className="relative z-10">
           <ProjectSelector
             value={projectId}
-            onChange={(id) => setProjectId(id)}
+            onChange={(id) => {
+              setProjectId(id);
+              if (running && currentEntry) {
+                updateEntry.mutate({ id: currentEntry.id, projectId: id });
+              }
+            }}
           />
         </div>
 
         {/* Animated digits when running, static when idle */}
-        <div className="relative z-10 font-brand text-xl font-semibold tracking-wider text-primary tabular-nums">
-          {running ? (
-            <span className="inline-flex">
-              {digits.map((d, i) => (
-                <AnimatedDigit key={i} char={d} />
-              ))}
-            </span>
-          ) : (
-            <span style={{ opacity: 0.4 }}>0:00:00</span>
-          )}
+        <div className="relative z-10 flex flex-col items-end font-brand tabular-nums">
+          <div className="text-xl font-semibold tracking-wider text-primary">
+            {running ? (
+              <span className="inline-flex">
+                {digits.map((d, i) => (
+                  <AnimatedDigit key={i} char={d} />
+                ))}
+              </span>
+            ) : (
+              <span style={{ opacity: 0.4 }}>0:00:00</span>
+            )}
+          </div>
+          <span className="text-[9px] font-normal tracking-wider text-muted-foreground" style={{ opacity: 0.5 }}>
+            {getTimezoneLabel()}
+          </span>
         </div>
 
         {/* Start/Stop button with spring transitions */}

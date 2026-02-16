@@ -1,6 +1,8 @@
-import { Check, Search, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Check, Clock, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { getRecentProjectIds, trackRecentProject } from '@/hooks/use-recent-projects';
 import type { ProjectOption } from '@ternity/shared';
 
 export function groupByClient(projects: ProjectOption[]) {
@@ -34,6 +36,31 @@ export function InlineProjectDropdown({
   onCancel,
 }: InlineProjectDropdownProps) {
   const grouped = groupByClient(projects);
+  const recentIds = getRecentProjectIds();
+  const recentProjects = recentIds
+    .map((id) => projects.find((p) => p.id === id))
+    .filter((p): p is ProjectOption => p != null);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Dismiss on Escape or click outside
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    const onClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        onCancel();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, [onCancel]);
+
   const filtered = search
     ? grouped
         .map((g) => ({
@@ -45,10 +72,16 @@ export function InlineProjectDropdown({
           ),
         }))
         .filter((g) => g.projects.length > 0)
-    : grouped;
+    : [
+        ...(recentProjects.length > 0
+          ? [{ client: 'Recent', projects: recentProjects }]
+          : []),
+        ...grouped,
+      ];
 
   return (
     <motion.div
+      ref={dropdownRef}
       initial={{ opacity: 0, y: -8, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -67,9 +100,6 @@ export function InlineProjectDropdown({
             placeholder="Search projects..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') onCancel();
-            }}
             autoFocus
           />
         </div>
@@ -85,9 +115,10 @@ export function InlineProjectDropdown({
           filtered.map((group, gi) => (
             <div key={group.client}>
               <div
-                className="px-2.5 pb-1 pt-2.5 font-brand text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
+                className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
                 style={{ letterSpacing: '1.5px', opacity: 0.6 }}
               >
+                {group.client === 'Recent' && <Clock className="h-2.5 w-2.5" />}
                 {group.client}
               </div>
               {group.projects.map((p, pi) => {
@@ -105,7 +136,10 @@ export function InlineProjectDropdown({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: gi * 0.05 + pi * 0.03, duration: 0.15 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => onSelect(p.id)}
+                    onClick={() => {
+                      trackRecentProject(p.id);
+                      onSelect(p.id);
+                    }}
                   >
                     <motion.span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
