@@ -41,7 +41,7 @@ function DevLabContent() {
 }
 
 export function DevLabPage() {
-  if (!import.meta.env.DEV) return null;
+  if (!import.meta.env.DEV && import.meta.env.VITE_SHOW_DEV_PAGES !== 'true') return null;
 
   const [queryClient] = useState(
     () =>
