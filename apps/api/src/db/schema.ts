@@ -9,6 +9,7 @@ import {
   date,
   jsonb,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 
 // ── Enums ──────────────────────────────────────────────────────────────────
@@ -21,6 +22,15 @@ export const leaveStatusEnum = pgEnum('leave_status', [
   'rejected',
   'cancelled',
 ]);
+export const entryAuditActionEnum = pgEnum('entry_audit_action', [
+  'created',
+  'updated',
+  'deleted',
+  'timer_started',
+  'timer_stopped',
+  'timer_resumed',
+]);
+
 export const syncSourceEnum = pgEnum('sync_source', ['toggl', 'timetastic']);
 export const syncRunStatusEnum = pgEnum('sync_run_status', ['running', 'completed', 'failed']);
 
@@ -123,6 +133,33 @@ export const entryLabels = pgTable(
       .references(() => labels.id),
   },
   (t) => [uniqueIndex('entry_labels_entry_label_idx').on(t.entryId, t.labelId)],
+);
+
+// ── Entry Audit Log ───────────────────────────────────────────────────────
+
+export const entryAuditLog = pgTable(
+  'entry_audit_log',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    entryId: uuid('entry_id')
+      .notNull()
+      .references(() => timeEntries.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => users.id),
+    action: entryAuditActionEnum('action').notNull(),
+    changes: jsonb('changes'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('entry_audit_log_entry_id_idx').on(t.entryId),
+    index('entry_audit_log_actor_id_created_at_idx').on(t.actorId, t.createdAt),
+    index('entry_audit_log_created_at_idx').on(t.createdAt),
+  ],
 );
 
 // ── Leave Types ────────────────────────────────────────────────────────────

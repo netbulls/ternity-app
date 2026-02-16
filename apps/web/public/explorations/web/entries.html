@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ternity — Entries Page Exploration</title>
+    <title>Ternity — Entries Page Exploration v2</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="../themes.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
@@ -76,6 +76,15 @@
         }
         .option-label:first-child { margin-top: 0; }
 
+        /* Superseded */
+        .superseded { opacity: 0.25; pointer-events: none; position: relative; }
+        .superseded::before {
+            content: attr(data-superseded);
+            position: absolute; top: -18px; left: 0;
+            font-family: 'Inter', sans-serif; font-size: 10px; font-style: italic;
+            color: rgba(255,255,255,0.3); letter-spacing: 0; text-transform: none;
+        }
+
         /* Theme container */
         .theme-container {
             max-width: 1200px; margin: 0 auto;
@@ -90,6 +99,9 @@
             font-size: calc(14px * var(--t-scale, 1));
             min-height: 800px; display: grid;
             grid-template-columns: 220px 1fr;
+        }
+        .app.with-panel {
+            grid-template-columns: 220px 1fr 340px;
         }
 
         /* Sidebar */
@@ -152,18 +164,21 @@
         }
 
         /* ============================================================
-           WEEK HISTOGRAM
+           DASHBOARD — HISTOGRAM + HEATMAP
            ============================================================ */
-        .histogram-card {
-            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
-            border-radius: calc(var(--radius) + 2px); padding: 16px 20px;
+        .overview-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
             margin-bottom: 16px;
         }
-        .histogram-header {
+        .histogram-card, .heatmap-card {
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px); padding: 16px 20px;
+        }
+        .histogram-header, .heatmap-header {
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 12px;
         }
-        .histogram-title {
+        .histogram-title, .heatmap-title {
             font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1));
             letter-spacing: 2px; text-transform: uppercase;
             color: hsl(var(--muted-foreground));
@@ -189,10 +204,6 @@
             font-family: 'Oxanium', sans-serif;
             fill: hsl(var(--foreground));
         }
-        .chart-grid-line {
-            stroke: hsl(var(--border));
-            stroke-dasharray: 2 4;
-        }
         .chart-target-line {
             stroke: hsl(var(--destructive));
             stroke-dasharray: 4 4;
@@ -204,26 +215,7 @@
             fill: hsl(var(--destructive));
             opacity: 0.5;
         }
-        .chart-today .chart-bar { opacity: 1; }
-        .chart-weekend .chart-bar { opacity: 0.4; }
 
-        /* ============================================================
-           MONTHLY HEATMAP
-           ============================================================ */
-        .heatmap-card {
-            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
-            border-radius: calc(var(--radius) + 2px); padding: 16px 20px;
-            margin-bottom: 16px;
-        }
-        .heatmap-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        .heatmap-title {
-            font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1));
-            letter-spacing: 2px; text-transform: uppercase;
-            color: hsl(var(--muted-foreground));
-        }
         .heatmap-legend {
             display: flex; align-items: center; gap: 4px;
             font-size: calc(9px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));
@@ -235,16 +227,112 @@
             rx: 2; ry: 2; transition: opacity 0.15s; cursor: default;
         }
         .heatmap-day:hover { stroke: hsl(var(--foreground)); stroke-width: 1; }
-        .heatmap-day-label {
-            font-family: 'Oxanium', sans-serif;
-            fill: hsl(var(--muted-foreground));
-            font-size: 9px;
+
+        /* Stat pills */
+        .stat-pills {
+            display: flex; gap: 16px; margin-top: 12px;
+            padding-top: 12px; border-top: 1px solid hsl(var(--border) / 0.5);
         }
-        .heatmap-week-label {
-            font-family: 'Oxanium', sans-serif;
-            fill: hsl(var(--muted-foreground));
-            font-size: 9px;
+        .stat-pill {
+            display: flex; align-items: baseline; gap: 6px;
         }
+        .stat-pill-label {
+            font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1));
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+        }
+        .stat-pill-value {
+            font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1));
+            font-weight: 600; color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-pill-value.accent { color: hsl(var(--primary)); }
+        .stat-pill-value.warn { color: hsl(35, 100%, 60%); }
+
+        /* ============================================================
+           DASHBOARD — HOUSEKEEPING / ATTENTION CARDS
+           ============================================================ */
+        .attention-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            margin-top: 16px;
+        }
+        .attention-card {
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px); padding: 14px 16px;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .attention-card:hover { border-color: hsl(var(--primary) / 0.3); }
+        .attention-card.warn { border-left: 3px solid hsl(35, 100%, 60%); }
+        .attention-card.ok { border-left: 3px solid hsl(152, 60%, 50%); }
+        .attention-card.info { border-left: 3px solid hsl(var(--primary)); }
+
+        .attention-card-title {
+            font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1));
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin-bottom: 6px;
+        }
+        .attention-card-value {
+            font-family: 'Oxanium', sans-serif; font-size: calc(20px * var(--t-scale, 1));
+            font-weight: 700; color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .attention-card-value.warn-text { color: hsl(35, 100%, 60%); }
+        .attention-card-value.ok-text { color: hsl(152, 60%, 50%); }
+        .attention-card-desc {
+            font-size: calc(10px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); margin-top: 4px;
+        }
+        .attention-card-link {
+            font-size: calc(10px * var(--t-scale, 1));
+            color: hsl(var(--primary)); margin-top: 8px;
+            text-decoration: underline; text-underline-offset: 2px;
+        }
+
+        /* ============================================================
+           TIMER BAR
+           ============================================================ */
+        .timer-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; margin-bottom: 16px;
+            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+        }
+        .timer-bar.running {
+            border-color: hsl(var(--primary) / 0.3);
+            background: hsl(var(--t-timer-bg, var(--card)));
+        }
+        .timer-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1));
+            color: hsl(var(--foreground));
+        }
+        .timer-input::placeholder { color: hsl(var(--muted-foreground)); }
+        .timer-project-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: calc(11px * var(--t-scale, 1)); padding: 4px 10px;
+            border-radius: 9999px; border: 1px solid hsl(var(--border));
+            color: hsl(var(--muted-foreground)); cursor: pointer;
+        }
+        .timer-project-badge:hover { border-color: hsl(var(--foreground) / 0.3); }
+        .timer-duration {
+            font-family: 'Oxanium', sans-serif; font-size: calc(16px * var(--t-scale, 1));
+            font-weight: 700; color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums; min-width: 70px; text-align: right;
+        }
+        .timer-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: none; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .timer-btn.start {
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        }
+        .timer-btn.start:hover { opacity: 0.85; }
+        .timer-btn.stop {
+            background: hsl(var(--destructive)); color: white;
+        }
+        .timer-btn.stop:hover { opacity: 0.85; }
+        .timer-btn svg { width: 16px; height: 16px; }
 
         /* ============================================================
            DATE NAVIGATION
@@ -280,14 +368,9 @@
             border-radius: calc(var(--radius) - 2px);
             display: flex; align-items: center; gap: 6px;
         }
-        .date-label.today { background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); }
         .date-label svg { width: 14px; height: 14px; }
-
         .nav-spacer { flex: 1; }
-
-        .period-total {
-            display: flex; align-items: center; gap: 8px;
-        }
+        .period-total { display: flex; align-items: center; gap: 8px; }
         .period-total-label {
             font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1));
             letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground));
@@ -296,43 +379,6 @@
             font-family: 'Oxanium', sans-serif; font-size: calc(14px * var(--t-scale, 1));
             font-weight: 600; color: hsl(var(--foreground));
             font-variant-numeric: tabular-nums;
-        }
-
-        /* ============================================================
-           HOUSEKEEPING BANNER
-           ============================================================ */
-        .housekeeping-banner {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px; margin-bottom: 12px;
-            border-radius: calc(var(--radius)); background: hsl(35 100% 60% / 0.08);
-            border: 1px solid hsl(35 100% 60% / 0.15);
-        }
-        .housekeeping-banner svg { width: 16px; height: 16px; color: hsl(35, 100%, 60%); flex-shrink: 0; }
-        .housekeeping-banner .hk-text {
-            font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--foreground));
-        }
-        .housekeeping-banner .hk-count {
-            font-family: 'Oxanium', sans-serif; font-weight: 600;
-            color: hsl(35, 100%, 60%);
-        }
-        .housekeeping-banner .hk-action {
-            margin-left: auto; font-size: calc(11px * var(--t-scale, 1));
-            color: hsl(var(--primary)); cursor: pointer; white-space: nowrap;
-            text-decoration: underline; text-underline-offset: 2px;
-        }
-
-        /* Alt: pill-style housekeeping */
-        .housekeeping-pill {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 4px 10px; border-radius: 9999px;
-            background: hsl(35 100% 60% / 0.1); border: 1px solid hsl(35 100% 60% / 0.2);
-            font-size: calc(11px * var(--t-scale, 1)); color: hsl(35, 100%, 60%);
-            cursor: pointer; transition: all 0.15s;
-        }
-        .housekeeping-pill:hover { background: hsl(35 100% 60% / 0.15); }
-        .housekeeping-pill svg { width: 12px; height: 12px; }
-        .housekeeping-pill .pill-count {
-            font-family: 'Oxanium', sans-serif; font-weight: 700;
         }
 
         /* ============================================================
@@ -347,11 +393,27 @@
             font-size: calc(12px * var(--t-scale, 1)); font-weight: 600;
             color: hsl(var(--foreground));
         }
+        .day-header-right {
+            display: flex; align-items: center; gap: 10px;
+        }
         .day-total {
             font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1));
             font-weight: 600; color: hsl(var(--foreground));
             font-variant-numeric: tabular-nums;
         }
+        .day-add-btn {
+            width: 24px; height: 24px; border-radius: calc(var(--radius) - 2px);
+            border: 1px dashed hsl(var(--border)); background: transparent;
+            color: hsl(var(--muted-foreground)); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; opacity: 0;
+        }
+        .day-header:hover .day-add-btn { opacity: 1; }
+        .day-add-btn:hover {
+            border-color: hsl(var(--primary)); color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.05);
+        }
+        .day-add-btn svg { width: 14px; height: 14px; }
         .day-entries {
             border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius));
             overflow: hidden;
@@ -370,13 +432,10 @@
         .entry-row:last-child { border-bottom: none; }
         .entry-row:hover { background: hsl(var(--muted) / 0.3); }
 
-        /* Running entry */
         .entry-row.running {
             background: hsl(var(--t-timer-bg));
             border-left: 2px solid hsl(var(--primary));
         }
-
-        /* No-project warning */
         .entry-row.no-project {
             border-left: 2px solid hsl(35, 100%, 60%);
         }
@@ -421,7 +480,7 @@
         .entry-duration.running { color: hsl(var(--primary)); }
 
         .entry-actions {
-            display: flex; align-items: center;
+            display: flex; align-items: center; gap: 2px;
         }
         .entry-actions button {
             width: 28px; height: 28px; border-radius: calc(var(--radius) - 2px);
@@ -432,8 +491,45 @@
         .entry-actions button:hover { background: hsl(var(--muted) / 0.5); color: hsl(var(--foreground)); }
         .entry-actions svg { width: 16px; height: 16px; }
 
+        /* Play/Stop on rows */
+        .entry-play {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: none; background: transparent; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s; opacity: 0;
+        }
+        .entry-row:hover .entry-play { opacity: 1; }
+        .entry-play:hover { color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); }
+        .entry-play svg { width: 14px; height: 14px; }
+
+        .entry-stop {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: none; background: hsl(var(--destructive) / 0.1);
+            color: hsl(var(--destructive));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .entry-stop:hover { background: hsl(var(--destructive) / 0.2); }
+        .entry-stop svg { width: 12px; height: 12px; }
+
+        /* Inline add row */
+        .add-entry-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px;
+            border-top: 1px dashed hsl(var(--border) / 0.3);
+            color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+            opacity: 0;
+        }
+        .day-entries:hover .add-entry-row { opacity: 1; }
+        .add-entry-row:hover { background: hsl(var(--primary) / 0.03); color: hsl(var(--primary)); }
+        .add-entry-row svg { width: 14px; height: 14px; }
+        .add-entry-row span {
+            font-size: calc(11px * var(--t-scale, 1));
+        }
+
         /* ============================================================
-           INLINE EDITING STATES
+           INLINE EDITING
            ============================================================ */
         .entry-row.editing {
             background: hsl(var(--muted) / 0.2);
@@ -442,8 +538,10 @@
             background: transparent; border: none; outline: none;
             font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1));
             color: hsl(var(--foreground)); width: 100%;
-            padding: 2px 0; border-bottom: 1px solid hsl(var(--primary));
+            padding: 4px 8px; border-radius: calc(var(--radius) - 2px);
+            background: hsl(var(--muted) / 0.4); border: 1px solid hsl(var(--primary) / 0.4);
         }
+        .inline-edit-input:focus { border-color: hsl(var(--primary)); }
         .inline-edit-time {
             background: hsl(var(--muted) / 0.5); border: 1px solid hsl(var(--primary) / 0.3);
             border-radius: calc(var(--radius) - 2px);
@@ -455,9 +553,7 @@
         .inline-edit-time:focus { border-color: hsl(var(--primary)); }
 
         /* Project picker inline */
-        .project-picker-inline {
-            position: relative;
-        }
+        .project-picker-inline { position: relative; }
         .project-picker-dropdown {
             position: absolute; top: 100%; left: 0; margin-top: 4px;
             width: 260px; max-height: 240px; overflow-y: auto;
@@ -487,17 +583,44 @@
         .project-picker-item:hover { background: hsl(var(--accent)); }
 
         /* ============================================================
-           ENTRY TIMELINE (AUDIT LOG)
+           SLIDE-IN PANEL
            ============================================================ */
-        .timeline-card {
-            background: hsl(var(--card)); border: 1px solid hsl(var(--border));
-            border-radius: calc(var(--radius) + 2px); padding: 16px 20px;
+        .slide-panel {
+            background: hsl(var(--card));
+            border-left: 1px solid hsl(var(--border));
+            padding: 20px; overflow-y: auto;
         }
-        .timeline-header {
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .panel-title {
             font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1));
             letter-spacing: 2px; text-transform: uppercase;
-            color: hsl(var(--muted-foreground)); margin-bottom: 16px;
+            color: hsl(var(--muted-foreground));
         }
+        .panel-close {
+            width: 28px; height: 28px; border-radius: calc(var(--radius) - 2px);
+            border: none; background: transparent; color: hsl(var(--muted-foreground));
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .panel-close:hover { background: hsl(var(--muted) / 0.5); color: hsl(var(--foreground)); }
+        .panel-close svg { width: 16px; height: 16px; }
+
+        .panel-entry-summary {
+            padding: 12px; margin-bottom: 16px;
+            background: hsl(var(--muted) / 0.3); border-radius: calc(var(--radius));
+        }
+        .panel-entry-desc {
+            font-size: calc(13px * var(--t-scale, 1)); font-weight: 500;
+            color: hsl(var(--foreground)); margin-bottom: 6px;
+        }
+        .panel-entry-meta {
+            font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));
+        }
+
+        /* Timeline in panel */
         .timeline {
             position: relative; padding-left: 24px;
         }
@@ -536,56 +659,8 @@
         .timeline-new { color: hsl(var(--foreground)); font-weight: 500; }
 
         /* ============================================================
-           FILTER BAR FOR PROJECT
+           BUTTON HELPERS
            ============================================================ */
-        .filter-bar {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-        }
-        .filter-chip {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 5px 12px; border-radius: calc(var(--radius));
-            border: 1px solid hsl(var(--border)); background: transparent;
-            font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));
-            cursor: pointer; transition: all 0.15s;
-        }
-        .filter-chip:hover { border-color: hsl(var(--foreground)); color: hsl(var(--foreground)); }
-        .filter-chip.active {
-            border-color: hsl(var(--primary)); background: hsl(var(--primary) / 0.08);
-            color: hsl(var(--primary));
-        }
-        .filter-chip svg { width: 14px; height: 14px; }
-
-        /* ============================================================
-           COMBINED OVERVIEW OPTIONS
-           ============================================================ */
-        .overview-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-            margin-bottom: 16px;
-        }
-        .overview-grid.full { grid-template-columns: 1fr; }
-
-        /* Stat pills inside histogram card */
-        .stat-pills {
-            display: flex; gap: 16px; margin-top: 12px;
-            padding-top: 12px; border-top: 1px solid hsl(var(--border) / 0.5);
-        }
-        .stat-pill {
-            display: flex; align-items: baseline; gap: 6px;
-        }
-        .stat-pill-label {
-            font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1));
-            letter-spacing: 1.5px; text-transform: uppercase;
-            color: hsl(var(--muted-foreground));
-        }
-        .stat-pill-value {
-            font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1));
-            font-weight: 600; color: hsl(var(--foreground));
-            font-variant-numeric: tabular-nums;
-        }
-        .stat-pill-value.accent { color: hsl(var(--primary)); }
-        .stat-pill-value.warn { color: hsl(35, 100%, 60%); }
-
-        /* manual entry button */
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 500;
@@ -599,8 +674,8 @@
 </head>
 <body>
     <div class="page-header">
-        <h1>Entries — Exploration</h1>
-        <p>Layout, visualizations, inline editing, housekeeping indicators, audit timeline</p>
+        <h1>Entries — Exploration v2</h1>
+        <p>Two-page structure: Dashboard + Timer/Entries. Iteration 2.</p>
     </div>
 
     <!-- Theme / Scale switchers -->
@@ -612,102 +687,251 @@
     </div>
 
     <!-- ================================================================
-         SECTION 1: WEEK HISTOGRAM OPTIONS
+         SECTION 1: DASHBOARD PAGE
          ================================================================ -->
     <div class="section">
-        <div class="section-title">1 · Week Histogram</div>
-        <div class="section-desc">Hours per day — d3 bar chart. The primary "am I on track?" view.</div>
+        <div class="section-title">1 · Dashboard</div>
+        <div class="section-desc">"Am I on track?" — charts, stats, attention items. Links out to Timer/Entries for action.</div>
 
-        <div class="option-label">1a — Bars with day labels, 8h target line</div>
-        <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="histogram-card">
-                    <div class="histogram-header">
-                        <span class="histogram-title">This Week</span>
-                        <span class="histogram-total">
-                            <span class="total-label">Total</span>34:15
-                        </span>
-                    </div>
-                    <div id="histogram-a"></div>
-                    <div class="stat-pills">
-                        <div class="stat-pill">
-                            <span class="stat-pill-label">Avg/day</span>
-                            <span class="stat-pill-value">6:51</span>
-                        </div>
-                        <div class="stat-pill">
-                            <span class="stat-pill-label">Target</span>
-                            <span class="stat-pill-value" style="opacity: 0.5;">40:00</span>
-                        </div>
-                        <div class="stat-pill">
-                            <span class="stat-pill-label">No project</span>
-                            <span class="stat-pill-value warn">3</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="option-label">1b — Compact bars, no gridlines, stacked by project color</div>
-        <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="histogram-card">
-                    <div class="histogram-header">
-                        <span class="histogram-title">10 – 14 Feb 2026</span>
-                        <span class="histogram-total">
-                            <span class="total-label">Total</span>34:15
-                        </span>
-                    </div>
-                    <div id="histogram-b"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================================================================
-         SECTION 2: MONTHLY HEATMAP OPTIONS
-         ================================================================ -->
-    <div class="section">
-        <div class="section-title">2 · Monthly Heatmap</div>
-        <div class="section-desc">Calendar view of the month — hours per day shown as color intensity. GitHub contribution graph style.</div>
-
-        <div class="option-label">2a — Calendar grid with numbers</div>
-        <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="heatmap-card">
-                    <div class="heatmap-header">
-                        <span class="heatmap-title">February 2026</span>
-                        <div class="heatmap-legend">
-                            <span>Less</span>
-                            <div class="heatmap-legend-box" style="background: hsl(var(--muted));"></div>
-                            <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.2);"></div>
-                            <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.4);"></div>
-                            <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.7);"></div>
-                            <div class="heatmap-legend-box" style="background: hsl(var(--primary));"></div>
-                            <span>More</span>
-                        </div>
-                    </div>
-                    <div id="heatmap-a"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="option-label">2b — Compact row of squares (GitHub style), fits alongside histogram</div>
+        <div class="option-label">1a.1 — Week histogram + monthly heatmap side-by-side</div>
         <div class="theme-container" data-scale="default">
             <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
                 <div class="overview-grid">
-                    <div class="histogram-card" style="margin-bottom: 0;">
+                    <div class="histogram-card">
                         <div class="histogram-header">
                             <span class="histogram-title">This Week</span>
-                            <span class="histogram-total"><span class="total-label">Total</span>34:15</span>
+                            <span class="histogram-total">
+                                <span class="total-label">Total</span>34:15
+                            </span>
                         </div>
-                        <div id="histogram-c"></div>
+                        <div id="histogram-main"></div>
+                        <div class="stat-pills">
+                            <div class="stat-pill">
+                                <span class="stat-pill-label">Avg/day</span>
+                                <span class="stat-pill-value">6:51</span>
+                            </div>
+                            <div class="stat-pill">
+                                <span class="stat-pill-label">Target</span>
+                                <span class="stat-pill-value" style="opacity: 0.5;">40:00</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="heatmap-card" style="margin-bottom: 0;">
+                    <div class="heatmap-card">
                         <div class="heatmap-header">
                             <span class="heatmap-title">February 2026</span>
-                            <span style="font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 600; color: hsl(var(--foreground));">142:30</span>
+                            <div class="heatmap-legend">
+                                <span>Less</span>
+                                <div class="heatmap-legend-box" style="background: hsl(var(--muted));"></div>
+                                <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.2);"></div>
+                                <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.4);"></div>
+                                <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.7);"></div>
+                                <div class="heatmap-legend-box" style="background: hsl(var(--primary));"></div>
+                                <span>More</span>
+                            </div>
                         </div>
-                        <div id="heatmap-b"></div>
+                        <div id="heatmap-main"></div>
+                        <div class="stat-pills">
+                            <div class="stat-pill">
+                                <span class="stat-pill-label">Month total</span>
+                                <span class="stat-pill-value accent">142:30</span>
+                            </div>
+                            <div class="stat-pill">
+                                <span class="stat-pill-label">Working days left</span>
+                                <span class="stat-pill-value">10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="option-label">1b — Attention cards — things that need fixing</div>
+        <div class="theme-container" data-scale="default">
+            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
+                <div class="attention-grid">
+                    <div class="attention-card warn">
+                        <div class="attention-card-title">No Project</div>
+                        <div class="attention-card-value warn-text">3</div>
+                        <div class="attention-card-desc">entries this week without a project</div>
+                        <div class="attention-card-link">Fix in entries →</div>
+                    </div>
+                    <div class="attention-card ok">
+                        <div class="attention-card-title">This Week</div>
+                        <div class="attention-card-value ok-text">34:15</div>
+                        <div class="attention-card-desc">of 40h target (85%)</div>
+                        <div class="attention-card-link">View entries →</div>
+                    </div>
+                    <div class="attention-card info">
+                        <div class="attention-card-title">Low Day</div>
+                        <div class="attention-card-value">Wed</div>
+                        <div class="attention-card-desc">only 4:30 logged</div>
+                        <div class="attention-card-link">Check Wednesday →</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <div class="option-label">1c — Full dashboard page</div>
+        <div class="theme-container" data-scale="default">
+            <div class="app" data-theme="ternity-dark" style="min-height: 900px;">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 18 22" fill="none"><path d="M9 0L0 4v6c0 6.6 3.84 12.74 9 14.4V22c5.16-1.66 9-7.8 9-14.4V4L9 0z" fill="currentColor" opacity="0.15"/><path d="M9 2L2 5.2v4.8c0 5.5 3 10.6 7 12V2z" fill="currentColor" opacity="0.3"/><rect x="5" y="6" width="2" height="10" rx="1" fill="currentColor"/><rect x="8" y="4" width="2" height="12" rx="1" fill="currentColor"/><rect x="11" y="8" width="2" height="8" rx="1" fill="currentColor"/></svg>
+                        Ternity
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="clock"></i> Timer &amp; Entries</div>
+                    <div class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+                    <div class="nav-item"><i data-lucide="bar-chart-2"></i> Reports</div>
+                    <div class="nav-item"><i data-lucide="calendar"></i> Calendar</div>
+                    <div class="nav-section">Leave</div>
+                    <div class="nav-item"><i data-lucide="umbrella"></i> Time Off</div>
+                    <div class="nav-section">Manage</div>
+                    <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="nav-item"><i data-lucide="users"></i> Users</div>
+                    <div class="spacer"></div>
+                    <div class="user-block">
+                        <div class="avatar">EM</div>
+                        <div>
+                            <div class="user-name">Elena Marsh</div>
+                            <div class="user-role">Developer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main content — Dashboard -->
+                <div class="main">
+                    <div style="margin-bottom: 20px;">
+                        <div class="page-title">Dashboard</div>
+                        <div class="page-subtitle">Week 7 · 10 – 14 Feb 2026</div>
+                    </div>
+
+                    <!-- Attention cards row -->
+                    <div class="attention-grid" style="margin-top: 0; margin-bottom: 16px;">
+                        <div class="attention-card warn">
+                            <div class="attention-card-title">No Project</div>
+                            <div class="attention-card-value warn-text">3</div>
+                            <div class="attention-card-desc">entries this week without a project</div>
+                            <div class="attention-card-link">Fix in entries →</div>
+                        </div>
+                        <div class="attention-card ok">
+                            <div class="attention-card-title">This Week</div>
+                            <div class="attention-card-value ok-text">34:15</div>
+                            <div class="attention-card-desc">of 40h target (85%)</div>
+                            <div class="attention-card-link">View entries →</div>
+                        </div>
+                        <div class="attention-card info">
+                            <div class="attention-card-title">Low Day</div>
+                            <div class="attention-card-value">Wed</div>
+                            <div class="attention-card-desc">only 4:30 logged</div>
+                            <div class="attention-card-link">Check Wednesday →</div>
+                        </div>
+                    </div>
+
+                    <!-- Histogram + Heatmap side-by-side -->
+                    <div class="overview-grid">
+                        <div class="histogram-card">
+                            <div class="histogram-header">
+                                <span class="histogram-title">This Week</span>
+                                <span class="histogram-total">
+                                    <span class="total-label">Total</span>34:15
+                                </span>
+                            </div>
+                            <div id="histogram-dash"></div>
+                            <div class="stat-pills">
+                                <div class="stat-pill">
+                                    <span class="stat-pill-label">Avg/day</span>
+                                    <span class="stat-pill-value">6:51</span>
+                                </div>
+                                <div class="stat-pill">
+                                    <span class="stat-pill-label">Target</span>
+                                    <span class="stat-pill-value" style="opacity: 0.5;">40:00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="heatmap-card">
+                            <div class="heatmap-header">
+                                <span class="heatmap-title">February 2026</span>
+                                <div class="heatmap-legend">
+                                    <span>Less</span>
+                                    <div class="heatmap-legend-box" style="background: hsl(var(--muted));"></div>
+                                    <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.2);"></div>
+                                    <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.4);"></div>
+                                    <div class="heatmap-legend-box" style="background: hsl(var(--primary) / 0.7);"></div>
+                                    <div class="heatmap-legend-box" style="background: hsl(var(--primary));"></div>
+                                    <span>More</span>
+                                </div>
+                            </div>
+                            <div id="heatmap-dash"></div>
+                            <div class="stat-pills">
+                                <div class="stat-pill">
+                                    <span class="stat-pill-label">Month total</span>
+                                    <span class="stat-pill-value accent">142:30</span>
+                                </div>
+                                <div class="stat-pill">
+                                    <span class="stat-pill-label">Working days left</span>
+                                    <span class="stat-pill-value">10</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project breakdown -->
+                    <div style="margin-top: 16px;">
+                        <div class="project-breakdown-card" style="background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) + 2px); padding: 16px 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                                <span class="histogram-title">This Week by Project</span>
+                                <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); letter-spacing: 1px;">5 PROJECTS</span>
+                            </div>
+                            <!-- Stacked bar -->
+                            <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; margin-bottom: 14px;">
+                                <div style="flex: 38; background: hsl(var(--t-project-1)); border-radius: 4px;"></div>
+                                <div style="flex: 22; background: hsl(var(--t-project-2)); border-radius: 4px;"></div>
+                                <div style="flex: 18; background: hsl(var(--t-project-3)); border-radius: 4px;"></div>
+                                <div style="flex: 12; background: hsl(var(--chart-4)); border-radius: 4px;"></div>
+                                <div style="flex: 10; background: hsl(var(--muted)); border-radius: 4px; opacity: 0.5;"></div>
+                            </div>
+                            <!-- Project list -->
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="project-dot" style="background: hsl(var(--t-project-1));"></span>
+                                    <span style="flex: 1; font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--foreground));">Platform Core</span>
+                                    <span style="font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));">Meridian Labs</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; font-variant-numeric: tabular-nums; color: hsl(var(--foreground)); min-width: 40px; text-align: right;">13:00</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); min-width: 30px; text-align: right;">38%</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="project-dot" style="background: hsl(var(--t-project-2));"></span>
+                                    <span style="flex: 1; font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--foreground));">E-commerce Rebuild</span>
+                                    <span style="font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));">Apex Digital</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; font-variant-numeric: tabular-nums; color: hsl(var(--foreground)); min-width: 40px; text-align: right;">7:30</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); min-width: 30px; text-align: right;">22%</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="project-dot" style="background: hsl(var(--t-project-3));"></span>
+                                    <span style="flex: 1; font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--foreground));">Team Ops</span>
+                                    <span style="font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));">Internal</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; font-variant-numeric: tabular-nums; color: hsl(var(--foreground)); min-width: 40px; text-align: right;">6:15</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); min-width: 30px; text-align: right;">18%</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="project-dot" style="background: hsl(var(--chart-4));"></span>
+                                    <span style="flex: 1; font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--foreground));">API Gateway</span>
+                                    <span style="font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));">Meridian Labs</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; font-variant-numeric: tabular-nums; color: hsl(var(--foreground)); min-width: 40px; text-align: right;">4:00</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); min-width: 30px; text-align: right;">12%</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="project-dot" style="background: hsl(var(--muted)); opacity: 0.5;"></span>
+                                    <span style="flex: 1; font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); font-style: italic;">No project</span>
+                                    <span style="font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground));"></span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1)); font-weight: 600; font-variant-numeric: tabular-nums; color: hsl(35, 100%, 60%); min-width: 40px; text-align: right;">3:30</span>
+                                    <span style="font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); min-width: 30px; text-align: right;">10%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -715,51 +939,13 @@
     </div>
 
     <!-- ================================================================
-         SECTION 3: HOUSEKEEPING INDICATORS
+         SECTION 2: TIMER + ENTRIES PAGE
          ================================================================ -->
     <div class="section">
-        <div class="section-title">3 · Housekeeping Indicators</div>
-        <div class="section-desc">"You have entries without a project" — different ways to surface this.</div>
+        <div class="section-title">2 · Timer + Entries</div>
+        <div class="section-desc">Timer bar on top, entry list with day groups. Play/stop per row. Inline add. Full page mockup.</div>
 
-        <div class="option-label">3a — Banner above entries</div>
-        <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="housekeeping-banner">
-                    <i data-lucide="alert-triangle"></i>
-                    <span class="hk-text"><span class="hk-count">3 entries</span> this week have no project assigned</span>
-                    <span class="hk-action">Show only unassigned →</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="option-label">3b — Filter pill in the nav bar</div>
-        <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="filter-bar">
-                    <div class="filter-chip active">
-                        <i data-lucide="layers"></i> All entries
-                    </div>
-                    <div class="filter-chip">
-                        <i data-lucide="alert-triangle"></i> No project <span style="font-family: 'Oxanium'; font-weight: 700; color: hsl(35, 100%, 60%);">3</span>
-                    </div>
-                    <div class="filter-chip">
-                        <i data-lucide="folder"></i> Project
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="option-label">3c — Stat pill inside the overview card (see 1a)</div>
-        <div class="section-desc" style="margin-bottom: 0; opacity: 0.5;">Already shown above in the stat pills row under the histogram — "No project: 3" in amber.</div>
-    </div>
-
-    <!-- ================================================================
-         SECTION 4: ENTRY ROW LAYOUT
-         ================================================================ -->
-    <div class="section">
-        <div class="section-title">4 · Entry Row Layout</div>
-        <div class="section-desc">Client · Project display, times, duration. Various states. Single layout proposal.</div>
-
+        <div class="option-label">2a — Full page with timer bar, play/stop, inline add</div>
         <div class="theme-container" data-scale="default">
             <div class="app" data-theme="ternity-dark">
                 <!-- Sidebar -->
@@ -769,13 +955,15 @@
                         Ternity
                     </div>
                     <div class="nav-section">Tracking</div>
-                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
-                    <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-item active"><i data-lucide="clock"></i> Timer &amp; Entries</div>
+                    <div class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</div>
                     <div class="nav-item"><i data-lucide="bar-chart-2"></i> Reports</div>
                     <div class="nav-item"><i data-lucide="calendar"></i> Calendar</div>
-                    <div class="nav-item"><i data-lucide="palm-tree"></i> Leave</div>
+                    <div class="nav-section">Leave</div>
+                    <div class="nav-item"><i data-lucide="umbrella"></i> Time Off</div>
                     <div class="nav-section">Manage</div>
                     <div class="nav-item"><i data-lucide="folder"></i> Projects</div>
+                    <div class="nav-item"><i data-lucide="users"></i> Users</div>
                     <div class="spacer"></div>
                     <div class="user-block">
                         <div class="avatar">EM</div>
@@ -788,12 +976,15 @@
 
                 <!-- Main content -->
                 <div class="main">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                        <div>
-                            <div class="page-title">Entries</div>
-                            <div class="page-subtitle">Review and organize your time log</div>
+                    <!-- Timer bar — running state -->
+                    <div class="timer-bar running">
+                        <input class="timer-input" value="PROJ-347 Implement user notifications API" />
+                        <div class="timer-project-badge">
+                            <span class="project-dot" style="background: hsl(var(--t-project-1)); width: 6px; height: 6px;"></span>
+                            Platform Core
                         </div>
-                        <button class="btn"><i data-lucide="plus"></i> Manual Entry</button>
+                        <div class="timer-duration">1:42:08</div>
+                        <button class="timer-btn stop"><i data-lucide="square"></i></button>
                     </div>
 
                     <!-- Nav bar -->
@@ -804,31 +995,27 @@
                         </div>
                         <div class="date-nav">
                             <button><i data-lucide="chevron-left"></i></button>
-                            <div class="date-label today"><i data-lucide="calendar"></i> 10 – 14 Feb 2026</div>
+                            <div class="date-label"><i data-lucide="calendar"></i> 10 – 14 Feb 2026</div>
                             <button><i data-lucide="chevron-right"></i></button>
                         </div>
-
                         <div class="nav-spacer"></div>
-
-                        <div class="housekeeping-pill">
-                            <i data-lucide="alert-triangle"></i>
-                            <span class="pill-count">3</span> no project
-                        </div>
-
                         <div class="period-total">
                             <span class="period-total-label">Total</span>
                             <span class="period-total-value">34:15</span>
                         </div>
                     </div>
 
-                    <!-- 4a: Day groups with entry rows -->
+                    <!-- Friday -->
                     <div class="day-group">
                         <div class="day-header">
                             <span class="day-date">Friday, 14 Feb</span>
-                            <span class="day-total">7:45</span>
+                            <div class="day-header-right">
+                                <span class="day-total">7:45</span>
+                                <button class="day-add-btn" style="opacity: 1;"><i data-lucide="plus"></i></button>
+                            </div>
                         </div>
                         <div class="day-entries">
-                            <!-- 4a: Running entry -->
+                            <!-- Running entry with stop -->
                             <div class="entry-row running" style="grid-template-columns: 1fr auto auto auto auto;">
                                 <div>
                                     <div class="entry-desc">PROJ-347 Implement user notifications API</div>
@@ -841,10 +1028,11 @@
                                 </div>
                                 <div class="entry-time">14:20 – now</div>
                                 <div class="entry-duration running">1:42</div>
+                                <button class="entry-stop"><i data-lucide="square"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
 
-                            <!-- 4b: Normal entry -->
+                            <!-- Normal entry with play on hover -->
                             <div class="entry-row" style="grid-template-columns: 1fr auto auto auto auto;">
                                 <div>
                                     <div class="entry-desc">PROJ-341 Fix pagination edge case on reports</div>
@@ -857,10 +1045,11 @@
                                 </div>
                                 <div class="entry-time">11:00 – 14:15</div>
                                 <div class="entry-duration">3:15</div>
+                                <button class="entry-play" style="opacity: 1;"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
 
-                            <!-- 4c: Entry without project -->
+                            <!-- No project entry -->
                             <div class="entry-row no-project" style="grid-template-columns: 1fr auto auto auto auto;">
                                 <div>
                                     <div class="entry-desc">Team standup + sprint planning</div>
@@ -870,10 +1059,11 @@
                                 </div>
                                 <div class="entry-time">09:00 – 10:45</div>
                                 <div class="entry-duration">1:45</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
 
-                            <!-- 4d: Entry with different project/client -->
+                            <!-- Different project -->
                             <div class="entry-row" style="grid-template-columns: 1fr auto auto auto auto;">
                                 <div>
                                     <div class="entry-desc">Code review for onboarding flow PR</div>
@@ -886,7 +1076,14 @@
                                 </div>
                                 <div class="entry-time">08:00 – 09:00</div>
                                 <div class="entry-duration">1:00</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
+                            </div>
+
+                            <!-- Inline add row -->
+                            <div class="add-entry-row" style="opacity: 1;">
+                                <i data-lucide="plus"></i>
+                                <span>Add entry</span>
                             </div>
                         </div>
                     </div>
@@ -895,7 +1092,10 @@
                     <div class="day-group">
                         <div class="day-header">
                             <span class="day-date">Thursday, 13 Feb</span>
-                            <span class="day-total">8:15</span>
+                            <div class="day-header-right">
+                                <span class="day-total">8:15</span>
+                                <button class="day-add-btn"><i data-lucide="plus"></i></button>
+                            </div>
                         </div>
                         <div class="day-entries">
                             <div class="entry-row" style="grid-template-columns: 1fr auto auto auto auto;">
@@ -910,6 +1110,7 @@
                                 </div>
                                 <div class="entry-time">13:00 – 17:30</div>
                                 <div class="entry-duration">4:30</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
                             <div class="entry-row no-project" style="grid-template-columns: 1fr auto auto auto auto;">
@@ -921,9 +1122,9 @@
                                 </div>
                                 <div class="entry-time">09:30 – 12:45</div>
                                 <div class="entry-duration">3:15</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
-                            <!-- 4e: Entry with no description -->
                             <div class="entry-row" style="grid-template-columns: 1fr auto auto auto auto;">
                                 <div>
                                     <div class="entry-desc empty">(no description)</div>
@@ -936,16 +1137,20 @@
                                 </div>
                                 <div class="entry-time">09:00 – 09:30</div>
                                 <div class="entry-duration">0:30</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Wednesday (lower hours) -->
+                    <!-- Wednesday -->
                     <div class="day-group">
                         <div class="day-header">
                             <span class="day-date">Wednesday, 12 Feb</span>
-                            <span class="day-total">4:30</span>
+                            <div class="day-header-right">
+                                <span class="day-total">4:30</span>
+                                <button class="day-add-btn"><i data-lucide="plus"></i></button>
+                            </div>
                         </div>
                         <div class="day-entries">
                             <div class="entry-row" style="grid-template-columns: 1fr auto auto auto auto;">
@@ -960,6 +1165,7 @@
                                 </div>
                                 <div class="entry-time">13:00 – 17:30</div>
                                 <div class="entry-duration">4:30</div>
+                                <button class="entry-play"><i data-lucide="play"></i></button>
                                 <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                             </div>
                         </div>
@@ -970,13 +1176,13 @@
     </div>
 
     <!-- ================================================================
-         SECTION 5: INLINE EDITING
+         SECTION 3: INLINE EDITING (refined from v1)
          ================================================================ -->
     <div class="section">
-        <div class="section-title">5 · Inline Editing States</div>
-        <div class="section-desc">Click any field to edit in place. One field at a time.</div>
+        <div class="section-title">3 · Inline Editing States</div>
+        <div class="section-desc">Click any field to edit in place. One field at a time. Refined from v1.</div>
 
-        <div class="option-label">5a — Description editing</div>
+        <div class="option-label">3a.1 — Description editing (rounded input, no underline)</div>
         <div class="theme-container" data-scale="default">
             <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
                 <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); overflow: hidden;">
@@ -992,13 +1198,14 @@
                         </div>
                         <div class="entry-time">11:00 – 14:15</div>
                         <div class="entry-duration">3:15</div>
+                        <button class="entry-play"><i data-lucide="play"></i></button>
                         <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="option-label">5b — Time editing</div>
+        <div class="option-label">3b — Time editing</div>
         <div class="theme-container" data-scale="default">
             <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
                 <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); overflow: hidden;">
@@ -1018,13 +1225,14 @@
                             <input class="inline-edit-time" value="14:15" />
                         </div>
                         <div class="entry-duration">3:15</div>
+                        <button class="entry-play"><i data-lucide="play"></i></button>
                         <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="option-label">5c — Project picker (inline dropdown)</div>
+        <div class="option-label">3c — Project picker (inline dropdown)</div>
         <div class="theme-container" data-scale="default">
             <div style="background: hsl(var(--background)); padding: 24px; min-height: 320px;" data-theme="ternity-dark">
                 <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); overflow: visible;">
@@ -1052,6 +1260,7 @@
                         </div>
                         <div class="entry-time">09:00 – 10:45</div>
                         <div class="entry-duration">1:45</div>
+                        <button class="entry-play"><i data-lucide="play"></i></button>
                         <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
                     </div>
                 </div>
@@ -1060,17 +1269,111 @@
     </div>
 
     <!-- ================================================================
-         SECTION 6: ENTRY AUDIT TIMELINE
+         SECTION 4: AUDIT TIMELINE — SLIDE-IN PANEL
          ================================================================ -->
     <div class="section">
-        <div class="section-title">6 · Entry Audit Timeline</div>
-        <div class="section-desc">Shopify-style activity log. Every edit is traceable. Could live in an expandable row or side panel.</div>
+        <div class="section-title">4 · Audit Timeline — Slide-in Panel</div>
+        <div class="section-desc">Right panel slides in when clicking entry details. Shows full edit history.</div>
 
-        <div class="option-label">6a — Edit history timeline</div>
+        <div class="option-label">4a — Panel with entry summary + timeline</div>
         <div class="theme-container" data-scale="default">
-            <div style="background: hsl(var(--background)); padding: 24px;" data-theme="ternity-dark">
-                <div class="timeline-card">
-                    <div class="timeline-header">Activity — "PROJ-341 Fix pagination edge case"</div>
+            <div class="app with-panel" data-theme="ternity-dark" style="min-height: 600px;">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <div class="logo">
+                        <svg viewBox="0 0 18 22" fill="none"><path d="M9 0L0 4v6c0 6.6 3.84 12.74 9 14.4V22c5.16-1.66 9-7.8 9-14.4V4L9 0z" fill="currentColor" opacity="0.15"/><path d="M9 2L2 5.2v4.8c0 5.5 3 10.6 7 12V2z" fill="currentColor" opacity="0.3"/><rect x="5" y="6" width="2" height="10" rx="1" fill="currentColor"/><rect x="8" y="4" width="2" height="12" rx="1" fill="currentColor"/><rect x="11" y="8" width="2" height="8" rx="1" fill="currentColor"/></svg>
+                        Ternity
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item active"><i data-lucide="clock"></i> Timer &amp; Entries</div>
+                    <div class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+                    <div class="spacer"></div>
+                    <div class="user-block">
+                        <div class="avatar">EM</div>
+                        <div>
+                            <div class="user-name">Elena Marsh</div>
+                            <div class="user-role">Developer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main — entries list (dimmed to show focus on panel) -->
+                <div class="main" style="opacity: 0.6;">
+                    <div class="nav-bar">
+                        <div class="view-toggle">
+                            <button>Day</button>
+                            <button class="active">Week</button>
+                        </div>
+                        <div class="date-nav">
+                            <button><i data-lucide="chevron-left"></i></button>
+                            <div class="date-label"><i data-lucide="calendar"></i> 10 – 14 Feb 2026</div>
+                            <button><i data-lucide="chevron-right"></i></button>
+                        </div>
+                        <div class="nav-spacer"></div>
+                        <div class="period-total">
+                            <span class="period-total-label">Total</span>
+                            <span class="period-total-value">34:15</span>
+                        </div>
+                    </div>
+                    <div class="day-group">
+                        <div class="day-header">
+                            <span class="day-date">Friday, 14 Feb</span>
+                            <span class="day-total">7:45</span>
+                        </div>
+                        <div class="day-entries">
+                            <div class="entry-row" style="grid-template-columns: 1fr auto auto auto; background: hsl(var(--primary) / 0.05); border-left: 2px solid hsl(var(--primary));">
+                                <div>
+                                    <div class="entry-desc">PROJ-341 Fix pagination edge case on reports</div>
+                                    <div class="entry-project" style="margin-top: 3px;">
+                                        <span class="project-dot" style="background: hsl(var(--t-project-1));"></span>
+                                        <span class="client-name">Meridian Labs</span>
+                                        <span class="client-sep">·</span>
+                                        <span class="project-name">Platform Core</span>
+                                    </div>
+                                </div>
+                                <div class="entry-time">11:00 – 14:15</div>
+                                <div class="entry-duration">3:15</div>
+                                <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
+                            </div>
+                            <div class="entry-row" style="grid-template-columns: 1fr auto auto auto;">
+                                <div>
+                                    <div class="entry-desc">Team standup + sprint planning</div>
+                                    <div class="entry-project" style="margin-top: 3px;">
+                                        <span class="project-dot" style="background: hsl(var(--t-project-3));"></span>
+                                        <span class="client-name">Internal</span>
+                                        <span class="client-sep">·</span>
+                                        <span class="project-name">Team Ops</span>
+                                    </div>
+                                </div>
+                                <div class="entry-time">09:00 – 10:45</div>
+                                <div class="entry-duration">1:45</div>
+                                <div class="entry-actions"><button><i data-lucide="more-horizontal"></i></button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide-in panel -->
+                <div class="slide-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Entry Details</span>
+                        <button class="panel-close"><i data-lucide="x"></i></button>
+                    </div>
+
+                    <div class="panel-entry-summary">
+                        <div class="panel-entry-desc">PROJ-341 Fix pagination edge case on reports</div>
+                        <div class="panel-entry-meta">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <span class="project-dot" style="background: hsl(var(--t-project-1));"></span>
+                                <span style="color: hsl(var(--muted-foreground)); font-size: calc(11px * var(--t-scale, 1));">Meridian Labs · Platform Core</span>
+                            </div>
+                            <div style="color: hsl(var(--muted-foreground)); font-size: calc(11px * var(--t-scale, 1));">
+                                Fri 14 Feb · 11:00 – 14:15 · <span style="font-family: 'Oxanium'; font-weight: 600; color: hsl(var(--foreground));">3:15</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-title" style="margin-bottom: 16px;">Activity</div>
                     <div class="timeline">
                         <div class="timeline-event edited">
                             <div class="timeline-dot"></div>
@@ -1111,35 +1414,28 @@
                         <div class="timeline-event created">
                             <div class="timeline-dot"></div>
                             <div class="timeline-meta">Elena Marsh · <span class="timestamp">Today at 11:00</span></div>
-                            <div class="timeline-action">
-                                Created entry — started timer
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 6b: Deleted entry example -->
-                <div style="font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1)); letter-spacing: 3px; text-transform: uppercase; color: hsl(var(--muted-foreground)); opacity: 0.5; margin-top: 20px; margin-bottom: 8px;">6b — Deleted entry timeline</div>
-                <div class="timeline-card" style="opacity: 0.7;">
-                    <div class="timeline-header" style="display: flex; align-items: center; gap: 8px;">
-                        Activity — "Accidental duplicate"
-                        <span style="font-family: 'Inter'; font-size: calc(10px * var(--t-scale, 1)); background: hsl(var(--destructive) / 0.12); color: hsl(var(--destructive)); padding: 2px 8px; border-radius: 9999px; letter-spacing: 0;">Deleted</span>
-                    </div>
-                    <div class="timeline">
-                        <div class="timeline-event deleted">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-meta">Elena Marsh · <span class="timestamp">Today at 12:30</span></div>
-                            <div class="timeline-action">Deleted entry</div>
-                        </div>
-                        <div class="timeline-event created">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-meta">Elena Marsh · <span class="timestamp">Today at 12:28</span></div>
-                            <div class="timeline-action">Created entry — manual</div>
+                            <div class="timeline-action">Created entry — started timer</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ================================================================
+         SECTION 5: SUPERSEDED FROM V1 (dimmed)
+         ================================================================ -->
+    <div class="section">
+        <div class="section-title" style="opacity: 0.3;">Superseded from v1</div>
+        <div class="section-desc" style="opacity: 0.2;">Previous iterations kept for reference. See entries-v1.html for full versions.</div>
+
+        <div class="option-label superseded" data-superseded="Superseded by 1a.1 — bars now slimmer, paired with heatmap">1a — Bars with day labels, 8h target line (standalone)</div>
+        <div class="option-label superseded" data-superseded="Superseded by 1a.1 — project stacking deferred">1b — Compact bars, stacked by project color</div>
+        <div class="option-label superseded" data-superseded="Superseded by 1a.1 heatmap — horizontal layout preferred">2a — Calendar grid with numbers (vertical)</div>
+        <div class="option-label superseded" data-superseded="Evolved into 1a.1 side-by-side layout">2b — Compact heatmap alongside histogram</div>
+        <div class="option-label superseded" data-superseded="Replaced by 1b attention cards">3a/3b/3c — Housekeeping indicators (banner, pills, stat pill)</div>
+        <div class="option-label superseded" data-superseded="Superseded by 3a.1 — rounded input instead of underline">5a — Description editing (underline style)</div>
+        <div class="option-label superseded" data-superseded="Superseded by 4a — timeline now in slide-in panel">6a/6b — Entry audit timeline (standalone cards)</div>
     </div>
 
     <script>
@@ -1175,7 +1471,6 @@
         document.querySelectorAll('#scaleNav button').forEach(b => b.classList.toggle('active', b.dataset.id === id));
     }
 
-    // Build switchers
     const themeNav = document.getElementById('themeNav');
     THEMES.forEach(t => {
         const btn = document.createElement('button');
@@ -1199,27 +1494,15 @@
     // d3 Charts
     // ================================================================
     const WEEK_DATA = [
-        { day: 'Mon', hours: 7.5, label: '7:30', weekend: false },
-        { day: 'Tue', hours: 6.0, label: '6:00', weekend: false },
-        { day: 'Wed', hours: 4.5, label: '4:30', weekend: false },
-        { day: 'Thu', hours: 8.25, label: '8:15', weekend: false },
-        { day: 'Fri', hours: 7.75, label: '7:45', weekend: false, today: true },
-        { day: 'Sat', hours: 0.25, label: '0:15', weekend: true },
-        { day: 'Sun', hours: 0, label: '—', weekend: true },
+        { day: 'Mon', hours: 7.5, label: '7:30' },
+        { day: 'Tue', hours: 6.0, label: '6:00' },
+        { day: 'Wed', hours: 4.5, label: '4:30' },
+        { day: 'Thu', hours: 8.25, label: '8:15' },
+        { day: 'Fri', hours: 7.75, label: '7:45' },
+        { day: 'Sat', hours: 0.25, label: '0:15' },
+        { day: 'Sun', hours: 0, label: '—' },
     ];
 
-    // Project-stacked data for option B
-    const WEEK_STACKED = [
-        { day: 'Mon', projects: [{ hours: 5, color: 'var(--t-project-1)' }, { hours: 2, color: 'var(--t-project-2)' }, { hours: 0.5, color: 'var(--t-project-3)' }] },
-        { day: 'Tue', projects: [{ hours: 4, color: 'var(--t-project-1)' }, { hours: 2, color: 'var(--t-project-2)' }] },
-        { day: 'Wed', projects: [{ hours: 4.5, color: 'var(--t-project-1)' }] },
-        { day: 'Thu', projects: [{ hours: 5, color: 'var(--t-project-1)' }, { hours: 3.25, color: 'var(--t-project-3)' }] },
-        { day: 'Fri', projects: [{ hours: 4.5, color: 'var(--t-project-1)' }, { hours: 1, color: 'var(--t-project-2)' }, { hours: 2.25, color: 'var(--t-project-3)' }] },
-        { day: 'Sat', projects: [{ hours: 0.25, color: 'var(--t-project-3)' }] },
-        { day: 'Sun', projects: [] },
-    ];
-
-    // Feb 2026 heatmap data
     const FEB_DATA = [];
     for (let d = 1; d <= 28; d++) {
         const date = new Date(2026, 1, d);
@@ -1227,13 +1510,12 @@
         const isWeekend = dow === 0 || dow === 6;
         let hours = 0;
         if (!isWeekend) hours = 4 + Math.random() * 5;
-        if (d > 14) hours = 0; // future
+        if (d > 14) hours = 0;
         if (isWeekend && Math.random() > 0.7) hours = Math.random() * 2;
         FEB_DATA.push({ day: d, date, dow, hours: Math.round(hours * 10) / 10, isWeekend });
     }
 
     function getCSS(varName) {
-        // Read CSS variable from the first themed element
         const el = document.querySelector('[data-theme]');
         if (!el) return '#00D4AA';
         const val = getComputedStyle(el).getPropertyValue(varName).trim();
@@ -1241,11 +1523,12 @@
         return `hsl(${val})`;
     }
 
-    function renderHistogramA() {
-        const container = document.getElementById('histogram-a');
+    function renderHistogramTo(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
         container.innerHTML = '';
-        const width = container.offsetWidth || 600;
-        const height = 120;
+        const width = container.offsetWidth || 400;
+        const height = 100;
         const margin = { top: 8, right: 10, bottom: 22, left: 0 };
 
         const svg = d3.select(container).append('svg')
@@ -1254,7 +1537,7 @@
         const x = d3.scaleBand()
             .domain(WEEK_DATA.map(d => d.day))
             .range([margin.left, width - margin.right])
-            .padding(0.35);
+            .padding(0.55);
 
         const y = d3.scaleLinear()
             .domain([0, 10]).range([height - margin.bottom, margin.top]);
@@ -1268,112 +1551,30 @@
             .attr('class', 'chart-target-label')
             .attr('x', width - margin.right).attr('y', y(8) - 3)
             .attr('text-anchor', 'end').attr('font-size', '9px')
-            .text('8h target');
+            .text('8h');
 
-        // Bars
         const primary = getCSS('--primary');
-        const muted = getCSS('--muted-foreground');
 
         svg.selectAll('.bar-group')
             .data(WEEK_DATA).enter().append('g')
-            .attr('class', d => `bar-group ${d.today ? 'chart-today' : ''} ${d.weekend ? 'chart-weekend' : ''}`)
             .each(function(d) {
                 const g = d3.select(this);
-                // Bar
+                const isWeekend = d.day === 'Sat' || d.day === 'Sun';
                 g.append('rect')
                     .attr('class', 'chart-bar')
                     .attr('x', x(d.day)).attr('width', x.bandwidth())
                     .attr('y', y(d.hours)).attr('height', Math.max(0, y(0) - y(d.hours)))
                     .attr('rx', 3).attr('ry', 3)
-                    .attr('fill', primary);
-                // Value label
+                    .attr('fill', primary)
+                    .attr('opacity', isWeekend ? 0.3 : 0.85);
                 if (d.hours > 0) {
                     g.append('text').attr('class', 'chart-value')
                         .attr('x', x(d.day) + x.bandwidth() / 2)
                         .attr('y', y(d.hours) - 4)
-                        .attr('text-anchor', 'middle').attr('font-size', '10px')
+                        .attr('text-anchor', 'middle').attr('font-size', '9px')
                         .attr('font-weight', '600')
                         .text(d.label);
                 }
-                // Day label
-                g.append('text').attr('class', 'chart-label')
-                    .attr('x', x(d.day) + x.bandwidth() / 2)
-                    .attr('y', height - 4)
-                    .attr('text-anchor', 'middle').attr('font-size', '10px')
-                    .text(d.day);
-            });
-    }
-
-    function renderHistogramB() {
-        const container = document.getElementById('histogram-b');
-        container.innerHTML = '';
-        const width = container.offsetWidth || 600;
-        const height = 80;
-        const margin = { top: 4, right: 10, bottom: 22, left: 0 };
-
-        const svg = d3.select(container).append('svg')
-            .attr('width', width).attr('height', height);
-
-        const x = d3.scaleBand()
-            .domain(WEEK_STACKED.map(d => d.day))
-            .range([margin.left, width - margin.right])
-            .padding(0.4);
-
-        const y = d3.scaleLinear()
-            .domain([0, 10]).range([height - margin.bottom, margin.top]);
-
-        svg.selectAll('.stack-group')
-            .data(WEEK_STACKED).enter().append('g')
-            .each(function(d) {
-                const g = d3.select(this);
-                let cumulative = 0;
-                d.projects.forEach(p => {
-                    g.append('rect')
-                        .attr('class', 'chart-bar')
-                        .attr('x', x(d.day)).attr('width', x.bandwidth())
-                        .attr('y', y(cumulative + p.hours))
-                        .attr('height', Math.max(0, y(cumulative) - y(cumulative + p.hours)))
-                        .attr('rx', 2).attr('ry', 2)
-                        .attr('fill', `hsl(${p.color})`);
-                    cumulative += p.hours;
-                });
-                g.append('text').attr('class', 'chart-label')
-                    .attr('x', x(d.day) + x.bandwidth() / 2)
-                    .attr('y', height - 4)
-                    .attr('text-anchor', 'middle').attr('font-size', '10px')
-                    .text(d.day);
-            });
-    }
-
-    function renderHistogramC() {
-        const container = document.getElementById('histogram-c');
-        if (!container) return;
-        container.innerHTML = '';
-        const width = container.offsetWidth || 400;
-        const height = 80;
-        const margin = { top: 4, right: 4, bottom: 22, left: 0 };
-
-        const svg = d3.select(container).append('svg')
-            .attr('width', width).attr('height', height);
-
-        const primary = getCSS('--primary');
-        const x = d3.scaleBand()
-            .domain(WEEK_DATA.map(d => d.day))
-            .range([margin.left, width - margin.right])
-            .padding(0.35);
-        const y = d3.scaleLinear()
-            .domain([0, 10]).range([height - margin.bottom, margin.top]);
-
-        svg.selectAll('.bar')
-            .data(WEEK_DATA).enter().append('g')
-            .each(function(d) {
-                const g = d3.select(this);
-                g.append('rect')
-                    .attr('class', 'chart-bar')
-                    .attr('x', x(d.day)).attr('width', x.bandwidth())
-                    .attr('y', y(d.hours)).attr('height', Math.max(0, y(0) - y(d.hours)))
-                    .attr('rx', 2).attr('fill', primary)
-                    .attr('opacity', d.weekend ? 0.3 : 0.8);
                 g.append('text').attr('class', 'chart-label')
                     .attr('x', x(d.day) + x.bandwidth() / 2)
                     .attr('y', height - 4)
@@ -1382,86 +1583,16 @@
             });
     }
 
-    function renderHeatmapA() {
-        const container = document.getElementById('heatmap-a');
-        container.innerHTML = '';
-        const cellSize = 28;
-        const cellGap = 3;
-        const labelWidth = 30;
-        const headerHeight = 20;
-
-        // Calendar grid — 7 rows (Mon-Sun) × 4-5 cols
-        const weeks = [];
-        let currentWeek = [];
-        FEB_DATA.forEach(d => {
-            const dow = d.date.getDay();
-            if (dow === 1 && currentWeek.length > 0) {
-                weeks.push(currentWeek);
-                currentWeek = [];
-            }
-            currentWeek.push(d);
-        });
-        if (currentWeek.length > 0) weeks.push(currentWeek);
-
-        const width = labelWidth + weeks.length * (cellSize + cellGap) + 20;
-        const height = headerHeight + 7 * (cellSize + cellGap);
-
-        const svg = d3.select(container).append('svg')
-            .attr('width', width).attr('height', height);
-
-        const primary = getCSS('--primary');
-        const mutedBg = getCSS('--muted');
-
-        // Day labels
-        ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach((label, i) => {
-            if (i % 2 === 0) {
-                svg.append('text').attr('class', 'heatmap-day-label')
-                    .attr('x', labelWidth - 6)
-                    .attr('y', headerHeight + i * (cellSize + cellGap) + cellSize / 2 + 3)
-                    .attr('text-anchor', 'end')
-                    .text(label);
-            }
-        });
-
-        // Cells
-        weeks.forEach((week, wi) => {
-            week.forEach(d => {
-                const dow = d.date.getDay();
-                const row = dow === 0 ? 6 : dow - 1; // Mon=0
-                const opacity = d.hours === 0 ? 0 : Math.min(1, 0.15 + (d.hours / 10) * 0.85);
-                const fill = d.hours === 0 ? mutedBg : primary;
-
-                const rect = svg.append('rect')
-                    .attr('class', 'heatmap-day')
-                    .attr('x', labelWidth + wi * (cellSize + cellGap))
-                    .attr('y', headerHeight + row * (cellSize + cellGap))
-                    .attr('width', cellSize).attr('height', cellSize)
-                    .attr('fill', fill)
-                    .attr('opacity', d.hours === 0 ? 0.3 : opacity);
-
-                // Hours number inside cell
-                if (d.hours > 0) {
-                    svg.append('text')
-                        .attr('x', labelWidth + wi * (cellSize + cellGap) + cellSize / 2)
-                        .attr('y', headerHeight + row * (cellSize + cellGap) + cellSize / 2 + 4)
-                        .attr('text-anchor', 'middle')
-                        .attr('font-family', "'Oxanium', sans-serif")
-                        .attr('font-size', '9px').attr('font-weight', '600')
-                        .attr('fill', 'hsl(var(--foreground))')
-                        .attr('opacity', 0.9)
-                        .text(d.hours.toFixed(0) + 'h');
-                }
-            });
-        });
-    }
-
-    function renderHeatmapB() {
-        const container = document.getElementById('heatmap-b');
+    function renderHeatmapTo(containerId) {
+        const container = document.getElementById(containerId);
         if (!container) return;
         container.innerHTML = '';
-        const cellSize = 16;
-        const cellGap = 2;
 
+        const cellSize = 20;
+        const cellGap = 3;
+        const headerHeight = 16;
+
+        // Horizontal layout: 5 rows (weeks), 7 cols (Mon-Sun)
         const weeks = [];
         let currentWeek = [];
         FEB_DATA.forEach(d => {
@@ -1474,8 +1605,9 @@
         });
         if (currentWeek.length > 0) weeks.push(currentWeek);
 
-        const width = weeks.length * (cellSize + cellGap) + 10;
-        const height = 7 * (cellSize + cellGap);
+        const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+        const width = 7 * (cellSize + cellGap) + 10;
+        const height = headerHeight + weeks.length * (cellSize + cellGap) + 10;
 
         const svg = d3.select(container).append('svg')
             .attr('width', width).attr('height', height);
@@ -1483,31 +1615,55 @@
         const primary = getCSS('--primary');
         const mutedBg = getCSS('--muted');
 
+        // Day labels (header row)
+        dayLabels.forEach((label, i) => {
+            svg.append('text')
+                .attr('x', i * (cellSize + cellGap) + cellSize / 2)
+                .attr('y', 10)
+                .attr('text-anchor', 'middle')
+                .attr('font-family', "'Oxanium', sans-serif")
+                .attr('font-size', '8px')
+                .attr('fill', 'hsl(var(--muted-foreground))')
+                .attr('opacity', 0.5)
+                .text(label);
+        });
+
+        // Cells — rows=weeks, cols=days
         weeks.forEach((week, wi) => {
             week.forEach(d => {
                 const dow = d.date.getDay();
-                const row = dow === 0 ? 6 : dow - 1;
+                const col = dow === 0 ? 6 : dow - 1; // Mon=0, Sun=6
                 const opacity = d.hours === 0 ? 0 : Math.min(1, 0.15 + (d.hours / 10) * 0.85);
                 const fill = d.hours === 0 ? mutedBg : primary;
 
                 svg.append('rect')
                     .attr('class', 'heatmap-day')
-                    .attr('x', wi * (cellSize + cellGap))
-                    .attr('y', row * (cellSize + cellGap))
+                    .attr('x', col * (cellSize + cellGap))
+                    .attr('y', headerHeight + wi * (cellSize + cellGap))
                     .attr('width', cellSize).attr('height', cellSize)
                     .attr('fill', fill)
-                    .attr('opacity', d.hours === 0 ? 0.3 : opacity);
+                    .attr('opacity', d.hours === 0 ? 0.2 : opacity);
+
+                // Day number
+                svg.append('text')
+                    .attr('x', col * (cellSize + cellGap) + cellSize / 2)
+                    .attr('y', headerHeight + wi * (cellSize + cellGap) + cellSize / 2 + 3)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-family', "'Oxanium', sans-serif")
+                    .attr('font-size', '8px').attr('font-weight', '600')
+                    .attr('fill', d.hours > 4 ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))')
+                    .attr('opacity', d.hours === 0 ? 0.3 : 0.8)
+                    .text(d.day);
             });
         });
     }
 
     function renderAllCharts() {
         setTimeout(() => {
-            renderHistogramA();
-            renderHistogramB();
-            renderHistogramC();
-            renderHeatmapA();
-            renderHeatmapB();
+            renderHistogramTo('histogram-main');
+            renderHistogramTo('histogram-dash');
+            renderHeatmapTo('heatmap-main');
+            renderHeatmapTo('heatmap-dash');
         }, 50);
     }
 
@@ -1515,7 +1671,6 @@
     lucide.createIcons();
     renderAllCharts();
 
-    // Re-render on resize
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);

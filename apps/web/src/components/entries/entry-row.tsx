@@ -185,7 +185,7 @@ export function EntryRow({ entry }: Props) {
     release(entry.id);
     setEditingField(null);
     if (editDesc !== entry.description) {
-      updateEntry.mutate({ id: entry.id, description: editDesc });
+      updateEntry.mutate({ id: entry.id, description: editDesc, source: 'inline_edit' });
     }
     triggerSaveFlash();
   }, [editDesc, entry.description, entry.id, updateEntry, release]);
@@ -210,7 +210,7 @@ export function EntryRow({ entry }: Props) {
       const endDay = editEndTime < editStartTime ? day + 1 : day;
       update.stoppedAt = orgTimeToISO(year, month, endDay, endH, endM);
     }
-    updateEntry.mutate(update);
+    updateEntry.mutate({ ...update, source: 'inline_edit' });
     triggerSaveFlash();
   }, [editStartTime, editEndTime, entry.startedAt, entry.id, isRunning, updateEntry, release]);
 
@@ -236,7 +236,7 @@ export function EntryRow({ entry }: Props) {
       // Delay mutation until after pill-pop animation completes.
       // Prevents React Query refetch from re-rendering all rows mid-animation.
       setTimeout(() => {
-        updateEntry.mutate({ id: entry.id, projectId });
+        updateEntry.mutate({ id: entry.id, projectId, source: 'inline_edit' });
       }, 500);
     },
     [entry.id, updateEntry, release, allProjects],
@@ -571,7 +571,7 @@ export function EntryRow({ entry }: Props) {
           </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive"
-            onClick={() => deleteEntry.mutate(entry.id)}
+            onClick={() => deleteEntry.mutate({ id: entry.id, source: 'inline_edit' })}
           >
             <Trash2 className="mr-2 h-3.5 w-3.5" />
             Delete

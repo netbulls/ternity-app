@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ternity — Impersonation Exploration (4a1c)</title>
+    <title>Ternity — Impersonation Exploration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="../themes.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,20 +48,22 @@
             max-width: 1200px; margin: 0 auto;
             border-radius: 16px; overflow: hidden;
             border: 1px solid rgba(255,255,255,0.06);
+            position: relative;
         }
 
-        /* APP LAYOUT */
+        /* ---- APP LAYOUT ---- */
         .app {
             background: hsl(var(--background)); color: hsl(var(--foreground));
             font-family: 'Inter', system-ui, sans-serif;
             font-size: calc(14px * var(--t-scale, 1));
             min-height: 720px; display: grid;
             grid-template-columns: 220px 1fr;
+            position: relative;
         }
-        .app.with-top-banner { grid-template-rows: auto 1fr; grid-template-columns: 1fr; }
-        .app.with-top-banner .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
-        .app.with-bottom-banner { grid-template-rows: 1fr auto; grid-template-columns: 1fr; }
-        .app.with-bottom-banner .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
+        .app.has-banner-top { grid-template-rows: auto 1fr; grid-template-columns: 1fr; }
+        .app.has-banner-top .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
+        .app.has-banner-bottom { grid-template-rows: 1fr auto; grid-template-columns: 1fr; }
+        .app.has-banner-bottom .app-body { display: grid; grid-template-columns: 220px 1fr; min-height: 680px; }
 
         /* Sidebar */
         .sidebar {
@@ -96,6 +98,7 @@
         .sidebar .user-block {
             display: flex; align-items: center; gap: 8px; padding: 10px;
             border-radius: calc(var(--radius)); background: hsl(var(--muted) / 0.5);
+            transition: all 0.4s ease;
         }
         .sidebar .avatar {
             width: 30px; height: 30px; border-radius: 50%;
@@ -108,10 +111,20 @@
 
         .main { padding: 24px; overflow: auto; }
         .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .page-title { font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600; letter-spacing: 1px; color: hsl(var(--foreground)); }
+        .page-title {
+            font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600;
+            letter-spacing: 1px; color: hsl(var(--foreground));
+        }
         .page-subtitle { font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
 
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; padding: 8px 16px; border-radius: calc(var(--radius)); border: none; cursor: default; white-space: nowrap; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: 'Inter', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 500;
+            padding: 8px 16px; border-radius: calc(var(--radius));
+            border: none; cursor: default; transition: opacity 0.15s; white-space: nowrap;
+        }
+        .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .btn-outline { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); }
         .btn-sm { font-size: calc(12px * var(--t-scale, 1)); padding: 5px 10px; }
 
         .badge { display: inline-flex; align-items: center; gap: 5px; font-size: calc(11px * var(--t-scale, 1)); font-weight: 500; padding: 2px 8px; border-radius: 9999px; }
@@ -190,12 +203,12 @@
         .entry-desc { font-size: calc(13px * var(--t-scale, 1)); font-weight: 500; color: hsl(var(--foreground)); }
         .entry-project { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); display: flex; align-items: center; gap: 6px; margin-top: 2px; }
         .entry-project-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .entry-labels { display: flex; gap: 4px; }
         .entry-label { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; font-weight: 500; }
         .entry-label-1 { background: hsl(var(--t-label-1-bg)); color: hsl(var(--t-label-1-text)); }
         .entry-label-2 { background: hsl(var(--t-label-2-bg)); color: hsl(var(--t-label-2-text)); }
         .entry-time { font-size: calc(11px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); white-space: nowrap; }
         .entry-duration { font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1)); font-weight: 600; color: hsl(var(--foreground)); letter-spacing: 0.5px; min-width: 52px; text-align: right; }
+        .entry-labels { display: flex; gap: 4px; }
         .chart-placeholder { background: hsl(var(--t-stat-bg)); border: 1px solid hsl(var(--t-border-subtle)); border-radius: calc(var(--radius)); padding: 20px; height: 180px; display: flex; align-items: center; justify-content: center; color: hsl(var(--muted-foreground)); font-size: calc(12px * var(--t-scale, 1)); }
 
         /* State nav */
@@ -206,73 +219,290 @@
         .state { display: none; }
         .state.visible { display: block; }
 
-        /* IMPERSONATION BANNER — simple top bar */
-        .imp-banner-top {
+        /* ================================================================
+           IMPERSONATION BANNER — OPTION A: TOP BAR (warm amber glow)
+           ================================================================ */
+        .imp-banner-a {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 8px 20px;
-            background: hsl(35 100% 50% / 0.12);
-            border-bottom: 1px solid hsl(35 100% 50% / 0.25);
-            font-size: calc(12px * var(--t-scale, 1));
+            padding: 10px 24px;
+            background: linear-gradient(90deg, hsl(35 100% 50% / 0.15) 0%, hsl(25 100% 45% / 0.08) 100%);
+            border-bottom: 1px solid hsl(35 100% 50% / 0.3);
+            position: relative; overflow: hidden;
+            animation: bannerSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .imp-banner-top .banner-left { display: flex; align-items: center; gap: 10px; }
-        .imp-banner-top .banner-icon { width: 18px; height: 18px; color: hsl(35 100% 60%); }
-        .imp-banner-top .banner-text { color: hsl(35 100% 70%); font-weight: 500; }
-        .imp-banner-top .banner-user { color: hsl(var(--foreground)); font-weight: 600; }
-        .imp-banner-top .banner-role { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; border: 1px solid hsl(35 100% 50% / 0.3); color: hsl(35 100% 65%); margin-left: 4px; }
-        .imp-banner-top .banner-exit {
-            display: inline-flex; align-items: center; gap: 5px;
-            font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600;
-            padding: 4px 12px; border-radius: calc(var(--radius) - 2px);
-            border: 1px solid hsl(35 100% 50% / 0.3); background: hsl(35 100% 50% / 0.1);
-            color: hsl(35 100% 65%); cursor: default; text-transform: uppercase; letter-spacing: 0.5px;
+        @keyframes bannerSlideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        .imp-banner-top .banner-exit svg { width: 12px; height: 12px; }
+        /* Animated shimmer on banner */
+        .imp-banner-a::before {
+            content: '';
+            position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, hsl(35 100% 60% / 0.06), transparent);
+            animation: bannerShimmer 4s ease-in-out infinite;
+        }
+        @keyframes bannerShimmer {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+        .imp-banner-a .b-left { display: flex; align-items: center; gap: 12px; z-index: 1; }
+        .imp-banner-a .b-eye {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: hsl(35 100% 50% / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            animation: eyePulse 3s ease-in-out infinite;
+        }
+        @keyframes eyePulse {
+            0%, 100% { box-shadow: 0 0 0 0 hsl(35 100% 50% / 0.2); }
+            50% { box-shadow: 0 0 0 8px hsl(35 100% 50% / 0); }
+        }
+        .imp-banner-a .b-eye svg { width: 16px; height: 16px; color: hsl(35 100% 60%); }
+        .imp-banner-a .b-label {
+            font-family: 'Oxanium', sans-serif; font-size: 9px;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(35 100% 65%); font-weight: 600;
+        }
+        .imp-banner-a .b-name {
+            font-size: 14px; font-weight: 600; color: hsl(var(--foreground));
+            display: flex; align-items: center; gap: 8px;
+        }
+        .imp-banner-a .b-role {
+            font-size: 10px; padding: 1px 8px; border-radius: 9999px;
+            background: hsl(35 100% 50% / 0.12); color: hsl(35 100% 65%);
+            font-weight: 500;
+        }
+        .imp-banner-a .b-exit {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            padding: 6px 16px; border-radius: calc(var(--radius));
+            border: 1px solid hsl(35 100% 50% / 0.3);
+            background: hsl(35 100% 50% / 0.08);
+            color: hsl(35 100% 65%); cursor: pointer;
+            transition: all 0.2s; z-index: 1;
+        }
+        .imp-banner-a .b-exit:hover {
+            background: hsl(35 100% 50% / 0.2);
+            border-color: hsl(35 100% 50% / 0.5);
+            box-shadow: 0 0 16px hsl(35 100% 50% / 0.15);
+        }
+        .imp-banner-a .b-exit svg { width: 14px; height: 14px; }
 
-        /* IMPERSONATION BANNER — simple bottom bar */
-        .imp-banner-bottom {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 6px 20px;
+        /* ================================================================
+           OPTION B: FLOATING PILL (bottom-center, glass morphism)
+           ================================================================ */
+        .imp-banner-b {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 20px; border-radius: 999px;
+            background: hsl(var(--card) / 0.85);
+            border: 1px solid hsl(35 100% 50% / 0.25);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px hsl(var(--background) / 0.5), 0 0 0 1px hsl(35 100% 50% / 0.1);
+            z-index: 50;
+            animation: pillFloat 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes pillFloat {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .imp-banner-b .b-eye {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: hsl(35 100% 50% / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            animation: eyePulse 3s ease-in-out infinite;
+        }
+        .imp-banner-b .b-eye svg { width: 14px; height: 14px; color: hsl(35 100% 60%); }
+        .imp-banner-b .b-text { font-size: 13px; color: hsl(35 100% 70%); font-weight: 500; }
+        .imp-banner-b .b-name { color: hsl(var(--foreground)); font-weight: 600; }
+        .imp-banner-b .b-sep { width: 1px; height: 20px; background: hsl(var(--border)); }
+        .imp-banner-b .b-exit {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+            padding: 4px 12px; border-radius: 999px;
+            border: 1px solid hsl(35 100% 50% / 0.3);
             background: hsl(35 100% 50% / 0.1);
-            border-top: 1px solid hsl(35 100% 50% / 0.25);
-            font-size: calc(12px * var(--t-scale, 1));
+            color: hsl(35 100% 65%); cursor: pointer; transition: all 0.2s;
         }
-        .imp-banner-bottom .banner-left { display: flex; align-items: center; gap: 10px; }
-        .imp-banner-bottom .banner-icon { width: 16px; height: 16px; color: hsl(35 100% 60%); }
-        .imp-banner-bottom .banner-text { color: hsl(35 100% 70%); font-weight: 500; }
-        .imp-banner-bottom .banner-user { color: hsl(var(--foreground)); font-weight: 600; }
-        .imp-banner-bottom .banner-role { font-size: calc(10px * var(--t-scale, 1)); padding: 1px 7px; border-radius: 9999px; border: 1px solid hsl(35 100% 50% / 0.3); color: hsl(35 100% 65%); margin-left: 4px; }
-        .imp-banner-bottom .banner-exit {
-            display: inline-flex; align-items: center; gap: 5px;
-            font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1)); font-weight: 600;
-            padding: 3px 10px; border-radius: calc(var(--radius) - 2px);
-            border: 1px solid hsl(35 100% 50% / 0.3); background: hsl(35 100% 50% / 0.1);
-            color: hsl(35 100% 65%); cursor: default; text-transform: uppercase; letter-spacing: 0.5px;
+        .imp-banner-b .b-exit:hover {
+            background: hsl(35 100% 50% / 0.2);
+            border-color: hsl(35 100% 50% / 0.5);
         }
-        .imp-banner-bottom .banner-exit svg { width: 12px; height: 12px; }
+        .imp-banner-b .b-exit svg { width: 12px; height: 12px; }
 
-        /* SIDEBAR ACCENT variant */
-        .app.with-sidebar-accent .sidebar { border-left: 3px solid hsl(35 100% 55%); }
-        .imp-sidebar-block {
-            display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-            border-radius: calc(var(--radius));
-            background: hsl(35 100% 50% / 0.1); border: 1px solid hsl(35 100% 50% / 0.2);
-            margin-bottom: 8px;
+        /* ================================================================
+           OPTION C: SIDEBAR GLOW + IDENTITY SWAP
+           ================================================================ */
+        .app.sidebar-glow .sidebar {
+            border-left: 3px solid hsl(35 100% 55%);
+            box-shadow: inset 3px 0 20px hsl(35 100% 50% / 0.08);
         }
-        .imp-sidebar-block .imp-icon { width: 16px; height: 16px; color: hsl(35 100% 60%); flex-shrink: 0; }
-        .imp-sidebar-block .imp-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(35 100% 65%); font-weight: 600; }
-        .imp-sidebar-block .imp-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
-        .imp-sidebar-block .imp-exit {
-            margin-left: auto; width: 20px; height: 20px; border-radius: 4px;
-            border: none; background: transparent; color: hsl(35 100% 60%); cursor: default;
+        .imp-sidebar-card {
+            padding: 10px 12px; border-radius: calc(var(--radius));
+            background: hsl(35 100% 50% / 0.08);
+            border: 1px solid hsl(35 100% 50% / 0.15);
+            margin-bottom: 12px;
+            position: relative; overflow: hidden;
+        }
+        .imp-sidebar-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, hsl(35 100% 50% / 0), hsl(35 100% 55%), hsl(35 100% 50% / 0));
+            animation: topGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes topGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .imp-sidebar-card .imp-top {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .imp-sidebar-card .imp-label {
+            font-family: 'Oxanium', sans-serif; font-size: 8px;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(35 100% 65%); font-weight: 600;
+        }
+        .imp-sidebar-card .imp-close {
+            width: 18px; height: 18px; border-radius: 4px;
+            border: none; background: transparent;
+            color: hsl(35 100% 60%); cursor: pointer;
             display: flex; align-items: center; justify-content: center;
         }
-        .imp-sidebar-block .imp-exit svg { width: 14px; height: 14px; }
+        .imp-sidebar-card .imp-close:hover { background: hsl(35 100% 50% / 0.2); }
+        .imp-sidebar-card .imp-close svg { width: 12px; height: 12px; }
+        .imp-sidebar-card .imp-user {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .imp-sidebar-card .imp-avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: hsl(35 100% 50% / 0.2); color: hsl(35 100% 65%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 600;
+            box-shadow: 0 0 0 2px hsl(35 100% 50% / 0.3);
+        }
+        .imp-sidebar-card .imp-name { font-size: 12px; font-weight: 600; color: hsl(var(--sidebar-foreground)); }
+        .imp-sidebar-card .imp-role-text { font-size: 10px; color: hsl(35 100% 65%); }
+
+        /* ================================================================
+           OPTION D: FULL SCREEN TRANSITION — the "identity shift" moment
+           This is the big creative one — a takeover animation
+           ================================================================ */
+        .identity-shift-overlay {
+            position: absolute; inset: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            background: hsl(var(--background));
+            animation: identityShift 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: none;
+        }
+        @keyframes identityShift {
+            0% { opacity: 1; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .identity-shift-content {
+            text-align: center;
+            animation: identityContent 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes identityContent {
+            0% { transform: scale(0.8); opacity: 0; }
+            15% { transform: scale(1); opacity: 1; }
+            70% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.05); opacity: 0; }
+        }
+        .identity-shift-content .shift-icon {
+            width: 64px; height: 64px; margin: 0 auto 20px;
+            border-radius: 50%;
+            background: hsl(35 100% 50% / 0.12);
+            display: flex; align-items: center; justify-content: center;
+            animation: shiftPulse 1s ease-in-out 0.3s;
+        }
+        @keyframes shiftPulse {
+            0% { box-shadow: 0 0 0 0 hsl(35 100% 50% / 0.3); }
+            50% { box-shadow: 0 0 0 24px hsl(35 100% 50% / 0); }
+            100% { box-shadow: 0 0 0 0 hsl(35 100% 50% / 0); }
+        }
+        .identity-shift-content .shift-icon svg { width: 28px; height: 28px; color: hsl(35 100% 60%); }
+        .identity-shift-content .shift-label {
+            font-family: 'Oxanium', sans-serif; font-size: 10px;
+            letter-spacing: 4px; text-transform: uppercase;
+            color: hsl(35 100% 65%); margin-bottom: 8px;
+        }
+        .identity-shift-content .shift-name {
+            font-family: 'Oxanium', sans-serif; font-size: 24px;
+            font-weight: 700; color: hsl(var(--foreground));
+            letter-spacing: 2px;
+        }
+        .identity-shift-content .shift-role {
+            font-size: 12px; color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+        }
+        /* Scan line effect */
+        .identity-shift-overlay::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: hsl(35 100% 55%);
+            box-shadow: 0 0 20px 4px hsl(35 100% 50% / 0.5);
+            animation: scanLine 1s ease-in-out 0.2s;
+            opacity: 0;
+        }
+        @keyframes scanLine {
+            0% { top: 0; opacity: 1; }
+            100% { top: 100%; opacity: 0.3; }
+        }
+
+        /* ================================================================
+           OPTION E: ELECTRIC TEAL BORDER GLOW (brand-colored instead of amber)
+           ================================================================ */
+        .imp-banner-e {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 24px;
+            background: hsl(var(--background));
+            border-bottom: 2px solid hsl(var(--primary));
+            position: relative;
+            box-shadow: 0 4px 20px hsl(var(--primary) / 0.1);
+        }
+        .imp-banner-e::before {
+            content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px;
+            background: hsl(var(--primary));
+            box-shadow: 0 0 12px 2px hsl(var(--primary) / 0.4);
+            animation: tealGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes tealGlow {
+            0% { box-shadow: 0 0 8px 1px hsl(var(--primary) / 0.3); }
+            100% { box-shadow: 0 0 16px 4px hsl(var(--primary) / 0.5); }
+        }
+        .imp-banner-e .b-left { display: flex; align-items: center; gap: 12px; }
+        .imp-banner-e .b-icon {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: hsl(var(--primary));
+            box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
+            animation: dotBlink 2s ease-in-out infinite;
+        }
+        @keyframes dotBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .imp-banner-e .b-text { font-size: 12px; color: hsl(var(--muted-foreground)); }
+        .imp-banner-e .b-name { color: hsl(var(--primary)); font-weight: 600; }
+        .imp-banner-e .b-exit {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+            padding: 4px 14px; border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--primary) / 0.3);
+            background: transparent; color: hsl(var(--primary));
+            cursor: pointer; transition: all 0.2s;
+        }
+        .imp-banner-e .b-exit:hover {
+            background: hsl(var(--primary) / 0.1);
+            border-color: hsl(var(--primary) / 0.5);
+        }
     </style>
 </head>
 <body>
     <div class="page-header">
         <h1>Impersonation</h1>
-        <p>First iteration (4a1c) — safe, functional exploration of trigger + banner placement</p>
+        <p>Admin views the app as another user — trigger, banners, transitions, and creative ideas</p>
     </div>
 
     <div class="switcher-row">
@@ -294,16 +524,18 @@
     </div>
 
     <div class="state-nav" id="stateNav">
-        <button class="active" onclick="setState('trigger')">1. Trigger (Row Menu)</button>
-        <button onclick="setState('top-entries')">2a. Top Banner — Entries</button>
-        <button onclick="setState('top-dashboard')">2b. Top Banner — Dashboard</button>
-        <button onclick="setState('bottom-entries')">3. Bottom Banner</button>
-        <button onclick="setState('sidebar-entries')">4. Sidebar Accent</button>
+        <button class="active" onclick="setState('trigger')">1. Trigger</button>
+        <button onclick="setState('opt-a')">A. Amber Top Bar</button>
+        <button onclick="setState('opt-b')">B. Floating Pill</button>
+        <button onclick="setState('opt-c')">C. Sidebar Glow</button>
+        <button onclick="setState('opt-d')">D. Identity Shift</button>
+        <button onclick="setState('opt-e')">E. Teal Minimal</button>
+        <button onclick="setState('opt-a-dash')">A+Dashboard</button>
     </div>
 
     <div class="theme-container" data-theme="ternity-dark" data-scale="default">
 
-        <!-- 1. TRIGGER -->
+        <!-- ===== 1. TRIGGER ===== -->
         <div class="state state-trigger visible" id="state-trigger">
             <div class="app">
                 <div class="sidebar">
@@ -341,12 +573,18 @@
             </div>
         </div>
 
-        <!-- 2a. TOP BANNER — Entries -->
-        <div class="state state-top-entries" id="state-top-entries">
-            <div class="app with-top-banner">
-                <div class="imp-banner-top">
-                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
-                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
+        <!-- ===== A. AMBER TOP BAR — Entries ===== -->
+        <div class="state state-opt-a" id="state-opt-a">
+            <div class="app has-banner-top">
+                <div class="imp-banner-a">
+                    <div class="b-left">
+                        <div class="b-eye"><i data-lucide="eye"></i></div>
+                        <div>
+                            <div class="b-label">Impersonating</div>
+                            <div class="b-name">James Oakley <span class="b-role">User</span></div>
+                        </div>
+                    </div>
+                    <button class="b-exit" onclick="replayAnimation('opt-a')"><i data-lucide="log-out"></i> Exit</button>
                 </div>
                 <div class="app-body">
                     <div class="sidebar">
@@ -373,12 +611,169 @@
             </div>
         </div>
 
-        <!-- 2b. TOP BANNER — Dashboard -->
-        <div class="state state-top-dashboard" id="state-top-dashboard">
-            <div class="app with-top-banner">
-                <div class="imp-banner-top">
-                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
-                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
+        <!-- ===== B. FLOATING PILL — Entries ===== -->
+        <div class="state state-opt-b" id="state-opt-b">
+            <div class="app" style="position:relative;">
+                <div class="sidebar">
+                    <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Insights</div>
+                    <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                    <div class="spacer"></div>
+                    <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                </div>
+                <div class="main">
+                    <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                    <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                    <div class="day-group">
+                        <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                    </div>
+                </div>
+                <div class="imp-banner-b">
+                    <div class="b-eye"><i data-lucide="eye"></i></div>
+                    <span class="b-text">Viewing as <span class="b-name">James Oakley</span></span>
+                    <div class="b-sep"></div>
+                    <button class="b-exit"><i data-lucide="log-out"></i> Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== C. SIDEBAR GLOW ===== -->
+        <div class="state state-opt-c" id="state-opt-c">
+            <div class="app sidebar-glow">
+                <div class="sidebar">
+                    <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                    <div class="imp-sidebar-card">
+                        <div class="imp-top">
+                            <span class="imp-label">Impersonating</span>
+                            <button class="imp-close"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="imp-user">
+                            <div class="imp-avatar">JO</div>
+                            <div>
+                                <div class="imp-name">James Oakley</div>
+                                <div class="imp-role-text">User</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nav-section">Tracking</div>
+                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                    <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                    <div class="nav-section">Insights</div>
+                    <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                    <div class="spacer"></div>
+                    <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                </div>
+                <div class="main">
+                    <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                    <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                    <div class="day-group">
+                        <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                        <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== D. IDENTITY SHIFT TRANSITION ===== -->
+        <div class="state state-opt-d" id="state-opt-d">
+            <div class="app has-banner-top" style="position:relative;">
+                <!-- The overlay plays on state switch -->
+                <div class="identity-shift-overlay" id="identityOverlay">
+                    <div class="identity-shift-content">
+                        <div class="shift-icon"><i data-lucide="eye"></i></div>
+                        <div class="shift-label">Switching identity</div>
+                        <div class="shift-name">James Oakley</div>
+                        <div class="shift-role">User &middot; Acme Platform, Internal Ops, Widget Suite</div>
+                    </div>
+                </div>
+                <div class="imp-banner-a">
+                    <div class="b-left">
+                        <div class="b-eye"><i data-lucide="eye"></i></div>
+                        <div>
+                            <div class="b-label">Impersonating</div>
+                            <div class="b-name">James Oakley <span class="b-role">User</span></div>
+                        </div>
+                    </div>
+                    <button class="b-exit" onclick="replayIdentity()"><i data-lucide="log-out"></i> Exit</button>
+                </div>
+                <div class="app-body">
+                    <div class="sidebar">
+                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                        <div class="nav-section">Tracking</div>
+                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                        <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                        <div class="nav-section">Insights</div>
+                        <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                        <div class="spacer"></div>
+                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                    </div>
+                    <div class="main">
+                        <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                        <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                        <div class="day-group">
+                            <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== E. TEAL MINIMAL ===== -->
+        <div class="state state-opt-e" id="state-opt-e">
+            <div class="app has-banner-top">
+                <div class="imp-banner-e">
+                    <div class="b-left">
+                        <div class="b-icon"></div>
+                        <span class="b-text">Viewing as <span class="b-name">James Oakley</span> &middot; User</span>
+                    </div>
+                    <button class="b-exit">Exit impersonation</button>
+                </div>
+                <div class="app-body">
+                    <div class="sidebar">
+                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
+                        <div class="nav-section">Tracking</div>
+                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
+                        <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
+                        <div class="nav-section">Insights</div>
+                        <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
+                        <div class="spacer"></div>
+                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
+                    </div>
+                    <div class="main">
+                        <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
+                        <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
+                        <div class="day-group">
+                            <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== A + DASHBOARD ===== -->
+        <div class="state state-opt-a-dash" id="state-opt-a-dash">
+            <div class="app has-banner-top">
+                <div class="imp-banner-a">
+                    <div class="b-left">
+                        <div class="b-eye"><i data-lucide="eye"></i></div>
+                        <div>
+                            <div class="b-label">Impersonating</div>
+                            <div class="b-name">James Oakley <span class="b-role">User</span></div>
+                        </div>
+                    </div>
+                    <button class="b-exit"><i data-lucide="log-out"></i> Exit</button>
                 </div>
                 <div class="app-body">
                     <div class="sidebar">
@@ -398,73 +793,15 @@
                             <div class="stat-card"><div class="stat-label">Avg per Day</div><div class="stat-value">6h 50m</div><div class="stat-sub">across 5 working days</div></div>
                             <div class="stat-card"><div class="stat-label">Projects</div><div class="stat-value">3</div><div class="stat-sub">Acme Platform, Internal Ops, Widget Suite</div></div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                             <div class="chart-placeholder">Weekly hours bar chart</div>
                             <div class="chart-placeholder">Project breakdown pie chart</div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. BOTTOM BANNER -->
-        <div class="state state-bottom-entries" id="state-bottom-entries">
-            <div class="app with-bottom-banner">
-                <div class="app-body">
-                    <div class="sidebar">
-                        <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
-                        <div class="nav-section">Tracking</div>
-                        <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
-                        <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
-                        <div class="nav-section">Insights</div>
-                        <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
-                        <div class="spacer"></div>
-                        <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
-                    </div>
-                    <div class="main">
-                        <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
-                        <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
                         <div class="day-group">
                             <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
                             <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
-                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
-                            <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
+                            <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
                         </div>
-                    </div>
-                </div>
-                <div class="imp-banner-bottom">
-                    <div class="banner-left"><i data-lucide="eye" class="banner-icon"></i><span class="banner-text">Viewing as</span> <span class="banner-user">James Oakley</span> <span class="banner-role">User</span></div>
-                    <button class="banner-exit"><i data-lucide="log-out"></i> Exit</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. SIDEBAR ACCENT -->
-        <div class="state state-sidebar-entries" id="state-sidebar-entries">
-            <div class="app with-sidebar-accent">
-                <div class="sidebar">
-                    <div class="logo"><svg viewBox="0 0 24 30" fill="none"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg> TERNITY</div>
-                    <div class="imp-sidebar-block">
-                        <i data-lucide="eye" class="imp-icon"></i>
-                        <div><div class="imp-label">Viewing as</div><div class="imp-name">James Oakley</div></div>
-                        <button class="imp-exit" title="Exit impersonation"><i data-lucide="x"></i></button>
-                    </div>
-                    <div class="nav-section">Tracking</div>
-                    <div class="nav-item"><i data-lucide="timer"></i> Timer</div>
-                    <div class="nav-item active"><i data-lucide="list"></i> Entries</div>
-                    <div class="nav-section">Insights</div>
-                    <div class="nav-item"><i data-lucide="bar-chart-3"></i> Dashboard</div>
-                    <div class="spacer"></div>
-                    <div class="user-block"><div class="avatar">JO</div><div><div class="user-name">James Oakley</div><div class="user-role">User</div></div></div>
-                </div>
-                <div class="main">
-                    <div class="top-bar"><div><div class="page-title">Entries</div><div class="page-subtitle">Today's tracked time</div></div></div>
-                    <div class="timer-bar"><input class="timer-input" placeholder="What are you working on?"><span class="timer-duration">0:00:00</span><button class="timer-btn timer-btn-start"><i data-lucide="play"></i></button></div>
-                    <div class="day-group">
-                        <div class="day-header"><span class="day-label">Today — Sat, Feb 15</span><span class="day-total">6h 42m</span></div>
-                        <div class="entry-row"><div><div class="entry-desc">PROJ-234 Refactor auth middleware</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">backend</span></div><div class="entry-time">09:15 – 12:30</div><div class="entry-duration">3:15</div></div>
-                        <div class="entry-row"><div><div class="entry-desc">PROJ-251 Fix login redirect loop</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-1))"></span> Acme Platform</div></div><div class="entry-labels"><span class="entry-label entry-label-1">bugfix</span><span class="entry-label entry-label-2">jira</span></div><div class="entry-time">13:00 – 14:45</div><div class="entry-duration">1:45</div></div>
-                        <div class="entry-row"><div><div class="entry-desc">Sprint planning & backlog grooming</div><div class="entry-project"><span class="entry-project-dot" style="background: hsl(var(--t-project-2))"></span> Internal Ops</div></div><div class="entry-labels"><span class="entry-label entry-label-2">meeting</span></div><div class="entry-time">15:00 – 16:42</div><div class="entry-duration">1:42</div></div>
                     </div>
                 </div>
             </div>
@@ -488,6 +825,24 @@
             document.getElementById('state-' + state).classList.add('visible');
             document.querySelectorAll('.state-nav button').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            // Re-trigger animations by cloning
+            if (state === 'opt-d') replayIdentity();
+        }
+        function replayIdentity() {
+            const el = document.getElementById('identityOverlay');
+            const clone = el.cloneNode(true);
+            clone.id = 'identityOverlay';
+            el.parentNode.replaceChild(clone, el);
+            lucide.createIcons({ nodes: [clone] });
+        }
+        function replayAnimation(stateId) {
+            const container = document.getElementById('state-' + stateId);
+            const banner = container.querySelector('.imp-banner-a');
+            if (banner) {
+                banner.style.animation = 'none';
+                banner.offsetHeight; // force reflow
+                banner.style.animation = '';
+            }
         }
         lucide.createIcons();
     </script>

@@ -74,36 +74,39 @@ interface TtHolidaysResponse {
   nextPageLink: string | null;
 }
 
+/** Add days to a YYYY-MM-DD string using pure UTC arithmetic (timezone-independent) */
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number) as [number, number, number];
+  const ms = Date.UTC(y, m - 1, d) + days * 86_400_000;
+  const dt = new Date(ms);
+  return dt.toISOString().split('T')[0]!;
+}
+
 /** Fetch absences in 31-day windows between from and to */
 export async function fetchTtAbsences(from: string, to: string): Promise<unknown[]> {
-  const allAbsences: unknown[] = [];
-  const startDate = new Date(from);
-  const endDate = new Date(to);
+  const seen = new Map<string, unknown>();
 
-  let windowStart = new Date(startDate);
+  let windowStart = from;
 
-  while (windowStart < endDate) {
-    const windowEnd = new Date(windowStart);
-    windowEnd.setDate(windowEnd.getDate() + 30); // 31-day window (inclusive)
-    if (windowEnd > endDate) {
-      windowEnd.setTime(endDate.getTime());
-    }
-
-    const fromStr = windowStart.toISOString().split('T')[0]!;
-    const toStr = windowEnd.toISOString().split('T')[0]!;
+  while (windowStart < to) {
+    let windowEnd = addDays(windowStart, 30); // 31-day window (inclusive)
+    if (windowEnd > to) windowEnd = to;
 
     const res = await ttFetch<TtHolidaysResponse>(
-      `/holidays?Start=${fromStr}&End=${toStr}`,
+      `/holidays?Start=${windowStart}&End=${windowEnd}`,
       ABSENCES_GAP_MS,
     );
     const holidays = res.holidays ?? [];
-    allAbsences.push(...holidays);
+    for (const h of holidays) {
+      const obj = h as Record<string, unknown>;
+      const id = String(obj.id ?? obj.Id ?? obj.ID);
+      seen.set(id, h);
+    }
 
-    log.info(`  Fetched absences for ${fromStr} → ${toStr} (running total: ${allAbsences.length})`);
+    log.info(`  Fetched absences for ${windowStart} → ${windowEnd} (unique so far: ${seen.size})`);
 
-    windowStart = new Date(windowEnd);
-    windowStart.setDate(windowStart.getDate() + 1);
+    windowStart = addDays(windowEnd, 1);
   }
 
-  return allAbsences;
+  return [...seen.values()];
 }

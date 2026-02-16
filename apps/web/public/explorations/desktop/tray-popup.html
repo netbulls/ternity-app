@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Tray Popup Exploration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111;
+            color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px;
+            font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+        }
+
+        .controls {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .controls-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .controls-group { display: flex; gap: 4px; }
+        .controls-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .controls-group button:hover { border-color: #444; }
+        .controls-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        /* Layout: side-by-side variants */
+        .variants {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .variant {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+
+        /* ============================================
+           POPUP FRAME — simulates the tray popup
+           ============================================ */
+        .popup-frame {
+            width: 340px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+
+        /* ============================================
+           SHARED POPUP STYLES
+           ============================================ */
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        /* Header */
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .popup-logo {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: hsl(var(--primary));
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .popup-logo svg {
+            width: 14px; height: 17px;
+        }
+        .popup-header-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .popup-header-btn {
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .popup-header-btn:hover {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+        }
+
+        /* Timer section — idle state */
+        .timer-section {
+            padding: 16px;
+        }
+        .timer-input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
+            margin-bottom: 8px;
+        }
+        .timer-input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+        .timer-input:focus {
+            border-color: hsl(var(--primary));
+        }
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .project-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .project-pill:hover {
+            border-color: hsl(var(--primary) / 0.4);
+        }
+        .project-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        .timer-display {
+            margin-left: auto;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: hsl(var(--muted-foreground) / 0.4);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+        }
+        .timer-display.active {
+            color: hsl(var(--primary));
+        }
+        .start-btn {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s;
+            flex-shrink: 0;
+        }
+        .start-btn:hover { transform: scale(1.1); }
+        .stop-btn {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: hsl(var(--destructive));
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s;
+            flex-shrink: 0;
+        }
+        .stop-btn:hover { transform: scale(1.1); }
+
+        /* Timer section — tracking state */
+        .timer-tracking {
+            padding: 16px;
+            background: hsl(var(--primary) / 0.04);
+            border-bottom: 1px solid hsl(var(--primary) / 0.15);
+        }
+        .tracking-desc {
+            font-size: 13px;
+            font-weight: 500;
+            color: hsl(var(--foreground));
+            margin-bottom: 4px;
+        }
+        .tracking-project {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tracking-row {
+            display: flex;
+            align-items: center;
+        }
+        .tracking-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            flex: 1;
+        }
+
+        /* Stats strip */
+        .stats-strip {
+            display: flex;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .stat {
+            flex: 1;
+            padding: 10px 16px;
+            text-align: center;
+        }
+        .stat + .stat {
+            border-left: 1px solid hsl(var(--border));
+        }
+        .stat-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-value.accent { color: hsl(var(--primary)); }
+        .stat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            margin-top: 2px;
+        }
+
+        /* Recent entries */
+        .entries-section {
+            padding: 0;
+        }
+        .entries-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px 6px;
+        }
+        .entries-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+        }
+        .entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 16px;
+            cursor: default;
+            transition: background 0.1s;
+        }
+        .entry:hover {
+            background: hsl(var(--muted) / 0.5);
+        }
+        .entry-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .entry-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .entry-desc {
+            font-size: 12px;
+            color: hsl(var(--foreground));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .entry-project {
+            font-size: 10px;
+            color: hsl(var(--muted-foreground));
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
+        .entry-play {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.3);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: all 0.15s;
+        }
+        .entry:hover .entry-play {
+            opacity: 1;
+        }
+        .entry-play:hover {
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+        }
+
+        /* Footer */
+        .popup-footer {
+            padding: 8px 16px;
+            border-top: 1px solid hsl(var(--border));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .open-web {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.15s;
+        }
+        .open-web:hover {
+            color: hsl(var(--primary));
+        }
+
+        /* ============================================
+           VARIANT B — compact single-row timer
+           ============================================ */
+        .timer-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .timer-compact .timer-input-sm {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 5px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            outline: none;
+        }
+        .timer-compact .timer-input-sm::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* ============================================
+           VARIANT C — hero timer (Focus-inspired)
+           ============================================ */
+        .timer-hero {
+            padding: 20px 16px;
+            text-align: center;
+            position: relative;
+        }
+        .timer-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            position: relative;
+        }
+        .hero-elapsed.idle {
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .hero-project-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: hsl(var(--primary));
+            margin-top: 4px;
+            position: relative;
+        }
+        .hero-desc {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            margin-top: 2px;
+            position: relative;
+        }
+        .hero-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 14px;
+            position: relative;
+        }
+        .hero-input {
+            width: 200px;
+            padding: 7px 12px;
+            border-radius: 6px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            outline: none;
+            text-align: center;
+        }
+        .hero-input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* ============================================
+           VARIANT D — minimal card layout
+           ============================================ */
+        .mini-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            padding: 8px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .mini-card {
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border) / 0.5);
+        }
+        .mini-card-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .mini-card-value.accent { color: hsl(var(--primary)); }
+        .mini-card-label {
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            margin-top: 1px;
+        }
+
+        /* Hourglass SVG for logo */
+        .hg { display: inline-flex; }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>Ternity Desktop / Tray Popup</h1>
+    <p>System tray companion app — design exploration</p>
+</div>
+
+<div class="controls">
+    <span class="controls-label">Theme</span>
+    <div class="controls-group" id="themeNav">
+        <button onclick="setTheme('ternity-dark')" class="active">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+    </div>
+</div>
+
+<div class="variants" id="variants">
+
+    <!-- =============================================
+         VARIANT A: Layered — Idle State
+         Input on top, project picker, timer display
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">A / Layered — Idle</div>
+        <div class="popup-frame">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="popup-header-actions">
+                        <button class="popup-header-btn" title="Settings">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="timer-section">
+                    <input class="timer-input" placeholder="What are you working on?" readonly>
+                    <div class="timer-controls">
+                        <div class="project-pill">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                            Project
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="timer-display">0:00:00</div>
+                        <button class="start-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-strip">
+                    <div class="stat">
+                        <div class="stat-value accent">3h 45m</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">28h 30m</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                </div>
+
+                <div class="entries-section">
+                    <div class="entries-header">
+                        <span class="entries-title">Recent</span>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">TERN-42 Timer component</div>
+                            <div class="entry-project">Ternity App</div>
+                        </div>
+                        <div class="entry-duration">1h 45m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Sprint planning</div>
+                            <div class="entry-project">Legal500</div>
+                        </div>
+                        <div class="entry-duration">1h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Client feedback review</div>
+                            <div class="entry-project">Exegy</div>
+                        </div>
+                        <div class="entry-duration">45m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         VARIANT A: Layered — Tracking State
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">A / Layered — Tracking</div>
+        <div class="popup-frame">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="popup-header-actions">
+                        <button class="popup-header-btn" title="Settings">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="timer-tracking">
+                    <div class="tracking-desc">TERN-42 Implement timer component</div>
+                    <div class="tracking-project">
+                        <div class="project-dot" style="background: hsl(var(--t-project-1));"></div>
+                        Acme Corp &middot; Ternity App
+                    </div>
+                    <div class="tracking-row">
+                        <div class="tracking-elapsed">1:23:47</div>
+                        <button class="stop-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-strip">
+                    <div class="stat">
+                        <div class="stat-value accent">5h 08m</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">29h 53m</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                </div>
+
+                <div class="entries-section">
+                    <div class="entries-header">
+                        <span class="entries-title">Earlier Today</span>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Sprint planning</div>
+                            <div class="entry-project">Legal500</div>
+                        </div>
+                        <div class="entry-duration">1h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Auth flow with Logto</div>
+                            <div class="entry-project">Ternity App</div>
+                        </div>
+                        <div class="entry-duration">2h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Morning standup</div>
+                            <div class="entry-project">Internal</div>
+                        </div>
+                        <div class="entry-duration">15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         VARIANT B: Hero Timer — Idle
+         Big centered timer, Focus-inspired
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">B / Hero — Idle</div>
+        <div class="popup-frame">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="popup-header-actions">
+                        <button class="popup-header-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="timer-hero">
+                    <div class="hero-elapsed idle">0:00:00</div>
+                    <div class="hero-controls">
+                        <input class="hero-input" placeholder="What are you working on?" readonly>
+                        <button class="start-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div style="margin-top: 8px; position: relative;">
+                        <div class="project-pill" style="display: inline-flex;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                            Project
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mini-cards">
+                    <div class="mini-card">
+                        <div class="mini-card-value accent">3h 45m</div>
+                        <div class="mini-card-label">Today</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="mini-card-value">28h 30m</div>
+                        <div class="mini-card-label">This Week</div>
+                    </div>
+                </div>
+
+                <div class="entries-section">
+                    <div class="entries-header">
+                        <span class="entries-title">Recent</span>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">TERN-42 Timer component</div>
+                            <div class="entry-project">Ternity App</div>
+                        </div>
+                        <div class="entry-duration">1h 45m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Sprint planning</div>
+                            <div class="entry-project">Legal500</div>
+                        </div>
+                        <div class="entry-duration">1h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Client feedback review</div>
+                            <div class="entry-project">Exegy</div>
+                        </div>
+                        <div class="entry-duration">45m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         VARIANT B: Hero Timer — Tracking
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">B / Hero — Tracking</div>
+        <div class="popup-frame">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="popup-header-actions">
+                        <button class="popup-header-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="timer-hero" style="background: hsl(var(--primary) / 0.03);">
+                    <div class="hero-elapsed">1:23:47</div>
+                    <div class="hero-project-name">Ternity App</div>
+                    <div class="hero-desc">TERN-42 Implement timer component</div>
+                    <div class="hero-controls">
+                        <button class="stop-btn" style="width: 40px; height: 40px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mini-cards">
+                    <div class="mini-card">
+                        <div class="mini-card-value accent">5h 08m</div>
+                        <div class="mini-card-label">Today</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="mini-card-value">29h 53m</div>
+                        <div class="mini-card-label">This Week</div>
+                    </div>
+                </div>
+
+                <div class="entries-section">
+                    <div class="entries-header">
+                        <span class="entries-title">Earlier Today</span>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Sprint planning</div>
+                            <div class="entry-project">Legal500</div>
+                        </div>
+                        <div class="entry-duration">1h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Auth flow with Logto</div>
+                            <div class="entry-project">Ternity App</div>
+                        </div>
+                        <div class="entry-duration">2h 15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                        <div class="entry-info">
+                            <div class="entry-desc">Morning standup</div>
+                            <div class="entry-project">Internal</div>
+                        </div>
+                        <div class="entry-duration">15m</div>
+                        <button class="entry-play">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function setTheme(id) {
+    document.querySelectorAll('.popup').forEach(p => p.setAttribute('data-theme', id));
+    document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

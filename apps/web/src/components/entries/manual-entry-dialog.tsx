@@ -54,6 +54,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
         labelIds,
         startedAt: startIso,
         stoppedAt: endIso,
+        source: 'manual_dialog',
       },
       {
         onSuccess: () => {

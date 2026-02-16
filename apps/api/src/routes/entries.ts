@@ -4,10 +4,13 @@ import { db } from '../db/index.js';
 import {
   timeEntries,
   entryLabels,
+  entryAuditLog,
   projects,
   clients,
   labels,
+  users,
 } from '../db/schema.js';
+import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { CreateEntry, UpdateEntry, DayGroup, Entry } from '@ternity/shared';
 
 /** Build a full entry response with project + labels joined */
@@ -60,6 +63,16 @@ async function buildEntryResponse(entryId: string): Promise<Entry | null> {
     durationSeconds: entry.durationSeconds,
     userId: entry.userId,
   };
+}
+
+/** Get the actor ID — the real user behind the action (handles impersonation) */
+function getActorId(request: { auth: { realUserId?: string; userId: string } }): string {
+  return request.auth.realUserId ?? request.auth.userId;
+}
+
+/** Get audit source from X-Audit-Source header, defaulting to 'api' */
+function getAuditSource(request: { headers: Record<string, string | string[] | undefined> }): string {
+  return (request.headers['x-audit-source'] as string) ?? 'api';
 }
 
 export async function entriesRoutes(fastify: FastifyInstance) {
@@ -126,6 +139,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
   /** POST /api/entries — create a manual entry */
   fastify.post('/api/entries', async (request) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const source = getAuditSource(request);
     const body = request.body as CreateEntry;
 
     const startedAt = new Date(body.startedAt);
@@ -154,12 +169,31 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       );
     }
 
+    // Record audit
+    const newProjectName = await resolveProjectName(body.projectId);
+    await recordAudit({
+      entryId: created!.id,
+      userId,
+      actorId,
+      action: 'created',
+      changes: {
+        description: { new: body.description ?? '' },
+        project: { new: newProjectName },
+        startedAt: { new: startedAt.toISOString() },
+        stoppedAt: { new: stoppedAt.toISOString() },
+        durationSeconds: { new: durationSeconds },
+      },
+      metadata: { source },
+    });
+
     return buildEntryResponse(created!.id);
   });
 
   /** PATCH /api/entries/:id — update an entry */
   fastify.patch('/api/entries/:id', async (request, reply) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const source = getAuditSource(request);
     const { id } = request.params as { id: string };
     const body = request.body as UpdateEntry;
 
@@ -219,12 +253,67 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       }
     }
 
+    // Record audit — only changed fields
+    const changes: Record<string, { old?: unknown; new?: unknown }> = {};
+    if (body.description !== undefined && body.description !== existing.description) {
+      changes.description = { old: existing.description, new: body.description };
+    }
+    if (body.projectId !== undefined && body.projectId !== existing.projectId) {
+      const [oldName, newName] = await Promise.all([
+        resolveProjectName(existing.projectId),
+        resolveProjectName(body.projectId),
+      ]);
+      changes.project = { old: oldName, new: newName };
+    }
+    if (body.startedAt !== undefined && new Date(body.startedAt).getTime() !== existing.startedAt.getTime()) {
+      changes.startedAt = { old: existing.startedAt.toISOString(), new: new Date(body.startedAt).toISOString() };
+    }
+    if (body.stoppedAt !== undefined) {
+      const newStopped = body.stoppedAt ? new Date(body.stoppedAt) : null;
+      const oldStopped = existing.stoppedAt;
+      if (newStopped?.getTime() !== oldStopped?.getTime()) {
+        changes.stoppedAt = {
+          old: oldStopped?.toISOString() ?? null,
+          new: newStopped?.toISOString() ?? null,
+        };
+      }
+    }
+    if (updateSet.durationSeconds !== undefined && updateSet.durationSeconds !== existing.durationSeconds) {
+      changes.durationSeconds = { old: existing.durationSeconds, new: updateSet.durationSeconds };
+    }
+    if (body.labelIds !== undefined) {
+      // Labels changed — record as array change
+      const oldLabelRows = await db
+        .select({ id: labels.id })
+        .from(entryLabels)
+        .innerJoin(labels, eq(entryLabels.labelId, labels.id))
+        .where(eq(entryLabels.entryId, id));
+      const oldIds = oldLabelRows.map((r) => r.id).sort();
+      const newIds = [...body.labelIds].sort();
+      if (JSON.stringify(oldIds) !== JSON.stringify(newIds)) {
+        changes.labelIds = { old: oldIds, new: newIds };
+      }
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await recordAudit({
+        entryId: id,
+        userId: existing.userId,
+        actorId,
+        action: 'updated',
+        changes,
+        metadata: { source },
+      });
+    }
+
     return buildEntryResponse(id);
   });
 
   /** DELETE /api/entries/:id — delete an entry */
   fastify.delete('/api/entries/:id', async (request, reply) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const source = getAuditSource(request);
     const { id } = request.params as { id: string };
 
     const [existing] = await db
@@ -240,10 +329,69 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Not your entry' });
     }
 
+    // Record audit before deletion (cascade will delete audit logs too,
+    // but we record the final state for completeness)
+    const deletedProjectName = await resolveProjectName(existing.projectId);
+    await recordAudit({
+      entryId: id,
+      userId: existing.userId,
+      actorId,
+      action: 'deleted',
+      changes: {
+        description: { old: existing.description },
+        project: { old: deletedProjectName },
+        startedAt: { old: existing.startedAt.toISOString() },
+        stoppedAt: { old: existing.stoppedAt?.toISOString() ?? null },
+        durationSeconds: { old: existing.durationSeconds },
+      },
+      metadata: { source },
+    });
+
     // Delete labels first (FK constraint)
     await db.delete(entryLabels).where(eq(entryLabels.entryId, id));
     await db.delete(timeEntries).where(eq(timeEntries.id, id));
 
     return { success: true };
+  });
+
+  /** GET /api/entries/:id/audit — get audit trail for an entry */
+  fastify.get('/api/entries/:id/audit', async (request, reply) => {
+    const userId = request.auth.userId;
+    const { id } = request.params as { id: string };
+
+    // Verify ownership
+    const [entry] = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, id))
+      .limit(1);
+
+    if (!entry) {
+      return reply.code(404).send({ error: 'Entry not found' });
+    }
+    if (entry.userId !== userId && request.auth.globalRole !== 'admin') {
+      return reply.code(403).send({ error: 'Not your entry' });
+    }
+
+    const rows = await db
+      .select({
+        id: entryAuditLog.id,
+        entryId: entryAuditLog.entryId,
+        action: entryAuditLog.action,
+        actorId: entryAuditLog.actorId,
+        actorName: users.displayName,
+        changes: entryAuditLog.changes,
+        metadata: entryAuditLog.metadata,
+        createdAt: entryAuditLog.createdAt,
+      })
+      .from(entryAuditLog)
+      .innerJoin(users, eq(entryAuditLog.actorId, users.id))
+      .where(eq(entryAuditLog.entryId, id))
+      .orderBy(desc(entryAuditLog.createdAt));
+
+    return rows.map((row) => ({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+    }));
   });
 }

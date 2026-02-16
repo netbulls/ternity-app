@@ -260,8 +260,11 @@ sync_mappings (source, external_id, ternity_table, ternity_id)
 
 ## Critical References
 
-- `assets/design-preview.html` — visual reference for all components
 - `PRD.md` — feature source of truth
 - `BRAND.md` — brand guidelines
 - `THEMES.md` — theme definitions
 - `.claude/rules/stack.md` — tech stack and build commands
+- `apps/web/public/explorations/` — all UI design explorations (served by Vite at `/explorations/`)
+  - `web/` — main web app explorations (design-preview, entries, huge-*, etc.)
+  - `desktop/` — desktop tray app explorations
+  - `themes.css` — shared theme tokens for all explorations

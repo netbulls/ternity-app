@@ -43,7 +43,7 @@ export function TimerBar() {
     if (!running || !currentEntry) return;
     const timer = setTimeout(() => {
       if (descriptionRef.current !== currentEntry.description) {
-        updateEntry.mutate({ id: currentEntry.id, description: descriptionRef.current });
+        updateEntry.mutate({ id: currentEntry.id, description: descriptionRef.current, source: 'timer_bar' });
       }
     }, 800);
     return () => clearTimeout(timer);
@@ -112,7 +112,7 @@ export function TimerBar() {
             onChange={(id) => {
               setProjectId(id);
               if (running && currentEntry) {
-                updateEntry.mutate({ id: currentEntry.id, projectId: id });
+                updateEntry.mutate({ id: currentEntry.id, projectId: id, source: 'timer_bar' });
               }
             }}
           />

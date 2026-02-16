@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { timeEntries, entryLabels, projects, clients, labels } from '../db/schema.js';
+import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { StartTimer } from '@ternity/shared';
 
 /** Build a full entry response with project + labels joined */
@@ -62,6 +63,11 @@ async function buildEntryResponse(entryId: string) {
   };
 }
 
+/** Get the actor ID — the real user behind the action (handles impersonation) */
+function getActorId(request: { auth: { realUserId?: string; userId: string } }): string {
+  return request.auth.realUserId ?? request.auth.userId;
+}
+
 export async function timerRoutes(fastify: FastifyInstance) {
   /** GET /api/timer — get current running entry */
   fastify.get('/api/timer', async (request) => {
@@ -84,6 +90,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   /** POST /api/timer/start — start a new timer (stops any running one first) */
   fastify.post('/api/timer/start', async (request) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
     const body = (request.body ?? {}) as StartTimer;
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
@@ -105,6 +112,19 @@ export async function timerRoutes(fastify: FastifyInstance) {
         .update(timeEntries)
         .set({ stoppedAt: now, durationSeconds: duration })
         .where(eq(timeEntries.id, running.id));
+
+      // Audit: auto-stopped previous entry
+      await recordAudit({
+        entryId: running.id,
+        userId: running.userId,
+        actorId,
+        action: 'timer_stopped',
+        changes: {
+          stoppedAt: { old: null, new: now.toISOString() },
+          durationSeconds: { old: null, new: duration },
+        },
+        metadata: { source: 'timer_bar', reason: 'auto_stop_on_new_start' },
+      });
     }
 
     // Create new running entry
@@ -125,6 +145,21 @@ export async function timerRoutes(fastify: FastifyInstance) {
       );
     }
 
+    // Audit: timer started
+    const startedProjectName = await resolveProjectName(projectId);
+    await recordAudit({
+      entryId: created!.id,
+      userId,
+      actorId,
+      action: 'timer_started',
+      changes: {
+        description: { new: description },
+        project: { new: startedProjectName },
+        startedAt: { new: now.toISOString() },
+      },
+      metadata: { source: 'timer_bar' },
+    });
+
     const entry = await buildEntryResponse(created!.id);
     return { running: true, entry };
   });
@@ -132,6 +167,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   /** POST /api/timer/resume/:id — resume an existing stopped entry */
   fastify.post('/api/timer/resume/:id', async (request, reply) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
     const { id } = request.params as { id: string };
 
     // Verify ownership
@@ -169,6 +205,19 @@ export async function timerRoutes(fastify: FastifyInstance) {
         .update(timeEntries)
         .set({ stoppedAt: now, durationSeconds: duration })
         .where(eq(timeEntries.id, running.id));
+
+      // Audit: auto-stopped previous entry
+      await recordAudit({
+        entryId: running.id,
+        userId: running.userId,
+        actorId,
+        action: 'timer_stopped',
+        changes: {
+          stoppedAt: { old: null, new: now.toISOString() },
+          durationSeconds: { old: null, new: duration },
+        },
+        metadata: { source: 'timer_bar', reason: 'auto_stop_on_resume' },
+      });
     }
 
     // Resume: adjust startedAt to include previously accumulated duration,
@@ -180,6 +229,20 @@ export async function timerRoutes(fastify: FastifyInstance) {
       .set({ startedAt: adjustedStart, stoppedAt: null, durationSeconds: null })
       .where(eq(timeEntries.id, id));
 
+    // Audit: timer resumed
+    await recordAudit({
+      entryId: id,
+      userId: target.userId,
+      actorId,
+      action: 'timer_resumed',
+      changes: {
+        startedAt: { old: target.startedAt.toISOString(), new: adjustedStart.toISOString() },
+        stoppedAt: { old: target.stoppedAt.toISOString(), new: null },
+        durationSeconds: { old: target.durationSeconds, new: null },
+      },
+      metadata: { source: 'timer_bar' },
+    });
+
     const entry = await buildEntryResponse(id);
     return { running: true, entry };
   });
@@ -187,6 +250,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   /** POST /api/timer/stop — stop the running timer */
   fastify.post('/api/timer/stop', async (request, reply) => {
     const userId = request.auth.userId;
+    const actorId = getActorId(request);
 
     const [running] = await db
       .select()
@@ -207,6 +271,19 @@ export async function timerRoutes(fastify: FastifyInstance) {
       .update(timeEntries)
       .set({ stoppedAt: now, durationSeconds: duration })
       .where(eq(timeEntries.id, running.id));
+
+    // Audit: timer stopped
+    await recordAudit({
+      entryId: running.id,
+      userId: running.userId,
+      actorId,
+      action: 'timer_stopped',
+      changes: {
+        stoppedAt: { old: null, new: now.toISOString() },
+        durationSeconds: { old: null, new: duration },
+      },
+      metadata: { source: 'timer_bar' },
+    });
 
     const entry = await buildEntryResponse(running.id);
     return { running: false, entry };

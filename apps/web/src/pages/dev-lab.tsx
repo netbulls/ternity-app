@@ -6,15 +6,13 @@ import { Toaster } from '@/components/ui/sonner';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { DevNav, type NavItem } from '@/dev/dev-nav';
 import { LabSection } from '@/dev/section-lab';
-import { LAB_GROUPS } from '@/dev/lab-data';
+import { LAB_SECTIONS } from '@/dev/lab-data';
 
-const LAB_NAV_ITEMS: NavItem[] = [
-  {
-    id: 'design-lab',
-    label: 'Design Lab',
-    children: LAB_GROUPS.map((g) => ({ id: g.id, label: g.name })),
-  },
-];
+const LAB_NAV_ITEMS: NavItem[] = LAB_SECTIONS.map((s) => ({
+  id: `lab-${s.id}`,
+  label: s.product,
+  children: s.groups.map((g) => ({ id: g.id, label: g.name })),
+}));
 
 function DevLabContent() {
   const { scale } = useScale();

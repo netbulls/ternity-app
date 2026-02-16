@@ -79,6 +79,36 @@ export const StartTimerSchema = z.object({
 
 export type StartTimer = z.infer<typeof StartTimerSchema>;
 
+/* ── Audit event (returned from API) ───────────────────────────── */
+
+export const AuditEventSchema = z.object({
+  id: z.string(),
+  entryId: z.string(),
+  action: z.enum([
+    'created',
+    'updated',
+    'deleted',
+    'timer_started',
+    'timer_stopped',
+    'timer_resumed',
+  ]),
+  actorId: z.string(),
+  actorName: z.string(),
+  changes: z
+    .record(
+      z.string(),
+      z.object({
+        old: z.unknown().optional(),
+        new: z.unknown().optional(),
+      }),
+    )
+    .nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  createdAt: z.string(), // ISO 8601
+});
+
+export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
 /* ── Stats ──────────────────────────────────────────────────────── */
 
 export const StatsSchema = z.object({

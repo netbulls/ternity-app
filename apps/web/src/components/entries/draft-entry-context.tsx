@@ -99,6 +99,7 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
         labelIds: [],
         startedAt: startISO,
         stoppedAt: endISO,
+        source: 'draft',
       });
       // Mark as saved — DraftEntryRow switches to display mode + SaveFlash,
       // and DayGroup filters this ID from group.entries to prevent double-row

@@ -198,7 +198,19 @@ export async function matchUsers(apply: boolean): Promise<MatchReport> {
       }
     }
 
-    if (!found) {
+    if (!found && apply) {
+      // Create user from TT absence data — use first domain as default
+      const newEmail = `${localPart}@${EMAIL_DOMAINS[0]}`;
+      const displayName = userName;
+      const [created] = await db
+        .insert(users)
+        .values({ displayName, email: newEmail, timetasticId: ttUserId })
+        .returning();
+      await upsertMapping('timetastic', 'users', ttUserId, 'users', created!.id);
+      matchedTtIds.add(ttUserId);
+      nameMatched++;
+      log.info(`  Name-created TT "${userName}" (${ttUserId}) → ${newEmail} (new user)`);
+    } else if (!found) {
       log.warn(`  No user found for TT "${userName}" (${ttUserId}) — tried ${localPart}@{${EMAIL_DOMAINS.join(',')}}`);
       nameSkipped++;
     }
