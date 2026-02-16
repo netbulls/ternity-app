@@ -45,6 +45,20 @@ export const router = createBrowserRouter([
             return { Component: DevMissionPage };
           },
         },
+        {
+          path: '/dev/tray',
+          lazy: async () => {
+            const { DevTrayPage } = await import('@/pages/dev-tray');
+            return { Component: DevTrayPage };
+          },
+        },
+        {
+          path: '/dev/tray-v2',
+          lazy: async () => {
+            const { DevTrayV2Page } = await import('@/pages/dev-tray-v2');
+            return { Component: DevTrayV2Page };
+          },
+        },
       ]
     : []),
   {

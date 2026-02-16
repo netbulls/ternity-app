@@ -54,14 +54,15 @@ export function LabSection() {
       <div key={group.id}>
         <button
           onClick={() => toggleFolder(group.id)}
-          className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,2fr)_8rem] gap-x-6 px-3 py-1.5 text-left transition-colors hover:bg-muted/40"
+          className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,2fr)_7rem_7rem] gap-x-6 px-3 py-1.5 text-left transition-colors hover:bg-muted/40"
         >
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
             <FolderIcon className="h-3.5 w-3.5 text-primary/60" />
             {group.name}
           </span>
-          <span className="text-muted-foreground/40">{group.items.length} items</span>
+          <span className="truncate text-muted-foreground/40">{group.description}</span>
+          <span className="text-right text-muted-foreground/30">{new Date(group.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
           <span className="text-right text-muted-foreground/40">{relativeTime.get(group.id)}</span>
         </button>
 
@@ -82,7 +83,7 @@ export function LabSection() {
                     navigate(item.route);
                   }
                 }}
-                className="group grid w-full grid-cols-[minmax(0,1fr)_minmax(0,2fr)_8rem] gap-x-6 px-3 py-1 text-left transition-colors hover:bg-muted/40"
+                className="group grid w-full grid-cols-[minmax(0,1fr)_minmax(0,2fr)_7rem_7rem] gap-x-6 px-3 py-1 text-left transition-colors hover:bg-muted/40"
               >
                 <span className="flex items-center gap-1.5 pl-7 text-foreground/80 group-hover:text-foreground">
                   <Icon className={`h-3.5 w-3.5 shrink-0 ${isExploration ? 'text-muted-foreground/40 group-hover:text-primary/60' : 'text-primary/50 group-hover:text-primary'}`} />
@@ -92,6 +93,7 @@ export function LabSection() {
                   )}
                 </span>
                 <span className="truncate text-muted-foreground/50">{item.description}</span>
+                <span className="text-right text-muted-foreground/30">{new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                 <span className="text-right text-muted-foreground/40">{relativeTime.get(key)}</span>
               </button>
             );
@@ -105,9 +107,10 @@ export function LabSection() {
       {LAB_SECTIONS.map((section) => (
         <Section key={section.id} title={section.product} id={`lab-${section.id}`}>
           <div className="w-full overflow-hidden rounded-md border border-border/50 font-mono text-[13px]">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_8rem] gap-x-6 border-b border-border/50 bg-muted/30 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_7rem_7rem] gap-x-6 border-b border-border/50 bg-muted/30 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
               <span>Name</span>
               <span>Description</span>
+              <span className="text-right">Created</span>
               <span className="text-right">Modified</span>
             </div>
             {section.groups.map(renderGroup)}

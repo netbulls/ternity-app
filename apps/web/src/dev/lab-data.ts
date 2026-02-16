@@ -19,6 +19,7 @@ export type LabItem = LabExploration | LabPrototype;
 export interface LabFeatureGroup {
   name: string;
   id: string;
+  description: string;
   date: string;
   items: LabItem[];
 }
@@ -58,6 +59,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'huge-theme',
         id: 'huge-theme-lab',
+        description: 'Large-screen dashboard concepts — bento, scoreboard, narrative, ambient, focus',
         date: '2026-02-15T22:00:00',
         items: [
           { kind: 'exploration', title: 'huge-cockpit-a1f7', file: 'web/huge-cockpit-a1f7.html', description: 'The Cockpit — Bento grid, no sidebar, timer as hero, everything on one screen', date: '2026-02-15T22:00:00' },
@@ -70,6 +72,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'timer-mission',
         id: 'timer-mission-lab',
+        description: 'Timer bar reimagined — Dock, Stage, Strip directions with state transitions',
         date: '2026-02-16T12:00:00',
         items: [
           { kind: 'exploration', title: 'timer-mission-d7f3', file: 'web/timer-mission-d7f3.html', description: 'Mission Center — 3 visual directions (Dock, Stage, Strip) for reimagining the timer bar', date: '2026-02-16T12:00:00' },
@@ -79,6 +82,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'entries',
         id: 'entries-lab',
+        description: 'Time entries page — day groups, inline editing, timer bar flair',
         date: '2026-02-15T18:38:00',
         items: [
           { kind: 'exploration', title: 'entries-110c', file: 'web/entries-110c.html', description: 'Approved v2 with day groups and timer', date: '2026-02-15T18:38:00' },
@@ -90,6 +94,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'impersonation',
         id: 'impersonation-lab',
+        description: 'Admin impersonation — banner, controls, user switching',
         date: '2026-02-15T17:11:00',
         items: [
           { kind: 'exploration', title: 'impersonation-8f3d', file: 'web/impersonation-8f3d.html', description: 'Admin banner and controls', date: '2026-02-15T17:01:00' },
@@ -97,8 +102,19 @@ export const LAB_SECTIONS: LabProductSection[] = [
         ],
       },
       {
+        name: 'project-management',
+        id: 'project-management-lab',
+        description: 'Client & project CRUD — tables, dialogs, active/inactive status',
+        date: '2026-02-16T23:30:00',
+        items: [
+          { kind: 'exploration', title: 'projects-b2d8', file: 'web/projects-b2d8.html', description: 'v2 — aligned with user management patterns: 3 stat cards, bulk selection, pagination, toast, same toolbar', date: '2026-02-17T00:30:00' },
+          { kind: 'exploration', title: 'projects-ea7a', file: 'web/projects-ea7a.html', description: 'v1 — scope tabs, 4 stat cards, grouped-by-client view, create/deactivate dialogs', date: '2026-02-16T23:30:00' },
+        ],
+      },
+      {
         name: 'user-management',
         id: 'user-management-lab',
+        description: 'User admin — table, stat cards, filters, bulk activate/deactivate',
         date: '2026-02-14T19:12:00',
         items: [
           { kind: 'exploration', title: 'user-management', file: 'web/user-management.html', description: 'Table, stat cards, filters, bulk actions', date: '2026-02-14T19:12:00' },
@@ -107,6 +123,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'general',
         id: 'general-lab',
+        description: 'Foundation — typography, colors, spacing, themes, primitives',
         date: '2026-02-14T19:12:00',
         items: [
           { kind: 'exploration', title: 'design-preview', file: 'web/design-preview.html', description: 'Typography, colors, spacing, primitives', date: '2026-02-14T19:12:00' },
@@ -123,8 +140,11 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'tray-popup',
         id: 'desktop-tray-lab',
+        description: 'System tray popup — timer, recent entries, settings, login flow',
         date: '2026-02-16T22:00:00',
         items: [
+          { kind: 'prototype', title: 'Tray Popup v2', route: '/dev/tray-v2', description: 'v2 — stable layout (no size jump on idle↔tracking), in-progress entry indicator, persistent structure with animated content swaps', date: '2026-02-16T23:30:00' },
+          { kind: 'prototype', title: 'Tray Popup Interactive', route: '/dev/tray', description: 'Interactive prototype: Layered + Hero layouts, settings panel (expand/drawer/overlay), login view, theme/scale switching', date: '2026-02-16T23:00:00' },
           { kind: 'exploration', title: 'tray-popup-v2', file: 'desktop/tray-popup-v2.html', description: 'v2 — bolder, bigger: Panorama (wide+progress), Spotlight (ring timer), Workspace (two-column), Pulse (team-aware)', date: '2026-02-16T22:00:00' },
           { kind: 'exploration', title: 'tray-popup', file: 'desktop/tray-popup.html', description: 'v1 — 2 variants (Layered, Hero) × 2 states (idle, tracking)', date: '2026-02-16T21:00:00' },
         ],
@@ -132,6 +152,15 @@ export const LAB_SECTIONS: LabProductSection[] = [
     ],
   },
 ];
+
+// Sort groups within each section by date descending (newest first)
+for (const section of LAB_SECTIONS) {
+  section.groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Also sort items within each group by date descending
+  for (const group of section.groups) {
+    group.items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+}
 
 /** Flat list of all groups across all sections (for backward compat) */
 export const LAB_GROUPS: LabFeatureGroup[] = LAB_SECTIONS.flatMap((s) => s.groups);

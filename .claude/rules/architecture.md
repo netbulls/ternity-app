@@ -29,6 +29,16 @@ Key technical decisions and patterns. Not general docs — only things that affe
 - `setImpersonateUserId()` must be called **synchronously** before `queryClient.invalidateQueries()` — not in a `useEffect`. Otherwise refetches fire before the header is set.
 - `projectId` is nullable in `time_entries` — timer can start without a project.
 
+## No-Delete Policy
+
+Never hard-delete user data. All entities use `isActive` flags (soft delete) instead of `DELETE` operations.
+
+- **Deactivation** hides records from pickers and active views
+- **Historical references** remain intact — time entries, audit logs, reports keep working
+- **Reactivation** is always possible — no data loss
+- **No `DELETE` endpoints** for business entities (clients, projects, entries, users, labels)
+- Database-level cascades (`ON DELETE CASCADE`) are only for internal join tables (e.g., `entry_labels`, `entry_audit_log`), never for user-facing entities
+
 ## Vite Monorepo
 
 - `@logto/react` can cause duplicate React instances in pnpm monorepo → fix with `resolve: { dedupe: ['react', 'react-dom'] }` in vite.config.ts
