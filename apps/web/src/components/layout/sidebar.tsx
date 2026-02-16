@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, FolderKanban, Settings, LogOut, Users } from 'lucide-react';
+import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, Settings, LogOut, Users, FolderKanban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { HourglassLogo } from './hourglass-logo';
@@ -10,11 +10,11 @@ const navItems = [
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/leave', label: 'Leave', icon: Palmtree },
-  { to: '/projects', label: 'Projects', icon: FolderKanban },
 ];
 
 const adminNavItems = [
   { to: '/users', label: 'Users', icon: Users },
+  { to: '/projects', label: 'Projects', icon: FolderKanban },
 ];
 
 export function Sidebar() {

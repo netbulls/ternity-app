@@ -65,6 +65,7 @@ export const users = pgTable(
 export const clients = pgTable('clients', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -77,6 +78,8 @@ export const projects = pgTable('projects', {
     .references(() => clients.id),
   name: text('name').notNull(),
   color: text('color').notNull().default('#00D4AA'),
+  description: text('description'),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

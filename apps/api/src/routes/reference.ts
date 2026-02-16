@@ -1,11 +1,11 @@
 import { FastifyInstance } from 'fastify';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { projects, clients, labels, users, projectMembers } from '../db/schema.js';
 
 export async function referenceRoutes(fastify: FastifyInstance) {
-  /** GET /api/projects — all projects with client name */
+  /** GET /api/projects — active projects with active clients (for pickers) */
   fastify.get('/api/projects', async (request) => {
     const rows = await db
       .select({
@@ -16,6 +16,7 @@ export async function referenceRoutes(fastify: FastifyInstance) {
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
+      .where(and(eq(projects.isActive, true), eq(clients.isActive, true)))
       .orderBy(asc(projects.name));
 
     return rows;

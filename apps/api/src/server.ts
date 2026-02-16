@@ -10,6 +10,7 @@ import { referenceRoutes } from './routes/reference.js';
 import { statsRoutes } from './routes/stats.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { adminUsersRoutes } from './routes/admin-users.js';
+import { adminProjectsRoutes } from './routes/admin-projects.js';
 import { syncStatusRoutes } from './routes/sync-status.js';
 
 const fastify = Fastify({
@@ -36,6 +37,7 @@ await fastify.register(referenceRoutes);
 await fastify.register(statsRoutes);
 await fastify.register(dashboardRoutes);
 await fastify.register(adminUsersRoutes);
+await fastify.register(adminProjectsRoutes);
 await fastify.register(syncStatusRoutes);
 
 // Start
