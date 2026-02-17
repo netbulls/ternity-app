@@ -57,6 +57,16 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'web',
     groups: [
       {
+        name: 'presence',
+        id: 'presence-lab',
+        description: 'Presence & availability — team board, my day, away flow, schedule, leave, admin reconciliation, quarterly balance, lista obecności',
+        date: '2026-02-17T21:00:00',
+        items: [
+          { kind: 'exploration', title: 'presence-a7d4', file: 'web/presence-a7d4.html', description: 'Full system — 8 screens: team board, my day, away flow, schedule setup, leave request, admin reconciliation, quarterly balance, attendance record', date: '2026-02-17T21:00:00' },
+          { kind: 'prototype', title: 'Presence System', route: '/dev/presence', description: 'Interactive prototype: team board with live status, my day reconciliation, schedule editor, leave request, admin views, quarterly balance, attendance record', date: '2026-02-17T22:00:00' },
+        ],
+      },
+      {
         name: 'huge-theme',
         id: 'huge-theme-lab',
         description: 'Large-screen dashboard concepts — bento, scoreboard, narrative, ambient, focus',
@@ -85,6 +95,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
         description: 'Time entries page — day groups, inline editing, timer bar flair',
         date: '2026-02-15T18:38:00',
         items: [
+          { kind: 'exploration', title: 'entry-rows-a3c7', file: 'web/entry-rows-a3c7.html', description: 'Entry row variants — multi-line descriptions and project names with consistent row heights (A-H)', date: '2026-02-17T18:00:00' },
           { kind: 'exploration', title: 'entries-110c', file: 'web/entries-110c.html', description: 'Approved v2 with day groups and timer', date: '2026-02-15T18:38:00' },
           { kind: 'exploration', title: 'entries', file: 'web/entries.html', description: 'Day groups and timer bar', date: '2026-02-14T23:29:00' },
           { kind: 'exploration', title: 'entries-v1', file: 'web/entries-v1.html', description: 'Earlier layout iteration', date: '2026-02-14T23:29:00' },

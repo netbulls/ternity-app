@@ -16,6 +16,7 @@ import {
   X,
   ArrowLeft,
   Building2,
+  FolderKanban,
   Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -481,20 +482,24 @@ export function ProjectsPage() {
 
       {/* Scope Tabs (only when not in drill-down) */}
       {!drilldownClient && (
-        <div className="mb-4 flex gap-1">
-          {(['projects', 'clients'] as Scope[]).map((s) => (
+        <div className="mb-5 flex gap-1 border-b border-border pb-px">
+          {([
+            { id: 'projects' as Scope, label: 'Projects', icon: FolderKanban },
+            { id: 'clients' as Scope, label: 'Clients', icon: Building2 },
+          ]).map((tab) => (
             <button
-              key={s}
-              onClick={() => handleScopeChange(s)}
+              key={tab.id}
+              onClick={() => handleScopeChange(tab.id)}
               className={cn(
-                'rounded-md px-3 py-1.5 font-brand text-muted-foreground transition-colors',
-                scope === s
-                  ? 'bg-primary/[0.08] font-semibold text-foreground'
-                  : 'hover:bg-muted/30',
+                'mb-[-1px] flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 font-brand font-medium uppercase tracking-wider transition-colors',
+                scope === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
-              style={{ fontSize: scaled(12), letterSpacing: '0.5px' }}
+              style={{ fontSize: scaled(11), letterSpacing: '1px' }}
             >
-              {s === 'projects' ? 'Projects' : 'Clients'}
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
             </button>
           ))}
         </div>

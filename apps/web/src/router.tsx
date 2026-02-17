@@ -59,6 +59,13 @@ export const router = createBrowserRouter([
             return { Component: DevTrayV2Page };
           },
         },
+        {
+          path: '/dev/presence',
+          lazy: async () => {
+            const { DevPresencePage } = await import('@/pages/dev-presence');
+            return { Component: DevPresencePage };
+          },
+        },
       ]
     : []),
   {
