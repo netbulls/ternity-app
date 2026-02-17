@@ -8,21 +8,20 @@ import { getTimezoneAbbr } from '@/lib/format';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { cn } from '@/lib/utils';
 
-function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-      <span className="w-14 shrink-0 text-[11px] text-muted-foreground">{label}</span>
-      <span className="text-[13px] text-foreground">{value}</span>
-    </div>
-  );
-}
-
 const ENV_COLORS: Record<string, string> = {
   local: 'text-blue-400',
   dev: 'text-amber-400',
   prod: 'text-red-400',
 };
+
+function InfoRow({ icon: Icon, value, title }: { icon: React.ElementType; value: React.ReactNode; title?: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5 py-1" title={title}>
+      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+      <span className="min-w-0 truncate text-[12px] text-foreground/80">{value}</span>
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -42,30 +41,100 @@ export function SettingsPage() {
     : '??';
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="font-brand text-lg font-semibold tracking-wide text-foreground">Settings</h1>
+    <div className="grid grid-cols-[1fr_280px] gap-8">
+      {/* ── Main: editable preferences ── */}
+      <div>
+        <h1 className="font-brand text-lg font-semibold tracking-wide text-foreground">Settings</h1>
 
-      {/* ── Account + System info ── */}
-      <div className="mt-5 grid grid-cols-[1fr_auto] gap-4">
+        {/* Appearance */}
+        <div className="mt-5">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Appearance</h2>
+
+          <div className="flex flex-wrap gap-2">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id as ThemeId)}
+                className={cn(
+                  'rounded-lg border px-3.5 py-1.5 text-[12px] transition-all',
+                  theme === t.id
+                    ? 'border-primary bg-primary font-semibold text-primary-foreground'
+                    : 'border-border text-muted-foreground hover:border-primary/50',
+                )}
+              >
+                {t.name}
+                {t.badge ? ` (${t.badge})` : ''}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-[12px] text-muted-foreground">Scale</span>
+            <div className="flex gap-1.5">
+              {SCALES.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setScale(s.value)}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-[11px] transition-all',
+                    scale === s.value
+                      ? 'border-primary bg-primary font-semibold text-primary-foreground'
+                      : 'border-border text-muted-foreground hover:border-primary/50',
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
+            <p className="font-brand text-[calc(18px*var(--t-scale,1.1)/1.1)] font-semibold text-foreground">
+              Timer &amp; Entries
+            </p>
+            <p className="font-brand mt-1 text-[calc(22px*var(--t-scale,1.1)/1.1)] font-bold text-foreground">
+              14h 52m
+            </p>
+            <p className="mt-1 text-[calc(13px*var(--t-scale,1.1)/1.1)] text-muted-foreground">
+              Weekly summary across all projects and labels.
+            </p>
+            <p className="font-brand mt-1 text-[calc(10px*var(--t-scale,1.1)/1.1)] font-normal uppercase tracking-wider text-muted-foreground">
+              This week
+            </p>
+          </div>
+        </div>
+
+        {/* Default Project */}
+        <div className="mt-6">
+          <h2 className="mb-1 text-sm font-semibold text-foreground">Default Project</h2>
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Pre-fills the project when starting a new timer or creating an entry.
+          </p>
+          <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
+        </div>
+      </div>
+
+      {/* ── Right panel: read-only info ── */}
+      <aside className="min-w-0 space-y-3 pt-9">
         {/* Account */}
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
           <div className="mb-2 flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] text-[12px] font-semibold text-[hsl(var(--t-avatar-text))]">
               {initials}
             </div>
-            <div>
-              <div className="text-[13px] font-medium text-foreground">{user?.displayName ?? '—'}</div>
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-medium text-foreground">{user?.displayName ?? '—'}</div>
               <span className={cn('text-[11px] font-medium', user?.globalRole === 'admin' ? 'text-primary' : 'text-muted-foreground')}>
                 {user?.globalRole === 'admin' ? 'Admin' : 'Employee'}
               </span>
             </div>
           </div>
           <div className="border-t border-border/50 pt-2">
-            <InfoRow icon={Mail} label="Email" value={user?.email ?? '—'} />
-            <InfoRow icon={Phone} label="Phone" value={user?.phone ?? '—'} />
+            <InfoRow icon={Mail} value={user?.email ?? '—'} title={user?.email ?? undefined} />
+            <InfoRow icon={Phone} value={user?.phone ?? '—'} />
             <InfoRow
               icon={Globe}
-              label="Zone"
               value={
                 <span>
                   {ORG_TIMEZONE} <span className="text-[10px] text-muted-foreground/60">({getTimezoneAbbr()})</span>
@@ -90,74 +159,7 @@ export function SettingsPage() {
             <span className="text-muted-foreground">{new Date(__BUILD_TIME__).toLocaleDateString()}</span>
           </div>
         </div>
-      </div>
-
-      {/* ── Appearance ── */}
-      <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Appearance</h2>
-
-        <div className="flex flex-wrap gap-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id as ThemeId)}
-              className={cn(
-                'rounded-lg border px-3.5 py-1.5 text-[12px] transition-all',
-                theme === t.id
-                  ? 'border-primary bg-primary font-semibold text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:border-primary/50',
-              )}
-            >
-              {t.name}
-              {t.badge ? ` (${t.badge})` : ''}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-[12px] text-muted-foreground">Scale</span>
-          <div className="flex gap-1.5">
-            {SCALES.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setScale(s.value)}
-                className={cn(
-                  'rounded-md border px-2.5 py-1 text-[11px] transition-all',
-                  scale === s.value
-                    ? 'border-primary bg-primary font-semibold text-primary-foreground'
-                    : 'border-border text-muted-foreground hover:border-primary/50',
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
-          <p className="font-brand text-[calc(18px*var(--t-scale,1.1)/1.1)] font-semibold text-foreground">
-            Timer &amp; Entries
-          </p>
-          <p className="font-brand mt-1 text-[calc(22px*var(--t-scale,1.1)/1.1)] font-bold text-foreground">
-            14h 52m
-          </p>
-          <p className="mt-1 text-[calc(13px*var(--t-scale,1.1)/1.1)] text-muted-foreground">
-            Weekly summary across all projects and labels.
-          </p>
-          <p className="font-brand mt-1 text-[calc(10px*var(--t-scale,1.1)/1.1)] font-normal uppercase tracking-wider text-muted-foreground">
-            This week
-          </p>
-        </div>
-      </div>
-
-      {/* ── Default Project ── */}
-      <div className="mt-6">
-        <h2 className="mb-1 text-sm font-semibold text-foreground">Default Project</h2>
-        <p className="mb-2 text-[11px] text-muted-foreground">
-          Pre-fills the project when starting a new timer or creating an entry.
-        </p>
-        <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
-      </div>
+      </aside>
     </div>
   );
 }
