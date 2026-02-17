@@ -195,19 +195,26 @@ async function authPlugin(fastify: FastifyInstance) {
     fastify.addHook('onRequest', async (request: FastifyRequest) => {
       const devUserId = request.headers['x-dev-user-id'] as string | undefined;
 
-      // Find the user — either by header or default to first user
+      // Find the user — header override → explicit ID for role → first by role
       let user;
       if (devUserId) {
         [user] = await db.select().from(users).where(eq(users.id, devUserId)).limit(1);
       }
       if (!user) {
         const devRole = (process.env.DEV_USER_ROLE ?? 'admin') as 'admin' | 'user';
-        [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.globalRole, devRole))
-          .orderBy(asc(users.createdAt))
-          .limit(1);
+        // Explicit user IDs per role (set in .env.local)
+        const explicitId = devRole === 'admin' ? process.env.DEV_ADMIN_ID : process.env.DEV_USER_ID;
+        if (explicitId) {
+          [user] = await db.select().from(users).where(eq(users.id, explicitId)).limit(1);
+        }
+        if (!user) {
+          [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.globalRole, devRole))
+            .orderBy(asc(users.createdAt))
+            .limit(1);
+        }
         // Fallback to first user if no match for the role
         if (!user) {
           [user] = await db.select().from(users).orderBy(asc(users.createdAt)).limit(1);
