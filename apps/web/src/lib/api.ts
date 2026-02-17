@@ -37,8 +37,13 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {};
 
-  // Only set Content-Type for requests with a body
-  if (options?.body) {
+  // For mutating methods without an explicit body, send '{}' so Fastify's
+  // content-type parser doesn't reject the request as "Unsupported Media Type".
+  const method = options?.method?.toUpperCase();
+  const needsBody = method === 'POST' || method === 'PUT' || method === 'PATCH';
+  const body = options?.body ?? (needsBody ? '{}' : undefined);
+
+  if (body) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -57,6 +62,7 @@ export async function apiFetch<T>(
 
   const res = await fetch(`/api${path}`, {
     ...options,
+    body,
     headers: { ...headers, ...options?.headers },
   });
 
