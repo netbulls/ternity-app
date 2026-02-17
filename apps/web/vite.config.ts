@@ -1,6 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
+
+function gitVersion(): string {
+  // Prefer build arg (set by deploy.sh in Docker builds where git is unavailable)
+  if (process.env.VITE_APP_VERSION) return process.env.VITE_APP_VERSION;
+  try {
+    return execSync('git describe --tags --always', { encoding: 'utf-8' }).trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -27,6 +38,7 @@ export default defineConfig({
     },
   },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? 'dev'),
+    __APP_VERSION__: JSON.stringify(gitVersion()),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
 });

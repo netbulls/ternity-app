@@ -91,6 +91,40 @@ export function SettingsPage() {
           <span className="text-[10px] opacity-60">({getTimezoneAbbr()})</span>
         </div>
       </div>
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Build</h2>
+        <BuildInfoTable />
+      </div>
+    </div>
+  );
+}
+
+const ENV_COLORS: Record<string, string> = {
+  local: 'text-blue-400',
+  dev: 'text-amber-400',
+  prod: 'text-red-400',
+};
+
+function BuildInfoTable() {
+  const envName = import.meta.env.VITE_ENV_NAME || 'unknown';
+  const envColor = ENV_COLORS[envName] ?? 'text-muted-foreground';
+  const rows = [
+    ['Version', __APP_VERSION__],
+    ['Built', new Date(__BUILD_TIME__).toLocaleString()],
+  ];
+
+  return (
+    <div className="inline-flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-4 py-3 font-mono text-[12px]">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex items-center gap-3">
+          <span className="w-16 text-muted-foreground">{label}</span>
+          <span className="text-foreground">{value}</span>
+        </div>
+      ))}
+      <div className="flex items-center gap-3">
+        <span className="w-16 text-muted-foreground">Env</span>
+        <span className={cn('font-semibold', envColor)}>{envName}</span>
+      </div>
     </div>
   );
 }

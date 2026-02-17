@@ -14,6 +14,7 @@ SSH_HOST="${SSH_HOST:-deploy@89.167.28.70}"
 REMOTE_BASE="/opt/ternity-app"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_VERSION="$(cd "$PROJECT_ROOT" && git describe --tags --always 2>/dev/null || echo 'unknown')"
 
 sync_source() {
   echo "=== Syncing source to VPS ==="
@@ -50,8 +51,8 @@ deploy_env() {
     return 1
   fi
 
-  # Build and start
-  ssh "$SSH_HOST" "cd $REMOTE_BASE/$env && docker compose build && docker compose up -d"
+  # Build and start (pass version + env name as build args)
+  ssh "$SSH_HOST" "cd $REMOTE_BASE/$env && VITE_APP_VERSION=$APP_VERSION VITE_ENV_NAME=$env docker compose build && docker compose up -d"
 
   # Run migrations if requested
   if [[ "$MIGRATE" == true ]]; then

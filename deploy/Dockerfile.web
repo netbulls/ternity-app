@@ -4,6 +4,8 @@ ARG VITE_AUTH_MODE=logto
 ARG VITE_LOGTO_ENDPOINT
 ARG VITE_LOGTO_APP_ID
 ARG VITE_SHOW_DEV_PAGES
+ARG VITE_APP_VERSION=dev
+ARG VITE_ENV_NAME
 RUN corepack enable pnpm
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./

@@ -17,6 +17,34 @@ const adminNavItems = [
   { to: '/projects', label: 'Projects', icon: FolderKanban },
 ];
 
+const ENV_COLORS: Record<string, string> = {
+  local: 'text-blue-400',
+  dev: 'text-amber-400',
+  prod: 'text-red-400',
+};
+
+function formatBuildTime(iso: string): string {
+  const d = new Date(iso);
+  const mon = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${mon}-${day} ${h}:${m}`;
+}
+
+function BuildInfo() {
+  const envName = import.meta.env.VITE_ENV_NAME || 'unknown';
+  const envColor = ENV_COLORS[envName] ?? 'text-muted-foreground';
+
+  return (
+    <div className="mt-2 px-2.5 font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+      {__APP_VERSION__}
+      <span className={envColor}> · {envName}</span>
+      <span className="text-muted-foreground/50"> · {formatBuildTime(__BUILD_TIME__)}</span>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const { user, signOut } = useAuth();
 
@@ -139,6 +167,9 @@ export function Sidebar() {
           <LogOut className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Build info */}
+      <BuildInfo />
     </aside>
   );
 }

@@ -39,6 +39,8 @@ services:
         - VITE_LOGTO_ENDPOINT=${VITE_LOGTO_ENDPOINT}
         - VITE_LOGTO_APP_ID=${VITE_LOGTO_APP_ID}
         - VITE_SHOW_DEV_PAGES=true
+        - VITE_APP_VERSION=${VITE_APP_VERSION:-dev}
+        - VITE_ENV_NAME=${VITE_ENV_NAME:-dev}
     container_name: ternity-app-dev-web
     networks:
       - proxy
