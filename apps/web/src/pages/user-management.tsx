@@ -8,7 +8,7 @@ import {
   type SortingState,
   type RowSelectionState,
 } from '@tanstack/react-table';
-import { Search, UserCheck, UserX } from 'lucide-react';
+import { Search, X, UserCheck, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { StatCard } from '@/components/ui/stat-card';
@@ -252,6 +252,14 @@ export function UserManagementPage() {
             className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
           />
+          {searchQuery && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Filter Tabs */}

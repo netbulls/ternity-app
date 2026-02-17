@@ -13,6 +13,7 @@ import {
   Plus,
   CheckCircle2,
   XCircle,
+  X,
   ArrowLeft,
   Building2,
   Pencil,
@@ -541,6 +542,14 @@ export function ProjectsPage() {
             className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
           />
+          {searchQuery && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Filter Tabs */}

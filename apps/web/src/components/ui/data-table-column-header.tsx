@@ -17,7 +17,7 @@ export function DataTableColumnHeader<TData, TValue>({
   if (!column.getCanSort()) {
     return (
       <span
-        className={cn('font-brand', className)}
+        className={cn('flex w-full font-brand', className)}
         style={{ fontSize: scaled(11), fontWeight: 600, letterSpacing: '0.5px' }}
       >
         {title}
@@ -28,7 +28,7 @@ export function DataTableColumnHeader<TData, TValue>({
   return (
     <button
       className={cn(
-        'inline-flex cursor-pointer items-center gap-1 font-brand text-muted-foreground transition-colors hover:text-foreground',
+        'flex w-full cursor-pointer items-center gap-1 font-brand text-muted-foreground transition-colors hover:text-foreground',
         className,
       )}
       style={{ fontSize: scaled(11), fontWeight: 600, letterSpacing: '0.5px' }}
