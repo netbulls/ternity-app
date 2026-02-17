@@ -1,4 +1,4 @@
-import { Globe, Mail, Phone, Shield, User } from 'lucide-react';
+import { Globe, Mail, Phone } from 'lucide-react';
 import { THEMES, ORG_TIMEZONE, type ThemeId } from '@ternity/shared';
 import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
