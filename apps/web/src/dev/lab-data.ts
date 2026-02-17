@@ -107,6 +107,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
         description: 'Client & project CRUD — tables, dialogs, active/inactive status',
         date: '2026-02-16T23:30:00',
         items: [
+          { kind: 'exploration', title: 'projects-c4a1', file: 'web/projects-c4a1.html', description: 'v3 — scope tabs, client drill-down with breadcrumb, "New" dropdown, inline "+ New Client", deactivate cascade warning', date: '2026-02-17T01:30:00' },
           { kind: 'exploration', title: 'projects-b2d8', file: 'web/projects-b2d8.html', description: 'v2 — aligned with user management patterns: 3 stat cards, bulk selection, pagination, toast, same toolbar', date: '2026-02-17T00:30:00' },
           { kind: 'exploration', title: 'projects-ea7a', file: 'web/projects-ea7a.html', description: 'v1 — scope tabs, 4 stat cards, grouped-by-client view, create/deactivate dialogs', date: '2026-02-16T23:30:00' },
         ],

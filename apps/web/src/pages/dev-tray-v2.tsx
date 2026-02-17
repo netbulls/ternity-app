@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, useTheme } from '@/providers/theme-provider';
 import { ScaleProvider, SCALES, useScale } from '@/providers/scale-provider';
@@ -23,6 +24,7 @@ import {
   WifiOff,
   AlertTriangle,
   Clock,
+  Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { scaled } from '@/lib/scaled';
@@ -405,79 +407,239 @@ function ProjectPicker({
   selected,
   onSelect,
   onClose,
+  triggerRef,
+  align = 'left',
 }: {
   selected: MockProject | null;
-  onSelect: (project: MockProject) => void;
+  onSelect: (project: MockProject | null) => void;
   onClose: () => void;
+  triggerRef: React.RefObject<HTMLElement | null>;
+  align?: 'left' | 'center';
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState('');
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [recentIds] = useState<string[]>(() => {
+    // Simulate recents — first two projects as "recently used"
+    return ['p1', 'p2'];
+  });
+
+  // Position relative to trigger
+  useEffect(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    // Read the CSS custom property for scale to compute dropdown width
+    const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-scale') || '1.1');
+    const dropdownWidth = 260 * scale;
+    const gap = 4 * scale;
+    setPos({
+      top: rect.bottom + gap,
+      left: align === 'center'
+        ? rect.left + rect.width / 2 - dropdownWidth / 2
+        : rect.left,
+    });
+  }, [triggerRef, align]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (
+        ref.current && !ref.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) {
         onClose();
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, triggerRef]);
 
-  return (
+  // Focus search on open
+  useEffect(() => {
+    const t = setTimeout(() => searchRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Group projects by client
+  const grouped = (() => {
+    const map = new Map<string, MockProject[]>();
+    for (const p of MOCK_PROJECTS) {
+      const client = p.client || 'No Client';
+      if (!map.has(client)) map.set(client, []);
+      map.get(client)!.push(p);
+    }
+    return Array.from(map.entries()).map(([client, projects]) => ({ client, projects }));
+  })();
+
+  const recentProjects = recentIds
+    .map((id) => MOCK_PROJECTS.find((p) => p.id === id))
+    .filter((p): p is MockProject => p != null);
+
+  // Filter by search or show recents + all
+  const filtered = search
+    ? grouped
+        .map((g) => ({
+          ...g,
+          projects: g.projects.filter(
+            (p) =>
+              p.name.toLowerCase().includes(search.toLowerCase()) ||
+              g.client.toLowerCase().includes(search.toLowerCase()),
+          ),
+        }))
+        .filter((g) => g.projects.length > 0)
+    : [
+        ...(recentProjects.length > 0
+          ? [{ client: 'Recent', projects: recentProjects }]
+          : []),
+        ...grouped,
+      ];
+
+  return createPortal(
     <motion.div
       ref={ref}
-      className="absolute z-30 overflow-hidden rounded-lg border border-border bg-background"
+      className="fixed z-50 overflow-hidden rounded-lg border border-border bg-background"
       style={{
         width: scaled(260),
+        top: pos.top,
+        left: pos.left,
         boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-        marginTop: scaled(4),
       }}
       initial={{ opacity: 0, y: -4, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -4, scale: 0.97 }}
       transition={{ duration: 0.15 }}
     >
-      <div style={{ padding: `${scaled(4)} 0` }}>
-        {MOCK_PROJECTS.map((project) => {
-          const isSelected = selected?.id === project.id;
-          return (
-            <button
-              key={project.id}
-              className={`flex w-full items-center transition-colors ${
-                isSelected
-                  ? 'bg-primary/8 text-foreground'
-                  : 'text-foreground hover:bg-muted/50'
-              }`}
-              style={{ gap: scaled(10), padding: `${scaled(8)} ${scaled(14)}` }}
-              onClick={() => {
-                onSelect(project);
-                onClose();
-              }}
-            >
-              <div
-                className="shrink-0 rounded-full"
-                style={{ width: scaled(8), height: scaled(8), background: project.color }}
-              />
-              <div className="min-w-0 flex-1 text-left">
-                <div className="truncate" style={{ fontSize: scaled(12) }}>
-                  {project.name}
-                </div>
-                {project.client && (
-                  <div className="truncate text-muted-foreground" style={{ fontSize: scaled(10) }}>
-                    {project.client}
-                  </div>
-                )}
-              </div>
-              {isSelected && (
-                <Check
-                  className="shrink-0 text-primary"
-                  style={{ width: scaled(14), height: scaled(14) }}
-                />
-              )}
-            </button>
-          );
-        })}
+      {/* Search */}
+      <div className="border-b border-border" style={{ padding: scaled(8) }}>
+        <div className="relative">
+          <Search
+            className="absolute text-muted-foreground"
+            style={{
+              width: scaled(12),
+              height: scaled(12),
+              left: scaled(8),
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          />
+          <motion.input
+            ref={searchRef}
+            className="w-full rounded-md border border-border bg-muted/40 text-foreground outline-none placeholder:text-muted-foreground"
+            style={{
+              height: scaled(28),
+              paddingLeft: scaled(26),
+              paddingRight: scaled(8),
+              fontSize: scaled(11),
+            }}
+            whileFocus={{ borderColor: 'hsl(var(--primary) / 0.5)' }}
+            transition={{ duration: 0.2 }}
+            placeholder="Search projects..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
-    </motion.div>
+
+      {/* Project list */}
+      <div style={{ maxHeight: scaled(220), overflowY: 'auto', padding: `${scaled(4)} 0` }}>
+        {filtered.length === 0 ? (
+          <div className="text-center text-muted-foreground" style={{ padding: `${scaled(12)} ${scaled(8)}`, fontSize: scaled(11) }}>
+            No projects match &ldquo;{search}&rdquo;
+          </div>
+        ) : (
+          filtered.map((group, gi) => (
+            <div key={group.client}>
+              <div
+                className="flex items-center font-brand uppercase tracking-widest text-muted-foreground"
+                style={{
+                  fontSize: scaled(8),
+                  letterSpacing: '1.5px',
+                  padding: `${scaled(8)} ${scaled(12)} ${scaled(3)}`,
+                  gap: scaled(4),
+                  opacity: 0.6,
+                }}
+              >
+                {group.client === 'Recent' && (
+                  <Clock style={{ width: scaled(9), height: scaled(9) }} />
+                )}
+                {group.client}
+              </div>
+              {group.projects.map((project, pi) => {
+                const isSelected = selected?.id === project.id;
+                return (
+                  <motion.button
+                    key={`${group.client}-${project.id}`}
+                    className={`flex w-full items-center text-left transition-colors ${
+                      isSelected
+                        ? 'bg-primary/8 text-foreground'
+                        : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground'
+                    }`}
+                    style={{ gap: scaled(8), padding: `${scaled(6)} ${scaled(12)}` }}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: gi * 0.05 + pi * 0.03, duration: 0.15 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onSelect(project);
+                      onClose();
+                    }}
+                  >
+                    <motion.div
+                      className="shrink-0 rounded-full"
+                      style={{ width: scaled(8), height: scaled(8), background: project.color }}
+                      animate={isSelected ? { scale: [1, 1.3, 1] } : {}}
+                      transition={{ duration: 0.3 }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate" style={{ fontSize: scaled(12) }}>
+                        {project.name}
+                      </div>
+                      {project.client && (
+                        <div className="truncate text-muted-foreground" style={{ fontSize: scaled(10) }}>
+                          {project.client}
+                        </div>
+                      )}
+                    </div>
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0 }}
+                          transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+                        >
+                          <Check
+                            className="shrink-0 text-primary"
+                            style={{ width: scaled(14), height: scaled(14) }}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* No project option */}
+      <div className="border-t border-border" style={{ padding: scaled(4) }}>
+        <motion.button
+          className="flex w-full items-center text-left text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          style={{ gap: scaled(8), padding: `${scaled(6)} ${scaled(12)}`, fontSize: scaled(11) }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            onSelect(null);
+            onClose();
+          }}
+        >
+          <X style={{ width: scaled(10), height: scaled(10) }} />
+          No project
+        </motion.button>
+      </div>
+    </motion.div>,
+    document.body,
   );
 }
 
@@ -501,24 +663,24 @@ function StatusBanner({
       icon: WifiOff,
       message: "You're offline — entries will sync when reconnected",
       color: 'hsl(45 93% 47%)',
-      bgColor: 'hsl(45 93% 47% / 0.08)',
-      borderColor: 'hsl(45 93% 47% / 0.2)',
+      gradient: 'linear-gradient(90deg, hsl(45 93% 47% / 0.12), hsl(40 90% 45% / 0.06))',
+      shimmerColor: 'hsl(45 93% 47% / 0.06)',
       action: null as null | { label: string; onClick: () => void },
     },
     'sync-failed': {
       icon: AlertTriangle,
       message: 'Sync failed — retrying...',
       color: 'hsl(var(--destructive))',
-      bgColor: 'hsl(var(--destructive) / 0.08)',
-      borderColor: 'hsl(var(--destructive) / 0.2)',
+      gradient: 'linear-gradient(90deg, hsl(var(--destructive) / 0.12), hsl(var(--destructive) / 0.05))',
+      shimmerColor: 'hsl(var(--destructive) / 0.06)',
       action: null as null | { label: string; onClick: () => void },
     },
     'long-timer': {
       icon: Clock,
       message: 'Timer running for 8+ hours — did you forget to stop?',
       color: 'hsl(45 93% 47%)',
-      bgColor: 'hsl(45 93% 47% / 0.08)',
-      borderColor: 'hsl(45 93% 47% / 0.2)',
+      gradient: 'linear-gradient(90deg, hsl(45 93% 47% / 0.12), hsl(40 90% 45% / 0.06))',
+      shimmerColor: 'hsl(45 93% 47% / 0.06)',
       action: { label: 'Stop', onClick: onStopTimer },
     },
   }[status];
@@ -527,45 +689,81 @@ function StatusBanner({
 
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: 'auto', opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
+      className="absolute inset-0 z-20 overflow-hidden"
+      initial={{ y: '-100%', opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: '-100%', opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="overflow-hidden"
     >
       <div
-        className="flex items-center border-b"
+        className="relative flex h-full items-center"
         style={{
-          padding: `${scaled(6)} ${scaled(12)}`,
-          background: config.bgColor,
-          borderColor: config.borderColor,
+          padding: `0 ${scaled(12)}`,
+          background: `hsl(var(--background))`,
           gap: scaled(8),
-          minHeight: scaled(32),
+          borderBottom: `1px solid ${config.color}20`,
         }}
       >
-        <Icon
-          className="shrink-0"
-          style={{ width: scaled(13), height: scaled(13), color: config.color }}
+        {/* Tinted background layer */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: config.gradient }}
         />
-        <span className="min-w-0 flex-1 text-foreground" style={{ fontSize: scaled(11) }}>
+        {/* Shimmer overlay — impersonation style */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[5]"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${config.shimmerColor}, transparent)`,
+            width: '50%',
+          }}
+          animate={{ left: ['-50%', '150%'] }}
+          transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
+        />
+
+        {/* Icon with pulse glow */}
+        <motion.div
+          className="relative z-10 flex shrink-0 items-center justify-center rounded-full"
+          style={{
+            width: scaled(22),
+            height: scaled(22),
+            background: `${config.color}18`,
+          }}
+          animate={{
+            boxShadow: [
+              `0 0 0 0 ${config.color}30`,
+              `0 0 0 ${scaled(6)}px ${config.color}00`,
+              `0 0 0 0 ${config.color}30`,
+            ],
+          }}
+          transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
+        >
+          <Icon
+            className="shrink-0"
+            style={{ width: scaled(11), height: scaled(11), color: config.color }}
+          />
+        </motion.div>
+
+        <span className="relative z-10 min-w-0 flex-1 text-foreground" style={{ fontSize: scaled(11), lineHeight: 1.3 }}>
           {config.message}
         </span>
+
         {config.action && (
           <button
-            className="shrink-0 rounded-md font-medium transition-colors hover:bg-background/50"
+            className="relative z-10 shrink-0 rounded-md font-medium transition-colors hover:bg-background/30"
             style={{
               fontSize: scaled(10),
               padding: `${scaled(2)} ${scaled(8)}`,
               color: config.color,
-              border: `1px solid ${config.borderColor}`,
+              border: `1px solid ${config.color}30`,
             }}
             onClick={config.action.onClick}
           >
             {config.action.label}
           </button>
         )}
+
         <button
-          className="flex shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+          className="relative z-10 flex shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
           style={{ width: scaled(18), height: scaled(18) }}
           onClick={onDismiss}
         >
@@ -586,6 +784,7 @@ function StatusBanner({
 function LayeredLayout({ timer, onStart, onStop, onPlay, selectedProject, onProjectSelect }: LayoutProps) {
   const digits = formatTimer(timer.elapsed).split('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pillRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
@@ -669,6 +868,7 @@ function LayeredLayout({ timer, onStart, onStop, onPlay, selectedProject, onProj
                 transition={{ duration: 0.15 }}
               >
                 <div
+                  ref={pillRef}
                   className="flex cursor-pointer items-center rounded border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40"
                   style={{ gap: scaled(5), padding: `${scaled(5)} ${scaled(10)}`, fontSize: scaled(11) }}
                   onClick={() => setPickerOpen((o) => !o)}
@@ -695,6 +895,7 @@ function LayeredLayout({ timer, onStart, onStop, onPlay, selectedProject, onProj
                       selected={selectedProject}
                       onSelect={onProjectSelect}
                       onClose={() => setPickerOpen(false)}
+                      triggerRef={pillRef}
                     />
                   )}
                 </AnimatePresence>
@@ -767,6 +968,7 @@ function LayeredLayout({ timer, onStart, onStop, onPlay, selectedProject, onProj
 function HeroLayout({ timer, onStart, onStop, onPlay, selectedProject, onProjectSelect }: LayoutProps) {
   const digits = formatTimer(timer.elapsed).split('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pillRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
@@ -899,6 +1101,7 @@ function HeroLayout({ timer, onStart, onStop, onPlay, selectedProject, onProject
                 transition={{ duration: 0.15 }}
               >
                 <div
+                  ref={pillRef}
                   className="flex cursor-pointer items-center rounded border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40"
                   style={{ gap: scaled(5), padding: `${scaled(5)} ${scaled(10)}`, fontSize: scaled(11) }}
                   onClick={() => setPickerOpen((o) => !o)}
@@ -921,13 +1124,13 @@ function HeroLayout({ timer, onStart, onStop, onPlay, selectedProject, onProject
                 </div>
                 <AnimatePresence>
                   {pickerOpen && (
-                    <div className="absolute left-1/2 top-full" style={{ transform: 'translateX(-50%)' }}>
-                      <ProjectPicker
-                        selected={selectedProject}
-                        onSelect={onProjectSelect}
-                        onClose={() => setPickerOpen(false)}
-                      />
-                    </div>
+                    <ProjectPicker
+                      selected={selectedProject}
+                      onSelect={onProjectSelect}
+                      onClose={() => setPickerOpen(false)}
+                      triggerRef={pillRef}
+                      align="center"
+                    />
                   )}
                 </AnimatePresence>
               </motion.div>
@@ -1202,7 +1405,7 @@ interface LayoutProps {
   onStop: () => void;
   onPlay: () => void;
   selectedProject: MockProject | null;
-  onProjectSelect: (project: MockProject) => void;
+  onProjectSelect: (project: MockProject | null) => void;
 }
 
 type PopupView = 'timer' | 'login';
@@ -1217,6 +1420,9 @@ function DevTrayV2Inner() {
   const [view, setView] = useState<PopupView>('timer');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<SettingsPanelStyle>('expand');
+  const [selectedProject, setSelectedProject] = useState<MockProject | null>(null);
+  const [statusState, setStatusState] = useState<StatusState>('none');
+  const [statusDismissed, setStatusDismissed] = useState(false);
 
   const handleStart = () => {
     timer.start();
@@ -1329,6 +1535,36 @@ function DevTrayV2Inner() {
             </div>
           </div>
         )}
+
+        {/* Status toggle */}
+        {view === 'timer' && (
+          <div className="flex items-center gap-2">
+            <span className="font-brand text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</span>
+            <div className="flex gap-1">
+              {([
+                ['none', 'None'],
+                ['offline', 'Offline'],
+                ['sync-failed', 'Sync Failed'],
+                ['long-timer', 'Long Timer'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setStatusState(key);
+                    setStatusDismissed(false);
+                  }}
+                  className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                    statusState === key
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* The popup */}
@@ -1366,12 +1602,25 @@ function DevTrayV2Inner() {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <PopupHeader onSettingsClick={handleSettingsToggle} />
+                    <div className="relative">
+                      <PopupHeader onSettingsClick={handleSettingsToggle} />
+                      <AnimatePresence>
+                        {statusState !== 'none' && !statusDismissed && (
+                          <StatusBanner
+                            status={statusState}
+                            onDismiss={() => setStatusDismissed(true)}
+                            onStopTimer={handleStop}
+                          />
+                        )}
+                      </AnimatePresence>
+                    </div>
                     <LayoutComponent
                       timer={timer}
                       onStart={handleStart}
                       onStop={handleStop}
                       onPlay={handlePlay}
+                      selectedProject={selectedProject}
+                      onProjectSelect={setSelectedProject}
                     />
                     {/* Drawer: slides up inside popup */}
                     {isDrawer && (
