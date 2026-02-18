@@ -257,8 +257,8 @@ async function authPlugin(fastify: FastifyInstance) {
     const jwks = createRemoteJWKSet(jwksUrl);
 
     fastify.addHook('onRequest', async (request, reply) => {
-      // Skip auth for health endpoint
-      if (request.url === '/health') return;
+      // Skip auth for public endpoints
+      if (request.url === '/health' || request.url === '/api/downloads') return;
 
       const authHeader = request.headers.authorization;
       if (!authHeader?.startsWith('Bearer ')) {

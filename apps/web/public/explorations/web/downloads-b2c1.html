@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Downloads (Interactive B)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        /* Page header */
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        /* Theme & scale switchers */
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        /* Scale levels */
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* State switcher */
+        .state-nav {
+            display: flex; justify-content: center; gap: 4px; margin-bottom: 12px;
+        }
+        .state-nav button {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+            padding: 5px 12px; border-radius: 6px;
+            border: 1px solid #2a2a2a; background: #1a1a1a;
+            color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s;
+        }
+        .state-nav button:hover { border-color: #444; }
+        .state-nav button.active {
+            background: #00D4AA; border-color: #00D4AA;
+            color: #0a0a0a; font-weight: 600;
+        }
+
+        /* Theme container */
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* ---- APP LAYOUT ---- */
+        .app {
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: calc(14px * var(--t-scale, 1));
+            min-height: 760px; display: grid;
+            grid-template-columns: 220px 1fr;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: hsl(var(--sidebar-background));
+            border-right: 1px solid hsl(var(--sidebar-border));
+            padding: 20px 12px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .sidebar .logo {
+            font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: 15px;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar .logo svg { width: 18px; height: 22px; }
+        .sidebar .nav-section {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1)); letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            padding: 12px 10px 4px; margin-top: 4px;
+        }
+        .sidebar .nav-item {
+            font-size: calc(13px * var(--t-scale, 1)); padding: 8px 10px;
+            border-radius: calc(var(--radius) - 2px);
+            color: hsl(var(--muted-foreground)); cursor: default; transition: background 0.1s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar .nav-item:hover {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+        }
+        .sidebar .nav-item.active {
+            background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground));
+            font-weight: 600;
+        }
+        .sidebar .nav-item svg { width: 16px; height: 16px; }
+        .sidebar .spacer { flex: 1; }
+        .sidebar .user-block {
+            display: flex; align-items: center; gap: 8px; padding: 10px;
+            border-radius: calc(var(--radius)); background: hsl(var(--muted) / 0.5);
+        }
+        .sidebar .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: hsl(var(--t-avatar-bg)); color: hsl(var(--t-avatar-text));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600;
+        }
+        .sidebar .user-name { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .sidebar .user-role { font-size: 10px; color: hsl(var(--muted-foreground)); }
+
+        /* Main */
+        .main { padding: 24px; overflow: auto; }
+        .top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .page-title {
+            font-family: 'Oxanium', sans-serif; font-size: calc(18px * var(--t-scale, 1)); font-weight: 600;
+            letter-spacing: 1px; color: hsl(var(--foreground));
+        }
+        .page-subtitle {
+            font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--muted-foreground)); margin-top: 2px;
+        }
+
+        /* ---- PRODUCT CARD ---- */
+        .product-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            overflow: hidden; margin-bottom: 24px;
+        }
+        .product-header {
+            display: flex; align-items: center; gap: 16px;
+            padding: 20px 24px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .product-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: hsl(var(--primary) / 0.1);
+            border: 1px solid hsl(var(--primary) / 0.2);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .product-icon svg { width: 24px; height: 24px; color: hsl(var(--primary)); }
+        .product-info { flex: 1; }
+        .product-name {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale, 1)); font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .product-desc {
+            font-size: calc(12px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); margin-top: 2px;
+        }
+        .product-meta {
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: calc(11px * var(--t-scale, 1)); font-weight: 500; padding: 2px 8px; border-radius: 9999px;
+        }
+        .badge-stable { background: hsl(152 60% 50% / 0.12); color: hsl(152 60% 50%); }
+        .badge-beta { background: hsl(35 100% 64% / 0.12); color: hsl(35 100% 64%); }
+        .product-version-badge {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1)); font-weight: 500;
+            padding: 4px 10px; border-radius: calc(var(--radius));
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* Platform tabs */
+        .platform-tabs {
+            display: flex; gap: 0; padding: 0 24px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .platform-tab {
+            display: flex; align-items: center; gap: 6px;
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1)); font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 12px 16px; background: transparent;
+            color: hsl(var(--muted-foreground)); cursor: pointer; transition: all 0.15s;
+            border: none; border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+        .platform-tab .os-icon { width: 16px; height: 16px; display: flex; align-items: center; }
+        .platform-tab .os-icon svg { width: 16px; height: 16px; fill: currentColor; }
+        .platform-tab:hover { color: hsl(var(--foreground)); }
+        .platform-tab.active {
+            color: hsl(var(--primary));
+            border-bottom-color: hsl(var(--primary));
+            font-weight: 600;
+        }
+        .tab-detected {
+            font-size: calc(8px * var(--t-scale, 1));
+            padding: 1px 5px; border-radius: 4px;
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+            letter-spacing: 0.5px; text-transform: uppercase;
+            font-family: 'Oxanium', sans-serif;
+        }
+
+        /* Download rows */
+        .download-rows { padding: 16px 24px; }
+        .download-panel { display: none; }
+        .download-panel.active { display: block; }
+        .download-row {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px 16px;
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+            margin-bottom: 8px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .download-row:hover {
+            border-color: hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.02);
+        }
+        .download-row:last-child { margin-bottom: 0; }
+        .download-row .dl-icon {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: hsl(var(--muted) / 0.5);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .download-row .dl-icon svg { width: 18px; height: 18px; color: hsl(var(--muted-foreground)); }
+        .download-row .dl-info { flex: 1; }
+        .download-row .dl-name {
+            font-size: calc(13px * var(--t-scale, 1)); font-weight: 500;
+            color: hsl(var(--foreground));
+        }
+        .download-row .dl-meta {
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); margin-top: 1px;
+        }
+        .download-row .dl-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); flex-shrink: 0;
+        }
+        .dl-action {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1)); font-weight: 500;
+            padding: 6px 14px; border-radius: calc(var(--radius));
+            color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1);
+            border: none; cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+        }
+        .dl-action:hover { background: hsl(var(--primary) / 0.18); }
+        .dl-action svg { width: 14px; height: 14px; }
+
+        /* Recommended marker */
+        .dl-recommended {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1));
+            letter-spacing: 0.5px; text-transform: uppercase;
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+            padding: 2px 6px; border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        /* Release notes */
+        .release-notes {
+            padding: 16px 20px;
+            background: hsl(var(--muted) / 0.2);
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+        }
+        .release-notes-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .release-notes-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1)); font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .release-notes-date {
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+        }
+        .release-notes ul { padding-left: 16px; margin: 0; }
+        .release-notes li {
+            font-size: calc(12px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); line-height: 1.6;
+        }
+
+        /* Detection info bar */
+        .detection-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; margin-bottom: 16px;
+            background: hsl(var(--primary) / 0.04);
+            border: 1px solid hsl(var(--primary) / 0.12);
+            border-radius: calc(var(--radius));
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+        }
+        .detection-bar svg { width: 14px; height: 14px; color: hsl(var(--primary)); flex-shrink: 0; }
+        .detection-bar strong { color: hsl(var(--foreground)); font-weight: 500; }
+
+        /* Empty / no artifacts */
+        .empty-state {
+            text-align: center; padding: 40px 20px;
+            color: hsl(var(--muted-foreground));
+        }
+        .empty-state svg { width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.4; }
+        .empty-state p { font-size: calc(13px * var(--t-scale, 1)); }
+        .empty-state .empty-sub { font-size: calc(11px * var(--t-scale, 1)); margin-top: 4px; opacity: 0.6; }
+
+        /* Hide/show states */
+        .state { display: none; }
+        .state.visible { display: block; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; border-radius: calc(var(--radius) + 2px);
+            background: hsl(var(--card) / 0.95); border: 1px solid hsl(var(--border));
+            backdrop-filter: blur(12px); box-shadow: 0 8px 32px hsl(var(--background) / 0.5);
+            font-size: 13px; color: hsl(var(--foreground));
+            opacity: 0; transition: all 0.3s ease; z-index: 100;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast svg { width: 16px; height: 16px; color: hsl(var(--primary)); flex-shrink: 0; }
+
+        /* Checksum popover */
+        .checksum-section {
+            padding: 0 24px 16px;
+            display: none;
+        }
+        .checksum-section.show { display: block; }
+        .checksum-table {
+            width: 100%; border-collapse: collapse;
+            font-size: calc(11px * var(--t-scale, 1));
+        }
+        .checksum-table th {
+            font-family: 'Oxanium', sans-serif;
+            text-align: left; font-weight: 600; letter-spacing: 0.5px;
+            color: hsl(var(--muted-foreground)); padding: 6px 10px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .checksum-table td {
+            padding: 6px 10px; border-bottom: 1px solid hsl(var(--border) / 0.3);
+            color: hsl(var(--foreground));
+        }
+        .checksum-table .hash {
+            font-family: monospace; font-size: calc(10px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground)); word-break: break-all;
+        }
+
+        /* Checksum toggle */
+        .checksum-toggle {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 24px; cursor: pointer;
+            font-size: calc(11px * var(--t-scale, 1));
+            color: hsl(var(--muted-foreground));
+            border: none; background: none; width: 100%;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            transition: color 0.15s;
+        }
+        .checksum-toggle:hover { color: hsl(var(--foreground)); }
+        .checksum-toggle svg { width: 14px; height: 14px; transition: transform 0.2s; }
+        .checksum-toggle.open svg { transform: rotate(90deg); }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Downloads — Variant B Interactive</h1>
+        <p>Product Card + Tabs — OS auto-detection, working tabs, download simulation</p>
+    </div>
+
+    <!-- Theme & scale switchers -->
+    <div class="switcher-row">
+        <span class="switcher-label">Theme</span>
+        <div class="switcher-group" id="themeNav">
+            <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+            <button onclick="setTheme('ternity-light')">Ternity Light</button>
+            <button onclick="setTheme('midnight')">Midnight</button>
+            <button onclick="setTheme('warm-sand')">Warm Sand</button>
+            <button onclick="setTheme('carbon')">Carbon</button>
+            <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+        <span class="switcher-label">Scale</span>
+        <div class="switcher-group" id="scaleNav">
+            <button onclick="setScale('compact')">Compact</button>
+            <button class="active" onclick="setScale('default')">Default</button>
+            <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+    </div>
+
+    <!-- State switcher: simulate different OS detections -->
+    <div class="state-nav" id="stateNav">
+        <button class="active" onclick="simulateOS('auto')">Auto-detect</button>
+        <button onclick="simulateOS('darwin')">Simulate macOS</button>
+        <button onclick="simulateOS('windows')">Simulate Windows</button>
+        <button onclick="simulateOS('linux')">Simulate Linux</button>
+        <button onclick="simulateOS('unknown')">Simulate Unknown</button>
+    </div>
+
+    <div class="theme-container" data-theme="ternity-dark" data-scale="default">
+        <div class="app">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="logo">
+                    <svg viewBox="0 0 24 30" fill="none">
+                        <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                        <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                    </svg>
+                    TERNITY
+                </div>
+                <div class="nav-section">Tracking</div>
+                <div class="nav-item"><i data-lucide="timer"></i> Timer & Entries</div>
+                <div class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+                <div class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</div>
+                <div class="nav-item"><i data-lucide="calendar"></i> Calendar</div>
+                <div class="nav-item"><i data-lucide="tree-palm"></i> Leave</div>
+                <div class="nav-section">Admin</div>
+                <div class="nav-item"><i data-lucide="users"></i> Users</div>
+                <div class="nav-item"><i data-lucide="folder-kanban"></i> Projects</div>
+                <div class="spacer"></div>
+                <div class="nav-item active"><i data-lucide="download"></i> Downloads</div>
+                <div class="nav-item"><i data-lucide="settings"></i> Settings</div>
+                <div style="height:8px"></div>
+                <div class="user-block">
+                    <div class="avatar">JO</div>
+                    <div>
+                        <div class="user-name">James Oakley</div>
+                        <div class="user-role">Employee</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="main">
+                <div class="top-bar">
+                    <div>
+                        <div class="page-title">Downloads</div>
+                        <div class="page-subtitle">Desktop apps and tools</div>
+                    </div>
+                </div>
+
+                <!-- Detection bar -->
+                <div class="detection-bar" id="detectionBar">
+                    <i data-lucide="info"></i>
+                    <span>Detected <strong id="detectedOsLabel">macOS</strong> — showing recommended downloads first.</span>
+                </div>
+
+                <!-- Product card: Ternity Desktop Electron -->
+                <div class="product-card" id="productCard">
+                    <div class="product-header">
+                        <div class="product-icon">
+                            <i data-lucide="monitor"></i>
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">Ternity Desktop Electron</div>
+                            <div class="product-desc">Native time tracking with system tray, global shortcuts, and offline support</div>
+                        </div>
+                        <div class="product-meta">
+                            <span class="badge badge-stable">Stable</span>
+                            <span class="product-version-badge">v1.0.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Platform tabs -->
+                    <div class="platform-tabs" id="platformTabs">
+                        <button class="platform-tab active" data-platform="darwin" onclick="switchPlatform('darwin')">
+                            <span class="os-icon"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></span>
+                            macOS
+                            <span class="tab-detected" id="tab-detected-darwin" style="display:none">detected</span>
+                        </button>
+                        <button class="platform-tab" data-platform="windows" onclick="switchPlatform('windows')">
+                            <span class="os-icon"><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg></span>
+                            Windows
+                            <span class="tab-detected" id="tab-detected-windows" style="display:none">detected</span>
+                        </button>
+                        <button class="platform-tab" data-platform="linux" onclick="switchPlatform('linux')">
+                            <span class="os-icon"><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg></span>
+                            Linux
+                            <span class="tab-detected" id="tab-detected-linux" style="display:none">detected</span>
+                        </button>
+                    </div>
+
+                    <!-- macOS downloads -->
+                    <div class="download-panel active" data-panel="darwin">
+                        <div class="download-rows">
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-arm64.dmg')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">
+                                        macOS — Apple Silicon
+                                        <span class="dl-recommended" id="rec-darwin-arm64" style="display:none">recommended</span>
+                                    </div>
+                                    <div class="dl-meta">M1, M2, M3, M4 &middot; .dmg installer &middot; Ternity-1.0.0-arm64.dmg</div>
+                                </div>
+                                <div class="dl-size">98 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-x64.dmg')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">macOS — Intel</div>
+                                    <div class="dl-meta">x86_64 &middot; .dmg installer &middot; Ternity-1.0.0-x64.dmg</div>
+                                </div>
+                                <div class="dl-size">102 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Windows downloads -->
+                    <div class="download-panel" data-panel="windows">
+                        <div class="download-rows">
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-x64.exe')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">
+                                        Windows — 64-bit (x64)
+                                        <span class="dl-recommended" id="rec-windows-x64" style="display:none">recommended</span>
+                                    </div>
+                                    <div class="dl-meta">Most Windows PCs &middot; .exe installer &middot; Ternity-1.0.0-x64.exe</div>
+                                </div>
+                                <div class="dl-size">89 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-arm64.exe')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">Windows — ARM64</div>
+                                    <div class="dl-meta">Surface Pro X, Snapdragon laptops &middot; .exe installer &middot; Ternity-1.0.0-arm64.exe</div>
+                                </div>
+                                <div class="dl-size">85 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Linux downloads -->
+                    <div class="download-panel" data-panel="linux">
+                        <div class="download-rows">
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-x64.AppImage')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">
+                                        Linux — AppImage (x64)
+                                        <span class="dl-recommended" id="rec-linux-appimage" style="display:none">recommended</span>
+                                    </div>
+                                    <div class="dl-meta">Universal — runs on any distro &middot; Ternity-1.0.0-x64.AppImage</div>
+                                </div>
+                                <div class="dl-size">94 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                            <div class="download-row" onclick="simulateDownload('Ternity-1.0.0-x64.deb')">
+                                <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                                <div class="dl-info">
+                                    <div class="dl-name">Linux — .deb (x64)</div>
+                                    <div class="dl-meta">Ubuntu, Debian &middot; Ternity-1.0.0-x64.deb</div>
+                                </div>
+                                <div class="dl-size">91 MB</div>
+                                <button class="dl-action"><i data-lucide="download"></i> Download</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checksums toggle -->
+                    <button class="checksum-toggle" id="checksumToggle" onclick="toggleChecksums()">
+                        <i data-lucide="chevron-right"></i>
+                        <i data-lucide="shield-check"></i>
+                        SHA-256 checksums
+                    </button>
+                    <div class="checksum-section" id="checksumSection">
+                        <table class="checksum-table">
+                            <thead>
+                                <tr><th>File</th><th>SHA-256</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Ternity-1.0.0-arm64.dmg</td><td class="hash">a3f2e8c91d4b7056...f8a2c1d9e3b47061</td></tr>
+                                <tr><td>Ternity-1.0.0-x64.dmg</td><td class="hash">b7d1f4a82c5e9038...e1c3d7b4a2f58096</td></tr>
+                                <tr><td>Ternity-1.0.0-x64.exe</td><td class="hash">c4e2d8f15b3a7069...d2a4e8c1f5b37082</td></tr>
+                                <tr><td>Ternity-1.0.0-arm64.exe</td><td class="hash">d5f3e9a26c4b8072...c3b5f9d2a6e48015</td></tr>
+                                <tr><td>Ternity-1.0.0-x64.AppImage</td><td class="hash">e6a4f1b37d5c9083...b4c6a1e3d7f59028</td></tr>
+                                <tr><td>Ternity-1.0.0-x64.deb</td><td class="hash">f7b5a2c48e6d1094...a5d7b2f4c8a61039</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Release notes -->
+                <div class="release-notes">
+                    <div class="release-notes-header">
+                        <div class="release-notes-title">What's new in v1.0.0</div>
+                        <div class="release-notes-date">February 17, 2026</div>
+                    </div>
+                    <ul>
+                        <li>System tray with quick timer controls</li>
+                        <li>Global keyboard shortcuts (start/stop/switch project)</li>
+                        <li>Offline time tracking with automatic sync</li>
+                        <li>Native notifications for idle detection</li>
+                        <li>Auto-update support (checks on launch)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <i data-lucide="download"></i>
+        <span id="toastMsg">Downloading Ternity-1.0.0-arm64.dmg...</span>
+    </div>
+
+    <script>
+        // ---- OS Detection ----
+        function detectOS() {
+            // Modern API (Chrome, Edge, Opera)
+            if (navigator.userAgentData && navigator.userAgentData.platform) {
+                const p = navigator.userAgentData.platform.toLowerCase();
+                if (p.includes('mac')) return 'darwin';
+                if (p.includes('win')) return 'windows';
+                if (p.includes('linux')) return 'linux';
+            }
+
+            // Legacy fallback (Safari, Firefox, etc.)
+            const platform = (navigator.platform || '').toLowerCase();
+            if (platform.includes('mac')) return 'darwin';
+            if (platform.includes('win')) return 'windows';
+            if (platform.includes('linux')) return 'linux';
+
+            // User-agent string as last resort
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.includes('mac')) return 'darwin';
+            if (ua.includes('win')) return 'windows';
+            if (ua.includes('linux')) return 'linux';
+
+            return 'unknown';
+        }
+
+        // Attempt arch detection (only works in Chromium browsers)
+        async function detectArch() {
+            if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                try {
+                    const hints = await navigator.userAgentData.getHighEntropyValues(['architecture']);
+                    return hints.architecture === 'arm' ? 'arm64' : 'x64';
+                } catch (e) {
+                    // Permission denied or not supported
+                }
+            }
+            // Safari and Firefox: can't detect, default based on OS
+            return null;
+        }
+
+        const OS_LABELS = {
+            darwin: 'macOS',
+            windows: 'Windows',
+            linux: 'Linux',
+            unknown: 'your system'
+        };
+
+        let currentOS = 'unknown';
+        let currentArch = null;
+
+        // ---- Tab switching ----
+        function switchPlatform(platform) {
+            // Update tabs
+            document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.platform-tab[data-platform="${platform}"]`).classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.download-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.download-panel[data-panel="${platform}"]`).classList.add('active');
+
+            // Close checksums when switching
+            document.getElementById('checksumSection').classList.remove('show');
+            document.getElementById('checksumToggle').classList.remove('open');
+        }
+
+        // ---- Apply detection ----
+        function applyDetection(os, arch) {
+            currentOS = os;
+            currentArch = arch;
+
+            // Update detection bar
+            const bar = document.getElementById('detectionBar');
+            const label = document.getElementById('detectedOsLabel');
+            if (os === 'unknown') {
+                bar.style.display = 'none';
+            } else {
+                bar.style.display = 'flex';
+                label.textContent = OS_LABELS[os];
+            }
+
+            // Update "detected" badges on tabs
+            ['darwin', 'windows', 'linux'].forEach(p => {
+                document.getElementById('tab-detected-' + p).style.display = (p === os) ? 'inline' : 'none';
+            });
+
+            // Update "recommended" markers
+            document.querySelectorAll('.dl-recommended').forEach(r => r.style.display = 'none');
+            if (os === 'darwin') {
+                // Default to Apple Silicon unless we detected Intel
+                const recId = (arch === 'x64') ? 'rec-darwin-intel' : 'rec-darwin-arm64';
+                const el = document.getElementById('rec-darwin-arm64');
+                if (el) el.style.display = 'inline';
+            } else if (os === 'windows') {
+                const el = document.getElementById('rec-windows-x64');
+                if (el) el.style.display = 'inline';
+            } else if (os === 'linux') {
+                const el = document.getElementById('rec-linux-appimage');
+                if (el) el.style.display = 'inline';
+            }
+
+            // Switch to detected platform tab
+            if (os !== 'unknown') {
+                switchPlatform(os);
+            } else {
+                switchPlatform('darwin'); // default fallback
+            }
+        }
+
+        // ---- Simulate OS ----
+        function simulateOS(os) {
+            document.querySelectorAll('#stateNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (os === 'auto') {
+                const detected = detectOS();
+                detectArch().then(arch => applyDetection(detected, arch));
+            } else {
+                applyDetection(os, os === 'darwin' ? 'arm64' : 'x64');
+            }
+        }
+
+        // ---- Download simulation ----
+        function simulateDownload(filename) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = `Downloading ${filename}...`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ---- Checksums toggle ----
+        function toggleChecksums() {
+            const section = document.getElementById('checksumSection');
+            const toggle = document.getElementById('checksumToggle');
+            section.classList.toggle('show');
+            toggle.classList.toggle('open');
+        }
+
+        // ---- Theme / scale ----
+        function setTheme(theme) {
+            document.querySelector('.theme-container').setAttribute('data-theme', theme);
+            document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setScale(scale) {
+            document.querySelector('.theme-container').setAttribute('data-scale', scale);
+            document.querySelectorAll('#scaleNav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // ---- Init ----
+        lucide.createIcons();
+
+        // Auto-detect on load
+        const detectedOS = detectOS();
+        detectArch().then(arch => applyDetection(detectedOS, arch));
+    </script>
+</body>
+</html>

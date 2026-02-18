@@ -18,9 +18,13 @@ services:
       - LOGTO_M2M_APP_SECRET=${LOGTO_M2M_APP_SECRET}
       - PORT=3010
       - CORS_ORIGIN=https://app.ternity.xyz
+      - DRIVE_INTERNAL_URL=http://ternity-drive-prod:3020
+      - DRIVE_PUBLIC_URL=https://drive.ternity.xyz
+      - SIGNED_URL_SECRET=${SIGNED_URL_SECRET}
     networks:
       - internal
       - proxy
+      - ternity-drive-prod_internal
     restart: unless-stopped
     deploy:
       resources:
@@ -108,6 +112,8 @@ services:
 networks:
   internal:
   proxy:
+    external: true
+  ternity-drive-prod_internal:
     external: true
 
 volumes:

@@ -9,6 +9,7 @@ import { SettingsPage } from '@/pages/settings';
 import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
 import { DashboardPage } from '@/pages/dashboard';
+import { DownloadsPage } from '@/pages/downloads';
 
 export const router = createBrowserRouter([
   {
@@ -66,6 +67,13 @@ export const router = createBrowserRouter([
             return { Component: DevPresencePage };
           },
         },
+        {
+          path: '/dev/downloads',
+          lazy: async () => {
+            const { DevDownloadsPage } = await import('@/pages/dev-downloads');
+            return { Component: DevDownloadsPage };
+          },
+        },
       ]
     : []),
   {
@@ -79,6 +87,7 @@ export const router = createBrowserRouter([
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/users', element: <UserManagementPage /> },
+      { path: '/downloads', element: <DownloadsPage /> },
       { path: '/settings', element: <SettingsPage /> },
     ],
   },

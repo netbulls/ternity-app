@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, Settings, LogOut, Users, FolderKanban } from 'lucide-react';
+import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, Settings, LogOut, Users, FolderKanban, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { HourglassLogo } from './hourglass-logo';
@@ -129,22 +129,39 @@ export function Sidebar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Settings link */}
-      <NavLink
-        to="/settings"
-        className={({ isActive }) =>
-          cn(
-            'mb-2 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-muted-foreground transition-colors',
-            isActive
-              ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
-              : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-          )
-        }
-        style={{ fontSize: 'calc(13px * var(--t-scale, 1.1))' }}
-      >
-        <Settings className="h-4 w-4" />
-        Settings
-      </NavLink>
+      {/* Bottom nav */}
+      <nav className="mb-2 flex flex-col gap-0.5">
+        <NavLink
+          to="/downloads"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-muted-foreground transition-colors',
+              isActive
+                ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+                : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            )
+          }
+          style={{ fontSize: 'calc(13px * var(--t-scale, 1.1))' }}
+        >
+          <Download className="h-4 w-4" />
+          Downloads
+        </NavLink>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-muted-foreground transition-colors',
+              isActive
+                ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+                : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            )
+          }
+          style={{ fontSize: 'calc(13px * var(--t-scale, 1.1))' }}
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </NavLink>
+      </nav>
 
       {/* User block */}
       <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-2.5">

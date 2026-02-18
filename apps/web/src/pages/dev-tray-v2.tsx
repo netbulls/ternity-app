@@ -14,12 +14,11 @@ import {
   ChevronDown,
   Keyboard,
   X,
-  Layers,
-  Target,
   PanelRight,
   PanelBottom,
   Maximize2,
   LogIn,
+  LogOut,
   Check,
   WifiOff,
   AlertTriangle,
@@ -41,13 +40,45 @@ interface MockEntry {
   color: string;
   duration: string;
   durationSec: number;
+  day?: 'today' | 'yesterday';
 }
 
 const MOCK_ENTRIES: MockEntry[] = [
-  { id: 'e1', description: 'TERN-42 Timer component', project: 'Ternity App', client: 'Acme Corp', color: 'hsl(var(--t-project-1))', duration: '1h 45m', durationSec: 6300 },
-  { id: 'e2', description: 'Sprint planning', project: 'Legal500', client: 'Legal500', color: 'hsl(var(--t-project-2))', duration: '1h 15m', durationSec: 4500 },
-  { id: 'e3', description: 'Client feedback review', project: 'Exegy', client: 'Exegy', color: 'hsl(var(--t-project-3))', duration: '45m', durationSec: 2700 },
+  { id: 'e1', description: 'TERN-42 Timer component', project: 'Ternity App', client: 'Acme Corp', color: 'hsl(var(--t-project-1))', duration: '1h 45m', durationSec: 6300, day: 'today' },
+  { id: 'e2', description: 'Sprint planning', project: 'Legal500', client: 'Legal500', color: 'hsl(var(--t-project-2))', duration: '1h 15m', durationSec: 4500, day: 'today' },
+  { id: 'e3', description: 'Client feedback review', project: 'Exegy', client: 'Exegy', color: 'hsl(var(--t-project-3))', duration: '45m', durationSec: 2700, day: 'today' },
+  { id: 'e4', description: 'API integration docs', project: 'Ternity App', client: 'Acme Corp', color: 'hsl(var(--t-project-1))', duration: '30m', durationSec: 1800, day: 'yesterday' },
+  { id: 'e5', description: 'Design review meeting', project: 'Exegy Dashboard', client: 'Exegy', color: 'hsl(var(--t-project-3))', duration: '1h 00m', durationSec: 3600, day: 'yesterday' },
 ];
+
+interface MockDayGroup {
+  label: string;
+  totalDuration: string;
+  entries: MockEntry[];
+}
+
+function groupEntriesByDay(entries: MockEntry[]): MockDayGroup[] {
+  const today: MockEntry[] = [];
+  const yesterday: MockEntry[] = [];
+  for (const e of entries) {
+    if (e.day === 'yesterday') yesterday.push(e);
+    else today.push(e);
+  }
+  const groups: MockDayGroup[] = [];
+  if (today.length > 0) {
+    const totalSec = today.reduce((s, e) => s + e.durationSec, 0);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    groups.push({ label: 'Today', totalDuration: h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`, entries: today });
+  }
+  if (yesterday.length > 0) {
+    const totalSec = yesterday.reduce((s, e) => s + e.durationSec, 0);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    groups.push({ label: 'Yesterday', totalDuration: h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`, entries: yesterday });
+  }
+  return groups;
+}
 
 interface MockProject {
   id: string;
@@ -284,7 +315,7 @@ function MiniCards({ tracking }: { tracking: boolean }) {
 // Shared: EntriesList (with in-progress indicator)
 // ============================================================
 
-function EntriesList({ tracking, onPlay }: { tracking: boolean; onPlay: () => void }) {
+function EntriesList({ tracking, onPlay }: { tracking: boolean; onPlay: (entry: MockEntry) => void }) {
   return (
     <div>
       <div
@@ -368,7 +399,7 @@ function EntriesList({ tracking, onPlay }: { tracking: boolean; onPlay: () => vo
           <button
             className="flex shrink-0 items-center justify-center rounded-full text-muted-foreground/30 opacity-0 transition-all hover:bg-primary/15 hover:text-primary group-hover:opacity-100"
             style={{ width: scaled(22), height: scaled(22) }}
-            onClick={onPlay}
+            onClick={() => onPlay(entry)}
           >
             <Play style={{ width: scaled(10), height: scaled(10) }} fill="currentColor" />
           </button>
@@ -1147,10 +1178,549 @@ function HeroLayout({ timer, onStart, onStop, onPlay, selectedProject, onProject
 }
 
 // ============================================================
+// GlassBottom — stats + entries + footer in a second glass card
+// ============================================================
+
+function GlassBottom({ tracking, runningEntryId, extraEntries, onPlay }: { tracking: boolean; runningEntryId: string | null; extraEntries: MockEntry[]; onPlay: (entry: MockEntry) => void }) {
+  const stats = tracking ? MOCK_STATS_TRACKING : MOCK_STATS;
+  const allEntries = [...extraEntries, ...MOCK_ENTRIES].slice(0, 5);
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        borderRadius: scaled(14),
+        background: 'hsl(var(--card) / 0.6)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid hsl(var(--border) / 0.3)',
+      }}
+    >
+      {/* Top highlight (glass refraction) */}
+      <div
+        className="pointer-events-none absolute left-0 right-0 top-0"
+        style={{
+          height: '50%',
+          background:
+            'linear-gradient(180deg, hsl(var(--foreground) / 0.02) 0%, transparent 100%)',
+        }}
+      />
+
+      {/* Stats mini-cards */}
+      <div
+        className="relative grid grid-cols-2"
+        style={{ gap: scaled(6), padding: `${scaled(12)} ${scaled(12)} ${scaled(6)}` }}
+      >
+        <div
+          style={{
+            padding: `${scaled(8)} ${scaled(10)}`,
+            background: 'hsl(var(--muted) / 0.2)',
+            border: '1px solid hsl(var(--border) / 0.15)',
+            borderRadius: scaled(8),
+          }}
+        >
+          <div
+            className="font-brand font-bold tabular-nums text-primary"
+            style={{ fontSize: scaled(15) }}
+          >
+            {stats.today}
+          </div>
+          <div
+            className="font-brand uppercase tracking-wider text-muted-foreground"
+            style={{ fontSize: scaled(9), letterSpacing: '1px', marginTop: '1px' }}
+          >
+            Today
+          </div>
+        </div>
+        <div
+          style={{
+            padding: `${scaled(8)} ${scaled(10)}`,
+            background: 'hsl(var(--muted) / 0.2)',
+            border: '1px solid hsl(var(--border) / 0.15)',
+            borderRadius: scaled(8),
+          }}
+        >
+          <div
+            className="font-brand font-bold tabular-nums text-foreground"
+            style={{ fontSize: scaled(15) }}
+          >
+            {stats.week}
+          </div>
+          <div
+            className="font-brand uppercase tracking-wider text-muted-foreground"
+            style={{ fontSize: scaled(9), letterSpacing: '1px', marginTop: '1px' }}
+          >
+            This Week
+          </div>
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{ margin: `0 ${scaled(12)}`, borderTop: '1px solid hsl(var(--border) / 0.06)' }} />
+
+      {/* Entries section — grouped by day */}
+      <div style={{ overflowX: 'hidden', overflowY: 'auto' }}>
+        {groupEntriesByDay(allEntries).map((group, groupIdx) => (
+          <div key={group.label}>
+            {/* Day separator — thin line between groups */}
+            {groupIdx > 0 && (
+              <div style={{ margin: `${scaled(1)} ${scaled(14)}`, borderTop: '1px solid hsl(var(--border) / 0.08)' }} />
+            )}
+
+            {/* Day header */}
+            <div
+              className="sticky top-0 z-10 flex items-center justify-between backdrop-blur-sm"
+              style={{ padding: `${scaled(6)} ${scaled(14)} ${scaled(3)}`, background: 'hsl(var(--card) / 0.85)' }}
+            >
+              <span
+                className="font-brand uppercase tracking-widest text-muted-foreground/60"
+                style={{ fontSize: scaled(8), letterSpacing: '1.5px' }}
+              >
+                {group.label}
+              </span>
+              <span
+                className="font-brand tabular-nums text-muted-foreground/40"
+                style={{ fontSize: scaled(9) }}
+              >
+                {group.totalDuration}
+              </span>
+            </div>
+
+            {/* Entries in this group */}
+            {group.entries.map((entry) => {
+              const isRunning = tracking && runningEntryId === entry.id;
+              return (
+                <motion.div
+                  key={entry.id}
+                  layout
+                  className={`group flex items-center ${isRunning ? '' : 'cursor-pointer hover:bg-muted/50'}`}
+                  style={{
+                    gap: scaled(10),
+                    padding: `${scaled(7)} ${scaled(14)}`,
+                    background: isRunning ? 'hsl(var(--primary) / 0.06)' : 'transparent',
+                    transition: 'background 0.4s ease',
+                  }}
+                  onClick={isRunning ? undefined : () => onPlay(entry)}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, layout: { duration: 0.25 } }}
+                >
+                  {/* Dot — pulsing when running */}
+                  {isRunning ? (
+                    <div className="relative shrink-0" style={{ width: scaled(5), height: scaled(5) }}>
+                      <motion.div
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: entry.color }}
+                        animate={{ scale: [1, 1.8, 1], opacity: [1, 0.3, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      />
+                      <div
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: entry.color }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="shrink-0 rounded-full"
+                      style={{ width: scaled(5), height: scaled(5), background: entry.color }}
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className={`truncate ${isRunning ? 'font-medium' : ''} ${entry.description ? 'text-foreground' : 'text-muted-foreground/50 italic'}`}
+                      style={{ fontSize: scaled(12) }}
+                    >
+                      {entry.description || 'No description'}
+                    </div>
+                    <div
+                      className="flex items-center truncate text-muted-foreground"
+                      style={{ fontSize: scaled(10), gap: scaled(4) }}
+                    >
+                      {entry.client ? (
+                        <>
+                          <span className="truncate">{entry.client}</span>
+                          {entry.project && (
+                            <>
+                              <span className="shrink-0 text-muted-foreground/30">›</span>
+                              <span className="truncate">{entry.project}</span>
+                            </>
+                          )}
+                        </>
+                      ) : entry.project ? (
+                        <span className="truncate">{entry.project}</span>
+                      ) : (
+                        <span className="italic opacity-50">No project</span>
+                      )}
+                    </div>
+                  </div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isRunning ? (
+                      <motion.span
+                        key="running"
+                        className="shrink-0 font-brand text-primary/70"
+                        style={{ fontSize: scaled(9), letterSpacing: '0.5px' }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        IN PROGRESS
+                      </motion.span>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        className="flex items-center"
+                        style={{ gap: scaled(6) }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div
+                          className="shrink-0 font-brand font-semibold tabular-nums text-muted-foreground"
+                          style={{ fontSize: scaled(12) }}
+                        >
+                          {entry.duration}
+                        </div>
+                        <button
+                          className="flex shrink-0 items-center justify-center rounded-full text-muted-foreground/30 opacity-0 transition-all hover:bg-primary/15 hover:text-primary group-hover:opacity-100"
+                          style={{ width: scaled(22), height: scaled(22) }}
+                          onClick={(e) => { e.stopPropagation(); onPlay(entry); }}
+                        >
+                          <Play style={{ width: scaled(10), height: scaled(10) }} fill="currentColor" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer separator + link */}
+      <div style={{ margin: `0 ${scaled(12)}`, borderTop: '1px solid hsl(var(--border) / 0.1)' }} />
+      <div
+        className="flex items-center justify-center"
+        style={{ padding: `${scaled(8)} ${scaled(14)}` }}
+      >
+        <span
+          className="flex cursor-pointer items-center text-muted-foreground transition-colors hover:text-primary"
+          style={{ fontSize: scaled(11), gap: scaled(4) }}
+        >
+          Open Ternity
+          <ExternalLink style={{ width: scaled(10), height: scaled(10) }} />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Liquid Glass Layout — frosted glass card with status orb
+// ============================================================
+
+function LiquidGlassLayout({ timer, onStart, onStop, onPlay, selectedProject, onProjectSelect }: LayoutProps) {
+  const digits = formatTimer(timer.elapsed).split('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [description, setDescription] = useState('');
+  const [runningEntryId, setRunningEntryId] = useState<string | null>(null);
+  const [extraEntries, setExtraEntries] = useState<MockEntry[]>([]);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const isIncomplete = timer.running && !description;
+
+  // Clear running state when timer stops
+  useEffect(() => {
+    if (!timer.running) {
+      setRunningEntryId(null);
+      setExtraEntries([]);
+    }
+  }, [timer.running]);
+
+  // Start from the timer card — create a new entry in the list
+  const handleStart = () => {
+    const newId = `new-${Date.now()}`;
+    const project = selectedProject?.name ?? '';
+    const client = selectedProject?.client ?? '';
+    const color = selectedProject?.color ?? 'hsl(var(--primary))';
+    const newEntry: MockEntry = {
+      id: newId,
+      description: description || '',
+      project,
+      client,
+      color,
+      duration: '0m',
+      durationSec: 0,
+    };
+    setExtraEntries([newEntry]);
+    setRunningEntryId(newId);
+    onStart();
+  };
+
+  const handleEntryPlay = (entry: MockEntry) => {
+    setDescription(entry.description);
+    setRunningEntryId(entry.id);
+    setExtraEntries([]);
+    const matchedProject = MOCK_PROJECTS.find((p) => p.name === entry.project) ?? null;
+    onProjectSelect(matchedProject);
+    onPlay(entry);
+  };
+
+  return (
+    <div className="flex flex-col" style={{ padding: scaled(8), gap: scaled(8) }}>
+      {/* Timer Glass Card — z-10 so project picker renders above the stats card below */}
+      <motion.div
+        className="relative z-10"
+        style={{
+          borderRadius: scaled(14),
+          padding: scaled(14),
+          background: 'hsl(var(--card) / 0.6)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid',
+        }}
+        animate={{
+          borderColor: timer.running
+            ? 'hsl(var(--primary) / 0.2)'
+            : 'hsl(var(--border) / 0.3)',
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Top highlight (glass refraction) */}
+        <div
+          className="pointer-events-none absolute left-0 right-0 top-0"
+          style={{
+            height: '50%',
+            background:
+              'linear-gradient(180deg, hsl(var(--foreground) / 0.02) 0%, transparent 100%)',
+          }}
+        />
+
+        {/* Header: Orb + Timer + Button */}
+        <div
+          className="relative flex items-center"
+          style={{ gap: scaled(10), marginBottom: scaled(6) }}
+        >
+          {/* Status Orb */}
+          <motion.div
+            className="shrink-0 rounded-full"
+            style={{ width: scaled(10), height: scaled(10) }}
+            animate={{
+              background: isIncomplete
+                ? 'hsl(38 92% 50%)'
+                : timer.running
+                  ? 'hsl(var(--primary))'
+                  : 'hsl(var(--muted-foreground) / 0.2)',
+              boxShadow: isIncomplete
+                ? '0 0 8px hsl(38 92% 50% / 0.5)'
+                : timer.running
+                  ? '0 0 8px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2)'
+                  : '0 0 0px transparent',
+            }}
+            transition={{ duration: 0.3 }}
+          />
+
+          {/* Timer Display */}
+          <motion.div
+            className="font-brand font-bold tabular-nums tracking-wider"
+            style={{ fontSize: scaled(28), letterSpacing: '2px', lineHeight: 1, marginTop: scaled(2) }}
+            animate={{
+              color: timer.running
+                ? 'hsl(var(--primary))'
+                : 'hsl(var(--muted-foreground) / 0.15)',
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            {digits.map((d, i) => (
+              <AnimatedDigit key={i} char={d} />
+            ))}
+          </motion.div>
+
+          {/* Play / Stop Button — single button that transforms between states */}
+          <div className="ml-auto">
+            <motion.button
+              className="flex items-center justify-center font-brand font-semibold uppercase"
+              style={{
+                height: scaled(30),
+                width: scaled(72),
+                borderRadius: scaled(10),
+                gap: scaled(6),
+                fontSize: scaled(10),
+                letterSpacing: '0.5px',
+              }}
+              animate={{
+                background: timer.running
+                  ? 'hsl(var(--destructive))'
+                  : 'hsl(var(--primary))',
+                color: timer.running
+                  ? 'hsl(var(--destructive-foreground))'
+                  : 'hsl(var(--primary-foreground))',
+              }}
+              transition={{ duration: 0.3 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={timer.running ? onStop : handleStart}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {timer.running ? (
+                  <motion.span
+                    key="stop"
+                    className="flex items-center"
+                    style={{ gap: scaled(6) }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Square style={{ width: scaled(11), height: scaled(11) }} fill="currentColor" />
+                    Stop
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="start"
+                    className="flex items-center"
+                    style={{ gap: scaled(6) }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Play style={{ width: scaled(11), height: scaled(11) }} fill="currentColor" />
+                    Start
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Description input — always editable */}
+        <div>
+          <input
+            className="w-full text-foreground outline-none placeholder:italic placeholder:text-muted-foreground/40"
+            style={{
+              padding: `${scaled(8)} ${scaled(10)}`,
+              fontSize: scaled(13),
+              fontWeight: 500,
+              background: 'transparent',
+              border: `1px solid ${inputFocused ? 'hsl(var(--border) / 0.6)' : 'transparent'}`,
+              borderRadius: scaled(8),
+              fontFamily: "'Inter', sans-serif",
+              transition: 'border-color 0.2s ease',
+            }}
+            placeholder={timer.running ? 'Add description...' : 'What are you working on?'}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+          />
+        </div>
+
+        {/* Project — inline text link, opens picker on click */}
+        <div
+          className="relative flex items-center"
+          style={{
+            marginTop: scaled(4),
+            minWidth: 0,
+          }}
+        >
+          <span
+            ref={pillRef}
+            className="flex cursor-pointer items-center text-muted-foreground transition-colors hover:text-foreground"
+            style={{
+              gap: scaled(5),
+              fontSize: scaled(11),
+            }}
+            onClick={() => setPickerOpen((o) => !o)}
+          >
+            {selectedProject ? (
+              <>
+                <div
+                  className="shrink-0 rounded-full"
+                  style={{
+                    width: scaled(6),
+                    height: scaled(6),
+                    background: selectedProject.color,
+                  }}
+                />
+                {selectedProject.client && (
+                  <>
+                    <span>{selectedProject.client}</span>
+                    <span className="text-muted-foreground/30">›</span>
+                  </>
+                )}
+                <span>{selectedProject.name}</span>
+              </>
+            ) : (
+              <>
+                <FolderKanban style={{ width: scaled(12), height: scaled(12) }} />
+                <span>No project</span>
+              </>
+            )}
+            <ChevronDown
+              style={{
+                width: scaled(10),
+                height: scaled(10),
+                opacity: 0.5,
+                transition: 'transform 0.15s',
+                transform: pickerOpen ? 'rotate(180deg)' : 'rotate(0)',
+              }}
+            />
+          </span>
+          <AnimatePresence>
+            {pickerOpen && (
+              <ProjectPicker
+                selected={selectedProject}
+                onSelect={onProjectSelect}
+                onClose={() => setPickerOpen(false)}
+                triggerRef={pillRef}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Incomplete progress line */}
+        <AnimatePresence>
+          {isIncomplete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute bottom-0 left-0 right-0 overflow-hidden"
+              style={{
+                height: 2,
+                background: 'hsl(var(--border) / 0.1)',
+                borderRadius: `0 0 ${scaled(14)}px ${scaled(14)}px`,
+              }}
+            >
+              <motion.div
+                className="absolute h-full"
+                style={{
+                  width: '30%',
+                  background: 'hsl(38 92% 50% / 0.7)',
+                }}
+                animate={{ left: ['-30%', '100%'] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Stats + Entries Glass Card */}
+      <GlassBottom tracking={timer.running} runningEntryId={runningEntryId} extraEntries={extraEntries} onPlay={handleEntryPlay} />
+    </div>
+  );
+}
+
+// ============================================================
 // Settings Panel (inner content — shared by all 3 styles)
 // ============================================================
 
-type LayoutType = 'layered' | 'hero';
+type LayoutType = 'layered' | 'hero' | 'liquid-glass';
 
 function SettingsContent({
   layout,
@@ -1179,83 +1749,85 @@ function SettingsContent({
         </button>
       </div>
 
-      {/* Layout picker */}
-      <div className="mb-4">
-        <span className="mb-2 block font-brand uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(8), letterSpacing: '1.5px' }}>
-          Layout
-        </span>
-        <div className="flex" style={{ gap: scaled(6) }}>
-          {([['layered', 'Layered', Layers], ['hero', 'Hero', Target]] as const).map(([key, label, Icon]) => (
-            <button
-              key={key}
-              className={`flex flex-1 items-center justify-center rounded-md border transition-colors ${
-                layout === key
-                  ? 'border-primary/40 bg-primary/8 text-primary'
-                  : 'border-border bg-card text-muted-foreground hover:border-primary/20 hover:text-foreground'
-              }`}
-              style={{ gap: scaled(6), padding: `${scaled(8)} ${scaled(12)}`, fontSize: scaled(11) }}
-              onClick={() => onLayoutChange(key)}
-            >
-              <Icon style={{ width: scaled(14), height: scaled(14) }} />
-              {label}
-            </button>
-          ))}
+      {/* Appearance — compact rows */}
+      <div
+        className="mb-3 rounded-md border border-border bg-card"
+        style={{ fontSize: scaled(10) }}
+      >
+        {/* Layout */}
+        <div
+          className="flex items-center justify-between border-b border-border/50"
+          style={{ padding: `${scaled(7)} ${scaled(10)}` }}
+        >
+          <span className="text-muted-foreground">Layout</span>
+          <select
+            className="cursor-pointer rounded-md border-none bg-transparent text-right text-foreground outline-none"
+            style={{ fontSize: scaled(10), padding: `${scaled(2)} 0` }}
+            value={layout}
+            onChange={(e) => onLayoutChange(e.target.value as LayoutType)}
+          >
+            {([['layered', 'Layered'], ['hero', 'Hero'], ['liquid-glass', 'Glass']] as const).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
 
-      {/* Theme picker */}
-      <div className="mb-4">
-        <span className="mb-2 block font-brand uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(8), letterSpacing: '1.5px' }}>
-          Theme
-        </span>
-        <div className="grid grid-cols-3" style={{ gap: scaled(4) }}>
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              className={`rounded-md border text-center transition-colors ${
-                theme === t.id
-                  ? 'border-primary/40 bg-primary/8 text-primary'
-                  : 'border-border bg-card text-muted-foreground hover:border-primary/20 hover:text-foreground'
-              }`}
-              style={{ padding: `${scaled(6)} ${scaled(8)}`, fontSize: scaled(10) }}
-              onClick={() => setTheme(t.id as ThemeId)}
-            >
-              {t.name}
-            </button>
-          ))}
+        {/* Theme */}
+        <div
+          className="flex items-center justify-between border-b border-border/50"
+          style={{ padding: `${scaled(7)} ${scaled(10)}` }}
+        >
+          <span className="text-muted-foreground">Theme</span>
+          <select
+            className="cursor-pointer rounded-md border-none bg-transparent text-right text-foreground outline-none"
+            style={{ fontSize: scaled(10), padding: `${scaled(2)} 0` }}
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as ThemeId)}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
 
-      {/* Scale picker */}
-      <div className="mb-4">
-        <span className="mb-2 block font-brand uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(8), letterSpacing: '1.5px' }}>
-          Scale
-        </span>
-        <div className="flex" style={{ gap: scaled(4) }}>
-          {SCALES.map((s) => (
-            <button
-              key={s.label}
-              className={`flex-1 rounded-md border text-center transition-colors ${
-                scale === s.value
-                  ? 'border-primary/40 bg-primary/8 text-primary'
-                  : 'border-border bg-card text-muted-foreground hover:border-primary/20 hover:text-foreground'
-              }`}
-              style={{ padding: `${scaled(6)} ${scaled(8)}`, fontSize: scaled(10) }}
-              onClick={() => setScale(s.value)}
-            >
-              {s.label}
-            </button>
-          ))}
+        {/* Scale */}
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: `${scaled(7)} ${scaled(10)}` }}
+        >
+          <span className="text-muted-foreground">Scale</span>
+          <select
+            className="cursor-pointer rounded-md border-none bg-transparent text-right text-foreground outline-none"
+            style={{ fontSize: scaled(10), padding: `${scaled(2)} 0` }}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+          >
+            {SCALES.map((s) => (
+              <option key={s.label} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Shortcuts */}
       <div>
-        <span className="mb-2 flex items-center font-brand uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(8), letterSpacing: '1.5px', gap: scaled(4) }}>
+        <span
+          className="mb-2 flex items-center font-brand uppercase tracking-wider text-muted-foreground"
+          style={{ fontSize: scaled(8), letterSpacing: '1.5px', gap: scaled(4) }}
+        >
           <Keyboard style={{ width: scaled(10), height: scaled(10) }} />
           Shortcuts
         </span>
-        <div className="rounded-md border border-border bg-card" style={{ padding: `${scaled(8)} ${scaled(10)}` }}>
+        <div
+          className="rounded-md border border-border bg-card"
+          style={{ padding: `${scaled(8)} ${scaled(10)}` }}
+        >
           {[
             ['Start / Stop', '⌘ + Shift + T'],
             ['Open Popup', '⌘ + Shift + P'],
@@ -1276,6 +1848,27 @@ function SettingsContent({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* User + Sign out (mock) */}
+      <div
+        className="mt-4 flex items-center border-t border-border"
+        style={{ paddingTop: scaled(10), gap: scaled(8) }}
+      >
+        <div
+          className="min-w-0 flex-1 truncate text-muted-foreground"
+          style={{ fontSize: scaled(9) }}
+        >
+          john.doe@company.com
+        </div>
+        <button
+          className="flex shrink-0 items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-red-500/40 hover:bg-red-500/8 hover:text-red-400"
+          style={{ gap: scaled(4), padding: `${scaled(5)} ${scaled(8)}`, fontSize: scaled(10) }}
+          onClick={() => {}}
+        >
+          <LogOut style={{ width: scaled(12), height: scaled(12) }} />
+          Sign out
+        </button>
       </div>
     </div>
   );
@@ -1403,7 +1996,7 @@ interface LayoutProps {
   timer: ReturnType<typeof useFakeTimer>;
   onStart: () => void;
   onStop: () => void;
-  onPlay: () => void;
+  onPlay: (entry: MockEntry) => void;
   selectedProject: MockProject | null;
   onProjectSelect: (project: MockProject | null) => void;
 }
@@ -1416,7 +2009,7 @@ type PopupView = 'timer' | 'login';
 
 function DevTrayV2Inner() {
   const timer = useFakeTimer();
-  const [layout, setLayout] = useState<LayoutType>('layered');
+  const [layout, setLayout] = useState<LayoutType>('liquid-glass');
   const [view, setView] = useState<PopupView>('timer');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<SettingsPanelStyle>('expand');
@@ -1432,7 +2025,7 @@ function DevTrayV2Inner() {
     timer.stop();
   };
 
-  const handlePlay = () => {
+  const handlePlay = (_entry?: MockEntry) => {
     if (!timer.running) timer.start();
   };
 
@@ -1444,7 +2037,7 @@ function DevTrayV2Inner() {
     setView('timer');
   };
 
-  const LayoutComponent = layout === 'layered' ? LayeredLayout : HeroLayout;
+  const LayoutComponent = layout === 'layered' ? LayeredLayout : layout === 'hero' ? HeroLayout : LiquidGlassLayout;
 
   const isExpand = panelStyle === 'expand';
   const isDrawer = panelStyle === 'drawer';
@@ -1492,7 +2085,7 @@ function DevTrayV2Inner() {
           <div className="flex items-center gap-2">
             <span className="font-brand text-xs font-semibold uppercase tracking-wider text-muted-foreground">Layout</span>
             <div className="flex gap-1">
-              {([['layered', 'A / Layered'], ['hero', 'B / Hero']] as const).map(([key, label]) => (
+              {([['layered', 'A / Layered'], ['hero', 'B / Hero'], ['liquid-glass', 'C / Liquid Glass']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setLayout(key)}
@@ -1582,7 +2175,7 @@ function DevTrayV2Inner() {
         >
           <div className="flex">
             {/* Main popup column */}
-            <motion.div style={{ width: scaled(340), flexShrink: 0 }} layout>
+            <motion.div style={{ width: scaled(420), flexShrink: 0 }} layout>
               <AnimatePresence mode="wait">
                 {view === 'login' ? (
                   <motion.div
