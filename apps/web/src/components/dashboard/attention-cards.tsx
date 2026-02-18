@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, createSearchParams } from 'react-router-dom';
 import { scaled } from '@/lib/scaled';
 import type { DashboardData } from '@ternity/shared';
 
@@ -18,7 +18,7 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
     <div className="grid grid-cols-3 gap-3">
       {/* No Project */}
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate({ pathname: '/', search: createSearchParams({ filter: 'incomplete' }).toString() })}
         className="cursor-pointer rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))] p-3.5 text-left transition-colors hover:border-[hsl(var(--primary)/0.3)]"
         style={{ borderLeft: '3px solid hsl(35, 100%, 60%)' }}
       >

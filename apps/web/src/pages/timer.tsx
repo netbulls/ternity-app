@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { StatsRow } from '@/components/stats/stats-row';
 import { TimerBar } from '@/components/timer/timer-bar';
@@ -10,6 +10,7 @@ import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'react-router-dom';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 function todayStr() {
@@ -17,10 +18,20 @@ function todayStr() {
 }
 
 export function TimerPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [manualOpen, setManualOpen] = useState(false);
   const [view, setView] = useState<DateView>('week');
   const [anchor, setAnchor] = useState(todayStr);
-  const [onlyIncomplete, setOnlyIncomplete] = useState(false);
+  const [onlyIncomplete, setOnlyIncomplete] = useState(
+    () => searchParams.get('filter') === 'incomplete',
+  );
+
+  // Clear the URL param after reading it so it doesn't stick around
+  useEffect(() => {
+    if (searchParams.has('filter')) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute from/to based on view + anchor
   const { from, to } = useMemo(() => {
