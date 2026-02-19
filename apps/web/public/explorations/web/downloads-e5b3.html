@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Downloads L1 Interactive Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #111; color: #ccc; font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid #222; background: #161616; color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active { background: #333; border-color: #555; color: rgba(255,255,255,0.8); }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .tc { max-width: 1200px; margin: 0 auto; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+        .app { display: grid; grid-template-columns: 220px 1fr; min-height: 700px; }
+        .sb { display: flex; flex-direction: column; gap: 2px; border-right: 1px solid hsl(var(--sidebar-border)); background: hsl(var(--sidebar-background)); padding: 20px 12px; }
+        .sb-brand { display: flex; align-items: center; gap: 8px; padding: 0 10px; margin-bottom: 20px; }
+        .sb-brand span { font-family: 'Oxanium', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: hsl(var(--sidebar-foreground)); }
+        .sb-sec { padding: 12px 10px 4px; font-family: 'Oxanium', sans-serif; font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground)); opacity: 0.5; }
+        .sb-item { padding: 8px 10px; border-radius: 6px; font-size: 13px; color: hsl(var(--muted-foreground)); }
+        .sb-item.act { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 600; }
+        .sb-sp { flex: 1; }
+        .mn { background: hsl(var(--background)); color: hsl(var(--foreground)); padding: 24px 32px; overflow: auto; }
+
+        .pg-title { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(18px * var(--t-scale, 1.1)); letter-spacing: 1px; color: hsl(var(--foreground)); }
+        .pg-sub { font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
+
+        .detect-bar { display: flex; align-items: center; gap: 8px; border-radius: 6px; border: 1px solid hsl(var(--primary) / 0.12); background: hsl(var(--primary) / 0.04); padding: 8px 14px; margin: 12px 0 16px; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); }
+        .detect-bar i { width: 14px; height: 14px; color: hsl(var(--primary)); flex-shrink: 0; }
+        .detect-bar strong { color: hsl(var(--foreground)); font-weight: 500; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600; cursor: default; transition: all 0.15s; white-space: nowrap; }
+        .badge i { width: 12px; height: 12px; }
+        .b-rel { border: 1px solid hsl(142 71% 45% / 0.2); background: hsl(142 71% 45% / 0.1); color: hsl(142 71% 45%); }
+        .b-snap { border: 1px solid hsl(38 92% 50% / 0.2); background: hsl(38 92% 50% / 0.1); color: hsl(38 92% 50%); }
+        .b-rel.muted, .b-snap.muted { border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; opacity: 0.5; }
+        .b-rel.muted:hover { opacity: 0.8; border-color: hsl(142 71% 45% / 0.3); }
+        .b-snap.muted:hover { opacity: 0.8; border-color: hsl(38 92% 50% / 0.3); }
+
+        /* Card */
+        .card { border-radius: 10px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); overflow: hidden; }
+        .card-hdr { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid hsl(var(--border)); }
+        .card-icon { width: 40px; height: 40px; border-radius: 10px; background: hsl(var(--primary) / 0.08); border: 1px solid hsl(var(--primary) / 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .card-icon i { color: hsl(var(--primary)); width: 20px; height: 20px; }
+        .card-title { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(15px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .card-desc { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 1px; }
+        .card-meta { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .card-ver { font-family: 'Oxanium', sans-serif; font-weight: 500; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); background: hsl(var(--muted) / 0.5); padding: 4px 10px; border-radius: 6px; }
+
+        /* Framework tabs */
+        .fw-tabs { display: flex; overflow: hidden; border-radius: 6px; border: 1px solid hsl(var(--border)); margin-left: auto; }
+        .fw-tab { font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 500; letter-spacing: 0.5px; padding: 5px 12px; border: none; border-right: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; transition: all 0.15s; }
+        .fw-tab:last-child { border-right: none; }
+        .fw-tab:hover { background: hsl(var(--muted) / 0.3); }
+        .fw-tab.act { background: hsl(var(--primary) / 0.08); color: hsl(var(--foreground)); font-weight: 600; }
+
+        /* Platform tabs */
+        .ptabs { display: flex; gap: 0; border-bottom: 1px solid hsl(var(--border)); padding: 0 20px; }
+        .ptab { display: flex; align-items: center; gap: 6px; padding: 10px 14px; font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1.1)); letter-spacing: 0.5px; border-bottom: 2px solid transparent; color: hsl(var(--muted-foreground)); cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; transition: all 0.15s; }
+        .ptab:hover { color: hsl(var(--foreground)); }
+        .ptab.act { border-bottom-color: hsl(var(--primary)); color: hsl(var(--primary)); font-weight: 600; }
+        .ptab svg { width: 14px; height: 14px; fill: currentColor; }
+        .ptab .det { font-size: calc(8px * var(--t-scale, 1.1)); background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Download rows */
+        .dl-rows { padding: 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+        .dl-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid hsl(var(--border)); transition: all 0.15s; cursor: pointer; }
+        .dl-row:hover { border-color: hsl(var(--primary) / 0.3); }
+        .dl-row .dl-icon { width: 32px; height: 32px; border-radius: 8px; background: hsl(var(--muted) / 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dl-row .dl-icon i { width: 16px; height: 16px; color: hsl(var(--muted-foreground)); }
+        .dl-row .dl-info { flex: 1; }
+        .dl-row .dl-label { font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500; color: hsl(var(--foreground)); }
+        .dl-row .dl-detail { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 1px; }
+        .dl-row .rec-badge { font-size: calc(9px * var(--t-scale, 1.1)); background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Oxanium', sans-serif; }
+        .dl-row .dl-size { font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+        .dl-row .dl-btn { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); font-size: calc(12px * var(--t-scale, 1.1)); font-weight: 500; transition: all 0.15s; flex-shrink: 0; }
+        .dl-row .dl-btn:hover { background: hsl(var(--primary) / 0.18); }
+        .dl-row .dl-btn i { width: 14px; height: 14px; }
+
+        /* Footer */
+        .card-foot { padding: 0 20px; border-top: 1px solid hsl(var(--border) / 0.3); }
+        .card-foot-row { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.6; cursor: pointer; transition: opacity 0.15s; }
+        .card-foot-row:hover { opacity: 0.9; }
+        .card-foot-row i { width: 14px; height: 14px; }
+        .card-foot-row.static { cursor: default; opacity: 0.4; }
+
+        /* Expandable notes */
+        .notes-toggle { display: flex; align-items: center; gap: 4px; padding: 8px 20px; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.5; cursor: pointer; transition: all 0.15s; user-select: none; border-top: 1px solid hsl(var(--border) / 0.3); }
+        .notes-toggle:hover { opacity: 0.8; }
+        .notes-toggle i { width: 12px; height: 12px; transition: transform 0.2s; }
+        .notes-toggle.open i { transform: rotate(90deg); }
+        .notes-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease-out; padding: 0 20px; }
+        .notes-body.open { max-height: 300px; padding: 0 20px 14px; }
+        .n-cat { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: hsl(var(--foreground)); opacity: 0.6; margin-bottom: 4px; }
+        .n-cat:not(:first-child) { margin-top: 8px; }
+        .n-entry { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); line-height: 1.5; padding-left: 10px; position: relative; }
+        .n-entry::before { content: ''; position: absolute; left: 0; top: 8px; width: 3px; height: 3px; border-radius: 50%; background: hsl(var(--muted-foreground)); opacity: 0.4; }
+
+        /* Empty state */
+        .dl-empty { padding: 32px 20px; text-align: center; }
+        .dl-empty i { width: 32px; height: 32px; color: hsl(var(--muted-foreground)); opacity: 0.3; margin-bottom: 8px; }
+        .dl-empty p { font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.5; }
+
+        /* Transition for card body swap */
+        .card-body { transition: opacity 0.15s ease; }
+        .card-body.fading { opacity: 0; }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Downloads L1 — Interactive Mockup</h1>
+    <p>Tabbed product selector with framework switching, channel toggle, platform tabs. Click everything.</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<div class="tc"><div class="app">
+    <div class="sb">
+        <div class="sb-brand">
+            <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg>
+            <span>Ternity</span>
+        </div>
+        <div class="sb-sec">Tracking</div>
+        <div class="sb-item">Timer & Entries</div>
+        <div class="sb-item">Dashboard</div>
+        <div class="sb-item">Reports</div>
+        <div class="sb-sec">Admin</div>
+        <div class="sb-item">Users</div>
+        <div class="sb-item">Projects</div>
+        <div class="sb-sp"></div>
+        <div class="sb-item act"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+        <div class="sb-item">Settings</div>
+    </div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+        <div class="detect-bar"><i data-lucide="info"></i> Detected <strong id="detected-os">macOS</strong> — showing recommended downloads first.</div>
+
+        <div class="card" id="dl-card">
+            <div class="card-hdr">
+                <div class="card-icon"><i data-lucide="monitor"></i></div>
+                <div>
+                    <div class="card-title">Ternity Desktop</div>
+                    <div class="card-desc" id="card-desc"></div>
+                </div>
+                <div class="card-meta">
+                    <span id="badge-area"></span>
+                    <span class="card-ver" id="card-ver"></span>
+                    <div class="fw-tabs" id="fw-tabs"></div>
+                </div>
+            </div>
+            <div class="card-body" id="card-body">
+                <div class="ptabs" id="ptabs"></div>
+                <div class="dl-rows" id="dl-rows"></div>
+                <div class="notes-toggle" id="notes-toggle"><i data-lucide="chevron-right"></i> <span id="notes-label"></span></div>
+                <div class="notes-body" id="notes-body"></div>
+                <div class="card-foot">
+                    <div class="card-foot-row" id="checksum-row"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+                    <div class="card-foot-row static" id="release-date"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+<script>
+// ── Platform SVG icons ──
+const PLATFORM_ICONS = {
+    macos: '<svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>',
+    windows: '<svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg>',
+    linux: '<svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg>'
+};
+
+// ── Mock data — all three frameworks, per-platform artifacts ──
+const PRODUCTS = {
+    tauri: {
+        name: 'Tauri',
+        desc: 'Lightweight native app built with Rust',
+        channels: {
+            release: {
+                version: 'v0.1.0',
+                releaseDate: 'February 18, 2026',
+                notes: [
+                    { cat: 'Added', entries: ['System tray with idle detection', 'Auto-start on login preference'] },
+                    { cat: 'Fixed', entries: ['Timer not stopping on sleep/wake cycle'] }
+                ],
+                artifacts: {
+                    macos: [
+                        { label: 'macOS — Apple Silicon', detail: 'M1, M2, M3, M4 · .dmg · Ternity-Tauri-0.1.0-arm64.dmg', size: '4.8 MB', rec: true },
+                        { label: 'macOS — Intel', detail: 'x86_64 · .dmg · Ternity-Tauri-0.1.0-x64.dmg', size: '5.1 MB' }
+                    ],
+                    windows: [
+                        { label: 'Windows — x64', detail: '.msi · Ternity-Tauri-0.1.0-x64.msi', size: '3.9 MB', rec: true },
+                        { label: 'Windows — ARM64', detail: '.msi · Ternity-Tauri-0.1.0-arm64.msi', size: '4.0 MB' }
+                    ],
+                    linux: [
+                        { label: 'Linux — x64 AppImage', detail: '.AppImage · Ternity-Tauri-0.1.0-x64.AppImage', size: '5.6 MB', rec: true },
+                        { label: 'Linux — x64 deb', detail: '.deb · Ternity-Tauri-0.1.0-x64.deb', size: '4.2 MB' },
+                        { label: 'Linux — ARM64 AppImage', detail: '.AppImage · Ternity-Tauri-0.1.0-arm64.AppImage', size: '5.8 MB' }
+                    ]
+                }
+            },
+            snapshot: {
+                version: 'v0.1.0-7-ga3f2c1e',
+                releaseDate: null,
+                notes: [
+                    { cat: 'Added', entries: ['Keyboard shortcuts for start/stop/switch', 'Activity log panel'] },
+                    { cat: 'Changed', entries: ['Improve tray icon rendering on HiDPI displays'] }
+                ],
+                artifacts: {
+                    macos: [
+                        { label: 'macOS — Apple Silicon', detail: 'M1, M2, M3, M4 · .dmg · Ternity-Tauri-0.1.0-7-ga3f2c1e-arm64.dmg', size: '4.9 MB', rec: true },
+                        { label: 'macOS — Intel', detail: 'x86_64 · .dmg · Ternity-Tauri-0.1.0-7-ga3f2c1e-x64.dmg', size: '5.2 MB' }
+                    ],
+                    windows: [
+                        { label: 'Windows — x64', detail: '.msi · Ternity-Tauri-0.1.0-7-ga3f2c1e-x64.msi', size: '4.0 MB', rec: true }
+                    ],
+                    linux: [
+                        { label: 'Linux — x64 AppImage', detail: '.AppImage · Ternity-Tauri-0.1.0-7-ga3f2c1e-x64.AppImage', size: '5.7 MB', rec: true }
+                    ]
+                }
+            }
+        }
+    },
+    flutter: {
+        name: 'Flutter',
+        desc: 'Cross-platform native app',
+        channels: {
+            snapshot: {
+                version: 'v0.1.0-3-g8f2d4a1',
+                releaseDate: null,
+                notes: [
+                    { cat: 'Added', entries: ['Initial build with timer and entries', 'Project and label selectors'] }
+                ],
+                artifacts: {
+                    macos: [
+                        { label: 'macOS — Universal', detail: '.dmg · Ternity-Flutter-0.1.0-3-g8f2d4a1-universal.dmg', size: '43 MB', rec: true }
+                    ],
+                    windows: [
+                        { label: 'Windows — x64', detail: '.msix · Ternity-Flutter-0.1.0-3-g8f2d4a1-x64.msix', size: '38 MB', rec: true }
+                    ],
+                    linux: [
+                        { label: 'Linux — x64', detail: '.tar.gz · Ternity-Flutter-0.1.0-3-g8f2d4a1-x64.tar.gz', size: '41 MB', rec: true }
+                    ]
+                }
+            }
+        }
+    },
+    electron: {
+        name: 'Electron',
+        desc: 'Full-featured app with system tray and offline support',
+        channels: {
+            release: {
+                version: 'v0.2.1',
+                releaseDate: 'February 15, 2026',
+                notes: [
+                    { cat: 'Fixed', entries: ['Window position not restored on secondary display', 'Tray icon missing after monitor reconnect'] },
+                    { cat: 'Changed', entries: ['Reduce idle detection threshold from 10 to 5 minutes'] }
+                ],
+                artifacts: {
+                    macos: [
+                        { label: 'macOS — Apple Silicon', detail: 'M1, M2, M3, M4 · .dmg · Ternity-Electron-0.2.1-arm64.dmg', size: '92 MB', rec: true },
+                        { label: 'macOS — Intel', detail: 'x86_64 · .dmg · Ternity-Electron-0.2.1-x64.dmg', size: '98 MB' }
+                    ],
+                    windows: [
+                        { label: 'Windows — x64', detail: '.exe · Ternity-Electron-0.2.1-x64.exe', size: '88 MB', rec: true },
+                        { label: 'Windows — ARM64', detail: '.exe · Ternity-Electron-0.2.1-arm64.exe', size: '85 MB' }
+                    ],
+                    linux: [
+                        { label: 'Linux — x64 AppImage', detail: '.AppImage · Ternity-Electron-0.2.1-x64.AppImage', size: '95 MB', rec: true },
+                        { label: 'Linux — x64 deb', detail: '.deb · Ternity-Electron-0.2.1-x64.deb', size: '90 MB' },
+                        { label: 'Linux — ARM64 AppImage', detail: '.AppImage · Ternity-Electron-0.2.1-arm64.AppImage', size: '91 MB' }
+                    ]
+                }
+            }
+        }
+    }
+};
+
+const FRAMEWORK_ORDER = ['tauri', 'flutter', 'electron'];
+const DETECTED_PLATFORM = 'macos'; // mock detection
+
+let activeFramework = 'tauri';
+let activeChannel = null; // derived from product
+let activePlatform = DETECTED_PLATFORM;
+
+function getChannels(fw) {
+    return Object.keys(PRODUCTS[fw].channels);
+}
+
+function getDefaultChannel(fw) {
+    const ch = getChannels(fw);
+    return ch.includes('release') ? 'release' : ch[0];
+}
+
+function renderBadges(fw, selectedChannel) {
+    const channels = getChannels(fw);
+    const area = document.getElementById('badge-area');
+    let html = '';
+    if (channels.includes('release')) {
+        const muted = selectedChannel !== 'release' ? ' muted' : '';
+        html += `<span class="badge b-rel${muted}" data-channel="release" style="cursor:pointer"><i data-lucide="tag"></i> Release</span>`;
+    }
+    if (channels.includes('snapshot')) {
+        const muted = selectedChannel !== 'snapshot' ? ' muted' : '';
+        html += `<span class="badge b-snap${muted}" data-channel="snapshot" style="cursor:pointer"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>`;
+    }
+    area.innerHTML = html;
+
+    // Click handlers for channel toggle
+    area.querySelectorAll('.badge').forEach(b => {
+        b.addEventListener('click', () => {
+            const ch = b.dataset.channel;
+            if (ch !== activeChannel) {
+                activeChannel = ch;
+                render();
+            }
+        });
+    });
+}
+
+function renderFwTabs() {
+    const container = document.getElementById('fw-tabs');
+    container.innerHTML = FRAMEWORK_ORDER.map(fw => {
+        const act = fw === activeFramework ? ' act' : '';
+        return `<button class="fw-tab${act}" data-fw="${fw}">${PRODUCTS[fw].name}</button>`;
+    }).join('');
+    container.querySelectorAll('.fw-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.fw !== activeFramework) {
+                activeFramework = btn.dataset.fw;
+                activeChannel = getDefaultChannel(activeFramework);
+                activePlatform = DETECTED_PLATFORM;
+                render();
+            }
+        });
+    });
+}
+
+function renderPlatformTabs() {
+    const container = document.getElementById('ptabs');
+    const platforms = [
+        { id: 'macos', label: 'macOS', icon: PLATFORM_ICONS.macos },
+        { id: 'windows', label: 'Windows', icon: PLATFORM_ICONS.windows },
+        { id: 'linux', label: 'Linux', icon: PLATFORM_ICONS.linux }
+    ];
+    container.innerHTML = platforms.map(p => {
+        const act = p.id === activePlatform ? ' act' : '';
+        const det = p.id === DETECTED_PLATFORM ? ' <span class="det">detected</span>' : '';
+        return `<button class="ptab${act}" data-platform="${p.id}">${p.icon} ${p.label}${det}</button>`;
+    }).join('');
+    container.querySelectorAll('.ptab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activePlatform = btn.dataset.platform;
+            renderDownloadRows();
+            container.querySelectorAll('.ptab').forEach(b => b.classList.remove('act'));
+            btn.classList.add('act');
+        });
+    });
+}
+
+function renderDownloadRows() {
+    const container = document.getElementById('dl-rows');
+    const product = PRODUCTS[activeFramework];
+    const channelData = product.channels[activeChannel];
+    const artifacts = channelData.artifacts[activePlatform] || [];
+
+    if (artifacts.length === 0) {
+        container.innerHTML = `<div class="dl-empty"><i data-lucide="package-x"></i><p>No ${activePlatform} builds available for this channel yet.</p></div>`;
+        lucide.createIcons({ nameAttr: 'data-lucide', attrs: {}, icons: {} });
+        return;
+    }
+
+    container.innerHTML = artifacts.map(a => {
+        const rec = a.rec ? '<span class="rec-badge">recommended</span>' : '';
+        return `<div class="dl-row">
+            <div class="dl-icon"><i data-lucide="cpu"></i></div>
+            <div class="dl-info"><div class="dl-label">${a.label} ${rec}</div><div class="dl-detail">${a.detail}</div></div>
+            <div class="dl-size">${a.size}</div>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>`;
+    }).join('');
+    lucide.createIcons();
+}
+
+function renderNotes() {
+    const product = PRODUCTS[activeFramework];
+    const channelData = product.channels[activeChannel];
+    const toggle = document.getElementById('notes-toggle');
+    const body = document.getElementById('notes-body');
+
+    // Reset open state
+    toggle.classList.remove('open');
+    body.classList.remove('open');
+
+    document.getElementById('notes-label').textContent = `What's new in ${channelData.version}`;
+
+    let html = '';
+    for (const section of channelData.notes) {
+        html += `<div class="n-cat">${section.cat}</div>`;
+        for (const entry of section.entries) {
+            html += `<div class="n-entry">${entry}</div>`;
+        }
+    }
+    body.innerHTML = html;
+}
+
+function renderFooter() {
+    const product = PRODUCTS[activeFramework];
+    const channelData = product.channels[activeChannel];
+    const dateEl = document.getElementById('release-date');
+    if (channelData.releaseDate) {
+        dateEl.textContent = `Released ${channelData.releaseDate}`;
+        dateEl.style.display = '';
+    } else {
+        dateEl.style.display = 'none';
+    }
+}
+
+function render() {
+    const product = PRODUCTS[activeFramework];
+
+    // If channel not valid for this framework, pick default
+    if (!product.channels[activeChannel]) {
+        activeChannel = getDefaultChannel(activeFramework);
+    }
+    const channelData = product.channels[activeChannel];
+
+    // Header
+    document.getElementById('card-desc').textContent = product.desc;
+    document.getElementById('card-ver').textContent = channelData.version;
+
+    // Badges
+    renderBadges(activeFramework, activeChannel);
+
+    // Framework tabs
+    renderFwTabs();
+
+    // Platform tabs
+    renderPlatformTabs();
+
+    // Download rows
+    renderDownloadRows();
+
+    // Release notes
+    renderNotes();
+
+    // Footer
+    renderFooter();
+
+    // Re-render lucide icons
+    lucide.createIcons();
+}
+
+// ── Notes toggle ──
+document.getElementById('notes-toggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.getElementById('notes-body').classList.toggle('open');
+});
+
+// ── Theme/scale switchers ──
+document.getElementById('theme-switcher').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    document.body.setAttribute('data-theme', e.target.dataset.theme);
+});
+document.getElementById('scale-switcher').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    document.body.setAttribute('data-scale', e.target.dataset.scale);
+});
+
+// ── Initial render ──
+activeChannel = getDefaultChannel(activeFramework);
+render();
+</script>
+</body>
+</html>

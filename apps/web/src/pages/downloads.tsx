@@ -1,12 +1,12 @@
 import { useState, useEffect, type JSX } from 'react';
-import { Monitor, Download, Cpu, ChevronRight, ShieldCheck, Info, Loader2 } from 'lucide-react';
+import { Monitor, Download, Cpu, ChevronRight, ShieldCheck, Info, Loader2, Tag, GitCommitHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { useDownloads } from '@/hooks/use-downloads';
-import type { DownloadArtifact } from '@ternity/shared';
+import type { DownloadArtifact, DownloadProduct, DownloadChannel } from '@ternity/shared';
 
 // ============================================================
-// OS Detection (uses experimental NavigatorUAData API)
+// OS Detection
 // ============================================================
 
 type Platform = 'darwin' | 'windows' | 'linux';
@@ -97,6 +97,92 @@ function DetectionBar({ os }: { os: Platform | 'unknown' }) {
   );
 }
 
+function ChannelBadge({
+  channel,
+  active,
+  disabled,
+  onClick,
+}: {
+  channel: 'release' | 'snapshot';
+  active: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  const isRelease = channel === 'release';
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md border px-2.5 py-0.5 font-semibold transition-all',
+        disabled
+          ? 'cursor-default border-border/50 bg-transparent text-muted-foreground/30'
+          : active
+            ? isRelease
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+              : 'border-amber-500/20 bg-amber-500/10 text-amber-500'
+            : cn(
+                'cursor-pointer border-border bg-transparent text-muted-foreground opacity-50 hover:opacity-80',
+                isRelease ? 'hover:border-emerald-500/30' : 'hover:border-amber-500/30',
+              ),
+      )}
+      style={{ fontSize: scaled(11) }}
+    >
+      {isRelease ? <Tag className="h-3 w-3" /> : <GitCommitHorizontal className="h-3 w-3" />}
+      {isRelease ? 'Release' : 'Snapshot'}
+    </button>
+  );
+}
+
+const FRAMEWORK_ICONS: Record<string, JSX.Element> = {
+  tauri: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+      <path d="M13.912 0a8.72 8.72 0 0 0-8.308 6.139c1.05-.515 2.18-.845 3.342-.976 2.415-3.363 7.4-3.412 9.88-.097 2.48 3.315 1.025 8.084-2.883 9.45a6.131 6.131 0 0 1-.3 2.762 8.72 8.72 0 0 0 3.01-1.225A8.72 8.72 0 0 0 13.913 0zm.082 6.451a2.284 2.284 0 1 0-.15 4.566 2.284 2.284 0 0 0 .15-4.566zm-5.629.27a8.72 8.72 0 0 0-3.031 1.235 8.72 8.72 0 1 0 13.06 9.913 10.173 10.174 0 0 1-3.343.965 6.125 6.125 0 1 1-7.028-9.343 6.114 6.115 0 0 1 .342-2.772zm1.713 6.27a2.284 2.284 0 0 0-2.284 2.283 2.284 2.284 0 0 0 2.284 2.284 2.284 2.284 0 0 0 2.284-2.284 2.284 2.284 0 0 0-2.284-2.284z" />
+    </svg>
+  ),
+  flutter: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+      <path d="M14.314 0L2.3 12 6 15.7 21.684.013h-7.357zm.014 11.072L7.857 17.53l6.47 6.47H21.7l-6.46-6.468 6.46-6.46h-7.37z" />
+    </svg>
+  ),
+  electron: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+      <path d="M12.011 0c-.85 0-1.539.689-1.539 1.539 0 .85.689 1.54 1.54 1.54.594 0 1.109-.339 1.365-.833 2.221 1.268 3.847 5.473 3.847 10.363 0 2.071-.289 4.056-.825 5.768a.322.322 0 0 0 .614.192c.556-1.776.854-3.825.854-5.96 0-5.193-1.772-9.686-4.32-11.003.001-.022.003-.044.003-.067C12.55.69 11.861 0 11.011 0zm0 .643a.896.896 0 1 1 0 1.792.896.896 0 0 1 0-1.792zm-5.486 4.305c-2.067.008-3.647.665-4.388 1.949-.738 1.277-.527 2.971.511 4.781a.322.322 0 0 0 .558-.32c-.935-1.632-1.117-3.093-.512-4.14.821-1.423 3.033-1.956 5.932-1.428a.322.322 0 0 0 .115-.633c-.784-.143-1.527-.212-2.216-.21zm11.052.018a.322.322 0 0 0-.008.643c1.834.024 3.156.596 3.75 1.626.82 1.419.18 3.595-1.718 5.837a.322.322 0 0 0 .49.416c2.054-2.426 2.771-4.866 1.785-6.574-.726-1.257-2.26-1.921-4.3-1.948zm-2.698.292a.323.323 0 0 0-.065.008c-1.857.397-3.833 1.175-5.731 2.271-4.57 2.638-7.593 6.495-7.36 9.372-.473.263-.793.766-.793 1.345 0 .85.69 1.54 1.54 1.54.85 0 1.539-.69 1.539-1.54s-.69-1.539-1.54-1.539c-.037 0-.075.003-.112.006-.1-2.56 2.743-6.141 7.048-8.627 1.841-1.063 3.755-1.816 5.544-2.2a.322.322 0 0 0-.07-.636zm-2.879 6.237a1.119 1.119 0 0 0-1.078 1.349c.13.601.723.983 1.324.853a1.1 1.1 0 0 0 .853-1.324 1.1 1.1 0 0 0-1.1-.878zM4.532 13.34a.321.321 0 0 0-.253.538c1.268 1.394 2.916 2.701 4.795 3.786 4.414 2.549 9.105 3.285 11.56 1.839a1.53 1.53 0 0 0 .897.29c.85 0 1.54-.69 1.54-1.54s-.69-1.539-1.54-1.539c-.85 0-1.539.69-1.539 1.54 0 .275.074.534.201.758-2.245 1.214-6.631.5-10.798-1.905-1.823-1.053-3.418-2.318-4.64-3.662a.321.321 0 0 0-.223-.105zm-2.063 4.017a.896.896 0 1 1 0 1.792.896.896 0 0 1 0-1.792zm19.062 0a.896.896 0 1 1 0 1.792.896.896 0 0 1 0-1.792zm-14.005 1.368a.322.322 0 0 0-.32.43C8.279 22.153 10.036 24 12.011 24c1.44 0 2.773-.982 3.813-2.711a.322.322 0 0 0-.552-.331c-.934 1.554-2.081 2.399-3.261 2.399-1.641 0-3.208-1.647-4.2-4.418a.322.322 0 0 0-.285-.213z" />
+    </svg>
+  ),
+};
+
+function FrameworkTabs({
+  products,
+  activeFramework,
+  onChange,
+}: {
+  products: DownloadProduct[];
+  activeFramework: string;
+  onChange: (fw: string) => void;
+}) {
+  return (
+    <div className="ml-auto flex gap-1">
+      {products.map((p) => (
+        <button
+          key={p.framework}
+          onClick={() => onChange(p.framework)}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-4 py-1.5 font-brand font-semibold tracking-wide transition-colors',
+            p.framework === activeFramework
+              ? 'bg-primary/[0.12] text-primary'
+              : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+          )}
+          style={{ fontSize: scaled(13), letterSpacing: '0.5px' }}
+        >
+          {FRAMEWORK_ICONS[p.framework]}
+          {p.framework.charAt(0).toUpperCase() + p.framework.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PlatformTabs({
   active,
   detected,
@@ -107,13 +193,13 @@ function PlatformTabs({
   onChange: (p: Platform) => void;
 }) {
   return (
-    <div className="flex gap-0 border-b border-border px-6">
+    <div className="flex gap-0 border-y border-border px-5">
       {PLATFORMS.map((p) => (
         <button
           key={p.id}
           onClick={() => onChange(p.id)}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-4 py-3 font-brand tracking-wide transition-colors',
+            'flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 font-brand tracking-wide transition-colors',
             active === p.id
               ? 'border-primary font-semibold text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -146,10 +232,10 @@ function DownloadRow({
   return (
     <a
       href={artifact.downloadUrl}
-      className="flex items-center gap-4 rounded-md border border-border p-3 transition-colors hover:border-primary/30 hover:bg-primary/[0.02]"
+      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary/30"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
-        <Cpu className="h-[18px] w-[18px] text-muted-foreground" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+        <Cpu className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
@@ -183,24 +269,65 @@ function DownloadRow({
   );
 }
 
+function ReleaseNotes({ channel }: { channel: DownloadChannel }) {
+  const [open, setOpen] = useState(false);
+
+  if (channel.releaseNotes.length === 0) return null;
+
+  return (
+    <>
+      <button
+        className="flex w-full items-center gap-1 border-t border-border/30 px-5 py-2 text-muted-foreground/50 transition-colors hover:text-muted-foreground/80"
+        style={{ fontSize: scaled(11) }}
+        onClick={() => setOpen(!open)}
+      >
+        <ChevronRight className={cn('h-3 w-3 transition-transform', open && 'rotate-90')} />
+        What's new in {channel.version}
+      </button>
+      {open && (
+        <div className="px-5 pb-3">
+          {channel.releaseNotes.map((section) => (
+            <div key={section.category}>
+              <div
+                className="mb-1 mt-2 font-brand font-semibold uppercase text-foreground/60 first:mt-0"
+                style={{ fontSize: scaled(9), letterSpacing: '0.5px' }}
+              >
+                {section.category}
+              </div>
+              {section.entries.map((entry, i) => (
+                <div
+                  key={i}
+                  className="relative pl-2.5 text-muted-foreground"
+                  style={{ fontSize: scaled(11), lineHeight: 1.5 }}
+                >
+                  <span className="absolute left-0 top-[7px] h-[3px] w-[3px] rounded-full bg-muted-foreground/40" />
+                  {entry}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 function ChecksumTable({ artifacts }: { artifacts: DownloadArtifact[] }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div>
       <button
-        className="flex w-full items-center gap-1.5 border-t border-border/30 px-6 py-2 text-muted-foreground transition-colors hover:text-foreground"
+        className="flex w-full items-center gap-1.5 border-t border-border/30 px-5 py-2 text-muted-foreground/50 transition-colors hover:text-muted-foreground/80"
         style={{ fontSize: scaled(11) }}
         onClick={() => setOpen(!open)}
       >
-        <ChevronRight
-          className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-90')}
-        />
+        <ChevronRight className={cn('h-3 w-3 transition-transform', open && 'rotate-90')} />
         <ShieldCheck className="h-3.5 w-3.5" />
         SHA-256 checksums
       </button>
       {open && (
-        <div className="px-6 pb-4">
+        <div className="px-5 pb-4">
           <table className="w-full" style={{ fontSize: scaled(11) }}>
             <thead>
               <tr className="border-b border-border">
@@ -225,6 +352,143 @@ function ChecksumTable({ artifacts }: { artifacts: DownloadArtifact[] }) {
   );
 }
 
+function DownloadsCard({
+  products,
+  detectedOS,
+  detectedArch,
+}: {
+  products: DownloadProduct[];
+  detectedOS: Platform | 'unknown';
+  detectedArch: string | null;
+}) {
+  const [activeFramework, setActiveFramework] = useState(products[0]?.framework ?? '');
+  const [activeChannelId, setActiveChannelId] = useState<'release' | 'snapshot'>('release');
+  const [activePlatform, setActivePlatform] = useState<Platform>(() => {
+    if (detectedOS !== 'unknown') return detectedOS;
+    return 'darwin';
+  });
+
+  const product = products.find((p) => p.framework === activeFramework) ?? products[0]!;
+  const channels = product.channels;
+
+  // Derive active channel — if the selected channel doesn't exist for this framework, pick the first available
+  const activeChannel =
+    channels.find((c) => c.channel === activeChannelId) ?? channels[0]!;
+
+  // When switching frameworks, reset to the default channel for that framework
+  function handleFrameworkChange(fw: string) {
+    setActiveFramework(fw);
+    const p = products.find((pr) => pr.framework === fw);
+    if (p) {
+      const defaultChannel = p.channels.find((c) => c.channel === 'release') ?? p.channels[0];
+      if (defaultChannel) setActiveChannelId(defaultChannel.channel);
+    }
+    // Reset platform to detected
+    if (detectedOS !== 'unknown') setActivePlatform(detectedOS);
+  }
+
+  // Filter and sort artifacts for the active platform
+  const platformArtifacts = activeChannel.artifacts.filter((a) => a.platform === activePlatform);
+  const recommendedArch =
+    detectedOS === activePlatform
+      ? detectedArch || DEFAULT_RECOMMENDED[activePlatform]
+      : null;
+  const sortedArtifacts = [...platformArtifacts].sort((a, b) => {
+    if (recommendedArch) {
+      if (a.arch === recommendedArch && b.arch !== recommendedArch) return -1;
+      if (b.arch === recommendedArch && a.arch !== recommendedArch) return 1;
+    }
+    return 0;
+  });
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      {/* Row 1: Name + description | Framework tabs */}
+      <div className="flex items-center gap-3 px-5 py-4">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border bg-primary/[0.08]"
+          style={{ borderColor: 'hsl(var(--primary) / 0.15)' }}
+        >
+          <Monitor className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(15) }}>
+            Ternity Desktop
+          </div>
+          <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+            {product.description}
+          </div>
+        </div>
+        {products.length > 1 && (
+          <FrameworkTabs
+            products={products}
+            activeFramework={activeFramework}
+            onChange={handleFrameworkChange}
+          />
+        )}
+      </div>
+
+      {/* Row 2: Platform tabs */}
+      <PlatformTabs active={activePlatform} detected={detectedOS} onChange={setActivePlatform} />
+
+      {/* Row 3: Channel badges + version */}
+      <div className="flex items-center gap-2 px-5 py-3">
+        {(['release', 'snapshot'] as const).map((ch) => {
+          const exists = channels.some((c) => c.channel === ch);
+          return (
+            <ChannelBadge
+              key={ch}
+              channel={ch}
+              active={activeChannel.channel === ch}
+              disabled={!exists}
+              onClick={exists && channels.length > 1 ? () => setActiveChannelId(ch) : undefined}
+            />
+          );
+        })}
+        <span
+          className="rounded-md bg-muted/50 px-2.5 py-1 font-brand font-medium text-muted-foreground"
+          style={{ fontSize: scaled(11) }}
+        >
+          {activeChannel.version}
+        </span>
+      </div>
+
+      {/* Download rows */}
+      <div className="flex flex-col gap-2 p-5">
+        {sortedArtifacts.length > 0 ? (
+          sortedArtifacts.map((artifact) => (
+            <DownloadRow
+              key={artifact.id}
+              artifact={artifact}
+              recommended={recommendedArch === artifact.arch && detectedOS === activePlatform}
+            />
+          ))
+        ) : (
+          <div className="py-8 text-center text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            No builds available for this platform yet.
+          </div>
+        )}
+      </div>
+
+      {/* Release notes */}
+      <ReleaseNotes channel={activeChannel} />
+
+      {/* Checksums */}
+      <ChecksumTable artifacts={activeChannel.artifacts} />
+
+      {/* Release date */}
+      {activeChannel.releaseDate && (
+        <div
+          className="border-t border-border/30 px-5 py-2 text-muted-foreground/40"
+          style={{ fontSize: scaled(11) }}
+        >
+          Released {formatDate(activeChannel.releaseDate)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================================
 // Downloads Page
 // ============================================================
@@ -232,21 +496,17 @@ function ChecksumTable({ artifacts }: { artifacts: DownloadArtifact[] }) {
 export function DownloadsPage() {
   const [detectedOS, setDetectedOS] = useState<Platform | 'unknown'>('unknown');
   const [detectedArch, setDetectedArch] = useState<string | null>(null);
-  const [activePlatform, setActivePlatform] = useState<Platform>('darwin');
 
   const { data, isLoading, error } = useDownloads();
 
-  // Run detection
   useEffect(() => {
     const os = detectOS();
     setDetectedOS(os);
-    if (os !== 'unknown') setActivePlatform(os);
     detectArch().then((arch) => {
       if (arch) setDetectedArch(arch);
     });
   }, []);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="p-6">
@@ -261,7 +521,6 @@ export function DownloadsPage() {
     );
   }
 
-  // Error state
   if (error || !data) {
     return (
       <div className="p-6">
@@ -280,8 +539,7 @@ export function DownloadsPage() {
     );
   }
 
-  // Empty state
-  if (data.artifacts.length === 0) {
+  if (data.products.length === 0) {
     return (
       <div className="p-6">
         <div className="mb-6">
@@ -299,21 +557,6 @@ export function DownloadsPage() {
     );
   }
 
-  const activeArtifacts = data.artifacts.filter((a) => a.platform === activePlatform);
-
-  const recommendedArch =
-    detectedOS === activePlatform
-      ? detectedArch || DEFAULT_RECOMMENDED[activePlatform]
-      : null;
-
-  const sortedArtifacts = [...activeArtifacts].sort((a, b) => {
-    if (recommendedArch) {
-      if (a.arch === recommendedArch && b.arch !== recommendedArch) return -1;
-      if (b.arch === recommendedArch && a.arch !== recommendedArch) return 1;
-    }
-    return 0;
-  });
-
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -323,65 +566,11 @@ export function DownloadsPage() {
 
       <DetectionBar os={detectedOS} />
 
-      {/* Product card */}
-      <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
-        {/* Header */}
-        <div className="flex items-center gap-4 border-b border-border px-6 py-5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-primary/10" style={{ borderColor: 'hsl(var(--primary) / 0.2)' }}>
-            <Monitor className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(16) }}>
-              Ternity Desktop (Electron)
-            </div>
-            <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
-              Native time tracking with system tray, global shortcuts, and offline support
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.5">
-            <span
-              className={cn(
-                'rounded-full px-2 py-0.5 font-medium',
-                data.version.includes('-') ? 'bg-amber-500/12 text-amber-500' : 'bg-emerald-500/12 text-emerald-500',
-              )}
-              style={{ fontSize: scaled(11) }}
-            >
-              {data.version.includes('-') ? 'Pre-release' : 'Stable'}
-            </span>
-            <span className="rounded-md bg-muted/50 px-2.5 py-1 font-brand font-medium text-muted-foreground" style={{ fontSize: scaled(11) }}>
-              v{data.version}
-            </span>
-          </div>
-        </div>
-
-        {/* Platform tabs */}
-        <PlatformTabs active={activePlatform} detected={detectedOS} onChange={setActivePlatform} />
-
-        {/* Download rows */}
-        <div className="flex flex-col gap-2 p-6">
-          {sortedArtifacts.length > 0 ? (
-            sortedArtifacts.map((artifact) => (
-              <DownloadRow
-                key={artifact.id}
-                artifact={artifact}
-                recommended={recommendedArch === artifact.arch && detectedOS === activePlatform}
-              />
-            ))
-          ) : (
-            <div className="py-8 text-center text-muted-foreground" style={{ fontSize: scaled(12) }}>
-              No builds available for this platform yet.
-            </div>
-          )}
-        </div>
-
-        {/* Checksums */}
-        <ChecksumTable artifacts={data.artifacts} />
-      </div>
-
-      {/* Release info */}
-      <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-        Released {formatDate(data.releaseDate)}
-      </div>
+      <DownloadsCard
+        products={data.products}
+        detectedOS={detectedOS}
+        detectedArch={detectedArch}
+      />
     </div>
   );
 }
