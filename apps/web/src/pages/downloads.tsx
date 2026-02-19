@@ -383,8 +383,6 @@ function DownloadsCard({
       const defaultChannel = p.channels.find((c) => c.channel === 'release') ?? p.channels[0];
       if (defaultChannel) setActiveChannelId(defaultChannel.channel);
     }
-    // Reset platform to detected
-    if (detectedOS !== 'unknown') setActivePlatform(detectedOS);
   }
 
   // Filter and sort artifacts for the active platform
