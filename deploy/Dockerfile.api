@@ -22,6 +22,7 @@ COPY --from=builder /app/apps/api/package.json apps/api/
 COPY --from=builder /app/apps/api/dist apps/api/dist
 COPY --from=builder /app/apps/api/drizzle apps/api/drizzle
 COPY --from=builder /app/apps/api/drizzle.config.ts apps/api/
+COPY CHANGELOG.md ./
 RUN pnpm install --frozen-lockfile
 EXPOSE 3010
 CMD ["node", "apps/api/dist/server.js"]

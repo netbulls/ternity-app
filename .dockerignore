@@ -5,6 +5,7 @@ dist
 .claude
 assets
 *.md
+!CHANGELOG.md
 .prettierrc
 .vscode
 .idea

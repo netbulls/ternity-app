@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { createHmac } from 'node:crypto';
-import { getChangelogForVersion, parseNotes } from '../lib/changelog-parser.js';
+import { parseNotes } from '../lib/changelog-parser.js';
 
 /** Platform+arch → human-readable label and description */
 const ARTIFACT_META: Record<string, { label: string; description: string }> = {
@@ -22,6 +22,9 @@ const FRAMEWORK_META: Record<string, { name: string; description: string }> = {
   flutter: { name: 'Ternity Desktop', description: 'Cross-platform native app' },
   unknown: { name: 'Ternity Desktop', description: 'Desktop app' },
 };
+
+/** Preferred display order for framework tabs */
+const FRAMEWORK_ORDER: string[] = ['tauri', 'electron', 'flutter'];
 
 /** Determine channel from version string: tagged (v1.2.3) = release, untagged (v1.2.3-N-gXXX) = snapshot */
 function deriveChannel(version: string): 'release' | 'snapshot' {
@@ -88,7 +91,7 @@ interface DriveLatestResponse {
 }
 
 export async function downloadsRoutes(fastify: FastifyInstance) {
-  /** Fetch release notes from Drive, fall back to local CHANGELOG.md */
+  /** Fetch release notes from Drive for the given version */
   async function getReleaseNotes(version: string, driveInternalUrl: string) {
     try {
       const res = await fetch(`${driveInternalUrl}/api/releases/${version}/notes`);
@@ -97,9 +100,9 @@ export async function downloadsRoutes(fastify: FastifyInstance) {
         if (data.notes) return parseNotes(data.notes);
       }
     } catch {
-      // Drive unavailable — fall through to local
+      // Drive unavailable — no notes available
     }
-    return getChangelogForVersion(version);
+    return [];
   }
 
   fastify.get('/api/downloads', async (_request, reply) => {
@@ -198,6 +201,13 @@ export async function downloadsRoutes(fastify: FastifyInstance) {
         };
       }),
     );
+
+    // Sort frameworks in preferred display order
+    products.sort((a, b) => {
+      const ai = FRAMEWORK_ORDER.indexOf(a.framework);
+      const bi = FRAMEWORK_ORDER.indexOf(b.framework);
+      return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+    });
 
     return { products };
   });
