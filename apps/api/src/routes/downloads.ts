@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { createHmac } from 'node:crypto';
+import { getChangelogForVersion, parseNotes } from '../lib/changelog-parser.js';
 
 /** Platform+arch → human-readable label and description */
 const ARTIFACT_META: Record<string, { label: string; description: string }> = {
@@ -87,6 +88,20 @@ interface DriveLatestResponse {
 }
 
 export async function downloadsRoutes(fastify: FastifyInstance) {
+  /** Fetch release notes from Drive, fall back to local CHANGELOG.md */
+  async function getReleaseNotes(version: string, driveInternalUrl: string) {
+    try {
+      const res = await fetch(`${driveInternalUrl}/api/releases/${version}/notes`);
+      if (res.ok) {
+        const data = (await res.json()) as { notes?: string };
+        if (data.notes) return parseNotes(data.notes);
+      }
+    } catch {
+      // Drive unavailable — fall through to local
+    }
+    return getChangelogForVersion(version);
+  }
+
   fastify.get('/api/downloads', async (_request, reply) => {
     const driveInternalUrl = process.env.DRIVE_INTERNAL_URL;
     const drivePublicUrl = process.env.DRIVE_PUBLIC_URL;
@@ -150,35 +165,39 @@ export async function downloadsRoutes(fastify: FastifyInstance) {
     }
 
     // Build products array with channels
-    const products = [...frameworkMap.entries()].map(([framework, channelMap]) => {
-      const meta = FRAMEWORK_META[framework] ?? FRAMEWORK_META.unknown!;
+    const products = await Promise.all(
+      [...frameworkMap.entries()].map(async ([framework, channelMap]) => {
+        const meta = FRAMEWORK_META[framework] ?? FRAMEWORK_META.unknown!;
 
-      const channels = [...channelMap.entries()].map(([channel, artifacts]) => {
-        // Use latest artifact for version/releaseDate
-        const latest = artifacts.reduce((a, b) =>
-          new Date(b.uploadedAt) > new Date(a.uploadedAt) ? b : a,
+        const channels = await Promise.all(
+          [...channelMap.entries()].map(async ([channel, artifacts]) => {
+            // Use latest artifact for version/releaseDate
+            const latest = artifacts.reduce((a, b) =>
+              new Date(b.uploadedAt) > new Date(a.uploadedAt) ? b : a,
+            );
+            // Strip channel from artifacts sent to client
+            const clientArtifacts = artifacts.map(({ channel: _ch, ...rest }) => rest);
+            return {
+              channel: channel as 'release' | 'snapshot',
+              version: latest.version,
+              releaseDate: channel === 'release' ? latest.uploadedAt : null,
+              releaseNotes: await getReleaseNotes(latest.version, driveInternalUrl),
+              artifacts: clientArtifacts,
+            };
+          }),
         );
-        // Strip channel from artifacts sent to client
-        const clientArtifacts = artifacts.map(({ channel: _ch, ...rest }) => rest);
+
+        // Sort: release before snapshot
+        channels.sort((a, b) => (a.channel === 'release' ? -1 : 1) - (b.channel === 'release' ? -1 : 1));
+
         return {
-          channel: channel as 'release' | 'snapshot',
-          version: latest.version,
-          releaseDate: channel === 'release' ? latest.uploadedAt : null,
-          releaseNotes: [], // Populated from CHANGELOG.md in future
-          artifacts: clientArtifacts,
+          framework,
+          name: meta.name,
+          description: meta.description,
+          channels,
         };
-      });
-
-      // Sort: release before snapshot
-      channels.sort((a, b) => (a.channel === 'release' ? -1 : 1) - (b.channel === 'release' ? -1 : 1));
-
-      return {
-        framework,
-        name: meta.name,
-        description: meta.description,
-        channels,
-      };
-    });
+      }),
+    );
 
     return { products };
   });
