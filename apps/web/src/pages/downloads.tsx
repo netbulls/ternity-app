@@ -186,38 +186,46 @@ function FrameworkTabs({
 function PlatformTabs({
   active,
   detected,
+  availablePlatforms,
   onChange,
 }: {
   active: Platform;
   detected: Platform | 'unknown';
+  availablePlatforms: Set<Platform>;
   onChange: (p: Platform) => void;
 }) {
   return (
     <div className="flex gap-0 border-y border-border px-5">
-      {PLATFORMS.map((p) => (
-        <button
-          key={p.id}
-          onClick={() => onChange(p.id)}
-          className={cn(
-            'flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 font-brand tracking-wide transition-colors',
-            active === p.id
-              ? 'border-primary font-semibold text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground',
-          )}
-          style={{ fontSize: scaled(12), letterSpacing: '0.5px' }}
-        >
-          {p.icon}
-          {p.label}
-          {p.id === detected && (
-            <span
-              className="rounded bg-primary/15 px-1.5 py-px font-brand uppercase text-primary"
-              style={{ fontSize: scaled(8), letterSpacing: '0.5px' }}
-            >
-              detected
-            </span>
-          )}
-        </button>
-      ))}
+      {PLATFORMS.map((p) => {
+        const available = availablePlatforms.has(p.id);
+        return (
+          <button
+            key={p.id}
+            onClick={available ? () => onChange(p.id) : undefined}
+            disabled={!available}
+            className={cn(
+              'flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 font-brand tracking-wide transition-colors',
+              !available
+                ? 'cursor-default border-transparent text-muted-foreground/30'
+                : active === p.id
+                  ? 'border-primary font-semibold text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
+            )}
+            style={{ fontSize: scaled(12), letterSpacing: '0.5px' }}
+          >
+            {p.icon}
+            {p.label}
+            {available && p.id === detected && (
+              <span
+                className="rounded bg-primary/15 px-1.5 py-px font-brand uppercase text-primary"
+                style={{ fontSize: scaled(8), letterSpacing: '0.5px' }}
+              >
+                detected
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -371,11 +379,37 @@ function DownloadsCard({
   const product = products.find((p) => p.framework === activeFramework) ?? products[0]!;
   const channels = product.channels;
 
-  // Derive active channel — if the selected channel doesn't exist for this framework, pick the first available
-  const activeChannel =
-    channels.find((c) => c.channel === activeChannelId) ?? channels[0]!;
+  // Compute which platforms have ANY artifacts across all channels for this framework
+  const availablePlatforms = new Set<Platform>();
+  for (const ch of channels) {
+    for (const a of ch.artifacts) {
+      availablePlatforms.add(a.platform as Platform);
+    }
+  }
 
-  // When switching frameworks, reset to the default channel for that framework
+  // Auto-correct platform if the current selection has no artifacts
+  const effectivePlatform: Platform = availablePlatforms.has(activePlatform)
+    ? activePlatform
+    : (detectedOS !== 'unknown' && availablePlatforms.has(detectedOS)
+        ? detectedOS
+        : availablePlatforms.values().next().value ?? 'darwin');
+
+  // Compute which channels have artifacts for the effective platform
+  const availableChannels = new Set<'release' | 'snapshot'>();
+  for (const ch of channels) {
+    if (ch.artifacts.some((a) => a.platform === effectivePlatform)) {
+      availableChannels.add(ch.channel);
+    }
+  }
+
+  // Derive active channel — must have artifacts for the current platform
+  const effectiveChannelId: 'release' | 'snapshot' = availableChannels.has(activeChannelId)
+    ? activeChannelId
+    : (availableChannels.has('release') ? 'release' : availableChannels.values().next().value ?? 'release');
+
+  const activeChannel = channels.find((c) => c.channel === effectiveChannelId) ?? channels[0]!;
+
+  // When switching frameworks, reset to the best available channel for that framework
   function handleFrameworkChange(fw: string) {
     setActiveFramework(fw);
     const p = products.find((pr) => pr.framework === fw);
@@ -386,10 +420,10 @@ function DownloadsCard({
   }
 
   // Filter and sort artifacts for the active platform
-  const platformArtifacts = activeChannel.artifacts.filter((a) => a.platform === activePlatform);
+  const platformArtifacts = activeChannel.artifacts.filter((a) => a.platform === effectivePlatform);
   const recommendedArch =
-    detectedOS === activePlatform
-      ? detectedArch || DEFAULT_RECOMMENDED[activePlatform]
+    detectedOS === effectivePlatform
+      ? detectedArch || DEFAULT_RECOMMENDED[effectivePlatform]
       : null;
   const sortedArtifacts = [...platformArtifacts].sort((a, b) => {
     if (recommendedArch) {
@@ -427,19 +461,19 @@ function DownloadsCard({
       </div>
 
       {/* Row 2: Platform tabs */}
-      <PlatformTabs active={activePlatform} detected={detectedOS} onChange={setActivePlatform} />
+      <PlatformTabs active={effectivePlatform} detected={detectedOS} availablePlatforms={availablePlatforms} onChange={setActivePlatform} />
 
       {/* Row 3: Channel badges + version */}
       <div className="flex items-center gap-2 px-5 py-3">
         {(['release', 'snapshot'] as const).map((ch) => {
-          const exists = channels.some((c) => c.channel === ch);
+          const available = availableChannels.has(ch);
           return (
             <ChannelBadge
               key={ch}
               channel={ch}
-              active={activeChannel.channel === ch}
-              disabled={!exists}
-              onClick={exists && channels.length > 1 ? () => setActiveChannelId(ch) : undefined}
+              active={effectiveChannelId === ch}
+              disabled={!available}
+              onClick={available && availableChannels.size > 1 ? () => setActiveChannelId(ch) : undefined}
             />
           );
         })}
@@ -458,7 +492,7 @@ function DownloadsCard({
             <DownloadRow
               key={artifact.id}
               artifact={artifact}
-              recommended={recommendedArch === artifact.arch && detectedOS === activePlatform}
+              recommended={recommendedArch === artifact.arch && detectedOS === effectivePlatform}
             />
           ))
         ) : (
