@@ -6,12 +6,8 @@ dist/
 *.tsbuildinfo
 
 # Environment
-.env.local
-.env.preview
-.env.test
-.env.preprod
-.env.production
-.env.sync
+.env.*
+!.env.example
 
 # IDE
 .vscode/
