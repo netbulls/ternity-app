@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { ScaleProvider } from '@/providers/scale-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
-import { Monitor, Download, Cpu, ChevronRight, ShieldCheck, Info, Tag, GitCommitHorizontal } from 'lucide-react';
+import { Monitor, Download, Cpu, ChevronRight, ChevronDown, ShieldCheck, Info, Tag, GitCommitHorizontal, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { toast } from 'sonner';
@@ -294,26 +294,125 @@ function DownloadRow({ artifact, recommended, onDownload }: { artifact: Artifact
   );
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  Added: 'hsl(142 71% 45%)',
+  Changed: 'hsl(217 91% 60%)',
+  Fixed: 'hsl(38 92% 50%)',
+  Removed: 'hsl(0 84% 60%)',
+  Security: 'hsl(280 70% 55%)',
+  Deprecated: 'hsl(30 60% 50%)',
+};
+
 function ReleaseNotesSection({ channel }: { channel: Channel }) {
   const [open, setOpen] = useState(false);
   if (channel.releaseNotes.length === 0) return null;
+
+  const allEntries = channel.releaseNotes.flatMap((s) => s.entries);
+  const teaser = allEntries.slice(0, 3).join(', ');
+  const totalCount = allEntries.length;
+
+  // Split categories into two balanced columns
+  const totalItems = channel.releaseNotes.reduce((sum, s) => sum + 1 + s.entries.length, 0);
+  const half = Math.ceil(totalItems / 2);
+  const left: ReleaseNote[] = [];
+  const right: ReleaseNote[] = [];
+  let itemCount = 0;
+  for (const s of channel.releaseNotes) {
+    if (itemCount < half) {
+      left.push(s);
+      itemCount += 1 + s.entries.length;
+    } else {
+      right.push(s);
+    }
+  }
+  if (right.length === 0 && left.length > 1) right.push(left.pop()!);
+
+  const leftEntryCount = left.reduce((sum, s) => sum + s.entries.length, 0);
+
+  const renderColumn = (sections: ReleaseNote[], startNum: number) => {
+    let num = startNum;
+    return (
+      <div>
+        {sections.map((section, si) => (
+          <div key={section.category}>
+            <div
+              className="inline-flex items-center gap-[5px]"
+              style={{ marginBottom: 4, marginTop: si > 0 ? 8 : 0 }}
+            >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: CATEGORY_COLORS[section.category] ?? 'hsl(var(--muted-foreground))' }}
+              />
+              <span
+                className="font-brand font-semibold uppercase"
+                style={{
+                  fontSize: scaled(9),
+                  letterSpacing: '0.5px',
+                  color: 'hsl(var(--foreground))',
+                  opacity: 0.5,
+                }}
+              >
+                {section.category}
+              </span>
+            </div>
+            {section.entries.map((entry) => {
+              const n = num++;
+              return (
+                <div
+                  key={n}
+                  className="text-muted-foreground"
+                  style={{ fontSize: scaled(11), lineHeight: 1.7 }}
+                >
+                  <span className="font-brand text-muted-foreground/30" style={{ fontVariantNumeric: 'tabular-nums' }}>[{n}]</span>{' '}{entry}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <>
-      <button className="flex w-full items-center gap-1 border-t border-border/30 px-5 py-2 text-muted-foreground/50 transition-colors hover:text-muted-foreground/80" style={{ fontSize: scaled(11) }} onClick={() => setOpen(!open)}>
-        <ChevronRight className={cn('h-3 w-3 transition-transform', open && 'rotate-90')} /> What's new in {channel.version}
+      <button
+        className={cn(
+          'flex w-full items-center gap-2 border-t px-5 py-2 transition-colors',
+          open
+            ? 'border-primary/[0.08] bg-primary/[0.04]'
+            : 'border-primary/[0.08] bg-primary/[0.02] hover:bg-primary/[0.05]',
+        )}
+        onClick={() => setOpen(!open)}
+      >
+        <Sparkles className="h-3.5 w-3.5 text-primary/50" />
+        <span className="min-w-0 truncate" style={{ fontSize: scaled(11) }}>
+          <strong className="font-medium text-primary">What's new in {channel.version}</strong>
+          <span className="text-foreground/70"> — {teaser}</span>
+        </span>
+        <span
+          className="shrink-0 rounded font-brand font-semibold text-primary"
+          style={{
+            fontSize: scaled(9),
+            background: 'hsl(var(--primary) / 0.1)',
+            padding: '1px 6px',
+          }}
+        >
+          {totalCount}
+        </span>
+        <ChevronDown
+          className={cn('ml-auto h-3 w-3 shrink-0 text-muted-foreground/30 transition-transform', open && 'rotate-180')}
+        />
       </button>
       {open && (
-        <div className="px-5 pb-3">
-          {channel.releaseNotes.map((section) => (
-            <div key={section.category}>
-              <div className="mb-1 mt-2 font-brand font-semibold uppercase text-foreground/60 first:mt-0" style={{ fontSize: scaled(9), letterSpacing: '0.5px' }}>{section.category}</div>
-              {section.entries.map((entry, i) => (
-                <div key={i} className="relative pl-2.5 text-muted-foreground" style={{ fontSize: scaled(11), lineHeight: 1.5 }}>
-                  <span className="absolute left-0 top-[7px] h-[3px] w-[3px] rounded-full bg-muted-foreground/40" />{entry}
-                </div>
-              ))}
-            </div>
-          ))}
+        <div
+          className="grid border-t border-border/10 px-5 pb-4 pt-3"
+          style={{
+            gridTemplateColumns: right.length > 0 ? '1fr 1fr' : '1fr',
+            gap: '4px 32px',
+          }}
+        >
+          {renderColumn(left, 1)}
+          {right.length > 0 && renderColumn(right, leftEntryCount + 1)}
         </div>
       )}
     </>

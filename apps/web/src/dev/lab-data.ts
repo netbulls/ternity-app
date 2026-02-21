@@ -22,6 +22,7 @@ export interface LabFeatureGroup {
   description: string;
   date: string;
   items: LabItem[];
+  children?: LabFeatureGroup[];
 }
 
 export interface LabProductSection {
@@ -115,22 +116,52 @@ export const LAB_SECTIONS: LabProductSection[] = [
       {
         name: 'downloads',
         id: 'downloads-lab',
-        description: 'Desktop app distribution — download page inside the authenticated portal',
-        date: '2026-02-20T00:30:00',
-        items: [
-          { kind: 'prototype', title: 'Downloads Page', route: '/dev/downloads', description: 'L1 implementation — framework tabs (top), platform tabs (middle), channel badges with disabled state + version (bottom). 3 mock products: Tauri (release+snapshot), Flutter (snapshot only), Electron (release only)', date: '2026-02-20T00:30:00' },
-          { kind: 'exploration', title: 'downloads-e5b3', file: 'web/downloads-e5b3.html', description: 'L1 Interactive mockup — framework tabs switch all content (desc, badges, version, downloads, notes). Channel toggle, platform tabs, empty states. Data-driven.', date: '2026-02-19T22:00:00' },
-          { kind: 'exploration', title: 'downloads-d7f2', file: 'web/downloads-d7f2.html', description: 'Back to basics — 5 variants: L1) Tabbed Product Selector, L2) Smart Card + Dropdown, L3) Pill Accordion, L4) Hero + Table, L5) Slim Stacked Cards. Return to prod-style vertical stacked layout', date: '2026-02-19T21:00:00' },
-          { kind: 'exploration', title: 'downloads-c3e9', file: 'web/downloads-c3e9.html', description: 'Release notes — 3 variants: K1) Expandable accordion per card, K2) Clickable version popover, K3) Shared panel below cards. Keep a Changelog format (Added/Changed/Fixed)', date: '2026-02-19T20:00:00' },
-          { kind: 'exploration', title: 'downloads-f4a7', file: 'web/downloads-f4a7.html', description: 'Aligned — consistent badge-pair channel selector (active=filled, inactive=muted outline), CSS subgrid for cross-card row alignment', date: '2026-02-19T19:00:00' },
-          { kind: 'exploration', title: 'downloads-e8a1', file: 'web/downloads-e8a1.html', description: 'J1 Refined — app-style segmented control (bg-primary/8), Release/Snapshot channels, arch rows per card', date: '2026-02-19T18:00:00' },
-          { kind: 'exploration', title: 'downloads-d9f3', file: 'web/downloads-d9f3.html', description: 'Channel + Architecture — 3 variants: J1) Arch Rows, J2) Primary + Expand, J3) Arch Pills. App-style channel toggle + multi-arch per card', date: '2026-02-19T17:00:00' },
-          { kind: 'exploration', title: 'downloads-a2c5', file: 'web/downloads-a2c5.html', description: 'Channel switcher — 3 variants: H1) Pill Toggle, H2) Version Dropdown, H3) Tab Underline. Stable/Dev per card, all 3 states (both, only stable, only dev)', date: '2026-02-19T16:00:00' },
-          { kind: 'exploration', title: 'downloads-b3d7', file: 'web/downloads-b3d7.html', description: 'Version states — 3 variants: G1) Badge + Version Row, G2) Status Header, G3) Inline Version. Tagged releases vs untagged dev builds (git describe)', date: '2026-02-19T15:00:00' },
-          { kind: 'exploration', title: 'downloads-f1a9', file: 'web/downloads-f1a9.html', description: 'F refined — 3 sub-variants: F1) Flex Stretch, F2) Grid Rows, F3) Icon Cards. Fixed horizontal alignment, demoted size to meta line', date: '2026-02-19T14:00:00' },
-          { kind: 'exploration', title: 'downloads-e4b2', file: 'web/downloads-e4b2.html', description: 'App-first layouts — 3 variants: D) Big CTA Hero (VS Code style), E) Split Layout (info left, download right), F) Platform First (centered hero + framework comparison cards)', date: '2026-02-19T13:00:00' },
-          { kind: 'exploration', title: 'downloads-c7e1', file: 'web/downloads-c7e1.html', description: 'Multi-product layouts — 3 variants: A) Framework Tabs (single card with switcher), B) Comparison Cards (side-by-side), C) Hero + List (recommended + compact rows)', date: '2026-02-19T12:00:00' },
-          { kind: 'exploration', title: 'downloads-a4f8', file: 'web/downloads-a4f8.html', description: 'Initial explorations — 3 variants: A) Hero + Platform Grid, B) Product Card + Tabs, C) Minimal Table — OS detection, arch options, release notes', date: '2026-02-18T00:00:00' },
+        description: 'Downloads page — layout, channels, release notes',
+        date: '2026-02-21T13:00:00',
+        items: [],
+        children: [
+          {
+            name: 'release notes',
+            id: 'downloads-notes-lab',
+            description: 'Prominence, placement, and formatting within the download card',
+            date: '2026-02-21T12:00:00',
+            items: [
+              { kind: 'exploration', title: 'release-notes-0ffa', file: 'web/release-notes-0ffa.html', description: 'Multi-category stress test — G1a (colored dots) and G1b (accent bars) with 2, 3, and 4 changelog categories. CSS grid vs flexbox wrap layout.', date: '2026-02-21T14:00:00' },
+              { kind: 'exploration', title: 'release-notes-b1ba', file: 'web/release-notes-b1ba.html', description: 'G1 content styling — 4 treatments: a) Colored dots + dashes, b) Left accent bars per category, c) Badge pills with icons, d) Single column minimal. All interactive.', date: '2026-02-21T13:00:00' },
+              { kind: 'exploration', title: 'release-notes-9780', file: 'web/release-notes-9780.html', description: 'G focused — ribbon after downloads, expands down. 3 sub-variants: G1) Flat two-column, G2) Teal callout card, G3) Promoted section with header bar. Interactive.', date: '2026-02-21T12:00:00' },
+              { kind: 'exploration', title: 'release-notes-c2f4', file: 'web/release-notes-c2f4.html', description: '3 variants: G) Ribbon→Hero combo (F+C), H1) Toggleable side drawer via button, H2) Side tab trigger on card edge', date: '2026-02-21T11:00:00' },
+              { kind: 'exploration', title: 'release-notes-a7f3', file: 'web/release-notes-a7f3.html', description: '6 variants: A) Open by default, B) Promoted section with teal accent, C) Hero callout above downloads, D) Inline with badge, E) Side panel, F) Summary ribbon', date: '2026-02-21T10:00:00' },
+              { kind: 'exploration', title: 'downloads-c3e9', file: 'web/downloads-c3e9.html', description: 'Multi-card era — 3 variants: K1) Expandable accordion per card, K2) Clickable version popover, K3) Shared panel below cards', date: '2026-02-19T20:00:00' },
+            ],
+          },
+          {
+            name: 'channels',
+            id: 'downloads-channels-lab',
+            description: 'Release vs snapshot toggle, version display, architecture rows',
+            date: '2026-02-19T19:00:00',
+            items: [
+              { kind: 'exploration', title: 'downloads-f4a7', file: 'web/downloads-f4a7.html', description: 'Aligned — consistent badge-pair channel selector (active=filled, inactive=muted outline), CSS subgrid for cross-card row alignment', date: '2026-02-19T19:00:00' },
+              { kind: 'exploration', title: 'downloads-e8a1', file: 'web/downloads-e8a1.html', description: 'J1 Refined — app-style segmented control (bg-primary/8), Release/Snapshot channels, arch rows per card', date: '2026-02-19T18:00:00' },
+              { kind: 'exploration', title: 'downloads-d9f3', file: 'web/downloads-d9f3.html', description: 'Channel + Architecture — 3 variants: J1) Arch Rows, J2) Primary + Expand, J3) Arch Pills', date: '2026-02-19T17:00:00' },
+              { kind: 'exploration', title: 'downloads-a2c5', file: 'web/downloads-a2c5.html', description: 'Channel switcher — 3 variants: H1) Pill Toggle, H2) Version Dropdown, H3) Tab Underline', date: '2026-02-19T16:00:00' },
+              { kind: 'exploration', title: 'downloads-b3d7', file: 'web/downloads-b3d7.html', description: 'Version states — 3 variants: G1) Badge + Version Row, G2) Status Header, G3) Inline Version', date: '2026-02-19T15:00:00' },
+            ],
+          },
+          {
+            name: 'page layout',
+            id: 'downloads-page-lab',
+            description: 'Multi-product structure, framework tabs, platform selectors, download rows',
+            date: '2026-02-20T00:30:00',
+            items: [
+              { kind: 'prototype', title: 'Downloads Page', route: '/dev/downloads', description: 'L1 implementation — framework tabs (top), platform tabs (middle), channel badges with disabled state + version (bottom). 3 mock products: Tauri (release+snapshot), Flutter (snapshot only), Electron (release only)', date: '2026-02-20T00:30:00' },
+              { kind: 'exploration', title: 'downloads-e5b3', file: 'web/downloads-e5b3.html', description: 'L1 Interactive mockup — framework tabs switch all content (desc, badges, version, downloads, notes). Channel toggle, platform tabs, empty states. Data-driven.', date: '2026-02-19T22:00:00' },
+              { kind: 'exploration', title: 'downloads-d7f2', file: 'web/downloads-d7f2.html', description: 'Back to basics — 5 variants: L1) Tabbed Product Selector, L2) Smart Card + Dropdown, L3) Pill Accordion, L4) Hero + Table, L5) Slim Stacked Cards', date: '2026-02-19T21:00:00' },
+              { kind: 'exploration', title: 'downloads-f1a9', file: 'web/downloads-f1a9.html', description: 'F refined — 3 sub-variants: F1) Flex Stretch, F2) Grid Rows, F3) Icon Cards', date: '2026-02-19T14:00:00' },
+              { kind: 'exploration', title: 'downloads-e4b2', file: 'web/downloads-e4b2.html', description: 'App-first layouts — 3 variants: D) Big CTA Hero, E) Split Layout, F) Platform First', date: '2026-02-19T13:00:00' },
+              { kind: 'exploration', title: 'downloads-c7e1', file: 'web/downloads-c7e1.html', description: 'Multi-product layouts — 3 variants: A) Framework Tabs, B) Comparison Cards, C) Hero + List', date: '2026-02-19T12:00:00' },
+              { kind: 'exploration', title: 'downloads-a4f8', file: 'web/downloads-a4f8.html', description: 'Initial explorations — 3 variants: A) Hero + Platform Grid, B) Product Card + Tabs, C) Minimal Table', date: '2026-02-18T00:00:00' },
+            ],
+          },
         ],
       },
       {
@@ -198,14 +229,20 @@ export const LAB_SECTIONS: LabProductSection[] = [
   },
 ];
 
-// Sort groups within each section by date descending (newest first)
-for (const section of LAB_SECTIONS) {
-  section.groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  // Also sort items within each group by date descending
-  for (const group of section.groups) {
+// Sort groups (and nested children) within each section by date descending (newest first)
+function sortGroups(groups: LabFeatureGroup[]) {
+  groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  for (const group of groups) {
     group.items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (group.children) sortGroups(group.children);
   }
+}
+for (const section of LAB_SECTIONS) {
+  sortGroups(section.groups);
 }
 
 /** Flat list of all groups across all sections (for backward compat) */
-export const LAB_GROUPS: LabFeatureGroup[] = LAB_SECTIONS.flatMap((s) => s.groups);
+function flattenGroups(groups: LabFeatureGroup[]): LabFeatureGroup[] {
+  return groups.flatMap((g) => [g, ...(g.children ? flattenGroups(g.children) : [])]);
+}
+export const LAB_GROUPS: LabFeatureGroup[] = LAB_SECTIONS.flatMap((s) => flattenGroups(s.groups));
