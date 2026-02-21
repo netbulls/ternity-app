@@ -99,11 +99,13 @@ function DetectionBar({ os }: { os: Platform | 'unknown' }) {
 
 function ChannelBadge({
   channel,
+  version,
   active,
   disabled,
   onClick,
 }: {
   channel: 'release' | 'snapshot';
+  version?: string;
   active: boolean;
   disabled?: boolean;
   onClick?: () => void;
@@ -130,6 +132,11 @@ function ChannelBadge({
     >
       {isRelease ? <Tag className="h-3 w-3" /> : <GitCommitHorizontal className="h-3 w-3" />}
       {isRelease ? 'Release' : 'Snapshot'}
+      {version && (
+        <span className={cn('font-brand font-normal', disabled ? '' : active ? 'opacity-60' : 'opacity-40')}>
+          {version}
+        </span>
+      )}
     </button>
   );
 }
@@ -463,26 +470,22 @@ function DownloadsCard({
       {/* Row 2: Platform tabs */}
       <PlatformTabs active={effectivePlatform} detected={detectedOS} availablePlatforms={availablePlatforms} onChange={setActivePlatform} />
 
-      {/* Row 3: Channel badges + version */}
+      {/* Row 3: Channel badges with inline versions */}
       <div className="flex items-center gap-2 px-5 py-3">
         {(['release', 'snapshot'] as const).map((ch) => {
           const available = availableChannels.has(ch);
+          const channelData = channels.find((c) => c.channel === ch);
           return (
             <ChannelBadge
               key={ch}
               channel={ch}
+              version={channelData?.version}
               active={effectiveChannelId === ch}
               disabled={!available}
               onClick={available && availableChannels.size > 1 ? () => setActiveChannelId(ch) : undefined}
             />
           );
         })}
-        <span
-          className="rounded-md bg-muted/50 px-2.5 py-1 font-brand font-medium text-muted-foreground"
-          style={{ fontSize: scaled(11) }}
-        >
-          {activeChannel.version}
-        </span>
       </div>
 
       {/* Download rows */}
@@ -506,7 +509,7 @@ function DownloadsCard({
       <ReleaseNotes channel={activeChannel} />
 
       {/* Checksums */}
-      <ChecksumTable artifacts={activeChannel.artifacts} />
+      <ChecksumTable artifacts={platformArtifacts} />
 
       {/* Release date */}
       {activeChannel.releaseDate && (

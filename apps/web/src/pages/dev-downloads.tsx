@@ -399,7 +399,7 @@ function DownloadsCard({ products, detectedOS, detectedArch, onDownload }: { pro
         )}
       </div>
       <ReleaseNotesSection channel={activeChannel} />
-      <ChecksumTable artifacts={activeChannel.artifacts} />
+      <ChecksumTable artifacts={platformArtifacts} />
       {activeChannel.releaseDate && <div className="border-t border-border/30 px-5 py-2 text-muted-foreground/40" style={{ fontSize: scaled(11) }}>Released {formatDate(activeChannel.releaseDate)}</div>}
     </div>
   );

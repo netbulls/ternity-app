@@ -9,6 +9,8 @@
 - Redesign downloads page with framework tabs, platform tabs, and channel badges (release/snapshot)
 - Restructure downloads API to group artifacts by framework and channel
 - Wire CHANGELOG.md into downloads API to serve release notes per version
+- Inline version label in channel badges on downloads page
+- Scope checksum table to show only platform-relevant artifacts
 
 ## [0.2.0] - 2026-02-19
 
