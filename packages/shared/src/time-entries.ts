@@ -23,6 +23,7 @@ export const EntrySchema = z.object({
   startedAt: z.string(), // ISO 8601
   stoppedAt: z.string().nullable(),
   durationSeconds: z.number().nullable(), // null when running
+  createdAt: z.string(), // ISO 8601
   userId: z.string(),
 });
 

@@ -61,6 +61,7 @@ async function buildEntryResponse(entryId: string): Promise<Entry | null> {
     startedAt: entry.startedAt.toISOString(),
     stoppedAt: entry.stoppedAt?.toISOString() ?? null,
     durationSeconds: entry.durationSeconds,
+    createdAt: entry.createdAt.toISOString(),
     userId: entry.userId,
   };
 }
