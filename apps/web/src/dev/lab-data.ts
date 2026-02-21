@@ -178,6 +178,8 @@ export const LAB_SECTIONS: LabProductSection[] = [
         items: [
           { kind: 'exploration', title: 'timer-section-v6', file: 'desktop/timer-section-v6.html', description: 'v6 — full flow: idle → empty start → incomplete → complete. 8 designs: Ghost Input, Split Blade, Holographic, Radar Sweep, Marquee Stack, Brutalist, Liquid Glass, Typewriter', date: '2026-02-17T23:00:00' },
           { kind: 'exploration', title: 'timer-section-v5', file: 'desktop/timer-section-v5.html', description: 'v5 — 8 designs with real data lengths: Split Horizon, Neon Frame, Command Line, Floating Layers, Accent Rail, Ring Counter, Billboard, Gradient Wave', date: '2026-02-17T20:00:00' },
+          { kind: 'exploration', title: 'timer-section-v4', file: 'desktop/timer-section-v4.html', description: 'v4 — refined variants: Glass Tower Refined, Theater Evolved, Stacked Cards, Wide Timer Bar', date: '2026-02-17T17:58:00' },
+          { kind: 'exploration', title: 'timer-section-v3', file: 'desktop/timer-section-v3.html', description: 'v3 — 8 designs: Command Bar, Split Deck, Orbital, Neon Strip, Glass Tower, Theater, Radar, Brutalist Tape', date: '2026-02-17T17:36:00' },
         ],
       },
       {
