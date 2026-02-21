@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Timer Section v6</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+        }
+
+        .controls {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+        }
+        .controls-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .controls-group { display: flex; gap: 4px; }
+        .controls-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .controls-group button:hover { border-color: #444; }
+        .controls-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        /* Variant layout */
+        .variant {
+            max-width: 1820px; margin: 0 auto 56px;
+        }
+        .variant-header { text-align: center; margin-bottom: 12px; }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+        .variant-desc {
+            font-size: 10px; color: rgba(255,255,255,0.12);
+            line-height: 1.4; margin-top: 4px;
+        }
+        .variant-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 345px);
+            gap: 16px;
+            justify-content: center;
+        }
+        @media (max-width: 1820px) {
+            .variant-grid { grid-template-columns: repeat(3, 345px); }
+        }
+        @media (max-width: 1100px) {
+            .variant-grid { grid-template-columns: repeat(2, 345px); }
+        }
+        .state-wrap {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .state-label {
+            font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.15); font-family: 'Oxanium', sans-serif;
+        }
+
+        /* Popup frame */
+        .popup-frame {
+            width: 345px; border-radius: 14px; overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+        }
+
+        /* ================================================================
+           SHARED UTILITIES
+           ================================================================ */
+        .timer-font {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            letter-spacing: 1.5px;
+        }
+        .desc-clamp {
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; word-break: break-word;
+        }
+        .proj-truncate {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+
+        /* Icons */
+        .icon-play { width: 14px; height: 14px; }
+        .icon-stop { width: 14px; height: 14px; }
+
+        /* Input styling */
+        .input-desc {
+            width: 100%; border: none; outline: none;
+            background: transparent; color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+        }
+        .input-desc::placeholder {
+            color: hsl(var(--muted-foreground) / 0.4);
+            font-style: italic;
+        }
+
+        /* Incomplete indicator */
+        .incomplete-badge {
+            font-size: 9px; font-weight: 600;
+            padding: 2px 6px; border-radius: 4px;
+            letter-spacing: 0.3px;
+        }
+        .incomplete-badge--amber {
+            background: hsl(38 92% 50% / 0.15);
+            color: hsl(38 92% 60%);
+            border: 1px solid hsl(38 92% 50% / 0.25);
+        }
+
+        /* ================================================================
+           ANIMATIONS
+           ================================================================ */
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes text-glow {
+            0%, 100% { text-shadow: 0 0 8px hsl(var(--primary) / 0.4); }
+            50% { text-shadow: 0 0 20px hsl(var(--primary) / 0.7), 0 0 40px hsl(var(--primary) / 0.2); }
+        }
+        @keyframes neon-breathe {
+            0%, 100% { box-shadow: 0 0 4px hsl(var(--primary) / 0.3), 0 0 12px hsl(var(--primary) / 0.15); }
+            50% { box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.3), 0 0 48px hsl(var(--primary) / 0.1); }
+        }
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes rail-pulse {
+            0%, 100% { opacity: 0.6; box-shadow: 0 0 4px hsl(var(--primary) / 0.3); }
+            50% { opacity: 1; box-shadow: 0 0 12px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.2); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes amber-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        @keyframes dash-march {
+            to { stroke-dashoffset: -12; }
+        }
+        @keyframes input-glow {
+            0%, 100% { box-shadow: inset 0 -1px 0 hsl(var(--primary) / 0.3); }
+            50% { box-shadow: inset 0 -1px 0 hsl(var(--primary) / 0.7), 0 1px 8px hsl(var(--primary) / 0.1); }
+        }
+        @keyframes slide-up {
+            from { transform: translateY(4px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes progress-indeterminate {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
+        @keyframes border-rotate {
+            from { --angle: 0deg; }
+            to { --angle: 360deg; }
+        }
+
+        /* ================================================================
+           1 / GHOST INPUT — The input IS the timer
+           Timer lives inline with the input. Typing is optional.
+           Start immediately, fill in later. Minimal, typographic.
+           ================================================================ */
+        .v1-section {
+            padding: 14px 16px;
+        }
+        .v1-input-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border) / 0.5);
+            transition: all 0.3s;
+        }
+        .v1-section.running .v1-input-row {
+            border-color: hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.04);
+        }
+        .v1-section.running.incomplete .v1-input-row {
+            border-color: hsl(38 92% 50% / 0.3);
+            background: hsl(38 92% 50% / 0.04);
+        }
+        .v1-input {
+            flex: 1; min-width: 0;
+            font-size: 14px; font-weight: 500;
+        }
+        .v1-timer {
+            font-size: 18px; line-height: 1; flex-shrink: 0;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v1-section.running .v1-timer {
+            color: hsl(var(--primary));
+        }
+        .v1-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        }
+        .v1-btn:hover { transform: scale(1.08); }
+        .v1-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .v1-btn-stop { background: hsl(var(--destructive)); color: white; }
+        .v1-meta {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px 0;
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.5);
+            min-width: 0;
+        }
+        .v1-meta .dot {
+            background: hsl(var(--primary) / 0.4);
+        }
+        .v1-section.incomplete .v1-meta .amber-hint {
+            color: hsl(38 92% 60%);
+            animation: amber-pulse 2s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           2 / SPLIT BLADE — Diagonal slash divides timer from content
+           Bold geometric cut. Timer on dark side, content on slightly lighter.
+           ================================================================ */
+        .v2-section {
+            position: relative; overflow: hidden; min-height: 120px;
+        }
+        .v2-bg-left {
+            position: absolute; top: 0; left: 0; bottom: 0; width: 55%;
+            background: hsl(var(--card));
+            clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);
+        }
+        .v2-bg-right {
+            position: absolute; top: 0; right: 0; bottom: 0; width: 55%;
+            background: hsl(var(--muted) / 0.3);
+            clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
+        }
+        .v2-slash {
+            position: absolute; top: 0; bottom: 0;
+            left: 43%; width: 2px;
+            background: hsl(var(--border));
+            transform: skewX(-12deg);
+        }
+        .v2-section.running .v2-slash {
+            background: hsl(var(--primary));
+            box-shadow: 0 0 12px hsl(var(--primary) / 0.5);
+        }
+        .v2-content {
+            position: relative; z-index: 1;
+            display: flex; align-items: stretch; min-height: 120px;
+        }
+        .v2-left {
+            width: 42%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 16px; gap: 8px;
+        }
+        .v2-timer {
+            font-size: 32px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.15);
+        }
+        .v2-section.running .v2-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v2-right {
+            flex: 1; padding: 14px 16px 14px 24px;
+            display: flex; flex-direction: column; justify-content: center;
+            gap: 6px; min-width: 0;
+        }
+        .v2-input {
+            font-size: 13px; font-weight: 500;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground)); width: 100%;
+            border-bottom: 1px dashed hsl(var(--border) / 0.5);
+            padding-bottom: 4px;
+        }
+        .v2-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.3); font-style: italic;
+        }
+        .v2-section.running .v2-input {
+            border-bottom-color: hsl(var(--primary) / 0.3);
+        }
+        .v2-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+        }
+        .v2-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v2-proj .dot { background: hsl(var(--primary) / 0.4); }
+        .v2-incomplete-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 9px; color: hsl(38 92% 60%);
+            margin-top: 2px;
+        }
+        .v2-incomplete-tag::before {
+            content: ''; width: 5px; height: 5px; border-radius: 50%;
+            background: hsl(38 92% 50%);
+            animation: amber-pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           3 / HOLOGRAPHIC — Iridescent border, glassmorphism feel
+           The card looks like a holographic trading card. Futuristic.
+           ================================================================ */
+        .v3-section {
+            padding: 14px;
+        }
+        .v3-card {
+            position: relative;
+            border-radius: 12px;
+            padding: 2px;
+            background: linear-gradient(135deg,
+                hsl(var(--border)) 0%,
+                hsl(var(--border)) 100%
+            );
+        }
+        .v3-section.running .v3-card {
+            background: linear-gradient(135deg,
+                hsl(var(--primary)) 0%,
+                hsl(180 100% 50% / 0.6) 25%,
+                hsl(var(--primary)) 50%,
+                hsl(260 100% 70% / 0.4) 75%,
+                hsl(var(--primary)) 100%
+            );
+            background-size: 300% 300%;
+            animation: shimmer 4s linear infinite;
+        }
+        .v3-section.running.incomplete .v3-card {
+            background: linear-gradient(135deg,
+                hsl(38 92% 50% / 0.6) 0%,
+                hsl(var(--primary) / 0.4) 50%,
+                hsl(38 92% 50% / 0.6) 100%
+            );
+            background-size: 300% 300%;
+            animation: shimmer 4s linear infinite;
+        }
+        .v3-inner {
+            background: hsl(var(--background));
+            border-radius: 11px;
+            padding: 14px;
+        }
+        .v3-top {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 10px;
+        }
+        .v3-timer {
+            font-size: 28px; line-height: 1; flex-shrink: 0;
+            color: hsl(var(--muted-foreground) / 0.15);
+        }
+        .v3-section.running .v3-timer {
+            color: hsl(var(--primary));
+        }
+        .v3-input-area {
+            flex: 1; min-width: 0;
+        }
+        .v3-input {
+            font-size: 13px; font-weight: 500; width: 100%;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground));
+        }
+        .v3-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.3); font-style: italic;
+        }
+        .v3-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+        }
+        .v3-bottom {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px;
+        }
+        .v3-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            flex: 1; min-width: 0;
+        }
+        .v3-proj .dot { background: hsl(var(--primary) / 0.4); }
+        .v3-btn {
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        }
+        .v3-btn:hover { transform: scale(1.1); }
+        .v3-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .v3-btn-stop { background: hsl(var(--destructive)); color: white; }
+        .v3-incomplete-strip {
+            height: 3px; border-radius: 2px;
+            background: linear-gradient(90deg,
+                hsl(38 92% 50% / 0.6),
+                hsl(38 92% 50% / 0.2),
+                hsl(38 92% 50% / 0.6)
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+            margin-top: 8px;
+        }
+
+        /* ================================================================
+           4 / RADAR SWEEP — Circular progress with scanning radar line
+           Timer in center of a radar-style ring. Sci-fi military feel.
+           ================================================================ */
+        .v4-section {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 16px; min-height: 110px;
+        }
+        .v4-radar-wrap {
+            width: 80px; height: 80px; flex-shrink: 0;
+            position: relative;
+        }
+        .v4-radar-svg {
+            width: 80px; height: 80px;
+        }
+        .v4-radar-bg {
+            fill: none; stroke: hsl(var(--border) / 0.3); stroke-width: 1.5;
+        }
+        .v4-radar-ring {
+            fill: none; stroke: hsl(var(--muted-foreground) / 0.08); stroke-width: 1;
+        }
+        .v4-radar-sweep {
+            fill: none; stroke: hsl(var(--primary) / 0.15);
+            stroke-width: 2; stroke-dasharray: 3 6;
+            stroke-linecap: round;
+        }
+        .v4-section.running .v4-radar-sweep {
+            stroke: hsl(var(--primary));
+            filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.5));
+            animation: spin-slow 6s linear infinite;
+            transform-origin: center;
+        }
+        .v4-radar-crosshair {
+            stroke: hsl(var(--border) / 0.15); stroke-width: 0.5;
+        }
+        .v4-timer-center {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v4-section.running .v4-timer-center {
+            color: hsl(var(--primary));
+        }
+        .v4-info {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .v4-input-wrap {
+            position: relative;
+        }
+        .v4-input {
+            font-size: 13px; font-weight: 500; width: 100%;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground));
+            padding: 4px 0; border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .v4-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.3); font-style: italic;
+        }
+        .v4-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+            padding: 4px 0;
+        }
+        .v4-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v4-proj .dot { background: hsl(var(--primary) / 0.4); }
+        .v4-actions {
+            margin-top: 4px; display: flex; align-items: center; gap: 8px;
+        }
+        .v4-btn {
+            font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif;
+            padding: 5px 14px; border-radius: 6px; border: none;
+            cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+        }
+        .v4-btn:hover { filter: brightness(1.15); }
+        .v4-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .v4-btn-stop { background: hsl(var(--destructive)); color: white; }
+        .v4-section.incomplete .v4-incomplete-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: hsl(38 92% 50%);
+            animation: amber-pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           5 / MARQUEE STACK — Vertically stacked info blocks
+           Each piece of info is its own "card" stacking down.
+           Think: Notion blocks or terminal output scrolling.
+           ================================================================ */
+        .v5-section {
+            padding: 10px 14px;
+        }
+        .v5-block {
+            border-left: 3px solid hsl(var(--border) / 0.3);
+            padding: 8px 12px;
+            margin-bottom: 2px;
+            transition: all 0.3s;
+        }
+        .v5-block-timer {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .v5-block-timer.active {
+            border-left-color: hsl(var(--primary));
+        }
+        .v5-block-timer.active .v5-block-rail {
+            box-shadow: -2px 0 8px hsl(var(--primary) / 0.3);
+        }
+        .v5-timer {
+            font-size: 26px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.15);
+        }
+        .v5-block-timer.active .v5-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v5-block-desc {
+            border-left-color: hsl(var(--border) / 0.15);
+        }
+        .v5-section.running .v5-block-desc {
+            border-left-color: hsl(var(--primary) / 0.2);
+        }
+        .v5-input {
+            font-size: 13px; font-weight: 500; width: 100%;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground));
+        }
+        .v5-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.3); font-style: italic;
+        }
+        .v5-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+        }
+        .v5-block-proj {
+            border-left-color: hsl(var(--border) / 0.08);
+        }
+        .v5-section.running .v5-block-proj {
+            border-left-color: hsl(var(--primary) / 0.1);
+        }
+        .v5-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v5-proj .dot { background: hsl(var(--primary) / 0.4); }
+        .v5-section.incomplete .v5-block-desc {
+            border-left-color: hsl(38 92% 50% / 0.4);
+        }
+        .v5-incomplete-hint {
+            font-size: 9px; color: hsl(38 92% 60% / 0.7);
+            margin-top: 4px; font-style: italic;
+        }
+        .v5-btn {
+            width: 34px; height: 34px; border-radius: 8px; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        }
+        .v5-btn:hover { transform: scale(1.06); }
+        .v5-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .v5-btn-stop { background: hsl(var(--destructive)); color: white; }
+
+        /* ================================================================
+           6 / BRUTALIST — Raw, bold, unapologetic
+           Giant timer, everything oversized. No rounded corners.
+           Hard edges. Stark contrast.
+           ================================================================ */
+        .v6-section {
+            position: relative;
+        }
+        .v6-timer-block {
+            background: hsl(var(--muted) / 0.4);
+            padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 2px solid hsl(var(--border) / 0.3);
+        }
+        .v6-section.running .v6-timer-block {
+            border-bottom-color: hsl(var(--primary));
+            box-shadow: 0 2px 0 hsl(var(--primary) / 0.3);
+        }
+        .v6-section.running.incomplete .v6-timer-block {
+            border-bottom-color: hsl(38 92% 50%);
+            box-shadow: 0 2px 0 hsl(38 92% 50% / 0.3);
+        }
+        .v6-timer {
+            font-size: 36px; line-height: 1; letter-spacing: 3px;
+            color: hsl(var(--muted-foreground) / 0.12);
+        }
+        .v6-section.running .v6-timer {
+            color: hsl(var(--primary));
+        }
+        .v6-btn {
+            padding: 8px 18px; border: 2px solid; font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; cursor: pointer;
+            background: transparent; transition: all 0.15s;
+        }
+        .v6-btn:hover { transform: translateY(-1px); }
+        .v6-btn-start {
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary));
+        }
+        .v6-btn-start:hover { background: hsl(var(--primary) / 0.1); }
+        .v6-btn-stop {
+            border-color: hsl(var(--destructive));
+            color: hsl(var(--destructive));
+        }
+        .v6-btn-stop:hover { background: hsl(var(--destructive) / 0.1); }
+        .v6-detail-block {
+            padding: 10px 16px;
+        }
+        .v6-input {
+            font-size: 15px; font-weight: 600; width: 100%;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+        }
+        .v6-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.25);
+            font-weight: 400;
+        }
+        .v6-desc {
+            font-size: 15px; font-weight: 600; line-height: 1.35;
+        }
+        .v6-proj-row {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 6px;
+            font-size: 11px; color: hsl(var(--muted-foreground) / 0.6);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            min-width: 0;
+        }
+        .v6-proj-row .sep { color: hsl(var(--muted-foreground) / 0.2); }
+        .v6-incomplete-bar {
+            height: 2px;
+            background: repeating-linear-gradient(90deg,
+                hsl(38 92% 50% / 0.6) 0px,
+                hsl(38 92% 50% / 0.6) 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            animation: dash-march 0.5s linear infinite;
+        }
+
+        /* ================================================================
+           7 / LIQUID GLASS — Floating glass card with depth
+           Layered translucent panels, frosted glass, light refraction.
+           ================================================================ */
+        .v7-section {
+            padding: 14px;
+        }
+        .v7-glass {
+            border-radius: 14px;
+            background: hsl(var(--card) / 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid hsl(var(--border) / 0.3);
+            padding: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .v7-glass::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 50%;
+            background: linear-gradient(180deg,
+                hsl(var(--foreground) / 0.02) 0%,
+                transparent 100%
+            );
+            pointer-events: none;
+        }
+        .v7-section.running .v7-glass {
+            border-color: hsl(var(--primary) / 0.2);
+        }
+        .v7-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 12px; position: relative;
+        }
+        .v7-status-orb {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: hsl(var(--muted-foreground) / 0.2);
+            flex-shrink: 0;
+        }
+        .v7-section.running .v7-status-orb {
+            background: hsl(var(--primary));
+            box-shadow: 0 0 8px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2);
+            animation: breathe 2s ease-in-out infinite;
+        }
+        .v7-section.running.incomplete .v7-status-orb {
+            background: hsl(38 92% 50%);
+            box-shadow: 0 0 8px hsl(38 92% 50% / 0.5);
+        }
+        .v7-timer {
+            font-size: 22px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.15);
+        }
+        .v7-section.running .v7-timer {
+            color: hsl(var(--primary));
+        }
+        .v7-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+            margin-left: auto;
+        }
+        .v7-btn:hover { transform: scale(1.1); }
+        .v7-btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .v7-btn-stop { background: hsl(var(--destructive)); color: white; }
+        .v7-body { position: relative; }
+        .v7-input-float {
+            width: 100%;
+            font-size: 13px; font-weight: 500;
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border) / 0.3);
+            border-radius: 8px; padding: 8px 10px;
+            color: hsl(var(--foreground)); outline: none;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .v7-input-float::placeholder {
+            color: hsl(var(--muted-foreground) / 0.3); font-style: italic;
+        }
+        .v7-input-float:focus {
+            border-color: hsl(var(--primary) / 0.4);
+        }
+        .v7-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+            padding: 8px 0;
+        }
+        .v7-footer {
+            display: flex; align-items: center; gap: 6px;
+            margin-top: 8px; padding-top: 8px;
+            border-top: 1px solid hsl(var(--border) / 0.15);
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.5);
+            min-width: 0;
+        }
+        .v7-footer .dot {
+            background: hsl(var(--primary) / 0.3);
+        }
+        .v7-incomplete-line {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 2px; background: hsl(var(--border) / 0.1);
+            overflow: hidden; border-radius: 0 0 14px 14px;
+        }
+        .v7-incomplete-line::after {
+            content: ''; position: absolute;
+            width: 30%; height: 100%;
+            background: hsl(38 92% 50% / 0.7);
+            animation: progress-indeterminate 1.5s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           8 / TYPEWRITER — Retro terminal meets mechanical keyboard
+           Monospace, chunky keystrokes, tape-like progress strip.
+           ================================================================ */
+        .v8-section {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px 14px;
+            position: relative;
+        }
+        .v8-tape {
+            height: 4px; margin-bottom: 10px;
+            background: hsl(var(--border) / 0.15);
+            border-radius: 2px; overflow: hidden;
+        }
+        .v8-tape-fill {
+            height: 100%; width: 0;
+            background: hsl(var(--muted-foreground) / 0.1);
+            border-radius: 2px;
+        }
+        .v8-section.running .v8-tape-fill {
+            width: 35%;
+            background: linear-gradient(90deg,
+                hsl(var(--primary)),
+                hsl(var(--primary) / 0.6)
+            );
+            box-shadow: 0 0 8px hsl(var(--primary) / 0.3);
+        }
+        .v8-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 8px;
+        }
+        .v8-label {
+            font-size: 9px; letter-spacing: 1px;
+            color: hsl(var(--muted-foreground) / 0.3);
+            text-transform: uppercase; width: 40px; flex-shrink: 0;
+            text-align: right;
+        }
+        .v8-timer {
+            font-size: 24px; font-weight: 700; line-height: 1;
+            letter-spacing: 2px;
+            color: hsl(var(--muted-foreground) / 0.15);
+        }
+        .v8-section.running .v8-timer {
+            color: hsl(var(--primary));
+            text-shadow: 0 0 6px hsl(var(--primary) / 0.3);
+        }
+        .v8-cursor {
+            display: inline-block; width: 2px; height: 20px;
+            background: hsl(var(--primary)); margin-left: 4px;
+            opacity: 0;
+        }
+        .v8-section.running .v8-cursor {
+            animation: cursor-blink 0.8s step-end infinite;
+        }
+        .v8-input-row {
+            display: flex; align-items: baseline; gap: 10px;
+            margin-bottom: 6px;
+        }
+        .v8-prompt {
+            font-size: 11px; color: hsl(var(--primary) / 0.5);
+            flex-shrink: 0;
+        }
+        .v8-input {
+            font-size: 12px; font-family: 'JetBrains Mono', monospace;
+            font-weight: 500; width: 100%;
+            background: transparent; border: none; outline: none;
+            color: hsl(var(--foreground) / 0.8);
+            caret-color: hsl(var(--primary));
+        }
+        .v8-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v8-desc {
+            font-size: 12px; font-weight: 500; line-height: 1.4;
+            font-family: 'Inter', sans-serif;
+            color: hsl(var(--foreground) / 0.8);
+        }
+        .v8-proj-row {
+            display: flex; align-items: baseline; gap: 10px;
+            margin-bottom: 8px;
+        }
+        .v8-proj {
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.4);
+            display: flex; align-items: center; gap: 6px;
+            min-width: 0;
+        }
+        .v8-proj .slash { color: hsl(var(--muted-foreground) / 0.15); }
+        .v8-actions {
+            display: flex; gap: 6px; padding-left: 50px;
+        }
+        .v8-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; font-weight: 600; letter-spacing: 1px;
+            text-transform: uppercase; padding: 5px 14px;
+            border: 1px solid; border-radius: 3px;
+            background: transparent; cursor: pointer; transition: all 0.15s;
+        }
+        .v8-btn-start {
+            border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary));
+        }
+        .v8-btn-start:hover { background: hsl(var(--primary) / 0.1); }
+        .v8-btn-stop {
+            border-color: hsl(var(--destructive) / 0.4); color: hsl(var(--destructive));
+        }
+        .v8-btn-stop:hover { background: hsl(var(--destructive) / 0.1); }
+        .v8-section.incomplete .v8-tape-fill {
+            background: linear-gradient(90deg,
+                hsl(38 92% 50%),
+                hsl(38 92% 50% / 0.4)
+            );
+            box-shadow: 0 0 8px hsl(38 92% 50% / 0.3);
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark">
+
+    <div class="page-header">
+        <h1>Timer Section v6</h1>
+        <p>Full flow: idle &rarr; start (empty) &rarr; running incomplete &rarr; running complete &bull; With real data lengths</p>
+    </div>
+
+    <div class="controls">
+        <span class="controls-label">Theme</span>
+        <div class="controls-group" id="themeControls">
+            <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        </div>
+    </div>
+
+    <!-- SVG Icons -->
+    <svg style="display:none">
+        <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" fill="currentColor"/></symbol>
+        <symbol id="icon-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></symbol>
+    </svg>
+
+    <!-- ============================================================
+         1 / GHOST INPUT
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">1 / Ghost Input</div>
+            <div class="variant-desc">The input IS the interface. Timer, text, and button live on one line. Start empty, fill in anytime.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section">
+                        <div class="v1-input-row">
+                            <input class="input-desc v1-input" placeholder="What are you working on?" disabled>
+                            <span class="timer-font v1-timer">0:00:00</span>
+                            <button class="v1-btn v1-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                        </div>
+                        <div class="v1-meta">
+                            <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                            <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section running incomplete">
+                        <div class="v1-input-row">
+                            <input class="input-desc v1-input" placeholder="Add description..." disabled>
+                            <span class="timer-font v1-timer">0:03:12</span>
+                            <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v1-meta">
+                            <span class="amber-hint">needs description</span>
+                            <span style="margin: 0 4px; color: hsl(var(--muted-foreground) / 0.15)">|</span>
+                            <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                            <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section running">
+                        <div class="v1-input-row">
+                            <span class="v1-input" style="font-size: 14px; font-weight: 500; color: hsl(var(--foreground))">API integration</span>
+                            <span class="timer-font v1-timer">1:24:08</span>
+                            <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v1-meta">
+                            <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                            <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section running">
+                        <div class="v1-input-row" style="flex-wrap: wrap;">
+                            <span class="v1-input desc-clamp" style="font-size: 14px; font-weight: 500; color: hsl(var(--foreground)); flex-basis: 100%;">Implementing authentication flow with PKCE and refresh token rotation for desktop</span>
+                            <span class="timer-font v1-timer" style="margin-left: auto;">2:45:33</span>
+                            <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v1-meta">
+                            <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                            <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka Volunteer Portal</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- IDLE ALT (no default project) -->
+            <div class="state-wrap"><span class="state-label">Idle &middot; No project</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section">
+                        <div class="v1-input-row">
+                            <input class="input-desc v1-input" placeholder="What are you working on?" disabled>
+                            <span class="timer-font v1-timer">0:00:00</span>
+                            <button class="v1-btn v1-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                        </div>
+                        <div class="v1-meta">
+                            <span style="color: hsl(var(--muted-foreground) / 0.3); font-style: italic;">no project selected</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         2 / SPLIT BLADE
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">2 / Split Blade</div>
+            <div class="variant-desc">Diagonal slash divides timer from content. Geometric and bold. Timer dominates the left shard.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section">
+                        <div class="v2-bg-left"></div>
+                        <div class="v2-bg-right"></div>
+                        <div class="v2-slash"></div>
+                        <div class="v2-content">
+                            <div class="v2-left">
+                                <span class="timer-font v2-timer">0:00:00</span>
+                                <button class="v1-btn v1-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                            </div>
+                            <div class="v2-right">
+                                <input class="v2-input" placeholder="Start typing or just hit play..." disabled>
+                                <div class="v2-proj">
+                                    <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                    <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section running">
+                        <div class="v2-bg-left"></div>
+                        <div class="v2-bg-right"></div>
+                        <div class="v2-slash"></div>
+                        <div class="v2-content">
+                            <div class="v2-left">
+                                <span class="timer-font v2-timer">0:05:41</span>
+                                <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v2-right">
+                                <input class="v2-input" placeholder="What are you doing?" disabled>
+                                <div class="v2-proj">
+                                    <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                    <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                                </div>
+                                <div class="v2-incomplete-tag">fill in details</div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section running">
+                        <div class="v2-bg-left"></div>
+                        <div class="v2-bg-right"></div>
+                        <div class="v2-slash"></div>
+                        <div class="v2-content">
+                            <div class="v2-left">
+                                <span class="timer-font v2-timer">1:12:55</span>
+                                <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v2-right">
+                                <div class="v2-desc">API integration</div>
+                                <div class="v2-proj">
+                                    <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                    <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section running">
+                        <div class="v2-bg-left"></div>
+                        <div class="v2-bg-right"></div>
+                        <div class="v2-slash"></div>
+                        <div class="v2-content">
+                            <div class="v2-left">
+                                <span class="timer-font v2-timer">3:08:22</span>
+                                <button class="v1-btn v1-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v2-right">
+                                <div class="v2-desc desc-clamp">Implementing authentication flow with PKCE and refresh token rotation for desktop</div>
+                                <div class="v2-proj">
+                                    <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                    <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         3 / HOLOGRAPHIC
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">3 / Holographic</div>
+            <div class="variant-desc">Iridescent animated border when running. Shifts to amber spectrum for incomplete entries. Card-collecting energy.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section">
+                        <div class="v3-card">
+                            <div class="v3-inner">
+                                <div class="v3-top">
+                                    <span class="timer-font v3-timer">0:00:00</span>
+                                    <div class="v3-input-area">
+                                        <input class="v3-input" placeholder="What's next?" disabled>
+                                    </div>
+                                    <button class="v3-btn v3-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                                </div>
+                                <div class="v3-bottom">
+                                    <div class="v3-proj">
+                                        <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                        <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section running incomplete">
+                        <div class="v3-card">
+                            <div class="v3-inner">
+                                <div class="v3-top">
+                                    <span class="timer-font v3-timer">0:02:18</span>
+                                    <div class="v3-input-area">
+                                        <input class="v3-input" placeholder="Add a description..." disabled>
+                                    </div>
+                                    <button class="v3-btn v3-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                                </div>
+                                <div class="v3-bottom">
+                                    <div class="v3-proj">
+                                        <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                        <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                                    </div>
+                                </div>
+                                <div class="v3-incomplete-strip"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section running">
+                        <div class="v3-card">
+                            <div class="v3-inner">
+                                <div class="v3-top">
+                                    <span class="timer-font v3-timer">0:47:33</span>
+                                    <div class="v3-input-area">
+                                        <div class="v3-desc">Sprint planning session</div>
+                                    </div>
+                                    <button class="v3-btn v3-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                                </div>
+                                <div class="v3-bottom">
+                                    <div class="v3-proj">
+                                        <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                        <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section running">
+                        <div class="v3-card">
+                            <div class="v3-inner">
+                                <div class="v3-top">
+                                    <span class="timer-font v3-timer">2:15:07</span>
+                                    <div class="v3-input-area">
+                                        <div class="v3-desc desc-clamp">Redesigning the leave management approval workflow with multi-level hierarchy support</div>
+                                    </div>
+                                    <button class="v3-btn v3-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                                </div>
+                                <div class="v3-bottom">
+                                    <div class="v3-proj">
+                                        <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                        <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka Volunteer Portal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         4 / RADAR SWEEP
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">4 / Radar Sweep</div>
+            <div class="variant-desc">Sci-fi radar ring spins around the timer. Crosshair grid. Military precision aesthetic.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section">
+                        <div class="v4-radar-wrap">
+                            <svg class="v4-radar-svg" viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="36" class="v4-radar-bg"/>
+                                <circle cx="40" cy="40" r="24" class="v4-radar-ring"/>
+                                <circle cx="40" cy="40" r="12" class="v4-radar-ring"/>
+                                <line x1="40" y1="4" x2="40" y2="76" class="v4-radar-crosshair"/>
+                                <line x1="4" y1="40" x2="76" y2="40" class="v4-radar-crosshair"/>
+                                <circle cx="40" cy="40" r="36" class="v4-radar-sweep" stroke-dasharray="20 200"/>
+                            </svg>
+                            <div class="timer-font v4-timer-center">0:00</div>
+                        </div>
+                        <div class="v4-info">
+                            <div class="v4-input-wrap">
+                                <input class="input-desc v4-input" placeholder="Mission briefing..." disabled>
+                            </div>
+                            <div class="v4-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                            <div class="v4-actions">
+                                <button class="v4-btn v4-btn-start">Start</button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section running incomplete">
+                        <div class="v4-radar-wrap">
+                            <svg class="v4-radar-svg" viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="36" class="v4-radar-bg"/>
+                                <circle cx="40" cy="40" r="24" class="v4-radar-ring"/>
+                                <circle cx="40" cy="40" r="12" class="v4-radar-ring"/>
+                                <line x1="40" y1="4" x2="40" y2="76" class="v4-radar-crosshair"/>
+                                <line x1="4" y1="40" x2="76" y2="40" class="v4-radar-crosshair"/>
+                                <circle cx="40" cy="40" r="36" class="v4-radar-sweep" stroke-dasharray="20 200"/>
+                            </svg>
+                            <div class="timer-font v4-timer-center">3:12</div>
+                        </div>
+                        <div class="v4-info">
+                            <div class="v4-input-wrap">
+                                <input class="input-desc v4-input" placeholder="Describe this task..." disabled>
+                            </div>
+                            <div class="v4-proj" style="gap: 8px;">
+                                <div class="v4-incomplete-dot"></div>
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                            <div class="v4-actions">
+                                <button class="v4-btn v4-btn-stop">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section running">
+                        <div class="v4-radar-wrap">
+                            <svg class="v4-radar-svg" viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="36" class="v4-radar-bg"/>
+                                <circle cx="40" cy="40" r="24" class="v4-radar-ring"/>
+                                <circle cx="40" cy="40" r="12" class="v4-radar-ring"/>
+                                <line x1="40" y1="4" x2="40" y2="76" class="v4-radar-crosshair"/>
+                                <line x1="4" y1="40" x2="76" y2="40" class="v4-radar-crosshair"/>
+                                <circle cx="40" cy="40" r="36" class="v4-radar-sweep" stroke-dasharray="20 200"/>
+                            </svg>
+                            <div class="timer-font v4-timer-center">47:33</div>
+                        </div>
+                        <div class="v4-info">
+                            <div class="v4-desc">Code review and feedback</div>
+                            <div class="v4-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                            </div>
+                            <div class="v4-actions">
+                                <button class="v4-btn v4-btn-stop">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section running">
+                        <div class="v4-radar-wrap">
+                            <svg class="v4-radar-svg" viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="36" class="v4-radar-bg"/>
+                                <circle cx="40" cy="40" r="24" class="v4-radar-ring"/>
+                                <circle cx="40" cy="40" r="12" class="v4-radar-ring"/>
+                                <line x1="40" y1="4" x2="40" y2="76" class="v4-radar-crosshair"/>
+                                <line x1="4" y1="40" x2="76" y2="40" class="v4-radar-crosshair"/>
+                                <circle cx="40" cy="40" r="36" class="v4-radar-sweep" stroke-dasharray="20 200"/>
+                            </svg>
+                            <div class="timer-font v4-timer-center">3:08</div>
+                        </div>
+                        <div class="v4-info">
+                            <div class="v4-desc desc-clamp" style="font-size: 13px; font-weight: 500; line-height: 1.35;">Implementing authentication flow with PKCE and refresh token rotation for desktop</div>
+                            <div class="v4-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka</span>
+                            </div>
+                            <div class="v4-actions">
+                                <button class="v4-btn v4-btn-stop">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         5 / MARQUEE STACK
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">5 / Marquee Stack</div>
+            <div class="variant-desc">Stacked blocks with a left rail. Each info piece is its own segment. Modular, Notion-like. Incomplete = amber rail.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section">
+                        <div class="v5-block v5-block-timer" style="display: flex; align-items: center; gap: 10px;">
+                            <span class="timer-font v5-timer">0:00:00</span>
+                            <div style="flex:1"></div>
+                            <button class="v5-btn v5-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                        </div>
+                        <div class="v5-block v5-block-desc">
+                            <input class="input-desc v5-input" placeholder="What will you work on?" disabled>
+                        </div>
+                        <div class="v5-block v5-block-proj">
+                            <div class="v5-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section running incomplete">
+                        <div class="v5-block v5-block-timer active" style="display: flex; align-items: center; gap: 10px;">
+                            <span class="timer-font v5-timer" style="color: hsl(var(--primary)); animation: text-glow 3s ease-in-out infinite;">0:04:55</span>
+                            <div style="flex:1"></div>
+                            <button class="v5-btn v5-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v5-block v5-block-desc">
+                            <input class="input-desc v5-input" placeholder="Describe what you're doing..." disabled>
+                            <div class="v5-incomplete-hint">incomplete entry</div>
+                        </div>
+                        <div class="v5-block v5-block-proj">
+                            <div class="v5-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section running">
+                        <div class="v5-block v5-block-timer active" style="display: flex; align-items: center; gap: 10px;">
+                            <span class="timer-font v5-timer" style="color: hsl(var(--primary)); animation: text-glow 3s ease-in-out infinite;">1:18:42</span>
+                            <div style="flex:1"></div>
+                            <button class="v5-btn v5-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v5-block v5-block-desc">
+                            <div class="v5-desc">Database migration scripts</div>
+                        </div>
+                        <div class="v5-block v5-block-proj">
+                            <div class="v5-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section running">
+                        <div class="v5-block v5-block-timer active" style="display: flex; align-items: center; gap: 10px;">
+                            <span class="timer-font v5-timer" style="color: hsl(var(--primary)); animation: text-glow 3s ease-in-out infinite;">4:02:11</span>
+                            <div style="flex:1"></div>
+                            <button class="v5-btn v5-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                        </div>
+                        <div class="v5-block v5-block-desc">
+                            <div class="v5-desc desc-clamp">Redesigning the leave management approval workflow with multi-level hierarchy support</div>
+                        </div>
+                        <div class="v5-block v5-block-proj">
+                            <div class="v5-proj">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.4)"></div>
+                                <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka Volunteer Portal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         6 / BRUTALIST
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">6 / Brutalist</div>
+            <div class="variant-desc">No curves. Hard edges. Giant timer. Oversized type. The UI is a concrete slab with a neon vein. Incomplete = marching ants.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame" style="border-radius: 0;"><div class="popup">
+                    <div class="v6-section">
+                        <div class="v6-timer-block">
+                            <span class="timer-font v6-timer">0:00:00</span>
+                            <button class="v6-btn v6-btn-start">Start</button>
+                        </div>
+                        <div class="v6-detail-block">
+                            <input class="v6-input" placeholder="WHAT ARE YOU DOING" disabled>
+                            <div class="v6-proj-row">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="sep">/</span>
+                                <span class="proj-truncate">Ternity Platform</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame" style="border-radius: 0;"><div class="popup">
+                    <div class="v6-section running incomplete">
+                        <div class="v6-timer-block">
+                            <span class="timer-font v6-timer" style="color: hsl(var(--primary))">0:07:44</span>
+                            <button class="v6-btn v6-btn-stop">Stop</button>
+                        </div>
+                        <div class="v6-incomplete-bar"></div>
+                        <div class="v6-detail-block">
+                            <input class="v6-input" placeholder="DESCRIBE THIS" disabled>
+                            <div class="v6-proj-row">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="sep">/</span>
+                                <span class="proj-truncate">Ternity Platform</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame" style="border-radius: 0;"><div class="popup">
+                    <div class="v6-section running">
+                        <div class="v6-timer-block">
+                            <span class="timer-font v6-timer" style="color: hsl(var(--primary))">1:33:07</span>
+                            <button class="v6-btn v6-btn-stop">Stop</button>
+                        </div>
+                        <div class="v6-detail-block">
+                            <div class="v6-desc">Sprint retrospective notes</div>
+                            <div class="v6-proj-row">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="sep">/</span>
+                                <span class="proj-truncate">Ternity Platform Development</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame" style="border-radius: 0;"><div class="popup">
+                    <div class="v6-section running">
+                        <div class="v6-timer-block">
+                            <span class="timer-font v6-timer" style="color: hsl(var(--primary))">5:12:00</span>
+                            <button class="v6-btn v6-btn-stop">Stop</button>
+                        </div>
+                        <div class="v6-detail-block">
+                            <div class="v6-desc desc-clamp">Implementing authentication flow with PKCE and refresh token rotation for desktop</div>
+                            <div class="v6-proj-row">
+                                <span class="proj-truncate">Stowarzyszenie Wiosna</span>
+                                <span class="sep">/</span>
+                                <span class="proj-truncate">Szlachetna Paczka Volunteer Portal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         7 / LIQUID GLASS
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">7 / Liquid Glass</div>
+            <div class="variant-desc">Frosted glass card with a glowing status orb. Light refraction highlight on top. Incomplete = pulsing amber orb + progress line.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section">
+                        <div class="v7-glass">
+                            <div class="v7-header">
+                                <div class="v7-status-orb"></div>
+                                <span class="timer-font v7-timer">0:00:00</span>
+                                <button class="v7-btn v7-btn-start"><svg class="icon-play"><use href="#icon-play"/></svg></button>
+                            </div>
+                            <div class="v7-body">
+                                <input class="v7-input-float" placeholder="What are you working on?" disabled>
+                            </div>
+                            <div class="v7-footer">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section running incomplete">
+                        <div class="v7-glass">
+                            <div class="v7-header">
+                                <div class="v7-status-orb"></div>
+                                <span class="timer-font v7-timer">0:06:22</span>
+                                <button class="v7-btn v7-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v7-body">
+                                <input class="v7-input-float" placeholder="Describe this entry..." disabled>
+                            </div>
+                            <div class="v7-footer">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform</span>
+                            </div>
+                            <div class="v7-incomplete-line"></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section running">
+                        <div class="v7-glass">
+                            <div class="v7-header">
+                                <div class="v7-status-orb"></div>
+                                <span class="timer-font v7-timer">0:52:18</span>
+                                <button class="v7-btn v7-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v7-body">
+                                <div class="v7-desc">Client demo preparation</div>
+                            </div>
+                            <div class="v7-footer">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                                <span class="proj-truncate">Netbulls &middot; Ternity Platform Development</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section running">
+                        <div class="v7-glass">
+                            <div class="v7-header">
+                                <div class="v7-status-orb"></div>
+                                <span class="timer-font v7-timer">2:44:55</span>
+                                <button class="v7-btn v7-btn-stop"><svg class="icon-stop"><use href="#icon-stop"/></svg></button>
+                            </div>
+                            <div class="v7-body">
+                                <div class="v7-desc desc-clamp">Redesigning the leave management approval workflow with multi-level hierarchy support</div>
+                            </div>
+                            <div class="v7-footer">
+                                <div class="dot" style="background: hsl(var(--primary) / 0.3)"></div>
+                                <span class="proj-truncate">Stowarzyszenie Wiosna &middot; Szlachetna Paczka Volunteer Portal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         8 / TYPEWRITER
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">8 / Typewriter</div>
+            <div class="variant-desc">Monospace terminal with labeled rows, blinking cursor, and a tape-style progress strip. Retro-digital. Incomplete = amber tape.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- IDLE -->
+            <div class="state-wrap"><span class="state-label">Idle</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section">
+                        <div class="v8-tape"><div class="v8-tape-fill"></div></div>
+                        <div class="v8-row">
+                            <span class="v8-label">time</span>
+                            <span class="timer-font v8-timer">0:00:00</span>
+                        </div>
+                        <div class="v8-input-row">
+                            <span class="v8-prompt">&gt;</span>
+                            <input class="v8-input" placeholder="type to begin..." disabled>
+                        </div>
+                        <div class="v8-proj-row">
+                            <span class="v8-label">proj</span>
+                            <div class="v8-proj">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="slash">/</span>
+                                <span class="proj-truncate">Ternity Platform</span>
+                            </div>
+                        </div>
+                        <div class="v8-actions">
+                            <button class="v8-btn v8-btn-start">run</button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING EMPTY -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Empty</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section running incomplete">
+                        <div class="v8-tape"><div class="v8-tape-fill"></div></div>
+                        <div class="v8-row">
+                            <span class="v8-label">time</span>
+                            <span class="timer-font v8-timer">0:08:31</span>
+                            <span class="v8-cursor"></span>
+                        </div>
+                        <div class="v8-input-row">
+                            <span class="v8-prompt">&gt;</span>
+                            <input class="v8-input" placeholder="describe task..." disabled>
+                        </div>
+                        <div class="v8-proj-row">
+                            <span class="v8-label">proj</span>
+                            <div class="v8-proj">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="slash">/</span>
+                                <span class="proj-truncate">Ternity Platform</span>
+                            </div>
+                        </div>
+                        <div class="v8-actions">
+                            <button class="v8-btn v8-btn-stop">kill</button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING SHORT -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section running">
+                        <div class="v8-tape"><div class="v8-tape-fill"></div></div>
+                        <div class="v8-row">
+                            <span class="v8-label">time</span>
+                            <span class="timer-font v8-timer">1:42:09</span>
+                            <span class="v8-cursor"></span>
+                        </div>
+                        <div class="v8-input-row">
+                            <span class="v8-prompt">&gt;</span>
+                            <span class="v8-desc" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">Infrastructure monitoring setup</span>
+                        </div>
+                        <div class="v8-proj-row">
+                            <span class="v8-label">proj</span>
+                            <div class="v8-proj">
+                                <span class="proj-truncate">Netbulls</span>
+                                <span class="slash">/</span>
+                                <span class="proj-truncate">Ternity Platform Development</span>
+                            </div>
+                        </div>
+                        <div class="v8-actions">
+                            <button class="v8-btn v8-btn-stop">kill</button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- RUNNING LONG -->
+            <div class="state-wrap"><span class="state-label">Running &middot; Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section running">
+                        <div class="v8-tape"><div class="v8-tape-fill"></div></div>
+                        <div class="v8-row">
+                            <span class="v8-label">time</span>
+                            <span class="timer-font v8-timer">3:55:20</span>
+                            <span class="v8-cursor"></span>
+                        </div>
+                        <div class="v8-input-row">
+                            <span class="v8-prompt">&gt;</span>
+                            <span class="v8-desc desc-clamp" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">Implementing authentication flow with PKCE and refresh token rotation for desktop</span>
+                        </div>
+                        <div class="v8-proj-row">
+                            <span class="v8-label">proj</span>
+                            <div class="v8-proj">
+                                <span class="proj-truncate">Stowarzyszenie Wiosna</span>
+                                <span class="slash">/</span>
+                                <span class="proj-truncate">Szlachetna Paczka</span>
+                            </div>
+                        </div>
+                        <div class="v8-actions">
+                            <button class="v8-btn v8-btn-stop">kill</button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme switching
+        document.getElementById('themeControls')?.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            document.querySelectorAll('#themeControls button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            document.body.setAttribute('data-theme', e.target.dataset.theme);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Timer Section v5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+        }
+
+        .controls {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+        }
+        .controls-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .controls-group { display: flex; gap: 4px; }
+        .controls-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .controls-group button:hover { border-color: #444; }
+        .controls-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        /* Variant layout */
+        .variant {
+            max-width: 1500px; margin: 0 auto 56px;
+        }
+        .variant-header { text-align: center; margin-bottom: 12px; }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+        .variant-desc {
+            font-size: 10px; color: rgba(255,255,255,0.12);
+            line-height: 1.4; margin-top: 4px;
+        }
+        .variant-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 345px);
+            gap: 16px;
+            justify-content: center;
+        }
+        @media (max-width: 1500px) {
+            .variant-grid { grid-template-columns: repeat(2, 345px); }
+        }
+        .state-wrap {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .state-label {
+            font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.15); font-family: 'Oxanium', sans-serif;
+        }
+
+        /* Popup frame */
+        .popup-frame {
+            width: 345px; border-radius: 14px; overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+        }
+
+        /* ================================================================
+           SHARED UTILITIES
+           ================================================================ */
+        .timer-font {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            letter-spacing: 1.5px;
+        }
+        .desc-clamp {
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; word-break: break-word;
+        }
+        .proj-truncate {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+
+        /* Buttons */
+        .btn-circle {
+            border-radius: 50%; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
+        }
+        .btn-circle:hover { transform: scale(1.08); }
+        .btn-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .btn-stop { background: hsl(var(--destructive)); color: white; }
+
+        .btn-pill {
+            border: none; border-radius: 8px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-pill:hover { filter: brightness(1.1); }
+        .btn-pill-start { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+        .btn-pill-stop { background: hsl(var(--destructive)); color: white; }
+
+        .icon-play { width: 14px; height: 14px; }
+        .icon-stop { width: 14px; height: 14px; }
+
+        /* ================================================================
+           ANIMATIONS
+           ================================================================ */
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes text-glow {
+            0%, 100% { text-shadow: 0 0 8px hsl(var(--primary) / 0.4); }
+            50% { text-shadow: 0 0 20px hsl(var(--primary) / 0.7), 0 0 40px hsl(var(--primary) / 0.2); }
+        }
+        @keyframes neon-breathe {
+            0%, 100% { box-shadow: 0 0 4px hsl(var(--primary) / 0.3), 0 0 12px hsl(var(--primary) / 0.15), inset 0 0 4px hsl(var(--primary) / 0.05); }
+            50% { box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.3), 0 0 48px hsl(var(--primary) / 0.1), inset 0 0 8px hsl(var(--primary) / 0.1); }
+        }
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes rail-pulse {
+            0%, 100% { opacity: 0.6; box-shadow: 0 0 4px hsl(var(--primary) / 0.3); }
+            50% { opacity: 1; box-shadow: 0 0 12px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.2); }
+        }
+        @keyframes ring-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes shimmer-gradient {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes float-up {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+        @keyframes divider-glow {
+            0%, 100% { box-shadow: 0 0 6px hsl(var(--primary) / 0.3); opacity: 0.7; }
+            50% { box-shadow: 0 0 14px hsl(var(--primary) / 0.6), 0 0 28px hsl(var(--primary) / 0.2); opacity: 1; }
+        }
+        @keyframes scan-line {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* ================================================================
+           1 / SPLIT HORIZON
+           ================================================================ */
+        .v1-section {
+            display: flex; min-height: 108px; position: relative;
+        }
+        .v1-left {
+            width: 130px; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; padding: 16px 8px;
+            position: relative;
+        }
+        .v1-divider {
+            width: 2px; flex-shrink: 0;
+            background: hsl(var(--border));
+            align-self: stretch;
+        }
+        .v1-section.running .v1-divider {
+            background: hsl(var(--primary));
+            animation: divider-glow 2s ease-in-out infinite;
+        }
+        .v1-timer {
+            font-size: 28px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v1-section.running .v1-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v1-right {
+            flex: 1; padding: 14px 14px 14px 14px;
+            display: flex; flex-direction: column; justify-content: center; gap: 6px;
+            min-width: 0;
+        }
+        .v1-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+            min-height: 18px;
+        }
+        .v1-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+
+        /* ================================================================
+           2 / NEON FRAME
+           ================================================================ */
+        .v2-section {
+            padding: 16px; position: relative;
+        }
+        .v2-frame {
+            border: 1.5px solid hsl(var(--border));
+            border-radius: 10px; padding: 14px 14px 12px;
+            display: flex; align-items: center; gap: 14px;
+            position: relative; transition: all 0.3s;
+        }
+        .v2-section.running .v2-frame {
+            border-color: hsl(var(--primary) / 0.6);
+            animation: neon-breathe 2.5s ease-in-out infinite;
+        }
+        .v2-timer {
+            font-size: 30px; line-height: 1; flex-shrink: 0;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v2-section.running .v2-timer {
+            color: hsl(var(--primary));
+            text-shadow: 0 0 12px hsl(var(--primary) / 0.5);
+        }
+        .v2-meta {
+            padding: 10px 16px 0; display: flex; flex-direction: column; gap: 4px;
+        }
+        .v2-desc {
+            font-size: 12px; line-height: 1.4; font-weight: 500;
+            color: hsl(var(--muted-foreground));
+            min-height: 17px;
+        }
+        .v2-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.6);
+            min-width: 0;
+        }
+
+        /* ================================================================
+           3 / COMMAND LINE
+           ================================================================ */
+        .v3-section {
+            padding: 14px 16px; font-family: 'JetBrains Mono', monospace;
+            position: relative; overflow: hidden;
+        }
+        .v3-section::before {
+            content: ''; position: absolute; left: 0; right: 0;
+            height: 1px; background: hsl(var(--primary) / 0.15);
+            top: 0; opacity: 0;
+        }
+        .v3-section.running::before {
+            opacity: 1; animation: scan-line 3s linear infinite;
+        }
+        .v3-prompt {
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.4);
+            letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;
+        }
+        .v3-prompt span { color: hsl(var(--primary) / 0.5); }
+        .v3-timer-row {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+        }
+        .v3-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px; font-weight: 700; line-height: 1;
+            font-variant-numeric: tabular-nums; letter-spacing: 2px;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v3-section.running .v3-timer {
+            color: hsl(var(--primary));
+            text-shadow: 0 0 8px hsl(var(--primary) / 0.4);
+        }
+        .v3-cursor {
+            display: inline-block; width: 2px; height: 24px;
+            background: hsl(var(--primary)); margin-left: 2px;
+            opacity: 0;
+        }
+        .v3-section.running .v3-cursor {
+            animation: cursor-blink 1s step-end infinite;
+        }
+        .v3-desc-line {
+            font-size: 12px; line-height: 1.4; margin-bottom: 6px;
+            min-height: 17px;
+        }
+        .v3-desc-line .prefix {
+            color: hsl(var(--primary) / 0.5); margin-right: 6px;
+        }
+        .v3-desc-line .text {
+            color: hsl(var(--foreground) / 0.8); font-family: 'Inter', sans-serif;
+        }
+        .v3-path {
+            font-size: 10px; color: hsl(var(--muted-foreground) / 0.3);
+            display: flex; align-items: center; gap: 6px; min-width: 0;
+            margin-bottom: 10px;
+        }
+        .v3-path .slash { color: hsl(var(--muted-foreground) / 0.15); }
+        .v3-btn-row { display: flex; }
+        .v3-btn {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+            border: 1px solid; border-radius: 4px; padding: 6px 16px;
+            cursor: pointer; transition: all 0.15s; background: transparent;
+        }
+        .v3-btn-start {
+            border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary));
+        }
+        .v3-btn-start:hover {
+            background: hsl(var(--primary) / 0.1); border-color: hsl(var(--primary));
+        }
+        .v3-btn-stop {
+            border-color: hsl(var(--destructive) / 0.4); color: hsl(var(--destructive));
+        }
+        .v3-btn-stop:hover {
+            background: hsl(var(--destructive) / 0.1); border-color: hsl(var(--destructive));
+        }
+
+        /* ================================================================
+           4 / FLOATING LAYERS
+           ================================================================ */
+        .v4-section {
+            padding: 16px; position: relative;
+        }
+        .v4-card-timer {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px; padding: 12px 14px;
+            display: flex; align-items: center; gap: 12px;
+            position: relative; z-index: 2;
+            margin-bottom: -6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .v4-section.running .v4-card-timer {
+            border-color: hsl(var(--primary) / 0.3);
+            box-shadow: 0 4px 16px hsl(var(--primary) / 0.1), 0 0 0 1px hsl(var(--primary) / 0.15);
+        }
+        .v4-timer {
+            font-size: 26px; line-height: 1; flex: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v4-section.running .v4-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v4-card-desc {
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border) / 0.6);
+            border-radius: 10px; padding: 14px 14px 10px;
+            position: relative; z-index: 1;
+            margin-left: 12px; margin-right: 4px;
+        }
+        .v4-desc {
+            font-size: 12px; line-height: 1.4; font-weight: 500;
+            min-height: 17px; margin-bottom: 6px;
+        }
+        .v4-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v4-tag {
+            position: absolute; top: 10px; right: 14px; z-index: 3;
+            background: hsl(var(--primary) / 0.12);
+            color: hsl(var(--primary));
+            font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+            padding: 3px 8px; border-radius: 4px;
+        }
+        .v4-section.running .v4-card-timer {
+            animation: float-up 3s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           5 / ACCENT RAIL
+           ================================================================ */
+        .v5-section {
+            display: flex; position: relative; min-height: 108px;
+        }
+        .v5-rail {
+            width: 4px; flex-shrink: 0;
+            background: hsl(var(--border));
+            transition: all 0.3s;
+        }
+        .v5-section.running .v5-rail {
+            background: hsl(var(--primary));
+            animation: rail-pulse 2s ease-in-out infinite;
+        }
+        .v5-content {
+            flex: 1; padding: 14px 16px; min-width: 0;
+            display: flex; flex-direction: column;
+        }
+        .v5-top {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .v5-timer {
+            font-size: 24px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v5-section.running .v5-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v5-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+            flex: 1; min-height: 18px; margin-bottom: 6px;
+        }
+        .v5-bottom {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: auto;
+        }
+        .v5-proj {
+            flex: 1; display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+
+        /* ================================================================
+           6 / RING COUNTER
+           ================================================================ */
+        .v6-section {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; min-height: 108px;
+        }
+        .v6-ring-wrap {
+            width: 72px; height: 72px; flex-shrink: 0;
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .v6-ring-svg {
+            position: absolute; inset: 0; width: 72px; height: 72px;
+        }
+        .v6-ring-bg {
+            fill: none; stroke: hsl(var(--border)); stroke-width: 2.5;
+        }
+        .v6-ring-fg {
+            fill: none; stroke: hsl(var(--muted-foreground) / 0.15); stroke-width: 2.5;
+            stroke-dasharray: 8 4; stroke-linecap: round;
+            transform-origin: center;
+        }
+        .v6-section.running .v6-ring-fg {
+            stroke: hsl(var(--primary));
+            filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.4));
+            animation: ring-rotate 8s linear infinite;
+        }
+        .v6-timer {
+            font-size: 16px; line-height: 1; position: relative; z-index: 1;
+            color: hsl(var(--muted-foreground) / 0.25);
+        }
+        .v6-section.running .v6-timer {
+            color: hsl(var(--primary));
+        }
+        .v6-info {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .v6-desc {
+            font-size: 13px; font-weight: 500; line-height: 1.35;
+            min-height: 18px;
+        }
+        .v6-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v6-btn-wrap {
+            margin-top: 4px;
+        }
+
+        /* ================================================================
+           7 / BILLBOARD
+           ================================================================ */
+        .v7-section {
+            padding: 16px; position: relative;
+        }
+        .v7-desc-hero {
+            font-size: 16px; font-weight: 700; line-height: 1.3;
+            min-height: 21px; margin-bottom: 10px;
+        }
+        .v7-row {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .v7-timer {
+            font-size: 20px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v7-section.running .v7-timer {
+            color: hsl(var(--primary));
+        }
+        .v7-separator {
+            width: 1px; height: 16px; background: hsl(var(--border));
+        }
+        .v7-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: 6px; padding: 4px 8px;
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            max-width: 180px; min-width: 0;
+        }
+        .v7-actions {
+            display: flex; align-items: center;
+        }
+
+        /* ================================================================
+           8 / GRADIENT WAVE
+           ================================================================ */
+        .v8-section {
+            position: relative; overflow: hidden;
+        }
+        .v8-gradient-bar {
+            height: 3px;
+            background: linear-gradient(90deg,
+                hsl(var(--primary) / 0.1),
+                hsl(var(--primary) / 0.3),
+                hsl(var(--primary) / 0.1)
+            );
+            background-size: 200% 100%;
+        }
+        .v8-section.running .v8-gradient-bar {
+            background: linear-gradient(90deg,
+                hsl(var(--primary) / 0.2),
+                hsl(var(--primary) / 0.8),
+                hsl(var(--primary) / 0.2),
+                hsl(var(--primary) / 0.8),
+                hsl(var(--primary) / 0.2)
+            );
+            background-size: 200% 100%;
+            animation: shimmer-gradient 3s linear infinite;
+        }
+        .v8-body {
+            padding: 14px 16px;
+        }
+        .v8-timer-row {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+        }
+        .v8-timer {
+            font-size: 30px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .v8-section.running .v8-timer {
+            color: hsl(var(--primary));
+            animation: text-glow 3s ease-in-out infinite;
+        }
+        .v8-desc {
+            font-size: 12px; line-height: 1.4; font-weight: 500;
+            min-height: 17px; margin-bottom: 8px;
+        }
+        .v8-proj {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            min-width: 0;
+        }
+        .v8-proj .v8-dot-prefix {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: hsl(var(--primary)); flex-shrink: 0;
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark">
+
+    <div class="page-header">
+        <h1>Timer Section v5</h1>
+        <p>8 visually distinct directions &mdash; 4 states each</p>
+    </div>
+
+    <div class="controls">
+        <span class="controls-label">Theme</span>
+        <div class="controls-group" id="themeControls">
+            <button class="active" data-theme="ternity-dark">Dark</button>
+            <button data-theme="ternity-light">Light</button>
+            <button data-theme="midnight">Midnight</button>
+            <button data-theme="warm-sand">Sand</button>
+            <button data-theme="carbon">Carbon</button>
+            <button data-theme="high-contrast">Hi-Con</button>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         1 / SPLIT HORIZON
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">1 &mdash; Split Horizon</div>
+            <div class="variant-desc">Left: timer + button &bull; Right: description + project &bull; Teal accent divider</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section">
+                        <div class="v1-left">
+                            <div class="v1-timer timer-font">0:00:00</div>
+                            <button class="btn-circle btn-start" style="width:32px;height:32px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                            </button>
+                        </div>
+                        <div class="v1-divider"></div>
+                        <div class="v1-right">
+                            <div class="v1-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v1-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section">
+                        <div class="v1-left">
+                            <div class="v1-timer timer-font">0:00:00</div>
+                            <button class="btn-circle btn-start" style="width:32px;height:32px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                            </button>
+                        </div>
+                        <div class="v1-divider"></div>
+                        <div class="v1-right">
+                            <div class="v1-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v1-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section running">
+                        <div class="v1-left">
+                            <div class="v1-timer timer-font">1:23:47</div>
+                            <button class="btn-circle btn-stop" style="width:32px;height:32px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                            </button>
+                        </div>
+                        <div class="v1-divider"></div>
+                        <div class="v1-right">
+                            <div class="v1-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v1-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v1-section running">
+                        <div class="v1-left">
+                            <div class="v1-timer timer-font">1:23:47</div>
+                            <button class="btn-circle btn-stop" style="width:32px;height:32px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                            </button>
+                        </div>
+                        <div class="v1-divider"></div>
+                        <div class="v1-right">
+                            <div class="v1-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v1-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         2 / NEON FRAME
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">2 &mdash; Neon Frame</div>
+            <div class="variant-desc">Timer in glowing neon border &bull; Description + project outside below &bull; Futuristic</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section">
+                        <div class="v2-frame">
+                            <div class="v2-timer timer-font">0:00:00</div>
+                            <div style="margin-left:auto;">
+                                <button class="btn-circle btn-start" style="width:36px;height:36px;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="v2-meta">
+                            <div class="v2-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v2-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section">
+                        <div class="v2-frame">
+                            <div class="v2-timer timer-font">0:00:00</div>
+                            <div style="margin-left:auto;">
+                                <button class="btn-circle btn-start" style="width:36px;height:36px;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="v2-meta">
+                            <div class="v2-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v2-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section running">
+                        <div class="v2-frame">
+                            <div class="v2-timer timer-font">1:23:47</div>
+                            <div style="margin-left:auto;">
+                                <button class="btn-circle btn-stop" style="width:36px;height:36px;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="v2-meta">
+                            <div class="v2-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v2-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v2-section running">
+                        <div class="v2-frame">
+                            <div class="v2-timer timer-font">1:23:47</div>
+                            <div style="margin-left:auto;">
+                                <button class="btn-circle btn-stop" style="width:36px;height:36px;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="v2-meta">
+                            <div class="v2-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v2-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         3 / COMMAND LINE
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">3 &mdash; Command Line</div>
+            <div class="variant-desc">Terminal aesthetic &bull; Monospace timer with blinking cursor &bull; Path-style project</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section">
+                        <div class="v3-prompt"><span>$</span> ternity --track</div>
+                        <div class="v3-timer-row">
+                            <div class="v3-timer">0:00:00</div>
+                            <span class="v3-cursor"></span>
+                            <div style="margin-left:auto;">
+                                <button class="v3-btn v3-btn-start">START</button>
+                            </div>
+                        </div>
+                        <div class="v3-desc-line">
+                            <span class="prefix">&gt;</span><span class="text">Fix login validation bug</span>
+                        </div>
+                        <div class="v3-path proj-truncate">
+                            <span class="slash">~/</span><span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section">
+                        <div class="v3-prompt"><span>$</span> ternity --track</div>
+                        <div class="v3-timer-row">
+                            <div class="v3-timer">0:00:00</div>
+                            <span class="v3-cursor"></span>
+                            <div style="margin-left:auto;">
+                                <button class="v3-btn v3-btn-start">START</button>
+                            </div>
+                        </div>
+                        <div class="v3-desc-line">
+                            <span class="prefix">&gt;</span><span class="text desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</span>
+                        </div>
+                        <div class="v3-path proj-truncate">
+                            <span class="slash">~/</span><span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section running">
+                        <div class="v3-prompt"><span>$</span> ternity --track</div>
+                        <div class="v3-timer-row">
+                            <div class="v3-timer">1:23:47</div>
+                            <span class="v3-cursor"></span>
+                            <div style="margin-left:auto;">
+                                <button class="v3-btn v3-btn-stop">STOP</button>
+                            </div>
+                        </div>
+                        <div class="v3-desc-line">
+                            <span class="prefix">&gt;</span><span class="text">Fix login validation bug</span>
+                        </div>
+                        <div class="v3-path proj-truncate">
+                            <span class="slash">~/</span><span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v3-section running">
+                        <div class="v3-prompt"><span>$</span> ternity --track</div>
+                        <div class="v3-timer-row">
+                            <div class="v3-timer">1:23:47</div>
+                            <span class="v3-cursor"></span>
+                            <div style="margin-left:auto;">
+                                <button class="v3-btn v3-btn-stop">STOP</button>
+                            </div>
+                        </div>
+                        <div class="v3-desc-line">
+                            <span class="prefix">&gt;</span><span class="text desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</span>
+                        </div>
+                        <div class="v3-path proj-truncate">
+                            <span class="slash">~/</span><span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         4 / FLOATING LAYERS
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">4 &mdash; Floating Layers</div>
+            <div class="variant-desc">Overlapping cards with depth &bull; Timer card over description card &bull; Floating tag</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section">
+                        <div class="v4-card-timer">
+                            <div class="v4-timer timer-font">0:00:00</div>
+                            <button class="btn-circle btn-start" style="width:34px;height:34px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                            </button>
+                        </div>
+                        <div class="v4-card-desc">
+                            <div class="v4-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v4-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section">
+                        <div class="v4-card-timer">
+                            <div class="v4-timer timer-font">0:00:00</div>
+                            <button class="btn-circle btn-start" style="width:34px;height:34px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                            </button>
+                        </div>
+                        <div class="v4-card-desc">
+                            <div class="v4-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v4-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section running">
+                        <div class="v4-card-timer">
+                            <div class="v4-timer timer-font">1:23:47</div>
+                            <button class="btn-circle btn-stop" style="width:34px;height:34px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                            </button>
+                        </div>
+                        <div class="v4-card-desc">
+                            <div class="v4-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v4-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v4-section running">
+                        <div class="v4-card-timer">
+                            <div class="v4-timer timer-font">1:23:47</div>
+                            <button class="btn-circle btn-stop" style="width:34px;height:34px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                            </button>
+                        </div>
+                        <div class="v4-card-desc">
+                            <div class="v4-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v4-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         5 / ACCENT RAIL
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">5 &mdash; Accent Rail</div>
+            <div class="variant-desc">Thick 4px teal rail on left edge &bull; Pulses when running &bull; Clean, opinionated</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section">
+                        <div class="v5-rail"></div>
+                        <div class="v5-content">
+                            <div class="v5-top">
+                                <div class="v5-desc desc-clamp" style="flex:1; margin-right:12px;">Fix login validation bug</div>
+                                <div class="v5-timer timer-font">0:00:00</div>
+                            </div>
+                            <div class="v5-bottom">
+                                <div class="v5-proj proj-truncate">
+                                    <span class="dot" style="background:#4ade80;"></span>
+                                    <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                                </div>
+                                <button class="btn-circle btn-start" style="width:30px;height:30px;margin-left:auto;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section">
+                        <div class="v5-rail"></div>
+                        <div class="v5-content">
+                            <div class="v5-top">
+                                <div class="v5-desc desc-clamp" style="flex:1; margin-right:12px;">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                                <div class="v5-timer timer-font">0:00:00</div>
+                            </div>
+                            <div class="v5-bottom">
+                                <div class="v5-proj proj-truncate">
+                                    <span class="dot" style="background:#4ade80;"></span>
+                                    <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                                </div>
+                                <button class="btn-circle btn-start" style="width:30px;height:30px;margin-left:auto;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section running">
+                        <div class="v5-rail"></div>
+                        <div class="v5-content">
+                            <div class="v5-top">
+                                <div class="v5-desc desc-clamp" style="flex:1; margin-right:12px;">Fix login validation bug</div>
+                                <div class="v5-timer timer-font">1:23:47</div>
+                            </div>
+                            <div class="v5-bottom">
+                                <div class="v5-proj proj-truncate">
+                                    <span class="dot" style="background:#4ade80;"></span>
+                                    <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                                </div>
+                                <button class="btn-circle btn-stop" style="width:30px;height:30px;margin-left:auto;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v5-section running">
+                        <div class="v5-rail"></div>
+                        <div class="v5-content">
+                            <div class="v5-top">
+                                <div class="v5-desc desc-clamp" style="flex:1; margin-right:12px;">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                                <div class="v5-timer timer-font">1:23:47</div>
+                            </div>
+                            <div class="v5-bottom">
+                                <div class="v5-proj proj-truncate">
+                                    <span class="dot" style="background:#4ade80;"></span>
+                                    <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                                </div>
+                                <button class="btn-circle btn-stop" style="width:30px;height:30px;margin-left:auto;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         6 / RING COUNTER
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">6 &mdash; Ring Counter</div>
+            <div class="variant-desc">SVG ring with timer digits inside &bull; Dashed stroke rotates when running &bull; Info on right</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v6-section">
+                        <div class="v6-ring-wrap">
+                            <svg class="v6-ring-svg" viewBox="0 0 72 72">
+                                <circle class="v6-ring-bg" cx="36" cy="36" r="30"/>
+                                <circle class="v6-ring-fg" cx="36" cy="36" r="30"/>
+                            </svg>
+                            <div class="v6-timer timer-font">0:00:00</div>
+                        </div>
+                        <div class="v6-info">
+                            <div class="v6-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v6-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                            <div class="v6-btn-wrap">
+                                <button class="btn-pill btn-pill-start" style="height:30px;font-size:11px;width:100%;border-radius:6px;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><polygon points="6,3 20,12 6,21"/></svg>
+                                    Start
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v6-section">
+                        <div class="v6-ring-wrap">
+                            <svg class="v6-ring-svg" viewBox="0 0 72 72">
+                                <circle class="v6-ring-bg" cx="36" cy="36" r="30"/>
+                                <circle class="v6-ring-fg" cx="36" cy="36" r="30"/>
+                            </svg>
+                            <div class="v6-timer timer-font">0:00:00</div>
+                        </div>
+                        <div class="v6-info">
+                            <div class="v6-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v6-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                            <div class="v6-btn-wrap">
+                                <button class="btn-pill btn-pill-start" style="height:30px;font-size:11px;width:100%;border-radius:6px;">
+                                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><polygon points="6,3 20,12 6,21"/></svg>
+                                    Start
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v6-section running">
+                        <div class="v6-ring-wrap">
+                            <svg class="v6-ring-svg" viewBox="0 0 72 72">
+                                <circle class="v6-ring-bg" cx="36" cy="36" r="30"/>
+                                <circle class="v6-ring-fg" cx="36" cy="36" r="30"/>
+                            </svg>
+                            <div class="v6-timer timer-font">1:23:47</div>
+                        </div>
+                        <div class="v6-info">
+                            <div class="v6-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v6-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                            <div class="v6-btn-wrap">
+                                <button class="btn-pill btn-pill-stop" style="height:30px;font-size:11px;width:100%;border-radius:6px;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                    Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v6-section running">
+                        <div class="v6-ring-wrap">
+                            <svg class="v6-ring-svg" viewBox="0 0 72 72">
+                                <circle class="v6-ring-bg" cx="36" cy="36" r="30"/>
+                                <circle class="v6-ring-fg" cx="36" cy="36" r="30"/>
+                            </svg>
+                            <div class="v6-timer timer-font">1:23:47</div>
+                        </div>
+                        <div class="v6-info">
+                            <div class="v6-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v6-proj proj-truncate">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                            <div class="v6-btn-wrap">
+                                <button class="btn-pill btn-pill-stop" style="height:30px;font-size:11px;width:100%;border-radius:6px;">
+                                    <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                    Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         7 / BILLBOARD
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">7 &mdash; Billboard</div>
+            <div class="variant-desc">Description is the HERO &bull; Timer smaller, tucked beside badge &bull; Content-first philosophy</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section">
+                        <div class="v7-desc-hero desc-clamp">Fix login validation bug</div>
+                        <div class="v7-row">
+                            <div class="v7-timer timer-font">0:00:00</div>
+                            <div class="v7-separator"></div>
+                            <div class="v7-badge">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                        <div class="v7-actions">
+                            <button class="btn-pill btn-pill-start" style="height:34px;font-size:12px;width:100%;border-radius:8px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px;"><polygon points="6,3 20,12 6,21"/></svg>
+                                Start Timer
+                            </button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section">
+                        <div class="v7-desc-hero desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                        <div class="v7-row">
+                            <div class="v7-timer timer-font">0:00:00</div>
+                            <div class="v7-separator"></div>
+                            <div class="v7-badge">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                        <div class="v7-actions">
+                            <button class="btn-pill btn-pill-start" style="height:34px;font-size:12px;width:100%;border-radius:8px;">
+                                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px;"><polygon points="6,3 20,12 6,21"/></svg>
+                                Start Timer
+                            </button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section" style="position:relative;">
+                        <div class="v7-desc-hero desc-clamp">Fix login validation bug</div>
+                        <div class="v7-row">
+                            <div class="v7-timer timer-font" style="color:hsl(var(--primary));">1:23:47</div>
+                            <div class="v7-separator"></div>
+                            <div class="v7-badge">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                        <div class="v7-actions">
+                            <button class="btn-pill btn-pill-stop" style="height:34px;font-size:12px;width:100%;border-radius:8px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                Stop Timer
+                            </button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v7-section" style="position:relative;">
+                        <div class="v7-desc-hero desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                        <div class="v7-row">
+                            <div class="v7-timer timer-font" style="color:hsl(var(--primary));">1:23:47</div>
+                            <div class="v7-separator"></div>
+                            <div class="v7-badge">
+                                <span class="dot" style="background:#4ade80;"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                        <div class="v7-actions">
+                            <button class="btn-pill btn-pill-stop" style="height:34px;font-size:12px;width:100%;border-radius:8px;">
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                Stop Timer
+                            </button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================
+         8 / GRADIENT WAVE
+         ================================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">8 &mdash; Gradient Wave</div>
+            <div class="variant-desc">Shimmering gradient bar at top &bull; Colored dot prefix on project &bull; The gradient is the signature</div>
+        </div>
+        <div class="variant-grid">
+
+            <!-- Idle / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section">
+                        <div class="v8-gradient-bar"></div>
+                        <div class="v8-body">
+                            <div class="v8-timer-row">
+                                <div class="v8-timer timer-font">0:00:00</div>
+                                <div style="margin-left:auto;">
+                                    <button class="btn-circle btn-start" style="width:34px;height:34px;">
+                                        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="v8-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v8-proj proj-truncate">
+                                <span class="v8-dot-prefix"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Idle / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Idle / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section">
+                        <div class="v8-gradient-bar"></div>
+                        <div class="v8-body">
+                            <div class="v8-timer-row">
+                                <div class="v8-timer timer-font">0:00:00</div>
+                                <div style="margin-left:auto;">
+                                    <button class="btn-circle btn-start" style="width:34px;height:34px;">
+                                        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="v8-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v8-proj proj-truncate">
+                                <span class="v8-dot-prefix"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Short -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Short</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section running">
+                        <div class="v8-gradient-bar"></div>
+                        <div class="v8-body">
+                            <div class="v8-timer-row">
+                                <div class="v8-timer timer-font">1:23:47</div>
+                                <div style="margin-left:auto;">
+                                    <button class="btn-circle btn-stop" style="width:34px;height:34px;">
+                                        <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="v8-desc desc-clamp">Fix login validation bug</div>
+                            <div class="v8-proj proj-truncate">
+                                <span class="v8-dot-prefix"></span>
+                                <span class="proj-truncate">Netbulls &middot; Ternity App</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- Running / Long -->
+            <div class="state-wrap">
+                <span class="state-label">Running / Long</span>
+                <div class="popup-frame"><div class="popup">
+                    <div class="v8-section running">
+                        <div class="v8-gradient-bar"></div>
+                        <div class="v8-body">
+                            <div class="v8-timer-row">
+                                <div class="v8-timer timer-font">1:23:47</div>
+                                <div style="margin-left:auto;">
+                                    <button class="btn-circle btn-stop" style="width:34px;height:34px;">
+                                        <svg class="icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="v8-desc desc-clamp">TERN-42 Implement real-time timer sync with WebSocket reconnection handling</div>
+                            <div class="v8-proj proj-truncate">
+                                <span class="v8-dot-prefix"></span>
+                                <span class="proj-truncate">Seven Bridges Limited &middot; Glowny Urzad Nadzoru budowlanego (GUNB)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Theme switcher
+        document.getElementById('themeControls').addEventListener('click', e => {
+            if (e.target.tagName !== 'BUTTON') return;
+            document.querySelectorAll('#themeControls button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            document.body.setAttribute('data-theme', e.target.dataset.theme);
+        });
+    </script>
+</body>
+</html>
