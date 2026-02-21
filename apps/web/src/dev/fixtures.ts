@@ -72,6 +72,7 @@ const RUNNING_ENTRY: Entry = {
   startedAt: hoursAgo(1),
   stoppedAt: null,
   durationSeconds: null,
+  createdAt: hoursAgo(1),
   userId: 'dev-user-001',
 };
 
@@ -87,6 +88,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     startedAt: todayAt(9, 0),
     stoppedAt: todayAt(10, 30),
     durationSeconds: 5400,
+    createdAt: todayAt(9, 0),
     userId: 'dev-user-001',
   },
   {
@@ -103,6 +105,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     startedAt: todayAt(10, 45),
     stoppedAt: todayAt(12, 15),
     durationSeconds: 5400,
+    createdAt: todayAt(10, 45),
     userId: 'dev-user-001',
   },
   {
@@ -116,6 +119,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     startedAt: todayAt(13, 0),
     stoppedAt: todayAt(14, 0),
     durationSeconds: 3600,
+    createdAt: todayAt(13, 0),
     userId: 'dev-user-001',
   },
   {
@@ -129,6 +133,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     startedAt: todayAt(14, 30),
     stoppedAt: todayAt(15, 0),
     durationSeconds: 1800,
+    createdAt: todayAt(14, 30),
     userId: 'dev-user-001',
   },
 ];
@@ -156,6 +161,7 @@ export const MOCK_DAY_GROUPS: DayGroup[] = [
         startedAt: new Date(Date.now() - 86400_000 + 9 * 3600_000).toISOString(),
         stoppedAt: new Date(Date.now() - 86400_000 + 17 * 3600_000).toISOString(),
         durationSeconds: 28800,
+        createdAt: new Date(Date.now() - 86400_000 + 9 * 3600_000).toISOString(),
         userId: 'dev-user-001',
       },
     ],
