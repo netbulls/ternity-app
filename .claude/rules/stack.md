@@ -60,6 +60,6 @@ Injected at build time via Vite's `define` (frontend) and environment variable (
 | **build** | `pnpm -r build` | `pnpm -r build` | `pnpm -r build` |
 | **deploy** | (local) | TBD | TBD |
 | **app url** | localhost:5173 | TBD | app.ternity.xyz |
-| **api url** | localhost:3000 | TBD | api.ternity.xyz |
+| **api url** | localhost:3010 | TBD | api.ternity.xyz |
 | **auth url** | dev.auth.ternity.xyz | dev.auth.ternity.xyz | auth.ternity.xyz |
 | **db** | local Postgres | TBD | managed Postgres |

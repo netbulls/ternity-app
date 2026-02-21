@@ -40,16 +40,6 @@ All SVGs are path-based and self-contained.
 - **RBAC:** Global roles (admin) + Organization roles per project (manager, user)
 - **Integration:** OIDC with `@logto/react` (frontend) + JWT validation (Fastify backend)
 
-### Tech Stack
-
-- **Frontend:** Vite + React + shadcn/ui + Tailwind CSS
-- **Backend:** Node.js LTS + Fastify + Drizzle ORM
-- **Database:** PostgreSQL 17+
-- **Data tables:** TanStack Table + TanStack Query
-- **Calendar:** FullCalendar (MIT)
-- **Monorepo:** pnpm workspaces
-- **Type sharing:** Shared Zod schemas in `/packages/shared`
-
 ### Themes
 
 6 themes defined in `THEMES.md`. Default: Ternity Dark. All components use CSS custom properties (`--t-*`).

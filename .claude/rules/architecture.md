@@ -58,7 +58,7 @@ Scopes: `openid, profile, phone, email`
 
 - `apps/api/.env.local`: AUTH_MODE, LOGTO_ENDPOINT, LOGTO_APP_ID, DATABASE_URL, PORT, CORS_ORIGIN
 - `apps/web/.env.local`: VITE_AUTH_MODE, VITE_LOGTO_ENDPOINT, VITE_LOGTO_APP_ID, VITE_API_URL
-- Default auth mode: `stub` for local dev
+- Default auth mode: `logto` for local dev (switch to `stub` only for testing, always switch back)
 
 ## Running Services (Local Dev)
 
