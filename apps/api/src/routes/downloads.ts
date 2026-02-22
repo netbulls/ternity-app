@@ -95,6 +95,32 @@ interface DriveLatestResponse {
   latest: DriveLatestEntry[];
 }
 
+/** Parse semver parts from a version string (e.g. "v0.1.0" or "0.2.1-14-gabc123") */
+function parseSemver(version: string): [number, number, number] {
+  const m = version.match(/v?(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return [0, 0, 0];
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+/** True if the snapshot is ahead of the release (snapshot's base tag > release tag, or same base with commits ahead) */
+function isSnapshotAhead(releaseVersion: string, snapshotVersion: string): boolean {
+  const [rMaj, rMin, rPat] = parseSemver(releaseVersion);
+  const [sMaj, sMin, sPat] = parseSemver(snapshotVersion);
+
+  // Snapshot base tag is newer → ahead
+  if (sMaj > rMaj) return true;
+  if (sMaj === rMaj && sMin > rMin) return true;
+  if (sMaj === rMaj && sMin === rMin && sPat > rPat) return true;
+
+  // Same base tag — snapshot is ahead if it has commits after the tag
+  if (sMaj === rMaj && sMin === rMin && sPat === rPat) {
+    const commitsAhead = snapshotVersion.match(/\d+-g[0-9a-f]+$/i);
+    return commitsAhead !== null;
+  }
+
+  return false;
+}
+
 export async function downloadsRoutes(fastify: FastifyInstance) {
   /** Fetch release notes from Drive for the given version */
   async function getReleaseNotes(version: string, driveInternalUrl: string) {
@@ -198,11 +224,20 @@ export async function downloadsRoutes(fastify: FastifyInstance) {
         // Sort: release before snapshot
         channels.sort((a, b) => (a.channel === 'release' ? -1 : 1) - (b.channel === 'release' ? -1 : 1));
 
+        // Hide snapshot if release is at the same or newer base version.
+        // Snapshot v0.1.0-14-gXXX is based on v0.1.0 — only show it if no release >= v0.1.0 exists.
+        const release = channels.find((c) => c.channel === 'release');
+        const snapshot = channels.find((c) => c.channel === 'snapshot');
+        const filteredChannels =
+          release && snapshot && !isSnapshotAhead(release.version, snapshot.version)
+            ? channels.filter((c) => c.channel !== 'snapshot')
+            : channels;
+
         return {
           framework,
           name: meta.name,
           description: meta.description,
-          channels,
+          channels: filteredChannels,
         };
       }),
     );
