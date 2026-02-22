@@ -7,9 +7,9 @@ import { HourglassLogo } from './hourglass-logo';
 const navItems = [
   { to: '/', label: 'Timer & Entries', icon: Timer },
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/leave', label: 'Leave', icon: Palmtree },
+  { to: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 
 const adminNavItems = [
