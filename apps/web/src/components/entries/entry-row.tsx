@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, ChevronDown } from 'lucide-react';
+import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, ChevronDown, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry } from '@/hooks/use-entries';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AuditPanel } from './audit-panel';
 import { InlineProjectDropdown } from './inline-project-dropdown';
+import { ManualEntryDialog } from './manual-entry-dialog';
 import type { Entry } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
@@ -42,6 +43,7 @@ export function EntryRow({ entry }: Props) {
   const [pillPop, setPillPop] = useState(false);
   const [projectSearch, setProjectSearch] = useState('');
   const [auditOpen, setAuditOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const [optimisticProject, setOptimisticProject] = useState<{
     name: string;
     color: string;
@@ -436,6 +438,10 @@ export function EntryRow({ entry }: Props) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setAdjustOpen(true)}>
+            <Clock className="mr-2 h-3.5 w-3.5" />
+            Add adjustment
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleEditDescription}>
             <Pencil className="mr-2 h-3.5 w-3.5" />
             Edit description
@@ -455,6 +461,7 @@ export function EntryRow({ entry }: Props) {
       </DropdownMenu>
 
       <AuditPanel entry={entry} open={auditOpen} onOpenChange={setAuditOpen} />
+      <ManualEntryDialog mode="adjust" entry={entry} open={adjustOpen} onOpenChange={setAdjustOpen} />
     </motion.div>
   );
 }
