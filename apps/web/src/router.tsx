@@ -81,6 +81,20 @@ export const router = createBrowserRouter([
             return { Component: DevReleaseNotesPage };
           },
         },
+        {
+          path: '/dev/start-stop',
+          lazy: async () => {
+            const { DevStartStopPage } = await import('@/pages/dev-start-stop');
+            return { Component: DevStartStopPage };
+          },
+        },
+        {
+          path: '/dev/timer-looks',
+          lazy: async () => {
+            const { DevTimerLooksPage } = await import('@/pages/dev-timer-looks');
+            return { Component: DevTimerLooksPage };
+          },
+        },
       ]
     : []),
   {

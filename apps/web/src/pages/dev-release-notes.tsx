@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { ScaleProvider } from '@/providers/scale-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 
@@ -25,7 +25,7 @@ interface MockVersion {
 const MOCK_VERSIONS: MockVersion[] = [
   {
     version: 'v0.3.0-7-ga3f2c1e',
-    date: null,
+    date: '2026-02-22T14:37:00',
     releaseNotes: [
       { category: 'Added', entries: ['Expose createdAt field in Entry API response for stable client-side sorting'] },
       { category: 'Changed', entries: [
@@ -343,6 +343,26 @@ function VariantCNotes({ version }: { version: MockVersion }) {
 }
 
 // ============================================================
+// Date Placement Variants (all based on approved Variant C)
+// ============================================================
+
+function formatDateShort(date: string | null) {
+  if (!date) return null;
+  const d = date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateTimeFull(date: string | null) {
+  if (!date) return null;
+  const d = date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00');
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!date.includes('T')) return datePart;
+  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${datePart}, ${timePart}`;
+}
+
+
+// ============================================================
 // Page Shell
 // ============================================================
 
@@ -461,6 +481,99 @@ function ReleaseNotesPrototype() {
           <div className="px-5 py-3">
             <div className="font-brand text-sm font-semibold text-foreground">{snapshotVersion.version}</div>
             <div className="mt-0.5 text-xs text-muted-foreground">unreleased</div>
+          </div>
+          <VariantCNotes version={snapshotVersion} />
+        </VariantCard>
+
+        {/* ---- Date Placement Variants (near version header) ---- */}
+        <div className="border-t border-border/30 pt-8">
+          <h2 className="font-brand text-base font-semibold text-foreground">Date Placement — Near the version label</h2>
+          <p className="mt-1 text-xs text-muted-foreground">All based on approved variant C. Date placed in the version header area, not in the release notes section.</p>
+        </div>
+
+        {/* V1: Date below version */}
+        <VariantCard
+          id="date-v1"
+          title="V1 — Date below version"
+          description="Date on its own line below the version, small and muted. Simple, hierarchical."
+        >
+          <div className="px-5 py-3">
+            <div className="font-brand text-sm font-semibold text-foreground">{mainVersion.version}</div>
+            <div className="mt-0.5 text-muted-foreground/50" style={{ fontSize: scaled(11) }}>{formatDateShort(mainVersion.date)}</div>
+          </div>
+          <VariantCNotes version={mainVersion} />
+        </VariantCard>
+
+        <VariantCard
+          id="date-v1-snapshot"
+          title="V1 (snapshot)"
+          description="Snapshot version with date+time below — shows when the build was created."
+        >
+          <div className="px-5 py-3">
+            <div className="font-brand text-sm font-semibold text-foreground">{snapshotVersion.version}</div>
+            {snapshotVersion.date && (
+              <div className="mt-0.5 text-muted-foreground/50" style={{ fontSize: scaled(11) }}>{formatDateTimeFull(snapshotVersion.date)}</div>
+            )}
+          </div>
+          <VariantCNotes version={snapshotVersion} />
+        </VariantCard>
+
+        {/* V2: Date inline with version, dot separator */}
+        <VariantCard
+          id="date-v2"
+          title="V2 — Date inline with version (dot separator)"
+          description="Version and date on one line: 'v0.2.0 · Feb 19, 2026'. Compact, reads as a single label."
+        >
+          <div className="px-5 py-3">
+            <span className="font-brand text-sm font-semibold text-foreground">{mainVersion.version}</span>
+            <span className="text-muted-foreground/40" style={{ fontSize: scaled(12) }}> · {formatDateShort(mainVersion.date)}</span>
+          </div>
+          <VariantCNotes version={mainVersion} />
+        </VariantCard>
+
+        <VariantCard
+          id="date-v2-snapshot"
+          title="V2 (snapshot)"
+          description="Snapshot version with date+time — shows when the build was created."
+        >
+          <div className="px-5 py-3">
+            <span className="font-brand text-sm font-semibold text-foreground">{snapshotVersion.version}</span>
+            {snapshotVersion.date && (
+              <span className="text-muted-foreground/40" style={{ fontSize: scaled(12) }}> · {formatDateTimeFull(snapshotVersion.date)}</span>
+            )}
+          </div>
+          <VariantCNotes version={snapshotVersion} />
+        </VariantCard>
+
+        {/* V3: Date right-aligned on same line as version */}
+        <VariantCard
+          id="date-v3"
+          title="V3 — Date right-aligned on version line"
+          description="Version left, date pushed to the right. Both on the same line, date is secondary."
+        >
+          <div className="flex items-baseline justify-between px-5 py-3">
+            <div className="font-brand text-sm font-semibold text-foreground">{mainVersion.version}</div>
+            <div className="flex items-center gap-1 text-muted-foreground/40" style={{ fontSize: scaled(11) }}>
+              <Calendar className="h-3 w-3" />
+              {formatDateShort(mainVersion.date)}
+            </div>
+          </div>
+          <VariantCNotes version={mainVersion} />
+        </VariantCard>
+
+        <VariantCard
+          id="date-v3-snapshot"
+          title="V3 (snapshot)"
+          description="Snapshot version with date+time right-aligned — shows when the build was created."
+        >
+          <div className="flex items-baseline justify-between px-5 py-3">
+            <div className="font-brand text-sm font-semibold text-foreground">{snapshotVersion.version}</div>
+            {snapshotVersion.date && (
+              <div className="flex items-center gap-1 text-muted-foreground/40" style={{ fontSize: scaled(11) }}>
+                <Calendar className="h-3 w-3" />
+                {formatDateTimeFull(snapshotVersion.date)}
+              </div>
+            )}
           </div>
           <VariantCNotes version={snapshotVersion} />
         </VariantCard>

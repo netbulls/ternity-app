@@ -75,7 +75,7 @@ const MOCK_PRODUCTS: Product[] = [
       {
         channel: 'snapshot',
         version: 'v0.1.0-7-ga3f2c1e',
-        releaseDate: null,
+        releaseDate: '2026-02-19T14:37:00Z',
         releaseNotes: [
           { category: 'Added', entries: ['Keyboard shortcuts for start/stop/switch', 'Activity log panel'] },
           { category: 'Changed', entries: ['Improve tray icon rendering on HiDPI displays'] },
@@ -96,7 +96,7 @@ const MOCK_PRODUCTS: Product[] = [
       {
         channel: 'snapshot',
         version: 'v0.1.0-3-g8f2d4a1',
-        releaseDate: null,
+        releaseDate: '2026-02-17T10:22:00Z',
         releaseNotes: [
           { category: 'Added', entries: ['Initial build with timer and entries', 'Project and label selectors'] },
         ],
@@ -180,7 +180,13 @@ const PLATFORMS: { id: Platform; label: string; icon: JSX.Element }[] = [
 const DEFAULT_RECOMMENDED: Record<Platform, string> = { darwin: 'arm64', windows: 'x64', linux: 'x64' };
 
 function formatSize(bytes: number): string { return `${Math.round(bytes / 1024 / 1024)} MB`; }
-function formatDate(iso: string): string { return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }); }
+function formatVersionDate(iso: string, isSnapshot: boolean): string {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!isSnapshot) return datePart;
+  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${datePart}, ${timePart}`;
+}
 
 // ============================================================
 // Components
@@ -461,7 +467,14 @@ function DownloadsCard({ products, detectedOS, detectedArch, onDownload }: { pro
             <ChannelBadge key={ch} channel={ch} active={activeChannel.channel === ch} disabled={!exists} onClick={exists && channels.length > 1 ? () => setActiveChannelId(ch) : undefined} />
           );
         })}
-        <span className="rounded-md bg-muted/50 px-2.5 py-1 font-brand font-medium text-muted-foreground" style={{ fontSize: scaled(11) }}>{activeChannel.version}</span>
+        <div className="ml-1 font-brand" style={{ fontSize: scaled(13) }}>
+          <span className="font-semibold text-foreground">{activeChannel.version}</span>
+          {activeChannel.releaseDate && (
+            <span className="text-muted-foreground/40" style={{ fontSize: scaled(12) }}>
+              {' '}· {formatVersionDate(activeChannel.releaseDate, activeChannel.channel === 'snapshot')}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex flex-col gap-2 p-5">
         {sortedArtifacts.length > 0 ? sortedArtifacts.map((artifact) => (
@@ -472,7 +485,7 @@ function DownloadsCard({ products, detectedOS, detectedArch, onDownload }: { pro
       </div>
       <ReleaseNotesSection channel={activeChannel} />
       <ChecksumTable artifacts={platformArtifacts} />
-      {activeChannel.releaseDate && <div className="border-t border-border/30 px-5 py-2 text-muted-foreground/40" style={{ fontSize: scaled(11) }}>Released {formatDate(activeChannel.releaseDate)}</div>}
+      {/* Release date removed — now shown inline with version */}
     </div>
   );
 }

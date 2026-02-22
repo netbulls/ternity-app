@@ -183,7 +183,7 @@ export async function downloadsRoutes(fastify: FastifyInstance) {
             return {
               channel: channel as 'release' | 'snapshot',
               version: latest.version,
-              releaseDate: channel === 'release' ? latest.uploadedAt : null,
+              releaseDate: latest.uploadedAt,
               releaseNotes: await getReleaseNotes(latest.version, driveInternalUrl),
               artifacts: clientArtifacts,
             };

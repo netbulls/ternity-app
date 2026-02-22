@@ -70,8 +70,12 @@ function formatSize(bytes: number): string {
   return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+function formatVersionDate(iso: string, isSnapshot: boolean): string {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!isSnapshot) return datePart;
+  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${datePart}, ${timePart}`;
 }
 
 // ============================================================
@@ -526,7 +530,7 @@ function DownloadsCard({
       {/* Row 2: Platform tabs */}
       <PlatformTabs active={effectivePlatform} detected={detectedOS} availablePlatforms={availablePlatforms} onChange={setActivePlatform} />
 
-      {/* Row 3: Channel badges with inline versions */}
+      {/* Row 3: Channel badges + version with date */}
       <div className="flex items-center gap-2 px-5 py-3">
         {(['release', 'snapshot'] as const).map((ch) => {
           const available = availableChannels.has(ch);
@@ -542,6 +546,14 @@ function DownloadsCard({
             />
           );
         })}
+        <div className="ml-1 font-brand" style={{ fontSize: scaled(13) }}>
+          <span className="font-semibold text-foreground">{activeChannel.version}</span>
+          {activeChannel.releaseDate && (
+            <span className="text-muted-foreground/40" style={{ fontSize: scaled(12) }}>
+              {' '}· {formatVersionDate(activeChannel.releaseDate, activeChannel.channel === 'snapshot')}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Download rows */}
@@ -567,15 +579,7 @@ function DownloadsCard({
       {/* Checksums */}
       <ChecksumTable artifacts={platformArtifacts} />
 
-      {/* Release date */}
-      {activeChannel.releaseDate && (
-        <div
-          className="border-t border-border/30 px-5 py-2 text-muted-foreground/40"
-          style={{ fontSize: scaled(11) }}
-        >
-          Released {formatDate(activeChannel.releaseDate)}
-        </div>
-      )}
+      {/* Release date removed — now shown inline with version in Row 3 */}
     </div>
   );
 }

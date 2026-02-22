@@ -203,6 +203,20 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'desktop',
     groups: [
       {
+        name: 'start-stop',
+        id: 'desktop-start-stop-lab',
+        description: 'Start/stop button — visual styles, glassiness, animations, timer style collection across themes',
+        date: '2026-02-22T15:12:00',
+        items: [
+          { kind: 'prototype', title: 'Timer Looks', route: '/dev/timer-looks', description: 'Focused prototype: Original, Elastic Jelly, Magnetic — inline + full-width, experimenting with card looks', date: '2026-02-22T16:00:00' },
+          { kind: 'prototype', title: 'Animation Showcase', route: '/dev/start-stop', description: 'Original + 10 animation styles (Shockwave, Elastic, Glitch, Aurora, Particles, Neon, Magnetic, Heartbeat, Liquid, Gravity) — inline + full-width', date: '2026-02-22T15:30:00' },
+          { kind: 'exploration', title: 'start-stop-d8f4', file: 'desktop/start-stop-d8f4.html', description: 'Timer Style Collection — 6 styles × 6 themes, interactive ripple animation. Ghost Glass, Frosted Bar, Solid Pill, Neon Wire, Soft Slab, Mono Edge with default theme pairings', date: '2026-02-22T15:12:00' },
+          { kind: 'exploration', title: 'start-stop-c5d2', file: 'desktop/start-stop-c5d2.html', description: 'Animation exploration — A2 Frosted + B2 Frosted Bar with 6 animations each (Snap, Bounce, Glow Burst, Ripple, Jelly, Slide Swap). Interactive click-to-toggle', date: '2026-02-22T15:04:00' },
+          { kind: 'exploration', title: 'start-stop-b3e9', file: 'desktop/start-stop-b3e9.html', description: 'Glassiness exploration — 3 families (Ghost Glass, Flush Bar, Minimal Text) × 4 glass levels each. 12 total variants', date: '2026-02-22T14:57:00' },
+          { kind: 'exploration', title: 'start-stop-a1f7', file: 'desktop/start-stop-a1f7.html', description: '10 visual variants + current button recreation. Ghost Glass, Pill Morph, Neon Wire, Gradient Flow, Circle Icon, Glass Slab, Ring Pulse, Flush Bar, Split Tone, Minimal Text', date: '2026-02-22T14:46:00' },
+        ],
+      },
+      {
         name: 'timer-section',
         id: 'desktop-timer-lab',
         description: 'Timer section UI — idle/start/running states, empty start flow, incomplete entry indicators',
