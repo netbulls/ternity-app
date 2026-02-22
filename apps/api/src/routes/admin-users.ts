@@ -72,11 +72,13 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const [updated] = await db
-      .update(users)
-      .set({ active: true, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning({ id: users.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(users)
+        .set({ active: true, updatedAt: new Date() })
+        .where(eq(users.id, id))
+        .returning({ id: users.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'User not found' });
@@ -93,11 +95,13 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const [updated] = await db
-      .update(users)
-      .set({ active: false, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning({ id: users.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(users)
+        .set({ active: false, updatedAt: new Date() })
+        .where(eq(users.id, id))
+        .returning({ id: users.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'User not found' });
@@ -118,11 +122,13 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'userIds is required' });
     }
 
-    const updated = await db
-      .update(users)
-      .set({ active: true, updatedAt: new Date() })
-      .where(inArray(users.id, userIds))
-      .returning({ id: users.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(users)
+        .set({ active: true, updatedAt: new Date() })
+        .where(inArray(users.id, userIds))
+        .returning({ id: users.id });
+    });
 
     return { success: true, count: updated.length };
   });
@@ -139,11 +145,13 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'userIds is required' });
     }
 
-    const updated = await db
-      .update(users)
-      .set({ active: false, updatedAt: new Date() })
-      .where(inArray(users.id, userIds))
-      .returning({ id: users.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(users)
+        .set({ active: false, updatedAt: new Date() })
+        .where(inArray(users.id, userIds))
+        .returning({ id: users.id });
+    });
 
     return { success: true, count: updated.length };
   });

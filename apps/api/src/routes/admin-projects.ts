@@ -61,15 +61,17 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
 
     const { name, clientId, color, description } = parsed.data;
 
-    const [created] = await db
-      .insert(projects)
-      .values({
-        name,
-        clientId,
-        ...(color && { color }),
-        ...(description && { description }),
-      })
-      .returning();
+    const [created] = await db.transaction(async (tx) => {
+      return tx
+        .insert(projects)
+        .values({
+          name,
+          clientId,
+          ...(color && { color }),
+          ...(description && { description }),
+        })
+        .returning();
+    });
 
     return reply.code(201).send(created);
   });
@@ -96,11 +98,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'No fields to update' });
     }
 
-    const [updated] = await db
-      .update(projects)
-      .set(updates)
-      .where(eq(projects.id, id))
-      .returning();
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(projects)
+        .set(updates)
+        .where(eq(projects.id, id))
+        .returning();
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Project not found' });
@@ -116,11 +120,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const [updated] = await db
-      .update(projects)
-      .set({ isActive: true })
-      .where(eq(projects.id, id))
-      .returning({ id: projects.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(projects)
+        .set({ isActive: true })
+        .where(eq(projects.id, id))
+        .returning({ id: projects.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Project not found' });
@@ -136,11 +142,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const [updated] = await db
-      .update(projects)
-      .set({ isActive: false })
-      .where(eq(projects.id, id))
-      .returning({ id: projects.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(projects)
+        .set({ isActive: false })
+        .where(eq(projects.id, id))
+        .returning({ id: projects.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Project not found' });
@@ -160,11 +168,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'projectIds is required' });
     }
 
-    const updated = await db
-      .update(projects)
-      .set({ isActive: true })
-      .where(inArray(projects.id, projectIds))
-      .returning({ id: projects.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(projects)
+        .set({ isActive: true })
+        .where(inArray(projects.id, projectIds))
+        .returning({ id: projects.id });
+    });
 
     return { success: true, count: updated.length };
   });
@@ -180,11 +190,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'projectIds is required' });
     }
 
-    const updated = await db
-      .update(projects)
-      .set({ isActive: false })
-      .where(inArray(projects.id, projectIds))
-      .returning({ id: projects.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(projects)
+        .set({ isActive: false })
+        .where(inArray(projects.id, projectIds))
+        .returning({ id: projects.id });
+    });
 
     return { success: true, count: updated.length };
   });
@@ -226,10 +238,12 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: parsed.error.flatten() });
     }
 
-    const [created] = await db
-      .insert(clients)
-      .values({ name: parsed.data.name })
-      .returning();
+    const [created] = await db.transaction(async (tx) => {
+      return tx
+        .insert(clients)
+        .values({ name: parsed.data.name })
+        .returning();
+    });
 
     return reply.code(201).send(created);
   });
@@ -246,11 +260,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: parsed.error.flatten() });
     }
 
-    const [updated] = await db
-      .update(clients)
-      .set({ name: parsed.data.name })
-      .where(eq(clients.id, id))
-      .returning();
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(clients)
+        .set({ name: parsed.data.name })
+        .where(eq(clients.id, id))
+        .returning();
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Client not found' });
@@ -266,11 +282,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const [updated] = await db
-      .update(clients)
-      .set({ isActive: true })
-      .where(eq(clients.id, id))
-      .returning({ id: clients.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(clients)
+        .set({ isActive: true })
+        .where(eq(clients.id, id))
+        .returning({ id: clients.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Client not found' });
@@ -286,11 +304,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const [updated] = await db
-      .update(clients)
-      .set({ isActive: false })
-      .where(eq(clients.id, id))
-      .returning({ id: clients.id });
+    const [updated] = await db.transaction(async (tx) => {
+      return tx
+        .update(clients)
+        .set({ isActive: false })
+        .where(eq(clients.id, id))
+        .returning({ id: clients.id });
+    });
 
     if (!updated) {
       return reply.code(404).send({ error: 'Client not found' });
@@ -310,11 +330,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'clientIds is required' });
     }
 
-    const updated = await db
-      .update(clients)
-      .set({ isActive: true })
-      .where(inArray(clients.id, clientIds))
-      .returning({ id: clients.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(clients)
+        .set({ isActive: true })
+        .where(inArray(clients.id, clientIds))
+        .returning({ id: clients.id });
+    });
 
     return { success: true, count: updated.length };
   });
@@ -330,11 +352,13 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'clientIds is required' });
     }
 
-    const updated = await db
-      .update(clients)
-      .set({ isActive: false })
-      .where(inArray(clients.id, clientIds))
-      .returning({ id: clients.id });
+    const updated = await db.transaction(async (tx) => {
+      return tx
+        .update(clients)
+        .set({ isActive: false })
+        .where(inArray(clients.id, clientIds))
+        .returning({ id: clients.id });
+    });
 
     return { success: true, count: updated.length };
   });
