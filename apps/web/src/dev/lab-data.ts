@@ -126,6 +126,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
             description: 'Prominence, placement, and formatting within the download card',
             date: '2026-02-21T12:00:00',
             items: [
+              { kind: 'prototype', title: 'Release Notes Readability', route: '/dev/release-notes', description: 'Monospace terminal feel, bigger text, single column, no category grouping. 3 variants: A) Terminal Log (prefix symbols), B) CHANGELOG.md file look, C) Prefix Symbols + hover tint', date: '2026-02-22T10:00:00' },
               { kind: 'exploration', title: 'release-notes-0ffa', file: 'web/release-notes-0ffa.html', description: 'Multi-category stress test — G1a (colored dots) and G1b (accent bars) with 2, 3, and 4 changelog categories. CSS grid vs flexbox wrap layout.', date: '2026-02-21T14:00:00' },
               { kind: 'exploration', title: 'release-notes-b1ba', file: 'web/release-notes-b1ba.html', description: 'G1 content styling — 4 treatments: a) Colored dots + dashes, b) Left accent bars per category, c) Badge pills with icons, d) Single column minimal. All interactive.', date: '2026-02-21T13:00:00' },
               { kind: 'exploration', title: 'release-notes-9780', file: 'web/release-notes-9780.html', description: 'G focused — ribbon after downloads, expands down. 3 sub-variants: G1) Flat two-column, G2) Teal callout card, G3) Promoted section with header bar. Interactive.', date: '2026-02-21T12:00:00' },

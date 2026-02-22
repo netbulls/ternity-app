@@ -74,6 +74,13 @@ export const router = createBrowserRouter([
             return { Component: DevDownloadsPage };
           },
         },
+        {
+          path: '/dev/release-notes',
+          lazy: async () => {
+            const { DevReleaseNotesPage } = await import('@/pages/dev-release-notes');
+            return { Component: DevReleaseNotesPage };
+          },
+        },
       ]
     : []),
   {

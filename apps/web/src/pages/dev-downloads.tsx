@@ -294,90 +294,44 @@ function DownloadRow({ artifact, recommended, onDownload }: { artifact: Artifact
   );
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Added: 'hsl(142 71% 45%)',
-  Changed: 'hsl(217 91% 60%)',
-  Fixed: 'hsl(38 92% 50%)',
-  Removed: 'hsl(0 84% 60%)',
-  Security: 'hsl(280 70% 55%)',
-  Deprecated: 'hsl(30 60% 50%)',
+const NOTE_PREFIXES: Record<string, { prefix: string; color: string }> = {
+  Added:      { prefix: '+', color: 'hsl(142 71% 45%)' },
+  Changed:    { prefix: '~', color: 'hsl(217 91% 60%)' },
+  Fixed:      { prefix: '*', color: 'hsl(38 92% 50%)' },
+  Removed:    { prefix: '-', color: 'hsl(0 84% 60%)' },
+  Security:   { prefix: '!', color: 'hsl(280 70% 55%)' },
+  Deprecated: { prefix: '?', color: 'hsl(30 60% 50%)' },
 };
+
+const NOTE_LEGEND = [
+  { prefix: '+', label: 'added', color: NOTE_PREFIXES.Added!.color },
+  { prefix: '~', label: 'changed', color: NOTE_PREFIXES.Changed!.color },
+  { prefix: '*', label: 'fixed', color: NOTE_PREFIXES.Fixed!.color },
+  { prefix: '-', label: 'removed', color: NOTE_PREFIXES.Removed!.color },
+  { prefix: '!', label: 'security', color: NOTE_PREFIXES.Security!.color },
+];
+
+function flattenNotes(notes: ReleaseNote[]) {
+  return notes.flatMap((section) =>
+    section.entries.map((entry) => ({
+      prefix: NOTE_PREFIXES[section.category]?.prefix ?? '·',
+      color: NOTE_PREFIXES[section.category]?.color ?? 'hsl(var(--muted-foreground))',
+      text: entry,
+    })),
+  );
+}
 
 function ReleaseNotesSection({ channel }: { channel: Channel }) {
   const [open, setOpen] = useState(false);
   if (channel.releaseNotes.length === 0) return null;
 
-  const allEntries = channel.releaseNotes.flatMap((s) => s.entries);
-  const teaser = allEntries.slice(0, 3).join(', ');
-  const totalCount = allEntries.length;
-
-  // Split categories into two balanced columns
-  const totalItems = channel.releaseNotes.reduce((sum, s) => sum + 1 + s.entries.length, 0);
-  const half = Math.ceil(totalItems / 2);
-  const left: ReleaseNote[] = [];
-  const right: ReleaseNote[] = [];
-  let itemCount = 0;
-  for (const s of channel.releaseNotes) {
-    if (itemCount < half) {
-      left.push(s);
-      itemCount += 1 + s.entries.length;
-    } else {
-      right.push(s);
-    }
-  }
-  if (right.length === 0 && left.length > 1) right.push(left.pop()!);
-
-  const leftEntryCount = left.reduce((sum, s) => sum + s.entries.length, 0);
-
-  const renderColumn = (sections: ReleaseNote[], startNum: number) => {
-    let num = startNum;
-    return (
-      <div>
-        {sections.map((section, si) => (
-          <div key={section.category}>
-            <div
-              className="inline-flex items-center gap-[5px]"
-              style={{ marginBottom: 4, marginTop: si > 0 ? 8 : 0 }}
-            >
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ background: CATEGORY_COLORS[section.category] ?? 'hsl(var(--muted-foreground))' }}
-              />
-              <span
-                className="font-brand font-semibold uppercase"
-                style={{
-                  fontSize: scaled(9),
-                  letterSpacing: '0.5px',
-                  color: 'hsl(var(--foreground))',
-                  opacity: 0.5,
-                }}
-              >
-                {section.category}
-              </span>
-            </div>
-            {section.entries.map((entry) => {
-              const n = num++;
-              return (
-                <div
-                  key={n}
-                  className="text-muted-foreground"
-                  style={{ fontSize: scaled(11), lineHeight: 1.7 }}
-                >
-                  <span className="font-brand text-muted-foreground/30" style={{ fontVariantNumeric: 'tabular-nums' }}>[{n}]</span>{' '}{entry}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const items = flattenNotes(channel.releaseNotes);
 
   return (
     <>
       <button
         className={cn(
-          'flex w-full items-center gap-2 border-t px-5 py-2 transition-colors',
+          'flex w-full items-center gap-2 border-t px-5 py-2 transition-colors font-mono',
           open
             ? 'border-primary/[0.08] bg-primary/[0.04]'
             : 'border-primary/[0.08] bg-primary/[0.02] hover:bg-primary/[0.05]',
@@ -385,19 +339,18 @@ function ReleaseNotesSection({ channel }: { channel: Channel }) {
         onClick={() => setOpen(!open)}
       >
         <Sparkles className="h-3.5 w-3.5 text-primary/50" />
-        <span className="min-w-0 truncate" style={{ fontSize: scaled(11) }}>
+        <span style={{ fontSize: scaled(12) }}>
           <strong className="font-medium text-primary">What's new in {channel.version}</strong>
-          <span className="text-foreground/70"> — {teaser}</span>
         </span>
         <span
-          className="shrink-0 rounded font-brand font-semibold text-primary"
+          className="shrink-0 rounded font-mono font-semibold text-primary"
           style={{
-            fontSize: scaled(9),
+            fontSize: scaled(10),
             background: 'hsl(var(--primary) / 0.1)',
             padding: '1px 6px',
           }}
         >
-          {totalCount}
+          {items.length}
         </span>
         <ChevronDown
           className={cn('ml-auto h-3 w-3 shrink-0 text-muted-foreground/30 transition-transform', open && 'rotate-180')}
@@ -405,14 +358,34 @@ function ReleaseNotesSection({ channel }: { channel: Channel }) {
       </button>
       {open && (
         <div
-          className="grid border-t border-border/10 px-5 pb-4 pt-3"
-          style={{
-            gridTemplateColumns: right.length > 0 ? '1fr 1fr' : '1fr',
-            gap: '4px 32px',
-          }}
+          className="border-t border-border/10 px-5 pb-3 pt-2 font-mono"
+          style={{ fontSize: scaled(12.5) }}
         >
-          {renderColumn(left, 1)}
-          {right.length > 0 && renderColumn(right, leftEntryCount + 1)}
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="-mx-2 flex items-baseline gap-2 rounded px-2 py-[3px] text-muted-foreground transition-colors hover:bg-muted/30"
+            >
+              <span
+                className="shrink-0 text-center font-bold"
+                style={{ color: item.color, width: '1em' }}
+              >
+                {item.prefix}
+              </span>
+              <span style={{ lineHeight: 1.6 }}>{item.text}</span>
+            </div>
+          ))}
+          <div
+            className="mt-2 flex items-center gap-3 border-t border-border/10 pt-2"
+            style={{ fontSize: scaled(10) }}
+          >
+            {NOTE_LEGEND.map((l) => (
+              <span key={l.prefix} className="flex items-center gap-1 text-muted-foreground/40">
+                <span className="font-bold" style={{ color: l.color }}>{l.prefix}</span>
+                {l.label}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </>
