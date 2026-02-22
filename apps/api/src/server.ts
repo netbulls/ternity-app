@@ -29,6 +29,22 @@ await fastify.register(cors, {
 await fastify.register(viewerModePlugin);
 await fastify.register(authPlugin);
 
+// Global error handler — structured JSON for all unhandled errors
+fastify.setErrorHandler((error: Error & { statusCode?: number; code?: string }, request, reply) => {
+  request.log.error(error);
+  const status = error.statusCode ?? 500;
+  reply.code(status).send({
+    error: error.message ?? 'Internal server error',
+    code: error.code ?? 'INTERNAL_ERROR',
+  });
+});
+
+// Error simulation (dev-only)
+if (process.env.NODE_ENV !== 'production') {
+  const { default: errorSimulation } = await import('./plugins/error-simulation.js');
+  await fastify.register(errorSimulation);
+}
+
 // Routes
 await fastify.register(healthRoutes);
 await fastify.register(meRoutes);

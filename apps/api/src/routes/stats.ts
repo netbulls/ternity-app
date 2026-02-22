@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { timeEntries } from '../db/schema.js';
+import { timeEntries, entrySegments } from '../db/schema.js';
 
 export async function statsRoutes(fastify: FastifyInstance) {
   /** GET /api/stats — today + this week totals */
@@ -23,25 +23,26 @@ export async function statsRoutes(fastify: FastifyInstance) {
     weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
     weekEnd.setUTCHours(23, 59, 59, 999);
 
-    // Query today's total (completed + running entries)
+    // Query today's total (sum segments, handle running segments)
     const [todayResult] = await db
       .select({
         total: sql<number>`
           COALESCE(SUM(
             CASE
-              WHEN ${timeEntries.stoppedAt} IS NULL
-              THEN EXTRACT(EPOCH FROM NOW() - ${timeEntries.startedAt})
-              ELSE ${timeEntries.durationSeconds}
+              WHEN ${entrySegments.stoppedAt} IS NULL AND ${entrySegments.type} = 'clocked'
+              THEN EXTRACT(EPOCH FROM NOW() - ${entrySegments.startedAt})
+              ELSE ${entrySegments.durationSeconds}
             END
           ), 0)
         `.as('total'),
       })
       .from(timeEntries)
+      .innerJoin(entrySegments, eq(entrySegments.entryId, timeEntries.id))
       .where(
         and(
           eq(timeEntries.userId, userId),
-          gte(timeEntries.startedAt, todayStart),
-          lte(timeEntries.startedAt, todayEnd),
+          gte(timeEntries.createdAt, todayStart),
+          lte(timeEntries.createdAt, todayEnd),
         ),
       );
 
@@ -51,19 +52,20 @@ export async function statsRoutes(fastify: FastifyInstance) {
         total: sql<number>`
           COALESCE(SUM(
             CASE
-              WHEN ${timeEntries.stoppedAt} IS NULL
-              THEN EXTRACT(EPOCH FROM NOW() - ${timeEntries.startedAt})
-              ELSE ${timeEntries.durationSeconds}
+              WHEN ${entrySegments.stoppedAt} IS NULL AND ${entrySegments.type} = 'clocked'
+              THEN EXTRACT(EPOCH FROM NOW() - ${entrySegments.startedAt})
+              ELSE ${entrySegments.durationSeconds}
             END
           ), 0)
         `.as('total'),
       })
       .from(timeEntries)
+      .innerJoin(entrySegments, eq(entrySegments.entryId, timeEntries.id))
       .where(
         and(
           eq(timeEntries.userId, userId),
-          gte(timeEntries.startedAt, weekStart),
-          lte(timeEntries.startedAt, weekEnd),
+          gte(timeEntries.createdAt, weekStart),
+          lte(timeEntries.createdAt, weekEnd),
         ),
       );
 

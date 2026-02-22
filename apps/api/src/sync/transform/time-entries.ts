@@ -5,6 +5,7 @@ import {
   stgTogglTags,
   timeEntries,
   entryLabels,
+  entrySegments,
   labels,
 } from '../../db/schema.js';
 import { log } from '../logger.js';
@@ -71,17 +72,36 @@ export async function transformTimeEntries() {
       .filter((n): n is string => !!n);
 
     if (existingId) {
+      // Update entry metadata
       await db
         .update(timeEntries)
-        .set({ userId, projectId, description, startedAt, stoppedAt, durationSeconds })
+        .set({ userId, projectId, description })
         .where(eq(timeEntries.id, existingId));
+      // Update or recreate the clocked segment
+      // Delete existing segments and re-insert (simpler than upsert for sync)
+      await db.delete(entrySegments).where(eq(entrySegments.entryId, existingId));
+      await db.insert(entrySegments).values({
+        entryId: existingId,
+        type: 'clocked',
+        startedAt,
+        stoppedAt,
+        durationSeconds,
+      });
       await syncEntryLabels(existingId, tagNames, labelByName);
       counts.updated++;
     } else {
+      // Create entry (metadata only) + clocked segment
       const [created] = await db
         .insert(timeEntries)
-        .values({ userId, projectId, description, startedAt, stoppedAt, durationSeconds })
+        .values({ userId, projectId, description })
         .returning();
+      await db.insert(entrySegments).values({
+        entryId: created!.id,
+        type: 'clocked',
+        startedAt,
+        stoppedAt,
+        durationSeconds,
+      });
       await upsertMapping('toggl', 'time_entries', externalId, 'time_entries', created!.id);
       await syncEntryLabels(created!.id, tagNames, labelByName);
       counts.created++;

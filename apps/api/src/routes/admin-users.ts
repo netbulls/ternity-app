@@ -53,7 +53,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
         globalRole: users.globalRole,
         active: users.active,
         entryCount: sql<number>`cast(count(${timeEntries.id}) as int)`,
-        lastEntryAt: sql<string | null>`max(${timeEntries.startedAt})`,
+        lastEntryAt: sql<string | null>`max(${timeEntries.createdAt})`,
       })
       .from(users)
       .leftJoin(timeEntries, eq(timeEntries.userId, users.id))

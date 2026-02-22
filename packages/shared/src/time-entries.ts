@@ -10,6 +10,20 @@ export const EntryLabelSchema = z.object({
 
 export type EntryLabel = z.infer<typeof EntryLabelSchema>;
 
+/* ── Segment (immutable timer record) ───────────────────────────── */
+
+export const SegmentSchema = z.object({
+  id: z.string(),
+  type: z.enum(['clocked', 'manual']),
+  startedAt: z.string().nullable(), // null for pure adjustments; set for clocked and manual entries
+  stoppedAt: z.string().nullable(), // null while running (clocked) or for adjustments
+  durationSeconds: z.number().nullable(), // null while running
+  note: z.string().nullable(), // null for clocked; set for manual entries and adjustments
+  createdAt: z.string(),
+});
+
+export type Segment = z.infer<typeof SegmentSchema>;
+
 /* ── Entry (returned from API) ──────────────────────────────────── */
 
 export const EntrySchema = z.object({
@@ -20,9 +34,9 @@ export const EntrySchema = z.object({
   projectColor: z.string().nullable(),
   clientName: z.string().nullable(),
   labels: z.array(EntryLabelSchema),
-  startedAt: z.string(), // ISO 8601
-  stoppedAt: z.string().nullable(),
-  durationSeconds: z.number().nullable(), // null when running
+  segments: z.array(SegmentSchema),
+  totalDurationSeconds: z.number(), // sum of all segment durations
+  isRunning: z.boolean(), // any clocked segment with stoppedAt=null
   createdAt: z.string(), // ISO 8601
   userId: z.string(),
 });
@@ -56,6 +70,7 @@ export const CreateEntrySchema = z.object({
   labelIds: z.array(z.string()).default([]),
   startedAt: z.string(), // ISO 8601
   stoppedAt: z.string(), // ISO 8601
+  note: z.string().min(1), // required justification for manually entered time
 });
 
 export type CreateEntry = z.infer<typeof CreateEntrySchema>;
@@ -64,11 +79,18 @@ export const UpdateEntrySchema = z.object({
   description: z.string().optional(),
   projectId: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
-  startedAt: z.string().optional(),
-  stoppedAt: z.string().nullable().optional(),
 });
 
 export type UpdateEntry = z.infer<typeof UpdateEntrySchema>;
+
+/* ── Adjust entry payload (manual segment) ──────────────────────── */
+
+export const AdjustEntrySchema = z.object({
+  durationSeconds: z.number(),
+  note: z.string().min(1),
+});
+
+export type AdjustEntry = z.infer<typeof AdjustEntrySchema>;
 
 /* ── Start timer payload ────────────────────────────────────────── */
 
@@ -92,6 +114,7 @@ export const AuditEventSchema = z.object({
     'timer_started',
     'timer_stopped',
     'timer_resumed',
+    'adjustment_added',
   ]),
   actorId: z.string(),
   actorName: z.string(),

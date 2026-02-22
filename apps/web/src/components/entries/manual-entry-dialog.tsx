@@ -30,6 +30,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
   const [date, setDate] = useState(today);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
+  const [note, setNote] = useState('');
 
   const dateParts = date.split('-').map(Number);
   const year = dateParts[0] ?? 2026;
@@ -54,6 +55,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
         labelIds,
         startedAt: startIso,
         stoppedAt: endIso,
+        note,
         source: 'manual_dialog',
       },
       {
@@ -66,6 +68,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
           setDate(today);
           setStartTime('09:00');
           setEndTime('10:00');
+          setNote('');
         },
       },
     );
@@ -86,6 +89,16 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
               placeholder="What did you work on?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="note">Reason</Label>
+            <Input
+              id="note"
+              placeholder="Why are you adding this manually?"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
@@ -142,7 +155,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={createEntry.isPending || durationSec <= 0}>
+          <Button onClick={handleSubmit} disabled={createEntry.isPending || durationSec <= 0 || !note.trim()}>
             {createEntry.isPending ? 'Creating...' : 'Create Entry'}
           </Button>
         </DialogFooter>

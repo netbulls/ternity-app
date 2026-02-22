@@ -49,9 +49,17 @@ export function TimerBar() {
     return () => clearTimeout(timer);
   }, [description, running, currentEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Compute elapsed from segments
+  const completedDuration = currentEntry?.segments
+    .filter((s) => s.durationSeconds != null)
+    .reduce((sum, s) => sum + s.durationSeconds!, 0) ?? 0;
+  const runningSegment = currentEntry?.segments.find(
+    (s) => s.type === 'clocked' && !s.stoppedAt,
+  );
   const elapsed = useElapsedSeconds(
-    currentEntry?.startedAt ?? null,
+    runningSegment?.startedAt ?? null,
     running,
+    completedDuration,
   );
 
   const display = formatTimer(running ? elapsed : 0);

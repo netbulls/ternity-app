@@ -29,7 +29,10 @@ export const entryAuditActionEnum = pgEnum('entry_audit_action', [
   'timer_started',
   'timer_stopped',
   'timer_resumed',
+  'adjustment_added',
 ]);
+
+export const segmentTypeEnum = pgEnum('segment_type', ['clocked', 'manual']);
 
 export const syncSourceEnum = pgEnum('sync_source', ['toggl', 'timetastic']);
 export const syncRunStatusEnum = pgEnum('sync_run_status', ['running', 'completed', 'failed']);
@@ -117,11 +120,27 @@ export const timeEntries = pgTable('time_entries', {
     .references(() => users.id),
   projectId: uuid('project_id').references(() => projects.id),
   description: text('description').notNull().default(''),
-  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
-  stoppedAt: timestamp('stopped_at', { withTimezone: true }),
-  durationSeconds: integer('duration_seconds'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── Entry Segments ────────────────────────────────────────────────────────
+
+export const entrySegments = pgTable(
+  'entry_segments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    entryId: uuid('entry_id')
+      .notNull()
+      .references(() => timeEntries.id, { onDelete: 'cascade' }),
+    type: segmentTypeEnum('type').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    stoppedAt: timestamp('stopped_at', { withTimezone: true }),
+    durationSeconds: integer('duration_seconds'),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('entry_segments_entry_id_idx').on(t.entryId)],
+);
 
 // ── Entry Labels (join table) ──────────────────────────────────────────────
 

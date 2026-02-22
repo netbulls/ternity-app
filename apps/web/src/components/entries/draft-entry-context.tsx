@@ -99,6 +99,7 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
         labelIds: [],
         startedAt: startISO,
         stoppedAt: endISO,
+        note: 'Manual entry',
         source: 'draft',
       });
       // Mark as saved — DraftEntryRow switches to display mode + SaveFlash,

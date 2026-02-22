@@ -33,6 +33,7 @@ const actionConfig: Record<AuditAction, {
   timer_started: { label: 'Started timer', icon: Play, iconColor: 'text-primary' },
   timer_stopped: { label: 'Stopped timer', icon: Square, iconColor: 'text-blue-500' },
   timer_resumed: { label: 'Resumed timer', icon: Timer, iconColor: 'text-blue-500' },
+  adjustment_added: { label: 'Added adjustment', icon: Plus, iconColor: 'text-chart-3' },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -153,8 +154,8 @@ function buildTimelineItems(events: AuditEvent[], sessions: TimelineSession[]): 
   return items;
 }
 
-function LiveDuration({ startedAt }: { startedAt: string }) {
-  const elapsed = useElapsedSeconds(startedAt, true);
+function LiveDuration({ startedAt, offset = 0 }: { startedAt: string; offset?: number }) {
+  const elapsed = useElapsedSeconds(startedAt, true, offset);
   return (
     <span className="font-brand font-semibold text-primary">
       {formatDuration(elapsed)}
@@ -351,14 +352,21 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
 
   if (!entry) return null;
 
-  const dateStr = new Date(entry.startedAt).toLocaleDateString('en-GB', {
+  const dateStr = new Date(entry.createdAt).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
-  const startTime = formatTime(entry.startedAt);
-  const endTime = entry.stoppedAt ? formatTime(entry.stoppedAt) : null;
-  const isRunning = !entry.stoppedAt;
+  const timedSegments = entry.segments.filter((s) => s.startedAt != null);
+  const firstStartedAt = timedSegments[0]?.startedAt ?? entry.createdAt;
+  const lastStoppedAt = timedSegments[timedSegments.length - 1]?.stoppedAt ?? null;
+  const startTime = formatTime(firstStartedAt);
+  const endTime = lastStoppedAt ? formatTime(lastStoppedAt) : null;
+  const isRunning = entry.isRunning;
+  const completedDuration = entry.segments
+    .filter((s) => s.durationSeconds != null)
+    .reduce((sum, s) => sum + s.durationSeconds!, 0);
+  const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
 
   // Build unified timeline: sessions (collapsible) interleaved with regular events
   const sessions = events ? buildTimelineSessions(events) : [];
@@ -438,13 +446,13 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
                 </>
               )}
               <span className="opacity-30">|</span>
-              {isRunning ? (
-                <LiveDuration startedAt={entry.startedAt} />
-              ) : entry.durationSeconds != null ? (
+              {isRunning && runningSegment?.startedAt ? (
+                <LiveDuration startedAt={runningSegment.startedAt} offset={completedDuration} />
+              ) : (
                 <span className="font-brand font-semibold text-foreground">
-                  {formatDuration(entry.durationSeconds)}
+                  {formatDuration(entry.totalDurationSeconds)}
                 </span>
-              ) : null}
+              )}
             </div>
             {createdAtStr && (
               <div className="text-muted-foreground/40" style={{ fontSize: scaled(10) }}>

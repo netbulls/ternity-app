@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { useImpersonation } from '@/providers/impersonation-provider';
 import type { TimerState, StartTimer } from '@ternity/shared';
@@ -14,7 +15,11 @@ export function useTimer() {
   });
 }
 
-export function useElapsedSeconds(startedAt: string | null | undefined, running: boolean) {
+export function useElapsedSeconds(
+  startedAt: string | null | undefined,
+  running: boolean,
+  offset: number = 0,
+) {
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -25,13 +30,13 @@ export function useElapsedSeconds(startedAt: string | null | undefined, running:
     }
 
     if (!running || !startedAt) {
-      setElapsed(0);
+      setElapsed(offset);
       return;
     }
 
     const calcElapsed = () => {
       const start = new Date(startedAt).getTime();
-      return Math.max(0, Math.round((Date.now() - start) / 1000));
+      return offset + Math.max(0, Math.round((Date.now() - start) / 1000));
     };
 
     setElapsed(calcElapsed());
@@ -40,7 +45,7 @@ export function useElapsedSeconds(startedAt: string | null | undefined, running:
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [startedAt, running]);
+  }, [startedAt, running, offset]);
 
   return elapsed;
 }
@@ -49,7 +54,7 @@ export function useStartTimer() {
   const queryClient = useQueryClient();
   const { effectiveUserId } = useImpersonation();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (data: StartTimer) =>
       apiFetch<TimerState>('/timer/start', {
         method: 'POST',
@@ -60,14 +65,20 @@ export function useStartTimer() {
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
+    onError: (_error, variables) => {
+      toast.error('Failed to start timer', {
+        action: { label: 'Retry', onClick: () => mutation.mutate(variables) },
+      });
+    },
   });
+  return mutation;
 }
 
 export function useResumeTimer() {
   const queryClient = useQueryClient();
   const { effectiveUserId } = useImpersonation();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (entryId: string) =>
       apiFetch<TimerState>(`/timer/resume/${entryId}`, { method: 'POST' }),
     onSuccess: () => {
@@ -75,14 +86,20 @@ export function useResumeTimer() {
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
+    onError: (_error, variables) => {
+      toast.error('Failed to resume timer', {
+        action: { label: 'Retry', onClick: () => mutation.mutate(variables) },
+      });
+    },
   });
+  return mutation;
 }
 
 export function useStopTimer() {
   const queryClient = useQueryClient();
   const { effectiveUserId } = useImpersonation();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: () =>
       apiFetch<TimerState>('/timer/stop', { method: 'POST' }),
     onSuccess: () => {
@@ -90,5 +107,11 @@ export function useStopTimer() {
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
+    onError: () => {
+      toast.error('Failed to stop timer', {
+        action: { label: 'Retry', onClick: () => mutation.mutate() },
+      });
+    },
   });
+  return mutation;
 }

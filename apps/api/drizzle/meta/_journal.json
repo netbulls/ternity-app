@@ -50,6 +50,13 @@
       "when": 1771283943053,
       "tag": "0006_parched_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1771712939712,
+      "tag": "0007_left_vulcan",
+      "breakpoints": true
     }
   ]
 }

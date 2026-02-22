@@ -92,13 +92,16 @@ function TimerBarPreview({ running }: { running: boolean }) {
 /* ── Entry Row Preview ──────────────────────────────────────────────────── */
 
 function EntryRowPreview({ entry }: { entry: (typeof MOCK_ENTRIES)[number] }) {
-  const isRunning = !entry.stoppedAt;
+  const isRunning = entry.isRunning;
+  const timedSegments = entry.segments.filter((s) => s.startedAt != null);
+  const firstStartedAt = timedSegments[0]?.startedAt ?? entry.createdAt;
+  const lastStoppedAt = timedSegments[timedSegments.length - 1]?.stoppedAt ?? null;
   const durationStr = isRunning
     ? formatDuration(3661)
-    : formatDuration(entry.durationSeconds ?? 0);
+    : formatDuration(entry.totalDurationSeconds);
   const timeRange = isRunning
-    ? `${formatTime(entry.startedAt)} – now`
-    : `${formatTime(entry.startedAt)} – ${formatTime(entry.stoppedAt!)}`;
+    ? `${formatTime(firstStartedAt)} – now`
+    : `${formatTime(firstStartedAt)} – ${formatTime(lastStoppedAt!)}`;
 
   return (
     <div

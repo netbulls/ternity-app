@@ -44,26 +44,27 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       total_seconds: string;
     }>(sql`
       SELECT
-        DATE(te.started_at AT TIME ZONE 'UTC') AS entry_date,
+        DATE(te.created_at AT TIME ZONE 'UTC') AS entry_date,
         te.project_id,
         p.name AS project_name,
         p.color AS project_color,
         c.name AS client_name,
-        COUNT(*)::text AS entry_count,
+        COUNT(DISTINCT te.id)::text AS entry_count,
         COALESCE(SUM(
           CASE
-            WHEN te.stopped_at IS NULL
-            THEN EXTRACT(EPOCH FROM NOW() - te.started_at)
-            ELSE te.duration_seconds
+            WHEN es.stopped_at IS NULL AND es.type = 'clocked'
+            THEN EXTRACT(EPOCH FROM NOW() - es.started_at)
+            ELSE es.duration_seconds
           END
         ), 0)::text AS total_seconds
       FROM time_entries te
+      INNER JOIN entry_segments es ON es.entry_id = te.id
       LEFT JOIN projects p ON p.id = te.project_id
       LEFT JOIN clients c ON c.id = p.client_id
       WHERE te.user_id = ${userId}
-        AND te.started_at >= ${weekStart}
-        AND te.started_at <= ${weekEnd}
-      GROUP BY DATE(te.started_at AT TIME ZONE 'UTC'), te.project_id, p.name, p.color, c.name
+        AND te.created_at >= ${weekStart}
+        AND te.created_at <= ${weekEnd}
+      GROUP BY DATE(te.created_at AT TIME ZONE 'UTC'), te.project_id, p.name, p.color, c.name
       ORDER BY entry_date
     `);
 
@@ -73,19 +74,20 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       total_seconds: string;
     }>(sql`
       SELECT
-        DATE(started_at AT TIME ZONE 'UTC') AS entry_date,
+        DATE(te.created_at AT TIME ZONE 'UTC') AS entry_date,
         COALESCE(SUM(
           CASE
-            WHEN stopped_at IS NULL
-            THEN EXTRACT(EPOCH FROM NOW() - started_at)
-            ELSE duration_seconds
+            WHEN es.stopped_at IS NULL AND es.type = 'clocked'
+            THEN EXTRACT(EPOCH FROM NOW() - es.started_at)
+            ELSE es.duration_seconds
           END
         ), 0)::text AS total_seconds
-      FROM time_entries
-      WHERE user_id = ${userId}
-        AND started_at >= ${monthStart}
-        AND started_at <= ${monthEnd}
-      GROUP BY DATE(started_at AT TIME ZONE 'UTC')
+      FROM time_entries te
+      INNER JOIN entry_segments es ON es.entry_id = te.id
+      WHERE te.user_id = ${userId}
+        AND te.created_at >= ${monthStart}
+        AND te.created_at <= ${monthEnd}
+      GROUP BY DATE(te.created_at AT TIME ZONE 'UTC')
       ORDER BY entry_date
     `);
 

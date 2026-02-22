@@ -67,7 +67,7 @@ export function EntriesPage() {
       });
       if (filtered.length > 0) {
         const totalSeconds = filtered.reduce(
-          (sum, e) => sum + (e.durationSeconds ?? 0),
+          (sum, e) => sum + e.totalDurationSeconds,
           0,
         );
         result.push({ date: group.date, totalSeconds, entries: filtered });

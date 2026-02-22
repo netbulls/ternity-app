@@ -21,6 +21,11 @@ export function getImpersonateUserId() {
   return _impersonateUserId;
 }
 
+// Error simulation (dev-only, one-shot)
+let _simulateError = false;
+export function setSimulateError(on: boolean) { _simulateError = on; }
+export function getSimulateError() { return _simulateError; }
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -58,6 +63,12 @@ export async function apiFetch<T>(
   // Impersonation header
   if (_impersonateUserId) {
     headers['X-Impersonate-User-Id'] = _impersonateUserId;
+  }
+
+  // Error simulation (dev-only, one-shot: auto-clears after one mutating request)
+  if (_simulateError && needsBody) {
+    headers['X-Simulate-Error'] = 'true';
+    _simulateError = false;
   }
 
   const res = await fetch(`/api${path}`, {

@@ -68,7 +68,7 @@ export function TimerPage() {
     for (const group of dayGroups) {
       const filtered = group.entries.filter((e) => !e.projectId || !e.description);
       if (filtered.length > 0) {
-        const totalSec = filtered.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
+        const totalSec = filtered.reduce((sum, e) => sum + e.totalDurationSeconds, 0);
         result.push({ date: group.date, totalSeconds: totalSec, entries: filtered });
       }
     }

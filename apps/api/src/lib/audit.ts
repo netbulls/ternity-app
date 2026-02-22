@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { db, type Database } from '../db/index.js';
 import { entryAuditLog, projects } from '../db/schema.js';
 
 type AuditAction =
@@ -8,7 +8,8 @@ type AuditAction =
   | 'deleted'
   | 'timer_started'
   | 'timer_stopped'
-  | 'timer_resumed';
+  | 'timer_resumed'
+  | 'adjustment_added';
 
 interface RecordAuditParams {
   entryId: string;
@@ -17,12 +18,14 @@ interface RecordAuditParams {
   action: AuditAction;
   changes?: Record<string, { old?: unknown; new?: unknown }>;
   metadata?: Record<string, unknown>;
+  tx?: Database;
 }
 
 /** Resolve a project UUID to its name. Returns null for null/missing projects. */
-export async function resolveProjectName(projectId: string | null | undefined): Promise<string | null> {
+export async function resolveProjectName(projectId: string | null | undefined, tx?: Database): Promise<string | null> {
   if (!projectId) return null;
-  const [row] = await db
+  const conn = tx ?? db;
+  const [row] = await conn
     .select({ name: projects.name })
     .from(projects)
     .where(eq(projects.id, projectId))
@@ -32,7 +35,8 @@ export async function resolveProjectName(projectId: string | null | undefined): 
 
 export async function recordAudit(params: RecordAuditParams): Promise<void> {
   try {
-    await db.insert(entryAuditLog).values({
+    const conn = params.tx ?? db;
+    await conn.insert(entryAuditLog).values({
       entryId: params.entryId,
       userId: params.userId,
       actorId: params.actorId,
