@@ -121,7 +121,7 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
         </div>
 
         {/* Project list */}
-        <div className="max-h-[220px] overflow-y-auto p-1">
+        <div className="max-h-[220px] overflow-y-auto p-1" onWheel={(e) => e.stopPropagation()}>
           {filtered.length === 0 ? (
             <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
               No projects match &ldquo;{search}&rdquo;

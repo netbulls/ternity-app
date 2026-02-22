@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Check, ChevronDown, Tags } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLabels } from '@/hooks/use-reference-data';
@@ -51,7 +51,7 @@ export function LabelSelector({ value, onChange }: Props) {
       <PopoverContent className="w-[220px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search labels..." />
-          <CommandList>
+          <CommandList onWheel={(e: React.WheelEvent) => e.stopPropagation()}>
             <CommandEmpty>No labels found.</CommandEmpty>
             <CommandGroup>
               {labels?.map((label) => (
