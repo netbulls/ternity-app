@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { LabelSelector } from '@/components/timer/label-selector';
-import { useCreateEntry, useAddAdjustment } from '@/hooks/use-entries';
+import { useCreateEntry, useAddAdjustment, useUpdateEntry } from '@/hooks/use-entries';
 import { getDefaultProjectId } from '@/hooks/use-default-project';
 import { formatDuration, orgTimeToISO } from '@/lib/format';
 import type { Entry } from '@ternity/shared';
@@ -35,6 +35,7 @@ type Props = CreateProps | AdjustProps;
 export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }: Props) {
   const createEntry = useCreateEntry();
   const addAdjustment = useAddAdjustment();
+  const updateEntry = useUpdateEntry();
   const isAdjust = mode === 'adjust';
 
   const today = new Date().toISOString().slice(0, 10);
@@ -70,7 +71,9 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
     (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000,
   );
 
-  const isPending = isAdjust ? addAdjustment.isPending : createEntry.isPending;
+  const isPending = isAdjust
+    ? addAdjustment.isPending || updateEntry.isPending
+    : createEntry.isPending;
 
   const resetForm = () => {
     setDescription('');
@@ -84,6 +87,7 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
 
   const handleSubmit = () => {
     if (isAdjust && entry) {
+      // Add the time adjustment segment
       addAdjustment.mutate(
         {
           id: entry.id,
@@ -92,6 +96,26 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
         },
         {
           onSuccess: () => {
+            // If metadata changed, update the entry too
+            const entryLabelIds = entry.labels?.map((l) => l.id) ?? [];
+            const labelsChanged =
+              labelIds.length !== entryLabelIds.length ||
+              labelIds.some((id) => !entryLabelIds.includes(id));
+            const metadataChanged =
+              description !== entry.description ||
+              projectId !== entry.projectId ||
+              labelsChanged;
+
+            if (metadataChanged) {
+              updateEntry.mutate({
+                id: entry.id,
+                description,
+                projectId,
+                labelIds,
+                source: 'adjust_dialog',
+              });
+            }
+
             onOpenChange(false);
             resetForm();
           },
@@ -123,71 +147,39 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{isAdjust ? 'Add Adjustment' : 'Add Manual Entry'}</DialogTitle>
-          {isAdjust && entry && (
-            <p className="text-sm text-muted-foreground truncate">
-              {entry.description || 'No description'}
-              {entry.projectName && (
-                <span className="ml-1.5">
-                  &middot;{' '}
-                  <span
-                    className="inline-block h-2 w-2 rounded-full align-middle mr-1"
-                    style={{ backgroundColor: entry.projectColor ?? '#00D4AA' }}
-                  />
-                  {entry.projectName}
-                </span>
-              )}
-            </p>
-          )}
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {!isAdjust && (
-            <>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  placeholder="What did you work on?"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              placeholder="What did you work on?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="note">Reason</Label>
-                <Input
-                  id="note"
-                  placeholder="Why are you adding this manually?"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </div>
+          <div className="grid gap-2">
+            <Label htmlFor="note">Reason</Label>
+            <Input
+              id="note"
+              placeholder={isAdjust ? 'Why are you adding this adjustment?' : 'Why are you adding this manually?'}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="grid gap-2">
-                  <Label>Project</Label>
-                  <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Labels</Label>
-                  <LabelSelector value={labelIds} onChange={setLabelIds} />
-                </div>
-              </div>
-            </>
-          )}
-
-          {isAdjust && (
+          <div className="flex items-center gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="adjust-note">Reason</Label>
-              <Input
-                id="adjust-note"
-                placeholder="Why are you adding this adjustment?"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                autoFocus
-              />
+              <Label>Project</Label>
+              <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
             </div>
-          )}
+            <div className="grid gap-2">
+              <Label>Labels</Label>
+              <LabelSelector value={labelIds} onChange={setLabelIds} />
+            </div>
+          </div>
 
           <div className="grid gap-2">
             <Label htmlFor="date">Date</Label>
