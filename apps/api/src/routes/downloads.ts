@@ -13,6 +13,8 @@ const ARTIFACT_META: Record<string, { label: string; description: string }> = {
   'linux:x64:deb': { label: 'Linux — .deb (x64)', description: 'Ubuntu, Debian' },
   'linux:arm64:AppImage': { label: 'Linux — AppImage (ARM64)', description: 'Raspberry Pi, ARM servers' },
   'linux:arm64:deb': { label: 'Linux — .deb (ARM64)', description: 'Ubuntu/Debian ARM' },
+  'linux:x64:rpm': { label: 'Linux — .rpm (x64)', description: 'Fedora, RHEL' },
+  'linux:arm64:rpm': { label: 'Linux — .rpm (ARM64)', description: 'Fedora, RHEL ARM' },
 };
 
 /** Framework metadata: name + description per framework */
@@ -56,6 +58,9 @@ function deriveLabel(platform: string, arch: string, filename: string): { label:
     }
     if (filename.endsWith('.deb')) {
       return ARTIFACT_META[`linux:${arch}:deb`] ?? { label: `Linux — .deb (${arch})`, description: filename };
+    }
+    if (filename.endsWith('.rpm')) {
+      return ARTIFACT_META[`linux:${arch}:rpm`] ?? { label: `Linux — .rpm (${arch})`, description: filename };
     }
   }
   return ARTIFACT_META[`${platform}:${arch}`] ?? { label: `${platform} — ${arch}`, description: filename };
