@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ternity Login — Direction 4: Glass Nebula</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ===========================
+       DIRECTION 4: GLASS NEBULA
+       Teal particle/nebula background
+       Heavy glass with gradient border
+       Futuristic space-age feel
+       =========================== */
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --transition: 0.2s ease;
+    }
+
+    html[data-theme='dark'] {
+      --accent: #0AFFCE;
+      --accent-mid: #00D4AA;
+      --accent-dim: rgba(10, 255, 206, 0.12);
+      --accent-glow: rgba(10, 255, 206, 0.35);
+      --bg-overlay: linear-gradient(135deg, rgba(0,20,15,0.75) 0%, rgba(0,10,20,0.65) 100%);
+      --card-bg: rgba(4, 16, 14, 0.55);
+      --card-blur: blur(32px);
+      --card-shadow:
+        0 0 0 1px rgba(10, 255, 206, 0.08),
+        0 12px 60px rgba(0,0,0,0.8),
+        0 0 80px rgba(10, 255, 206, 0.06) inset;
+      --text-primary: #d4faf2;
+      --text-secondary: rgba(212, 250, 242, 0.55);
+      --text-muted: rgba(212, 250, 242, 0.28);
+      --input-bg: rgba(10, 255, 206, 0.04);
+      --input-border: rgba(10, 255, 206, 0.12);
+      --input-border-focus: rgba(10, 255, 206, 0.6);
+      --input-glow: 0 0 0 2px rgba(10, 255, 206, 0.15), 0 0 16px rgba(10, 255, 206, 0.1);
+      --btn-text: #000d0a;
+      --btn-shadow: 0 2px 24px rgba(10, 255, 206, 0.35), 0 0 48px rgba(10, 255, 206, 0.15);
+      --btn-shadow-hover: 0 4px 32px rgba(10, 255, 206, 0.55), 0 0 64px rgba(10, 255, 206, 0.2);
+      --social-bg: rgba(10, 255, 206, 0.04);
+      --social-border: rgba(10, 255, 206, 0.1);
+      --social-hover: rgba(10, 255, 206, 0.08);
+      --divider: rgba(10, 255, 206, 0.1);
+      --link: #0AFFCE;
+      --label: rgba(212, 250, 242, 0.45);
+      --prefix-bg: rgba(10, 255, 206, 0.06);
+      --prefix-border: rgba(10, 255, 206, 0.12);
+      --otp-bg: rgba(10, 255, 206, 0.04);
+      --otp-border: rgba(10, 255, 206, 0.12);
+      --otp-focus: rgba(10, 255, 206, 0.6);
+      --signature: rgba(212, 250, 242, 0.2);
+      --gradient-border: linear-gradient(135deg, #0AFFCE 0%, rgba(10, 255, 206, 0.1) 50%, #00D4AA 100%);
+    }
+
+    html[data-theme='light'] {
+      --accent: #00B893;
+      --accent-mid: #00B893;
+      --accent-dim: rgba(0, 184, 147, 0.12);
+      --accent-glow: rgba(0, 184, 147, 0.3);
+      --bg-overlay: linear-gradient(135deg, rgba(220, 255, 246, 0.5) 0%, rgba(200, 240, 255, 0.4) 100%);
+      --card-bg: rgba(255, 255, 255, 0.68);
+      --card-blur: blur(32px);
+      --card-shadow:
+        0 0 0 1px rgba(0, 184, 147, 0.2),
+        0 12px 60px rgba(0,0,0,0.18),
+        0 0 60px rgba(0, 184, 147, 0.04) inset;
+      --text-primary: #062018;
+      --text-secondary: rgba(6, 32, 24, 0.55);
+      --text-muted: rgba(6, 32, 24, 0.32);
+      --input-bg: rgba(255, 255, 255, 0.8);
+      --input-border: rgba(0, 184, 147, 0.18);
+      --input-border-focus: rgba(0, 184, 147, 0.6);
+      --input-glow: 0 0 0 2px rgba(0, 184, 147, 0.12), 0 0 16px rgba(0, 184, 147, 0.08);
+      --btn-text: #ffffff;
+      --btn-shadow: 0 2px 20px rgba(0, 184, 147, 0.3);
+      --btn-shadow-hover: 0 4px 28px rgba(0, 184, 147, 0.5);
+      --social-bg: rgba(255, 255, 255, 0.6);
+      --social-border: rgba(0, 184, 147, 0.15);
+      --social-hover: rgba(255, 255, 255, 0.85);
+      --divider: rgba(0, 184, 147, 0.12);
+      --link: #00B893;
+      --label: rgba(6, 32, 24, 0.5);
+      --prefix-bg: rgba(0, 184, 147, 0.07);
+      --prefix-border: rgba(0, 184, 147, 0.15);
+      --otp-bg: rgba(255, 255, 255, 0.7);
+      --otp-border: rgba(0, 184, 147, 0.18);
+      --otp-focus: rgba(0, 184, 147, 0.6);
+      --signature: rgba(6, 32, 24, 0.25);
+      --gradient-border: linear-gradient(135deg, #00B893 0%, rgba(0, 184, 147, 0.15) 50%, #00D4AA 100%);
+    }
+
+    /* ---- Theme Switcher ---- */
+    .theme-switcher {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .theme-switcher button {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(10, 255, 206, 0.25);
+      background: rgba(0, 20, 15, 0.6);
+      color: rgba(212, 250, 242, 0.7);
+      cursor: pointer;
+      transition: all var(--transition);
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(8px);
+    }
+
+    .theme-switcher button:hover {
+      background: rgba(10, 255, 206, 0.1);
+      color: #0AFFCE;
+    }
+
+    .direction-label {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 9999;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0AFFCE;
+      background: rgba(0, 20, 15, 0.6);
+      border: 1px solid rgba(10, 255, 206, 0.25);
+      padding: 6px 12px;
+      border-radius: 6px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ---- Body / Background ---- */
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      color: var(--text-primary);
+      padding: 60px 20px 80px;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    /* Background nebula image */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url('https://ternity.xyz/images/02b-teal-nebula.jpg');
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+    }
+
+    /* Overlay gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      z-index: -1;
+    }
+
+    .screen-label {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(10, 255, 206, 0.35);
+      text-align: center;
+      margin: 48px 0 24px;
+    }
+
+    /* ---- App container ---- */
+    .logto_page-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.desktop .logto_page-container { padding: 24px; }
+
+    /* ---- Gradient border card technique ---- */
+    .card-wrapper {
+      position: relative;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    body.mobile .card-wrapper {
+      max-width: 100%;
+      border-radius: 0;
+    }
+
+    /* Gradient border via pseudo-element */
+    .card-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 21px;
+      background: var(--gradient-border);
+      z-index: -1;
+      opacity: 0.5;
+    }
+
+    body.mobile .card-wrapper::before {
+      border-radius: 0;
+    }
+
+    /* Subtle pulsing glow */
+    .card-wrapper::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 28px;
+      background: radial-gradient(ellipse, rgba(10, 255, 206, 0.1), transparent 70%);
+      z-index: -2;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    body.mobile .card-wrapper::after { display: none; }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* ---- Main card ---- */
+    .logto_main-content {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: var(--card-blur);
+      -webkit-backdrop-filter: var(--card-blur);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      padding: 48px 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      animation: cardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.mobile .logto_main-content {
+      border-radius: 0;
+      padding: 40px 24px;
+      box-shadow: none;
+    }
+
+    /* Inner shimmer at top */
+    .logto_main-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 5%, var(--accent) 30%, rgba(10, 255, 206, 0.6) 50%, var(--accent) 70%, transparent 95%);
+    }
+
+    /* Corner glow spots */
+    .logto_main-content::after {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(10, 255, 206, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ---- Logo ---- */
+    .logto_branding-header {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 36px;
+    }
+
+    .logto_branding-header img {
+      height: 30px;
+      width: auto;
+      filter: drop-shadow(0 0 16px rgba(10, 255, 206, 0.5)) brightness(1.1);
+    }
+
+    /* ---- Heading ---- */
+    .logto_main-content h1 {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 28px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+
+    /* ---- Form groups ---- */
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--label);
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ---- Phone input ---- */
+    .phone-input {
+      display: flex;
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      background: var(--input-bg);
+      overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    .phone-input:focus-within {
+      border-color: var(--input-border-focus);
+      box-shadow: var(--input-glow);
+      background: rgba(10, 255, 206, 0.05);
+    }
+
+    .phone-input .prefix {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--prefix-bg);
+      border-right: 1px solid var(--prefix-border);
+      white-space: nowrap;
+    }
+
+    .phone-input input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 13px 16px;
+      font-size: 14px;
+      color: var(--text-primary);
+      min-width: 0;
+    }
+
+    .phone-input input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ---- Primary button ---- */
+    button.primary-btn,
+    button[type='submit'] {
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-mid) 100%);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      box-shadow: var(--btn-shadow);
+      transition: all var(--transition);
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button.primary-btn::before,
+    button[type='submit']::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    button.primary-btn:hover,
+    button[type='submit']:hover {
+      box-shadow: var(--btn-shadow-hover);
+      transform: translateY(-1px);
+    }
+
+    button.primary-btn:hover::before,
+    button[type='submit']:hover::before {
+      opacity: 1;
+    }
+
+    button.primary-btn:active,
+    button[type='submit']:active {
+      transform: translateY(0);
+    }
+
+    /* ---- Alt action ---- */
+    .alt-action {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .alt-action a {
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .alt-action a:hover { text-decoration: underline; }
+
+    /* ---- Divider ---- */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--divider);
+    }
+
+    .divider span {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ---- Social button ---- */
+    .social-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 24px;
+      background: var(--social-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--social-border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+      margin-bottom: 28px;
+      backdrop-filter: blur(4px);
+    }
+
+    .social-btn:hover {
+      background: var(--social-hover);
+      border-color: rgba(10, 255, 206, 0.3);
+      box-shadow: 0 0 12px rgba(10, 255, 206, 0.08);
+    }
+
+    /* ---- Logto signature ---- */
+    .logto_signature {
+      font-size: 11px;
+      color: var(--signature);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    /* ---- OTP ---- */
+    .otp-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .otp-description strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .otp-inputs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      justify-content: center;
+    }
+
+    .otp-inputs input {
+      width: 52px;
+      height: 62px;
+      background: var(--otp-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--otp-border);
+      border-radius: 10px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition);
+    }
+
+    .otp-inputs input:focus {
+      border-color: var(--otp-focus);
+      box-shadow: var(--input-glow);
+      background: rgba(10, 255, 206, 0.06);
+    }
+
+    .otp-inputs input.filled {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(10, 255, 206, 0.08);
+      box-shadow: 0 0 8px rgba(10, 255, 206, 0.15);
+    }
+
+    .resend-link {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .resend-link a {
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .resend-link a:hover { text-decoration: underline; }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      margin-bottom: 24px;
+      transition: color var(--transition);
+    }
+
+    .back-link:hover { color: var(--accent); }
+  </style>
+</head>
+<body class="desktop">
+
+  <div class="direction-label">Direction 4 — Glass Nebula</div>
+  <div class="theme-switcher">
+    <button onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'">Toggle Light / Dark</button>
+    <button onclick="document.body.className = document.body.className === 'desktop' ? 'mobile' : 'desktop'">Toggle Mobile / Desktop</button>
+  </div>
+
+  <!-- Screen 1: Sign In -->
+  <p class="screen-label">Sign-in Screen</p>
+  <div id="app">
+    <div class="logto_page-container">
+      <div class="card-wrapper">
+        <main class="logto_main-content">
+
+          <div class="logto_branding-header">
+            <img src="https://ternity.xyz/brand/logo-combo.svg" alt="Ternity" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-family:Oxanium,sans-serif;font-size:20px;font-weight:700;color:#0AFFCE;letter-spacing:0.08em;filter:drop-shadow(0 0 12px rgba(10,255,206,0.6))\'>TERNITY</span>'">
+          </div>
+
+          <h1>Sign in to your account</h1>
+
+          <div class="input-group">
+            <label>Phone number</label>
+            <div class="phone-input">
+              <span class="prefix">+48</span>
+              <input type="text" placeholder="123 456 789" />
+            </div>
+          </div>
+
+          <button type="submit" class="primary-btn">Continue</button>
+
+          <p class="alt-action">No account? <a href="#">Create account</a></p>
+
+          <div class="divider"><span>or</span></div>
+
+          <button class="social-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div class="logto_signature">Powered by Logto</div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 2: Verification Code -->
+  <p class="screen-label">Verification Code Screen</p>
+  <div id="app2">
+    <div class="logto_page-container">
+      <div class="card-wrapper">
+        <main class="logto_main-content">
+
+          <div class="logto_branding-header">
+            <img src="https://ternity.xyz/brand/logo-combo.svg" alt="Ternity" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-family:Oxanium,sans-serif;font-size:20px;font-weight:700;color:#0AFFCE;letter-spacing:0.08em;filter:drop-shadow(0 0 12px rgba(10,255,206,0.6))\'>TERNITY</span>'">
+          </div>
+
+          <h1>Enter verification code</h1>
+
+          <p class="otp-description">
+            A 6-digit code was sent to <strong>+48 123 456 789</strong>. Enter it below to continue.
+          </p>
+
+          <div class="otp-inputs">
+            <input type="text" maxlength="1" value="4" class="filled" />
+            <input type="text" maxlength="1" value="2" class="filled" />
+            <input type="text" maxlength="1" value="" autofocus />
+            <input type="text" maxlength="1" value="" />
+            <input type="text" maxlength="1" value="" />
+            <input type="text" maxlength="1" value="" />
+          </div>
+
+          <button type="submit" class="primary-btn">Verify</button>
+
+          <p class="resend-link">Didn't receive it? <a href="#">Resend code</a></p>
+
+          <a href="#" class="back-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Back
+          </a>
+
+          <div class="logto_signature">Powered by Logto</div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

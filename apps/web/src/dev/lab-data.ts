@@ -199,6 +199,29 @@ export const LAB_SECTIONS: LabProductSection[] = [
     ],
   },
   {
+    product: 'Auth',
+    id: 'auth',
+    groups: [
+      {
+        name: 'login-screens',
+        id: 'login-screens-lab',
+        description: 'Logto sign-in experience — 5 visual directions for branded login',
+        date: '2026-02-23T08:00:00',
+        items: [
+          { kind: 'exploration', title: 'login-bg-c5a1 — Background Logo + Wordmark', file: 'login/login-bg-c5a1.html', description: 'Background watermark with full combo logo (symbol + TERNITY): V1 Corner Signature (chosen), V2 Editorial Crop, V3 Quiet Footer, V4 Ambient Floor', date: '2026-02-23T17:00:00' },
+          { kind: 'exploration', title: 'login-bg-e7a3 — Background Symbol Only', file: 'login/login-bg-e7a3.html', description: 'Background watermark with hourglass symbol only: V1 Centered, V2 Corner Mark, V3 Offset Crop, V4 Ambient Glow', date: '2026-02-23T16:00:00' },
+          { kind: 'exploration', title: 'login-a1b2 — Abyss', file: 'login/login-a1b2.html', description: 'Direction 1: Minimal Dark — no background image, pure gradient, subtle teal border, premium SaaS feel (Linear/Vercel/Stripe)', date: '2026-02-23T07:55:00' },
+          { kind: 'exploration', title: 'login-c3d4 — Atmosphere', file: 'login/login-c3d4.html', description: 'Direction 2: Cinematic Photo — surreal hourglass desert background, heavy frosted glass, fade-in animation, movie-poster mood', date: '2026-02-23T07:56:00' },
+          { kind: 'exploration', title: 'login-e5f6 — Terminal', file: 'login/login-e5f6.html', description: 'Direction 3: Monospace Tech — terminal/code editor card, scanline texture, cursor blink animation, hacker aesthetic', date: '2026-02-23T07:58:00' },
+          { kind: 'exploration', title: 'login-g7h8 — Glass Nebula', file: 'login/login-g7h8.html', description: 'Direction 4: Teal Gradient + Glass — nebula background, gradient border, breathing glow, futuristic sci-fi', date: '2026-02-23T07:59:00' },
+          { kind: 'exploration', title: 'login-i9j0 — Warm Presence', file: 'login/login-i9j0.html', description: 'Direction 5: Natural + Warm — autumn path background, warm amber accent, rounded card, cozy and approachable', date: '2026-02-23T08:00:00' },
+          { kind: 'exploration', title: 'login-k2m3 — Deep Glow', file: 'login/login-k2m3.html', description: 'Direction 6: Abyss + Nebula hybrid — dark base with subtle teal radial glow behind card, gradient border at 30% opacity, no image, still and refined', date: '2026-02-23T08:30:00' },
+          { kind: 'exploration', title: 'login-n4p5 — Mist', file: 'login/login-n4p5.html', description: 'Direction 7: Abyss with hidden depth — teal particles image at 12% opacity, barely perceptible texture, slight card translucency, no animations', date: '2026-02-23T08:35:00' },
+        ],
+      },
+    ],
+  },
+  {
     product: 'Desktop App',
     id: 'desktop',
     groups: [
