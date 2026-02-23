@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Switch Timer Confirmation (5 Variants)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px; font-size: 14px;
+        }
+
+        /* ── Switcher row ── */
+        .switcher-row {
+            display: flex; justify-content: center; gap: 8px;
+            margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+            background: #111; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.35); margin: 0 8px;
+            font-family: 'Oxanium', sans-serif;
+        }
+        .switcher-group { display: flex; gap: 2px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+        .switcher-group button.active {
+            background: hsl(168 100% 42% / 0.15);
+            border-color: hsl(168 100% 42% / 0.5);
+            color: hsl(168 100% 42%);
+        }
+
+        /* ── Page header ── */
+        .page-header { text-align: center; margin-bottom: 40px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+            max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5;
+        }
+
+        /* ── Variant grid ── */
+        .variants-grid {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .variant-col {
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3); font-weight: 600;
+        }
+        .variant-desc {
+            font-size: 9px; color: rgba(255,255,255,0.15); text-align: center;
+            max-width: 320px; line-height: 1.4;
+        }
+
+        /* ════════════════════════════════════════════
+           POPUP CHROME
+           ════════════════════════════════════════════ */
+        .popup-frame {
+            width: 340px;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            position: relative;
+        }
+
+        /* Header — 10px 16px padding, border-bottom */
+        .popup-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .popup-logo {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--primary));
+            display: flex; align-items: center; gap: 6px;
+        }
+        .popup-logo svg { width: 12px; height: 15px; }
+        .hdr-actions { display: flex; gap: 2px; }
+        .hdr-btn {
+            width: 24px; height: 24px; border-radius: 4px;
+            border: none; background: transparent;
+            color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .hdr-btn:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+        .icon-sm { width: 14px; height: 14px; }
+
+        /* ── Timer bar — py-3 px-4 gap-3 rounded-lg ── */
+        .timer-section {
+            padding: 12px 16px;
+            background: hsl(var(--t-timer-bg));
+            border: 1px solid hsl(var(--t-timer-border));
+            border-left: none; border-right: none;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .timer-left { flex: 1; min-width: 0; }
+        .timer-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 20px; font-weight: 600;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.125em;
+        }
+        .timer-desc {
+            font-size: 13px; font-weight: 400;
+            color: hsl(var(--foreground));
+            margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .timer-project {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 4px; margin-top: 1px;
+        }
+        .dot { border-radius: 50%; flex-shrink: 0; }
+        .dot-8 { width: 8px; height: 8px; }
+        /* Stop button — h-9 w-9 rounded-full bg-destructive */
+        .stop-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: none; background: hsl(var(--destructive));
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
+            transition: transform 0.15s;
+        }
+        .stop-btn:hover { transform: scale(1.1); }
+        .stop-btn svg { width: 14px; height: 14px; }
+
+        /* ── Entry rows — py-2.5 px-4 gap-3 border-bottom ── */
+        .sect-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            padding: 8px 16px 4px;
+            display: flex; justify-content: space-between;
+        }
+        .entry {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+            cursor: default; transition: background 0.1s;
+            position: relative;
+        }
+        .entry:last-of-type { border-bottom: none; }
+        .entry:hover { background: hsl(var(--muted) / 0.5); }
+        .entry-info { flex: 1; min-width: 0; }
+        .entry-name {
+            font-size: 13px; color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry:hover .entry-name { color: hsl(var(--primary)); }
+        .entry-no-desc {
+            font-size: 13px; color: hsl(var(--muted-foreground));
+            font-style: italic;
+        }
+        .entry-project {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 6px; margin-top: 1px;
+        }
+        .entry-time {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums; flex-shrink: 0;
+        }
+        .entry-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px; font-weight: 600;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums; flex-shrink: 0;
+        }
+        /* Play button — h-7 w-7 rounded-full, opacity 0 on hover */
+        .entry-play {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: none; background: transparent;
+            color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; opacity: 0; transition: all 0.15s;
+        }
+        .entry-play svg { width: 14px; height: 14px; }
+        .entry:hover .entry-play { opacity: 1; }
+        .entry-play:hover {
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+        }
+
+        /* Running entry — bg primary/0.06 + 3px left border */
+        .entry.running-entry {
+            background: hsl(var(--primary) / 0.06);
+        }
+        .entry.running-entry::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: hsl(var(--primary));
+            border-radius: 2px 0 0 2px;
+        }
+        .entry.running-entry .entry-time { color: hsl(var(--primary) / 0.7); }
+        .entry.running-entry .entry-dur { color: hsl(var(--primary)); }
+
+        /* Keyboard shortcuts bar */
+        .shortcuts-bar {
+            padding: 5px 16px;
+            border-top: 1px solid hsl(var(--border));
+            display: flex; justify-content: center; gap: 14px;
+        }
+        .shortcut {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 9px; color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .kbd {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 18px; height: 16px; padding: 0 4px; border-radius: 3px;
+            border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+            font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600;
+            color: hsl(var(--muted-foreground)); line-height: 1;
+        }
+
+        /* ════════════════════════════════════════════
+           SWITCH TIMER DIALOG CARDS
+           ════════════════════════════════════════════ */
+
+        /* Shared card — rounded-lg px-3.5 py-2.5 */
+        .confirm-card {
+            border-radius: 8px; padding: 10px 14px;
+        }
+        .confirm-card.stopping {
+            background: hsl(var(--destructive) / 0.05);
+            border: 1px solid hsl(var(--destructive) / 0.2);
+        }
+        .confirm-card.starting {
+            background: hsl(var(--primary) / 0.05);
+            border: 1px solid hsl(var(--primary) / 0.2);
+        }
+        /* Label — 9px, font-weight 500, uppercase, tracking 0.05em */
+        .confirm-label {
+            font-size: 9px; font-weight: 500;
+            letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        .confirm-label.stop-l { color: hsl(var(--destructive) / 0.7); }
+        .confirm-label.start-l { color: hsl(var(--primary) / 0.7); }
+        /* Description — 13px, color foreground */
+        .confirm-entry-name {
+            font-size: 13px; color: hsl(var(--foreground));
+            margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .confirm-entry-meta {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 6px;
+        }
+        /* Project — 11px, dot w-2 h-2, color muted-foreground */
+        .confirm-entry-project {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 6px;
+        }
+        /* Duration — Oxanium, 13px, font-semibold, tabular-nums */
+        .confirm-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 13px; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .confirm-dur.stop-l { color: hsl(var(--destructive)); }
+        .confirm-dur.start-l { color: hsl(var(--foreground)); }
+        /* Arrow — h-6 w-6 circle, bg muted/0.5, icon 14px */
+        .arrow-divider {
+            display: flex; justify-content: center; margin: 8px 0;
+        }
+        .arrow-circle {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: hsl(var(--muted) / 0.5);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .arrow-circle svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+        /* Actions row */
+        .confirm-actions {
+            display: flex; align-items: center; justify-content: space-between; margin-top: 12px;
+        }
+        /* Checkbox — h-4 w-4 rounded-sm, label 12px */
+        .dont-ask {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px; color: hsl(var(--muted-foreground)); cursor: pointer;
+        }
+        .dont-ask input[type="checkbox"] {
+            width: 16px; height: 16px; border-radius: 4px;
+            accent-color: hsl(var(--primary));
+            cursor: pointer;
+        }
+        .confirm-btns { display: flex; gap: 8px; }
+        /* Buttons — h-8 px-3 rounded-md text-xs font-weight 500 */
+        .btn-cancel {
+            height: 32px; padding: 0 12px; border-radius: 6px;
+            background: hsl(var(--background));
+            border: 1px solid hsl(var(--input));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center;
+        }
+        .btn-cancel:hover { background: hsl(var(--accent)); }
+        .btn-switch {
+            height: 32px; padding: 0 12px; border-radius: 6px;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border: none;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center;
+        }
+        .btn-switch:hover { opacity: 0.9; }
+
+        /* ════════════════════════════════════════════
+           D1: OVERLAY
+           ════════════════════════════════════════════ */
+        .d1-overlay {
+            position: absolute; inset: 0;
+            background: hsl(var(--background) / 0.85);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; border-radius: 14px;
+        }
+        .d1-card {
+            width: 300px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .d1-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px; font-weight: 600;
+            color: hsl(var(--foreground));
+            text-align: center; margin-bottom: 12px;
+        }
+
+        /* ════════════════════════════════════════════
+           D2: SLIDE-UP SHEET
+           ════════════════════════════════════════════ */
+        .d2-sheet-overlay {
+            position: absolute; inset: 0;
+            background: hsl(var(--background) / 0.5);
+            z-index: 10; border-radius: 14px;
+        }
+        .d2-sheet {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: hsl(var(--card));
+            border-top: 1px solid hsl(var(--border));
+            border-radius: 14px 14px 0 0;
+            padding: 6px 16px 16px;
+            z-index: 11;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
+        }
+        .d2-handle {
+            width: 32px; height: 3px; border-radius: 2px;
+            background: hsl(var(--muted-foreground) / 0.25);
+            margin: 0 auto 10px;
+        }
+        .d2-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px; font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 10px;
+        }
+
+        /* ════════════════════════════════════════════
+           D3: INLINE EXPANSION
+           ════════════════════════════════════════════ */
+        .d3-expanded {
+            background: hsl(var(--muted) / 0.15);
+            padding: 10px 16px 10px 13px;
+            border-left: 3px solid hsl(var(--primary));
+        }
+        .d3-line {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11px; margin-bottom: 4px;
+        }
+        .d3-badge {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px; font-weight: 600; letter-spacing: 1px;
+            text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .d3-badge.stop-l {
+            background: hsl(var(--destructive) / 0.12);
+            color: hsl(var(--destructive));
+        }
+        .d3-badge.start-l {
+            background: hsl(var(--primary) / 0.12);
+            color: hsl(var(--primary));
+        }
+        .d3-name {
+            flex: 1; color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .d3-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--muted-foreground)); flex-shrink: 0;
+        }
+        .d3-actions {
+            display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;
+        }
+
+        /* ════════════════════════════════════════════
+           D4: FULL REPLACEMENT
+           ════════════════════════════════════════════ */
+        .d4-body {
+            padding: 24px 16px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .d4-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 16px; font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 16px;
+        }
+        .d4-big-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 20px; font-weight: 600;
+            color: hsl(var(--destructive));
+            font-variant-numeric: tabular-nums;
+            margin-top: 6px;
+        }
+        .d4-card {
+            width: 100%; border-radius: 8px; padding: 10px 14px;
+        }
+        .d4-card.stopping {
+            background: hsl(var(--destructive) / 0.05);
+            border: 1px solid hsl(var(--destructive) / 0.2);
+        }
+        .d4-card.starting {
+            background: hsl(var(--primary) / 0.05);
+            border: 1px solid hsl(var(--primary) / 0.2);
+        }
+        .d4-project {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 6px; margin-top: 2px;
+        }
+        .d4-switch-btn {
+            width: 100%; height: 36px; border-radius: 8px;
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+            border: none; font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            margin-top: 16px; transition: opacity 0.15s;
+        }
+        .d4-switch-btn:hover { opacity: 0.9; }
+        .d4-cancel {
+            margin-top: 8px; font-size: 12px;
+            color: hsl(var(--muted-foreground)); cursor: pointer;
+            background: none; border: none; font-family: 'Inter', sans-serif;
+        }
+        .d4-cancel:hover { color: hsl(var(--foreground)); }
+        .d4-dont-ask { margin-top: 14px; }
+
+        /* ════════════════════════════════════════════
+           D5: TOAST BANNER
+           ════════════════════════════════════════════ */
+        .d5-banner {
+            background: hsl(var(--card));
+            border-bottom: 1px solid hsl(var(--border));
+            padding: 10px 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .d5-top {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+        }
+        .d5-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 600; color: hsl(var(--foreground));
+        }
+        .d5-btns { display: flex; align-items: center; gap: 6px; }
+        .d5-btn-cancel {
+            height: 24px; padding: 0 8px; border-radius: 4px;
+            background: transparent; border: 1px solid hsl(var(--input));
+            color: hsl(var(--muted-foreground));
+            font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center;
+        }
+        .d5-btn-cancel:hover { background: hsl(var(--accent)); }
+        .d5-btn-switch {
+            height: 24px; padding: 0 10px; border-radius: 4px;
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+            border: none; font-family: 'Inter', sans-serif;
+            font-size: 10px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center;
+        }
+        .d5-gear {
+            width: 14px; height: 14px;
+            color: hsl(var(--muted-foreground) / 0.4); cursor: pointer; margin-left: 2px;
+        }
+        .d5-gear:hover { color: hsl(var(--muted-foreground)); }
+        .d5-lines { display: flex; flex-direction: column; gap: 3px; }
+        .d5-line { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+        .d5-line-badge {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .d5-line-badge.stop-l { color: hsl(var(--destructive)); }
+        .d5-line-badge.start-l { color: hsl(var(--primary)); }
+        .d5-line-name {
+            color: hsl(var(--foreground) / 0.8); flex: 1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .d5-line-project {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 4px;
+        }
+        .d5-line-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--muted-foreground));
+            flex-shrink: 0;
+        }
+
+        /* Active entry highlight (for D3) */
+        .entry.active-entry {
+            background: hsl(var(--primary) / 0.06);
+        }
+        .entry.active-entry::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: hsl(var(--primary));
+            border-radius: 2px 0 0 2px;
+        }
+        .entry.active-entry .entry-name { color: hsl(var(--primary)); }
+    </style>
+</head>
+<body>
+    <div class="switcher-row">
+        <span class="switcher-label">Theme</span>
+        <div class="switcher-group" id="themeNav">
+            <button class="active" onclick="setTheme('ternity-dark',this)">Dark</button>
+            <button onclick="setTheme('ternity-light',this)">Light</button>
+            <button onclick="setTheme('midnight',this)">Midnight</button>
+            <button onclick="setTheme('warm-sand',this)">Warm Sand</button>
+            <button onclick="setTheme('carbon',this)">Carbon</button>
+            <button onclick="setTheme('high-contrast',this)">Hi-Con</button>
+        </div>
+    </div>
+
+    <div class="page-header">
+        <h1>Switch Timer Confirmation</h1>
+        <p>Desktop tray popup (340px). User clicks play on "Dashboard redesign" while "API Performance Testing" is running. 5 design variants.</p>
+    </div>
+
+    <div class="variants-grid">
+
+        <!-- ═══════════════ D1 / OVERLAY ═══════════════ -->
+        <div class="variant-col">
+            <div class="variant-label">D1 / Overlay</div>
+            <div class="variant-desc">Dimmed popup + centered confirmation card. Two stacked cards with arrow.</div>
+            <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="hdr-actions"><button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-left">
+                        <div class="timer-elapsed">1:23:47</div>
+                        <div class="timer-desc">API Performance Testing</div>
+                        <div class="timer-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <button class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                </div>
+                <div class="sect-title"><span>Today</span><span>5h 08m</span></div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Dashboard redesign</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</div>
+                    </div>
+                    <span class="entry-time">09:15 – 10:30</span>
+                    <span class="entry-dur">1h 15m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Sprint retrospective</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-1))"></span> Netbulls · Internal</div>
+                    </div>
+                    <span class="entry-time">08:00 – 08:45</span>
+                    <span class="entry-dur">45m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Bug fix: login timeout</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <span class="entry-time">07:10 – 07:42</span>
+                    <span class="entry-dur">32m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="shortcuts-bar">
+                    <span class="shortcut"><span class="kbd">S</span> stop</span>
+                    <span class="shortcut"><span class="kbd">N</span> new</span>
+                    <span class="shortcut"><span class="kbd">R</span> resume</span>
+                    <span class="shortcut"><span class="kbd">Q</span> close</span>
+                </div>
+                <!-- Overlay -->
+                <div class="d1-overlay">
+                    <div class="d1-card">
+                        <div class="d1-title">Switch timer</div>
+                        <div class="confirm-card stopping">
+                            <div class="confirm-label stop-l">Stopping</div>
+                            <div class="confirm-entry-name">API Performance Testing</div>
+                            <div class="confirm-entry-meta">
+                                <span class="confirm-entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</span>
+                                <span class="confirm-dur stop-l">1h 23m</span>
+                            </div>
+                        </div>
+                        <div class="arrow-divider"><div class="arrow-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div></div>
+                        <div class="confirm-card starting">
+                            <div class="confirm-label start-l">Starting</div>
+                            <div class="confirm-entry-name">Dashboard redesign</div>
+                            <div class="confirm-entry-meta">
+                                <span class="confirm-entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</span>
+                                <span class="confirm-dur start-l">1h 15m</span>
+                            </div>
+                        </div>
+                        <div class="confirm-actions">
+                            <label class="dont-ask"><input type="checkbox"> Don't ask again</label>
+                            <div class="confirm-btns"><button class="btn-cancel">Cancel</button><button class="btn-switch">Switch</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+
+        <!-- ═══════════════ D2 / SLIDE-UP SHEET ═══════════════ -->
+        <div class="variant-col">
+            <div class="variant-label">D2 / Slide-Up Sheet</div>
+            <div class="variant-desc">Bottom sheet covers lower 60%. Timer stays visible above.</div>
+            <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo"><svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg> TERNITY</div>
+                    <div class="hdr-actions"><button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-left">
+                        <div class="timer-elapsed">1:23:47</div>
+                        <div class="timer-desc">API Performance Testing</div>
+                        <div class="timer-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <button class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                </div>
+                <div class="sect-title" style="opacity:0.3"><span>Today</span><span>5h 08m</span></div>
+                <div class="entry" style="opacity:0.3">
+                    <div class="entry-info">
+                        <div class="entry-name">Dashboard redesign</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</div>
+                    </div>
+                    <span class="entry-dur">1h 15m</span>
+                </div>
+                <div class="entry" style="opacity:0.3">
+                    <div class="entry-info">
+                        <div class="entry-name">Sprint retrospective</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-1))"></span> Netbulls · Internal</div>
+                    </div>
+                    <span class="entry-dur">45m</span>
+                </div>
+                <div class="entry" style="opacity:0.3">
+                    <div class="entry-info">
+                        <div class="entry-name">Bug fix: login timeout</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <span class="entry-dur">32m</span>
+                </div>
+                <div style="height:24px"></div>
+                <!-- Sheet -->
+                <div class="d2-sheet-overlay"></div>
+                <div class="d2-sheet">
+                    <div class="d2-handle"></div>
+                    <div class="d2-title">Switch timer</div>
+                    <div class="confirm-card stopping">
+                        <div class="confirm-label stop-l">Stopping</div>
+                        <div class="confirm-entry-name">API Performance Testing</div>
+                        <div class="confirm-entry-meta">
+                            <span class="confirm-entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</span>
+                            <span class="confirm-dur stop-l">1h 23m</span>
+                        </div>
+                    </div>
+                    <div class="arrow-divider"><div class="arrow-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div></div>
+                    <div class="confirm-card starting">
+                        <div class="confirm-label start-l">Starting</div>
+                        <div class="confirm-entry-name">Dashboard redesign</div>
+                        <div class="confirm-entry-meta">
+                            <span class="confirm-entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</span>
+                            <span class="confirm-dur start-l">1h 15m</span>
+                        </div>
+                    </div>
+                    <div class="confirm-actions">
+                        <label class="dont-ask"><input type="checkbox"> Don't ask again</label>
+                        <div class="confirm-btns"><button class="btn-cancel">Cancel</button><button class="btn-switch">Switch</button></div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+
+        <!-- ═══════════════ D3 / INLINE EXPANSION ═══════════════ -->
+        <div class="variant-col">
+            <div class="variant-label">D3 / Inline Expansion</div>
+            <div class="variant-desc">Entry row expands in-place. No overlay. Most minimal.</div>
+            <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo"><svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg> TERNITY</div>
+                    <div class="hdr-actions"><button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-left">
+                        <div class="timer-elapsed">1:23:47</div>
+                        <div class="timer-desc">API Performance Testing</div>
+                        <div class="timer-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <button class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                </div>
+                <div class="sect-title"><span>Today</span><span>5h 08m</span></div>
+                <!-- Clicked entry — highlighted -->
+                <div class="entry active-entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Dashboard redesign</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</div>
+                    </div>
+                    <span class="entry-dur">1h 15m</span>
+                </div>
+                <!-- Inline expansion -->
+                <div class="d3-expanded">
+                    <div class="d3-line"><span class="d3-badge stop-l">Stop</span><span class="d3-name">API Performance Testing</span><span class="d3-dur">1h 23m</span></div>
+                    <div class="d3-line"><span class="d3-badge start-l">Start</span><span class="d3-name">Dashboard redesign</span><span class="d3-dur">0:00</span></div>
+                    <div class="d3-actions"><button class="btn-cancel">Cancel</button><button class="btn-switch">Switch</button></div>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Sprint retrospective</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-1))"></span> Netbulls · Internal</div>
+                    </div>
+                    <span class="entry-time">08:00 – 08:45</span>
+                    <span class="entry-dur">45m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Bug fix: login timeout</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <span class="entry-time">07:10 – 07:42</span>
+                    <span class="entry-dur">32m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="shortcuts-bar">
+                    <span class="shortcut"><span class="kbd">S</span> stop</span>
+                    <span class="shortcut"><span class="kbd">N</span> new</span>
+                    <span class="shortcut"><span class="kbd">R</span> resume</span>
+                    <span class="shortcut"><span class="kbd">Q</span> close</span>
+                </div>
+            </div></div>
+        </div>
+
+        <!-- ═══════════════ D4 / FULL REPLACEMENT ═══════════════ -->
+        <div class="variant-col">
+            <div class="variant-label">D4 / Full Replacement</div>
+            <div class="variant-desc">Entire popup replaced. Large and bold. Full-width CTA.</div>
+            <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo"><svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg> TERNITY</div>
+                    <div class="hdr-actions"><button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div>
+                </div>
+                <div class="d4-body">
+                    <div class="d4-title">Switch timer?</div>
+                    <div class="d4-card stopping">
+                        <div class="confirm-label stop-l">Stopping</div>
+                        <div class="confirm-entry-name">API Performance Testing</div>
+                        <div class="d4-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                        <div class="d4-big-dur">1:23:47</div>
+                    </div>
+                    <div class="arrow-divider" style="margin:12px 0"><div class="arrow-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div></div>
+                    <div class="d4-card starting">
+                        <div class="confirm-label start-l">Starting</div>
+                        <div class="confirm-entry-name">Dashboard redesign</div>
+                        <div class="d4-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</div>
+                    </div>
+                    <button class="d4-switch-btn">Switch Timer</button>
+                    <button class="d4-cancel">Cancel</button>
+                    <label class="dont-ask d4-dont-ask"><input type="checkbox"> Don't ask again</label>
+                </div>
+            </div></div>
+        </div>
+
+        <!-- ═══════════════ D5 / TOAST BANNER ═══════════════ -->
+        <div class="variant-col">
+            <div class="variant-label">D5 / Toast Banner</div>
+            <div class="variant-desc">Compact banner at top. Popup stays visible. Gear icon for settings.</div>
+            <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo"><svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg> TERNITY</div>
+                    <div class="hdr-actions"><button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div>
+                </div>
+                <!-- Banner -->
+                <div class="d5-banner">
+                    <div class="d5-top">
+                        <span class="d5-title">Switch timer?</span>
+                        <div class="d5-btns">
+                            <button class="d5-btn-cancel">Cancel</button>
+                            <button class="d5-btn-switch">Switch</button>
+                            <svg class="d5-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="Timer settings"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </div>
+                    </div>
+                    <div class="d5-lines">
+                        <div class="d5-line">
+                            <span class="d5-line-badge stop-l">Stop</span>
+                            <span class="d5-line-name">API Performance Testing</span>
+                            <span class="d5-line-dur">1h 23m</span>
+                        </div>
+                        <div class="d5-line">
+                            <span class="d5-line-badge start-l">Start</span>
+                            <span class="d5-line-name">Dashboard redesign</span>
+                            <span class="d5-line-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2));width:6px;height:6px"></span> Acme Corp</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-left">
+                        <div class="timer-elapsed">1:23:47</div>
+                        <div class="timer-desc">API Performance Testing</div>
+                        <div class="timer-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <button class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                </div>
+                <div class="sect-title"><span>Today</span><span>5h 08m</span></div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Dashboard redesign</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-2))"></span> Acme Corp · Web</div>
+                    </div>
+                    <span class="entry-time">09:15 – 10:30</span>
+                    <span class="entry-dur">1h 15m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Sprint retrospective</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-1))"></span> Netbulls · Internal</div>
+                    </div>
+                    <span class="entry-time">08:00 – 08:45</span>
+                    <span class="entry-dur">45m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-info">
+                        <div class="entry-name">Bug fix: login timeout</div>
+                        <div class="entry-project"><span class="dot dot-8" style="background:hsl(var(--t-project-3))"></span> Netbulls · Infrastructure</div>
+                    </div>
+                    <span class="entry-time">07:10 – 07:42</span>
+                    <span class="entry-dur">32m</span>
+                    <button class="entry-play"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="shortcuts-bar">
+                    <span class="shortcut"><span class="kbd">S</span> stop</span>
+                    <span class="shortcut"><span class="kbd">N</span> new</span>
+                    <span class="shortcut"><span class="kbd">R</span> resume</span>
+                    <span class="shortcut"><span class="kbd">Q</span> close</span>
+                </div>
+            </div></div>
+        </div>
+
+    </div>
+
+    <script>
+        function setTheme(id, btn) {
+            document.querySelectorAll('.popup').forEach(p => p.setAttribute('data-theme', id));
+            document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>

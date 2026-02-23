@@ -96,6 +96,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
         description: 'Time entries page — day groups, inline editing, timer bar flair',
         date: '2026-02-15T18:38:00',
         items: [
+          { kind: 'exploration', title: 'switch-confirm-a7f2 — Timer Switch Confirmation', file: 'timer/switch-confirm-a7f2.html', description: '5 confirmation variants for switching timers: V1 The Swap (two-card handoff), V2 The Scoreboard (duration hero), V3 The Countdown (auto-proceed toast), V4 The Clash (VS split-screen), V5 The Inline (in-place expansion)', date: '2026-02-23T20:00:00' },
           { kind: 'exploration', title: 'entry-rows-a3c7', file: 'web/entry-rows-a3c7.html', description: 'Entry row variants — multi-line descriptions and project names with consistent row heights (A-H)', date: '2026-02-17T18:00:00' },
           { kind: 'exploration', title: 'entries-110c', file: 'web/entries-110c.html', description: 'Approved v2 with day groups and timer', date: '2026-02-15T18:38:00' },
           { kind: 'exploration', title: 'entries', file: 'web/entries.html', description: 'Day groups and timer bar', date: '2026-02-14T23:29:00' },
@@ -257,6 +258,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
         description: 'System tray popup — timer, recent entries, settings, login flow',
         date: '2026-02-16T22:00:00',
         items: [
+          { kind: 'exploration', title: 'switch-confirm-b3e1 — Desktop Switch Confirmation', file: 'desktop/switch-confirm-b3e1.html', description: '5 desktop variants for 340px tray popup: D1 Overlay, D2 Slide-Up Sheet, D3 Inline Expansion, D4 Full Replacement, D5 Toast Banner', date: '2026-02-23T21:00:00' },
           { kind: 'prototype', title: 'Tray Popup v2', route: '/dev/tray-v2', description: 'v2 — stable layout (no size jump on idle↔tracking), in-progress entry indicator, persistent structure with animated content swaps', date: '2026-02-16T23:30:00' },
           { kind: 'prototype', title: 'Tray Popup Interactive', route: '/dev/tray', description: 'Interactive prototype: Layered + Hero layouts, settings panel (expand/drawer/overlay), login view, theme/scale switching', date: '2026-02-16T23:00:00' },
           { kind: 'exploration', title: 'tray-popup-v2', file: 'desktop/tray-popup-v2.html', description: 'v2 — bolder, bigger: Panorama (wide+progress), Spotlight (ring timer), Workspace (two-column), Pulse (team-aware)', date: '2026-02-16T22:00:00' },

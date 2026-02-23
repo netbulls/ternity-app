@@ -17,6 +17,8 @@ import {
 import { AuditPanel } from './audit-panel';
 import { InlineProjectDropdown } from './inline-project-dropdown';
 import { ManualEntryDialog } from './manual-entry-dialog';
+import { SwitchTimerDialog } from './switch-timer-dialog';
+import { getConfirmTimerSwitch } from '@/hooks/use-timer-settings';
 import type { Entry } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
@@ -44,6 +46,7 @@ export function EntryRow({ entry }: Props) {
   const [projectSearch, setProjectSearch] = useState('');
   const [auditOpen, setAuditOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [optimisticProject, setOptimisticProject] = useState<{
     name: string;
     color: string;
@@ -169,6 +172,19 @@ export function EntryRow({ entry }: Props) {
   );
 
   const handlePlay = () => {
+    // If another timer is running and user wants confirmation, show dialog
+    if (timerState?.running && timerState.entry?.id !== entry.id && getConfirmTimerSwitch()) {
+      setSwitchDialogOpen(true);
+      return;
+    }
+    resumeTimer.mutate(entry.id);
+  };
+
+  const handleSwitchConfirm = (dontAskAgain: boolean) => {
+    if (dontAskAgain) {
+      try { localStorage.setItem('ternity-confirm-timer-switch', 'false'); } catch { /* noop */ }
+    }
+    setSwitchDialogOpen(false);
     resumeTimer.mutate(entry.id);
   };
 
@@ -462,6 +478,15 @@ export function EntryRow({ entry }: Props) {
 
       <AuditPanel entry={entry} open={auditOpen} onOpenChange={setAuditOpen} />
       <ManualEntryDialog mode="adjust" entry={entry} open={adjustOpen} onOpenChange={setAdjustOpen} />
+      {timerState?.entry && (
+        <SwitchTimerDialog
+          open={switchDialogOpen}
+          onOpenChange={setSwitchDialogOpen}
+          stoppingEntry={timerState.entry}
+          startingEntry={entry}
+          onConfirm={handleSwitchConfirm}
+        />
+      )}
     </motion.div>
   );
 }

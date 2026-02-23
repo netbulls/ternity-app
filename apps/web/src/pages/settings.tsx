@@ -4,6 +4,8 @@ import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
 import { SCALES, useScale } from '@/providers/scale-provider';
 import { useDefaultProject } from '@/hooks/use-default-project';
+import { useTimerSettings } from '@/hooks/use-timer-settings';
+import { Switch } from '@/components/ui/switch';
 import { getTimezoneAbbr } from '@/lib/format';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { cn } from '@/lib/utils';
@@ -28,6 +30,7 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { scale, setScale } = useScale();
   const { defaultProjectId, setDefaultProject } = useDefaultProject();
+  const { confirmSwitch, setConfirmSwitch } = useTimerSettings();
   const envName = import.meta.env.VITE_ENV_NAME || 'unknown';
   const envColor = ENV_COLORS[envName] ?? 'text-muted-foreground';
 
@@ -112,6 +115,21 @@ export function SettingsPage() {
             Pre-fills the project when starting a new timer or creating an entry.
           </p>
           <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
+        </div>
+
+        {/* Timer */}
+        <div className="mt-6">
+          <h2 className="mb-1 text-sm font-semibold text-foreground">Timer</h2>
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Controls how the timer behaves when switching between entries.
+          </p>
+          <label className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+            <div>
+              <div className="text-[13px] font-medium text-foreground">Confirm before switching timers</div>
+              <div className="text-[11px] text-muted-foreground">Show a confirmation dialog when starting a new timer while another is running.</div>
+            </div>
+            <Switch checked={confirmSwitch} onCheckedChange={setConfirmSwitch} />
+          </label>
         </div>
       </div>
 
