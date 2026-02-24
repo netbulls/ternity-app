@@ -4,9 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LogtoProvider, LogtoConfig, Prompt } from '@logto/react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider } from '@/providers/scale-provider';
+import { PreferencesProvider } from '@/providers/preferences-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { PreferencesSync } from '@/providers/preferences-sync';
 import { ImpersonationProvider } from '@/providers/impersonation-provider';
 import { getSimulateError, setSimulateError } from '@/lib/api';
 import { router } from '@/router';
@@ -57,18 +57,17 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
-          <LogtoWrapper>
-            <AuthProvider>
-              <ImpersonationProvider>
-                <RouterProvider router={router} />
-                <Toaster />
-              </ImpersonationProvider>
-            </AuthProvider>
-          </LogtoWrapper>
-        </ScaleProvider>
-      </ThemeProvider>
+      <PreferencesProvider>
+        <LogtoWrapper>
+          <AuthProvider>
+            <PreferencesSync />
+            <ImpersonationProvider>
+              <RouterProvider router={router} />
+              <Toaster />
+            </ImpersonationProvider>
+          </AuthProvider>
+        </LogtoWrapper>
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

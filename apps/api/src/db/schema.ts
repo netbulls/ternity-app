@@ -50,7 +50,7 @@ export const users = pgTable(
     avatarUrl: text('avatar_url'),
     globalRole: globalRoleEnum('global_role').notNull().default('user'),
     active: boolean('active').notNull().default(true),
-    themePreference: text('theme_preference').default('ternity-dark'),
+    preferences: jsonb('preferences').default({}).$type<Record<string, unknown>>(),
     togglId: text('toggl_id'),
     timetasticId: text('timetastic_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

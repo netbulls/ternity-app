@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider, useScale } from '@/providers/scale-provider';
+import { PreferencesProvider, usePreferences } from '@/providers/preferences-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { DevNav, type NavItem } from '@/dev/dev-nav';
@@ -49,7 +48,7 @@ const CATALOG_NAV_ITEMS: NavItem[] = [
 ];
 
 function DevPageContent() {
-  const { scale } = useScale();
+  const { scale } = usePreferences();
   const zoom = scale / 1.1;
 
   return (
@@ -88,12 +87,12 @@ export function DevPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <DevPageContent />
           <Toaster />
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

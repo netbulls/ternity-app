@@ -13,6 +13,7 @@ import { adminUsersRoutes } from './routes/admin-users.js';
 import { adminProjectsRoutes } from './routes/admin-projects.js';
 import { syncStatusRoutes } from './routes/sync-status.js';
 import { downloadsRoutes } from './routes/downloads.js';
+import { userPreferencesRoutes } from './routes/user-preferences.js';
 
 const fastify = Fastify({
   logger: {
@@ -57,6 +58,7 @@ await fastify.register(adminUsersRoutes);
 await fastify.register(adminProjectsRoutes);
 await fastify.register(syncStatusRoutes);
 await fastify.register(downloadsRoutes);
+await fastify.register(userPreferencesRoutes);
 
 // Start
 const port = Number(process.env.PORT ?? 3010);

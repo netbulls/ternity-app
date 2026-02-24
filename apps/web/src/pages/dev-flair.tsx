@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider, useScale } from '@/providers/scale-provider';
+import { PreferencesProvider, usePreferences } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { Play, Square, Check, X, ChevronDown, Search } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
@@ -3216,7 +3215,7 @@ function FlairLabel({ id, title, desc }: { id: string; title: string; desc: stri
 // Page
 // ============================================================
 function FlairPageContent() {
-  const { scale } = useScale();
+  const { scale } = usePreferences();
   const zoom = scale / 1.1;
 
   return (
@@ -3387,11 +3386,11 @@ export function DevFlairPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <FlairPageContent />
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

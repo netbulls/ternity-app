@@ -1,7 +1,6 @@
 import { useState, useEffect, type JSX } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider } from '@/providers/scale-provider';
+import { PreferencesProvider } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { Monitor, Download, Cpu, ChevronRight, ChevronDown, ShieldCheck, Info, Tag, GitCommitHorizontal, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -575,15 +574,15 @@ const queryClient = new QueryClient();
 export function DevDownloadsPage() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <div className="min-h-screen bg-background text-foreground">
             <DevToolbar />
             <DownloadsPrototype />
             <Toaster />
           </div>
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

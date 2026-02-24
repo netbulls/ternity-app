@@ -1,13 +1,13 @@
 "use client"
 
 import { Toaster as Sonner } from "sonner"
-import { useTheme } from "@/providers/theme-provider"
+import { usePreferences } from "@/providers/preferences-provider"
 import { scaled } from "@/lib/scaled"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { themeMeta } = useTheme()
+  const { themeMeta } = usePreferences()
 
   return (
     <Sonner

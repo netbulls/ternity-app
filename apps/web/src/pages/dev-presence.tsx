@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider } from '@/providers/scale-provider';
+import { PreferencesProvider } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import {
   Radio, LogOut, LogIn, Clock, Calendar, Users, BarChart3, Send, ChevronLeft, ChevronRight,
@@ -1034,8 +1033,8 @@ export function DevPresencePage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <div className="min-h-screen bg-background text-foreground">
             <DevToolbar />
             <div className="mx-auto max-w-[1100px] p-6">
@@ -1067,8 +1066,8 @@ export function DevPresencePage() {
               </AnimatePresence>
             </div>
           </div>
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

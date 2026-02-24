@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider } from '@/providers/scale-provider';
+import { PreferencesProvider } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { Play, Square, FolderKanban, Check, Search, X, ChevronDown, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -1131,14 +1130,14 @@ function DevMissionInner() {
 export function DevMissionPage() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <DevToolbar />
           <div className="p-6">
             <DevMissionInner />
           </div>
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

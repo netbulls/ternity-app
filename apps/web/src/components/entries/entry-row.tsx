@@ -18,7 +18,7 @@ import { AuditPanel } from './audit-panel';
 import { InlineProjectDropdown } from './inline-project-dropdown';
 import { ManualEntryDialog } from './manual-entry-dialog';
 import { SwitchTimerDialog } from './switch-timer-dialog';
-import { getConfirmTimerSwitch } from '@/hooks/use-timer-settings';
+import { getPreference, setPreference } from '@/providers/preferences-provider';
 import type { Entry } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
@@ -173,7 +173,7 @@ export function EntryRow({ entry }: Props) {
 
   const handlePlay = () => {
     // If another timer is running and user wants confirmation, show dialog
-    if (timerState?.running && timerState.entry?.id !== entry.id && getConfirmTimerSwitch()) {
+    if (timerState?.running && timerState.entry?.id !== entry.id && getPreference('confirmTimerSwitch')) {
       setSwitchDialogOpen(true);
       return;
     }
@@ -182,7 +182,7 @@ export function EntryRow({ entry }: Props) {
 
   const handleSwitchConfirm = (dontAskAgain: boolean) => {
     if (dontAskAgain) {
-      try { localStorage.setItem('ternity-confirm-timer-switch', 'false'); } catch { /* noop */ }
+      setPreference('confirmTimerSwitch', false);
     }
     setSwitchDialogOpen(false);
     resumeTimer.mutate(entry.id);

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, useTheme } from '@/providers/theme-provider';
-import { ScaleProvider, SCALES, useScale } from '@/providers/scale-provider';
+import { PreferencesProvider, usePreferences, SCALES } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { THEMES, type ThemeId } from '@ternity/shared';
 import {
@@ -1731,8 +1730,7 @@ function SettingsContent({
   onLayoutChange: (l: LayoutType) => void;
   onClose: () => void;
 }) {
-  const { theme, setTheme } = useTheme();
-  const { scale, setScale } = useScale();
+  const { theme, setTheme, scale, setScale } = usePreferences();
 
   return (
     <div style={{ padding: scaled(16) }}>
@@ -2278,14 +2276,14 @@ const queryClient = new QueryClient();
 export function DevTrayV2Page() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <DevToolbar />
           <div className="p-6">
             <DevTrayV2Inner />
           </div>
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }

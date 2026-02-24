@@ -1,10 +1,8 @@
+import { useEffect } from 'react';
 import { Globe, Mail, Phone } from 'lucide-react';
 import { THEMES, ORG_TIMEZONE, type ThemeId } from '@ternity/shared';
 import { useAuth } from '@/providers/auth-provider';
-import { useTheme } from '@/providers/theme-provider';
-import { SCALES, useScale } from '@/providers/scale-provider';
-import { useDefaultProject } from '@/hooks/use-default-project';
-import { useTimerSettings } from '@/hooks/use-timer-settings';
+import { SCALES, usePreferences } from '@/providers/preferences-provider';
 import { Switch } from '@/components/ui/switch';
 import { getTimezoneAbbr } from '@/lib/format';
 import { ProjectSelector } from '@/components/timer/project-selector';
@@ -27,10 +25,9 @@ function InfoRow({ icon: Icon, value, title }: { icon: React.ElementType; value:
 
 export function SettingsPage() {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const { scale, setScale } = useScale();
-  const { defaultProjectId, setDefaultProject } = useDefaultProject();
-  const { confirmSwitch, setConfirmSwitch } = useTimerSettings();
+  const { theme, setTheme, scale, setScale, defaultProjectId, setDefaultProject, confirmTimerSwitch, setConfirmTimerSwitch, refreshFromServer } = usePreferences();
+
+  useEffect(() => { refreshFromServer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const envName = import.meta.env.VITE_ENV_NAME || 'unknown';
   const envColor = ENV_COLORS[envName] ?? 'text-muted-foreground';
 
@@ -128,7 +125,7 @@ export function SettingsPage() {
               <div className="text-[13px] font-medium text-foreground">Confirm before switching timers</div>
               <div className="text-[11px] text-muted-foreground">Show a confirmation dialog when starting a new timer while another is running.</div>
             </div>
-            <Switch checked={confirmSwitch} onCheckedChange={setConfirmSwitch} />
+            <Switch checked={confirmTimerSwitch} onCheckedChange={setConfirmTimerSwitch} />
           </label>
         </div>
       </div>

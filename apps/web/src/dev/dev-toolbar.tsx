@@ -1,11 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { THEMES, type ThemeId } from '@ternity/shared';
-import { useTheme } from '@/providers/theme-provider';
-import { SCALES, useScale } from '@/providers/scale-provider';
+import { SCALES, usePreferences } from '@/providers/preferences-provider';
 
 export function DevToolbar() {
-  const { theme, setTheme } = useTheme();
-  const { scale: activeScale, setScale: onScaleChange } = useScale();
+  const { theme, setTheme, scale: activeScale, setScale: onScaleChange } = usePreferences();
   const { pathname } = useLocation();
 
   return (

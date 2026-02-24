@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateEntry } from '@/hooks/use-entries';
-import { getDefaultProjectId } from '@/hooks/use-default-project';
+import { getPreference } from '@/providers/preferences-provider';
 import { ORG_TIMEZONE } from '@ternity/shared';
 import { orgTimeToISO } from '@/lib/format';
 import { useActiveEdit } from './active-edit-context';
@@ -64,7 +64,7 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
 
       setSavedEntryId(null);
       const time = nowHHMM();
-      setDraft({ date, description: '', projectId: getDefaultProjectId(), startTime: time, endTime: time });
+      setDraft({ date, description: '', projectId: getPreference('defaultProjectId'), startTime: time, endTime: time });
       claim(DRAFT_SENTINEL);
     },
     [activeEntryId, claim],

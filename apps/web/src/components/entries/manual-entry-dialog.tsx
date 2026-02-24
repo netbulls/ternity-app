@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { LabelSelector } from '@/components/timer/label-selector';
 import { useCreateEntry, useAddAdjustment, useUpdateEntry } from '@/hooks/use-entries';
-import { getDefaultProjectId } from '@/hooks/use-default-project';
+import { getPreference } from '@/providers/preferences-provider';
 import { formatDuration, orgTimeToISO } from '@/lib/format';
 import type { Entry } from '@ternity/shared';
 
@@ -40,7 +40,7 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
 
   const today = new Date().toISOString().slice(0, 10);
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(getDefaultProjectId);
+  const [projectId, setProjectId] = useState<string | null>(() => getPreference('defaultProjectId'));
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [date, setDate] = useState(today);
   const [startTime, setStartTime] = useState('09:00');
@@ -77,7 +77,7 @@ export function ManualEntryDialog({ open, onOpenChange, mode = 'create', entry }
 
   const resetForm = () => {
     setDescription('');
-    setProjectId(getDefaultProjectId());
+    setProjectId(getPreference('defaultProjectId'));
     setLabelIds([]);
     setDate(today);
     setStartTime('09:00');

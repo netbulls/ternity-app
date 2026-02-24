@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/providers/theme-provider';
-import { ScaleProvider } from '@/providers/scale-provider';
+import { PreferencesProvider } from '@/providers/preferences-provider';
 import { DevToolbar } from '@/dev/dev-toolbar';
 import { ChevronDown, Sparkles, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -587,14 +586,14 @@ const queryClient = new QueryClient();
 export function DevReleaseNotesPage() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ScaleProvider>
+      <PreferencesProvider>
+        
           <div className="min-h-screen bg-background text-foreground">
             <DevToolbar />
             <ReleaseNotesPrototype />
           </div>
-        </ScaleProvider>
-      </ThemeProvider>
+        
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }
