@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="ternity-dark" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Timer Switch Confirmation (5 Variants)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(14px * var(--t-scale, 1));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* ── Switcher row ── */
+        .switcher-row {
+            display: flex; justify-content: center; gap: 8px;
+            margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+            background: hsl(var(--background)); padding: 12px 0;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin: 0 8px;
+        }
+        .switcher-group { display: flex; gap: 2px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+            color: hsl(var(--muted-foreground)); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: hsl(var(--ring)); }
+        .switcher-group button.active {
+            background: hsl(var(--primary) / 0.15); border-color: hsl(var(--primary));
+            color: hsl(var(--primary));
+        }
+
+        /* ── Page layout ── */
+        .page-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(22px * var(--t-scale));
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .page-subtitle {
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+            font-size: calc(12px * var(--t-scale));
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto; margin-right: auto;
+            line-height: 1.6;
+        }
+
+        /* ── Variant sections ── */
+        .variant {
+            max-width: 720px;
+            margin: 0 auto 64px;
+        }
+        .variant-header {
+            display: flex; align-items: baseline; gap: 12px;
+            margin-bottom: 8px;
+        }
+        .variant-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(11px * var(--t-scale));
+            font-weight: 600;
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .variant-name {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale));
+            font-weight: 600;
+        }
+        .variant-desc {
+            color: hsl(var(--muted-foreground));
+            font-size: calc(11px * var(--t-scale));
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* ── Shared backdrop ── */
+        .dialog-scene {
+            background: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .backdrop-dim {
+            position: absolute; inset: 0; border-radius: 12px;
+            background: hsl(0 0% 0% / 0.5);
+            z-index: 1;
+        }
+
+        /* ── Shared button styles ── */
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 500;
+            padding: calc(8px * var(--t-scale)) calc(20px * var(--t-scale));
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-ghost {
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border));
+        }
+        .btn-ghost:hover {
+            background: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+        }
+        .btn-destructive {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+
+        /* ── Mock entry context ── */
+        .mock-entries {
+            position: absolute; inset: 0; padding: 16px; z-index: 0;
+            opacity: 0.3; border-radius: 12px; overflow: hidden;
+        }
+        .mock-entry {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; border-radius: 8px;
+            margin-bottom: 4px;
+            background: hsl(var(--card));
+            border-left: 3px solid transparent;
+            font-size: calc(12px * var(--t-scale));
+        }
+        .mock-entry.running {
+            border-left-color: hsl(var(--primary));
+            background: hsl(var(--t-timer-bg));
+        }
+        .mock-entry .desc { flex: 1; }
+        .mock-entry .time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+        }
+        .mock-entry .project {
+            font-size: calc(10px * var(--t-scale));
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+            padding: 2px 8px; border-radius: 10px;
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           V1: THE SWAP — Two cards, visual handoff
+           ══════════════════════════════════════════════════════════════ */
+        .v1-dialog {
+            z-index: 2; position: relative;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 16px;
+            padding: 28px 32px;
+            width: 440px;
+            box-shadow: 0 24px 48px hsl(0 0% 0% / 0.4);
+        }
+        .v1-question {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(15px * var(--t-scale));
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .v1-cards {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px;
+        }
+        .v1-card {
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--secondary));
+        }
+        .v1-card.stopping {
+            border-color: hsl(var(--destructive) / 0.3);
+            opacity: 0.7;
+        }
+        .v1-card.starting {
+            border-color: hsl(var(--primary) / 0.4);
+            background: hsl(var(--t-timer-bg));
+        }
+        .v1-card-label {
+            font-size: calc(9px * var(--t-scale));
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 6px;
+        }
+        .v1-card.stopping .v1-card-label { color: hsl(var(--destructive)); }
+        .v1-card.starting .v1-card-label { color: hsl(var(--primary)); }
+        .v1-card-desc {
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .v1-card-meta {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 6px;
+        }
+        .v1-card-meta .project-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: hsl(var(--primary));
+            display: inline-block;
+        }
+        .v1-arrow {
+            color: hsl(var(--primary));
+            flex-shrink: 0;
+        }
+        .v1-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           V2: THE SCOREBOARD — Duration hero, round complete
+           ══════════════════════════════════════════════════════════════ */
+        .v2-dialog {
+            z-index: 2; position: relative;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 16px;
+            padding: 32px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 24px 48px hsl(0 0% 0% / 0.4);
+        }
+        .v2-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(9px * var(--t-scale));
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+        .v2-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: hsl(var(--primary));
+            animation: v2pulse 1.5s infinite;
+        }
+        @keyframes v2pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .v2-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(42px * var(--t-scale));
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: hsl(var(--foreground));
+            margin-bottom: 4px;
+        }
+        .v2-task-name {
+            font-size: calc(14px * var(--t-scale));
+            font-weight: 500;
+            color: hsl(var(--foreground));
+            margin-bottom: 4px;
+        }
+        .v2-project {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--primary));
+            margin-bottom: 20px;
+        }
+        .v2-divider {
+            height: 1px;
+            background: hsl(var(--border));
+            margin: 0 -32px 16px;
+        }
+        .v2-next-label {
+            font-size: calc(9px * var(--t-scale));
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 6px;
+        }
+        .v2-next-task {
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .v2-next-project {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 24px;
+        }
+        .v2-footer {
+            display: flex; gap: 8px;
+            justify-content: center;
+        }
+        .v2-footer .btn { flex: 1; justify-content: center; }
+
+        /* ══════════════════════════════════════════════════════════════
+           V3: THE COUNTDOWN TOAST — Auto-proceeds, cancel to abort
+           ══════════════════════════════════════════════════════════════ */
+        .v3-scene {
+            align-items: flex-end !important;
+            padding-bottom: 0 !important;
+        }
+        .v3-toast {
+            z-index: 2; position: relative;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px 12px 0 0;
+            padding: 16px 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 -8px 32px hsl(0 0% 0% / 0.3);
+        }
+        .v3-icon-wrap {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: hsl(var(--primary) / 0.12);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            color: hsl(var(--primary));
+        }
+        .v3-content { flex: 1; }
+        .v3-title {
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .v3-subtitle {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+        }
+        .v3-subtitle .task-name { color: hsl(var(--foreground)); font-weight: 500; }
+        .v3-countdown-ring {
+            width: 44px; height: 44px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .v3-countdown-ring svg {
+            transform: rotate(-90deg);
+            width: 44px; height: 44px;
+        }
+        .v3-countdown-ring .track {
+            fill: none;
+            stroke: hsl(var(--border));
+            stroke-width: 3;
+        }
+        .v3-countdown-ring .progress {
+            fill: none;
+            stroke: hsl(var(--primary));
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 113;
+            stroke-dashoffset: 28;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .v3-countdown-number {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale));
+            font-weight: 700;
+            color: hsl(var(--primary));
+        }
+        .v3-cancel {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale));
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid hsl(var(--border));
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .v3-cancel:hover {
+            background: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           V4: THE CLASH — VS screen, dramatic
+           ══════════════════════════════════════════════════════════════ */
+        .v4-dialog {
+            z-index: 2; position: relative;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 16px;
+            padding: 0;
+            width: 420px;
+            overflow: hidden;
+            box-shadow: 0 24px 48px hsl(0 0% 0% / 0.4);
+        }
+        .v4-versus {
+            display: flex;
+            min-height: 160px;
+        }
+        .v4-side {
+            flex: 1;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .v4-side.old {
+            background: hsl(var(--destructive) / 0.05);
+            border-right: 1px solid hsl(var(--border));
+        }
+        .v4-side.new {
+            background: hsl(var(--primary) / 0.05);
+        }
+        .v4-side-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(9px * var(--t-scale));
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+        .v4-side.old .v4-side-label { color: hsl(var(--destructive)); }
+        .v4-side.new .v4-side-label { color: hsl(var(--primary)); }
+        .v4-side-desc {
+            font-size: calc(14px * var(--t-scale));
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .v4-side-project {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 5px;
+        }
+        .v4-side-project .dot {
+            width: 5px; height: 5px; border-radius: 50%;
+        }
+        .v4-side.old .v4-side-project .dot { background: hsl(var(--chart-3)); }
+        .v4-side.new .v4-side-project .dot { background: hsl(var(--primary)); }
+        .v4-side-duration {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            margin-top: 8px;
+        }
+        .v4-vs-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale));
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: hsl(var(--foreground));
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .v4-question {
+            padding: 16px 20px;
+            text-align: center;
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 500;
+            border-top: 1px solid hsl(var(--border));
+            color: hsl(var(--muted-foreground));
+        }
+        .v4-question strong { color: hsl(var(--foreground)); }
+        .v4-footer {
+            display: flex; gap: 0;
+            border-top: 1px solid hsl(var(--border));
+        }
+        .v4-footer .btn {
+            flex: 1; justify-content: center;
+            border-radius: 0; border: none;
+            padding: calc(12px * var(--t-scale));
+        }
+        .v4-footer .btn:first-child {
+            border-right: 1px solid hsl(var(--border));
+            border-radius: 0 0 0 16px;
+        }
+        .v4-footer .btn:last-child {
+            border-radius: 0 0 16px 0;
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           V5: THE INLINE — Expands in-place, no modal
+           ══════════════════════════════════════════════════════════════ */
+        .v5-scene {
+            display: flex; flex-direction: column;
+            align-items: stretch;
+            padding: 16px !important;
+            min-height: 320px;
+        }
+        .v5-scene .backdrop-dim { display: none; }
+        .v5-entry {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; border-radius: 8px;
+            margin-bottom: 4px;
+            background: hsl(var(--card));
+            border-left: 3px solid transparent;
+            font-size: calc(12px * var(--t-scale));
+        }
+        .v5-entry.running {
+            border-left-color: hsl(var(--primary));
+            background: hsl(var(--t-timer-bg));
+        }
+        .v5-entry .desc { flex: 1; font-weight: 500; }
+        .v5-entry .time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+        }
+        .v5-entry .project-pill {
+            font-size: calc(10px * var(--t-scale));
+            padding: 2px 8px; border-radius: 10px;
+        }
+        .v5-entry .play-btn {
+            width: 28px; height: 28px;
+            border-radius: 6px; border: 1px solid hsl(var(--border));
+            background: transparent;
+            color: hsl(var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .v5-entry .play-btn:hover {
+            background: hsl(var(--primary) / 0.1);
+        }
+        .v5-expand {
+            margin: 4px 0;
+            border: 1px solid hsl(var(--primary) / 0.3);
+            border-radius: 10px;
+            background: hsl(var(--primary) / 0.04);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .v5-expand-icon {
+            color: hsl(var(--primary));
+            flex-shrink: 0;
+        }
+        .v5-expand-text {
+            flex: 1;
+            font-size: calc(12px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+        }
+        .v5-expand-text strong {
+            color: hsl(var(--foreground));
+            font-weight: 600;
+        }
+        .v5-expand-text .current-task {
+            color: hsl(var(--primary));
+            font-weight: 500;
+        }
+        .v5-expand-actions {
+            display: flex; gap: 6px; flex-shrink: 0;
+        }
+        .v5-expand-actions .btn {
+            font-size: calc(11px * var(--t-scale));
+            padding: calc(6px * var(--t-scale)) calc(14px * var(--t-scale));
+        }
+
+        /* ── Settings toggle preview ── */
+        .settings-preview {
+            max-width: 400px;
+            margin: 48px auto 64px;
+            padding: 24px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+        }
+        .settings-preview h3 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(14px * var(--t-scale));
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label {
+            font-size: calc(13px * var(--t-scale));
+            font-weight: 500;
+        }
+        .setting-desc {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            margin-top: 2px;
+        }
+        .toggle-track {
+            width: 40px; height: 22px;
+            border-radius: 11px;
+            background: hsl(var(--primary));
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .toggle-track.off {
+            background: hsl(var(--muted));
+        }
+        .toggle-thumb {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+            top: 2px;
+            left: 20px;
+            transition: left 0.2s;
+        }
+        .toggle-track.off .toggle-thumb {
+            left: 2px;
+        }
+
+        /* ── "Don't ask" checkbox ── */
+        .dont-ask {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 16px; padding-top: 12px;
+            border-top: 1px solid hsl(var(--border));
+        }
+        .dont-ask input[type="checkbox"] {
+            accent-color: hsl(var(--primary));
+            width: 14px; height: 14px;
+        }
+        .dont-ask label {
+            font-size: calc(11px * var(--t-scale));
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Switcher ── -->
+    <div class="switcher-row">
+        <span class="switcher-label">Theme</span>
+        <div class="switcher-group" id="themeNav"></div>
+        <span class="switcher-label">Scale</span>
+        <div class="switcher-group" id="scaleNav"></div>
+    </div>
+
+    <div class="page-title">Timer Switch Confirmation</div>
+    <div class="page-subtitle">
+        Scenario: User has <strong>"API integration"</strong> running for <strong>2h 14m</strong>.
+        They click ▶ on a past entry <strong>"Landing page design"</strong>.
+        Should we confirm before switching? Five approaches:
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- V1: THE SWAP -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+        <div class="variant-header">
+            <span class="variant-id">V1</span>
+            <span class="variant-name">The Swap</span>
+        </div>
+        <div class="variant-desc">
+            Two cards show what's stopping and what's starting. Visual handoff — the user sees both entries at a glance. Clean, informative, no drama. The question is almost rhetorical — it's really just showing you what's about to happen.
+        </div>
+        <div class="dialog-scene">
+            <div class="mock-entries">
+                <div class="mock-entry running"><span class="desc">API integration</span><span class="project">Ternity</span><span class="time">2:14:32</span></div>
+                <div class="mock-entry"><span class="desc">Landing page design</span><span class="project">Acme Corp</span><span class="time">1:45:00</span></div>
+                <div class="mock-entry"><span class="desc">Weekly standup</span><span class="project">Internal</span><span class="time">0:32:15</span></div>
+            </div>
+            <div class="backdrop-dim"></div>
+            <div class="v1-dialog">
+                <div class="v1-question">Switch timers?</div>
+                <div class="v1-cards">
+                    <div class="v1-card stopping">
+                        <div class="v1-card-label">Stopping</div>
+                        <div class="v1-card-desc">API integration</div>
+                        <div class="v1-card-meta">
+                            <span class="project-dot" style="background: hsl(var(--chart-3))"></span>
+                            Ternity · 2h 14m
+                        </div>
+                    </div>
+                    <div class="v1-arrow">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                    </div>
+                    <div class="v1-card starting">
+                        <div class="v1-card-label">Starting</div>
+                        <div class="v1-card-desc">Landing page design</div>
+                        <div class="v1-card-meta">
+                            <span class="project-dot"></span>
+                            Acme Corp · now
+                        </div>
+                    </div>
+                </div>
+                <div class="v1-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary">Switch</button>
+                </div>
+                <div class="dont-ask">
+                    <input type="checkbox" id="v1-dont-ask">
+                    <label for="v1-dont-ask">Don't ask again — always switch immediately</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- V2: THE SCOREBOARD -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+        <div class="variant-header">
+            <span class="variant-id">V2</span>
+            <span class="variant-name">The Scoreboard</span>
+        </div>
+        <div class="variant-desc">
+            Celebrates the work done before asking to move on. The big duration number is the hero — it says "look how much you did" before transitioning. Feels like saving a checkpoint. Emotionally rewarding.
+        </div>
+        <div class="dialog-scene">
+            <div class="mock-entries">
+                <div class="mock-entry running"><span class="desc">API integration</span><span class="project">Ternity</span><span class="time">2:14:32</span></div>
+                <div class="mock-entry"><span class="desc">Landing page design</span><span class="project">Acme Corp</span><span class="time">1:45:00</span></div>
+            </div>
+            <div class="backdrop-dim"></div>
+            <div class="v2-dialog">
+                <div class="v2-badge"><span class="dot"></span> Timer running</div>
+                <div class="v2-duration">2:14:32</div>
+                <div class="v2-task-name">API integration</div>
+                <div class="v2-project">Ternity</div>
+                <div class="v2-divider"></div>
+                <div class="v2-next-label">Switch to</div>
+                <div class="v2-next-task">Landing page design</div>
+                <div class="v2-next-project">Acme Corp</div>
+                <div class="v2-footer">
+                    <button class="btn btn-ghost">Keep going</button>
+                    <button class="btn btn-primary">Save & switch</button>
+                </div>
+                <div class="dont-ask">
+                    <input type="checkbox" id="v2-dont-ask">
+                    <label for="v2-dont-ask">Always switch without asking</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- V3: THE COUNTDOWN TOAST -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+        <div class="variant-header">
+            <span class="variant-id">V3</span>
+            <span class="variant-name">The Countdown</span>
+        </div>
+        <div class="variant-desc">
+            Inverts the pattern: the switch WILL happen in 3 seconds unless you cancel. A bottom toast with a countdown ring. Zero friction for intentional switches — you clicked play, so you probably meant it. The confirmation is just a safety net with an escape hatch. No modal, no overlay.
+        </div>
+        <div class="dialog-scene v3-scene">
+            <div class="mock-entries" style="opacity: 0.6;">
+                <div class="mock-entry running"><span class="desc">API integration</span><span class="project">Ternity</span><span class="time">2:14:32</span></div>
+                <div class="mock-entry"><span class="desc">Landing page design</span><span class="project">Acme Corp</span><span class="time">1:45:00</span></div>
+                <div class="mock-entry"><span class="desc">Weekly standup</span><span class="project">Internal</span><span class="time">0:32:15</span></div>
+                <div class="mock-entry"><span class="desc">Code review</span><span class="project">Ternity</span><span class="time">0:48:20</span></div>
+            </div>
+            <div class="v3-toast">
+                <div class="v3-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2-5 5-5-5"/><path d="m17 22-5-5-5 5"/><path d="M12 7v10"/></svg>
+                </div>
+                <div class="v3-content">
+                    <div class="v3-title">Switching timers…</div>
+                    <div class="v3-subtitle">
+                        Stopping <span class="task-name">API integration</span> → starting <span class="task-name">Landing page design</span>
+                    </div>
+                </div>
+                <div class="v3-countdown-ring">
+                    <svg viewBox="0 0 40 40">
+                        <circle class="track" cx="20" cy="20" r="18" />
+                        <circle class="progress" cx="20" cy="20" r="18" />
+                    </svg>
+                    <div class="v3-countdown-number">3</div>
+                </div>
+                <button class="v3-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- V4: THE CLASH -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+        <div class="variant-header">
+            <span class="variant-id">V4</span>
+            <span class="variant-name">The Clash</span>
+        </div>
+        <div class="variant-desc">
+            Split-screen VS layout. Dramatic but clear — left side shows what dies, right side shows what lives. The VS badge in the center adds personality. Full-width action buttons at the bottom make it easy to decide fast. Bold, opinionated, a little fun.
+        </div>
+        <div class="dialog-scene">
+            <div class="mock-entries">
+                <div class="mock-entry running"><span class="desc">API integration</span><span class="project">Ternity</span><span class="time">2:14:32</span></div>
+                <div class="mock-entry"><span class="desc">Landing page design</span><span class="project">Acme Corp</span><span class="time">1:45:00</span></div>
+            </div>
+            <div class="backdrop-dim"></div>
+            <div class="v4-dialog">
+                <div class="v4-versus" style="position: relative;">
+                    <div class="v4-side old">
+                        <div class="v4-side-label">Stop</div>
+                        <div class="v4-side-desc">API integration</div>
+                        <div class="v4-side-project"><span class="dot"></span> Ternity</div>
+                        <div class="v4-side-duration">2h 14m tracked</div>
+                    </div>
+                    <div class="v4-side new">
+                        <div class="v4-side-label">Start</div>
+                        <div class="v4-side-desc">Landing page design</div>
+                        <div class="v4-side-project"><span class="dot"></span> Acme Corp</div>
+                        <div class="v4-side-duration">New session</div>
+                    </div>
+                    <div class="v4-vs-badge">VS</div>
+                </div>
+                <div class="v4-question"><strong>Replace</strong> the running timer?</div>
+                <div class="v4-footer">
+                    <button class="btn btn-ghost">Keep current</button>
+                    <button class="btn btn-primary">Switch</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- V5: THE INLINE -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+        <div class="variant-header">
+            <span class="variant-id">V5</span>
+            <span class="variant-name">The Inline</span>
+        </div>
+        <div class="variant-desc">
+            No modal at all. The confirmation expands in-place between the entries, right where you clicked. Minimum disruption, maximum context — you never lose sight of your entry list. A subtle teal border and compact buttons. Feels native to the list, not like an interruption.
+        </div>
+        <div class="dialog-scene v5-scene">
+            <div class="v5-entry running">
+                <span class="desc">API integration</span>
+                <span class="project-pill" style="color: hsl(var(--chart-3)); background: hsl(var(--chart-3) / 0.1);">Ternity</span>
+                <span class="time">2:14:32 – now</span>
+            </div>
+            <div class="v5-entry">
+                <span class="desc">Landing page design</span>
+                <span class="project-pill" style="color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1);">Acme Corp</span>
+                <span class="time">1:45:00</span>
+                <button class="play-btn" style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--primary)); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+            </div>
+            <div class="v5-expand">
+                <div class="v5-expand-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>
+                </div>
+                <div class="v5-expand-text">
+                    Stop <span class="current-task">API integration</span> and start this?
+                </div>
+                <div class="v5-expand-actions">
+                    <button class="btn btn-ghost" style="font-size: calc(11px * var(--t-scale)); padding: calc(5px * var(--t-scale)) calc(12px * var(--t-scale));">No</button>
+                    <button class="btn btn-primary" style="font-size: calc(11px * var(--t-scale)); padding: calc(5px * var(--t-scale)) calc(12px * var(--t-scale));">Switch</button>
+                </div>
+            </div>
+            <div class="v5-entry">
+                <span class="desc">Weekly standup</span>
+                <span class="project-pill" style="color: hsl(var(--muted-foreground)); background: hsl(var(--muted) / 0.5);">Internal</span>
+                <span class="time">0:32:15</span>
+                <button class="play-btn" style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--primary)); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.3;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+            </div>
+            <div class="v5-entry">
+                <span class="desc">Code review</span>
+                <span class="project-pill" style="color: hsl(var(--chart-3)); background: hsl(var(--chart-3) / 0.1);">Ternity</span>
+                <span class="time">0:48:20</span>
+                <button class="play-btn" style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--primary)); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.3;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- SETTINGS PREVIEW -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="settings-preview">
+        <h3>Settings → Timer</h3>
+        <div class="setting-row">
+            <div>
+                <div class="setting-label">Confirm before switching timers</div>
+                <div class="setting-desc">Ask for confirmation when starting a new timer while one is running</div>
+            </div>
+            <div class="toggle-track" onclick="this.classList.toggle('off')">
+                <div class="toggle-thumb"></div>
+            </div>
+        </div>
+        <div class="setting-row">
+            <div>
+                <div class="setting-label">Auto-stop countdown</div>
+                <div class="setting-desc">Seconds before auto-switching (only for Countdown variant)</div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+                <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 11px;">3s</button>
+                <button class="btn btn-primary" style="padding: 4px 10px; font-size: 11px;">5s</button>
+                <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 11px;">10s</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Theme & Scale switcher logic ── -->
+    <script>
+        const THEMES = [
+            { id: 'ternity-dark', label: 'Ternity Dark' },
+            { id: 'ternity-light', label: 'Light' },
+            { id: 'midnight', label: 'Midnight' },
+            { id: 'warm-sand', label: 'Warm Sand' },
+            { id: 'carbon', label: 'Carbon' },
+            { id: 'high-contrast', label: 'High Contrast' },
+        ];
+        const SCALES = [
+            { id: 'compact', label: 'Compact' },
+            { id: 'default', label: 'Default' },
+            { id: 'comfortable', label: 'Comfortable' },
+        ];
+
+        let currentTheme = 'ternity-dark';
+        let currentScale = 'default';
+
+        function applyTheme(id) {
+            currentTheme = id;
+            document.documentElement.setAttribute('data-theme', id);
+            document.querySelectorAll('#themeNav button').forEach(b =>
+                b.classList.toggle('active', b.dataset.id === id)
+            );
+        }
+
+        function applyScale(id) {
+            currentScale = id;
+            document.documentElement.setAttribute('data-scale', id);
+            document.querySelectorAll('#scaleNav button').forEach(b =>
+                b.classList.toggle('active', b.dataset.id === id)
+            );
+        }
+
+        const themeNav = document.getElementById('themeNav');
+        THEMES.forEach(t => {
+            const btn = document.createElement('button');
+            btn.textContent = t.label;
+            btn.dataset.id = t.id;
+            if (t.id === currentTheme) btn.classList.add('active');
+            btn.onclick = () => applyTheme(t.id);
+            themeNav.appendChild(btn);
+        });
+
+        const scaleNav = document.getElementById('scaleNav');
+        SCALES.forEach(s => {
+            const btn = document.createElement('button');
+            btn.textContent = s.label;
+            btn.dataset.id = s.id;
+            if (s.id === currentScale) btn.classList.add('active');
+            btn.onclick = () => applyScale(s.id);
+            scaleNav.appendChild(btn);
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

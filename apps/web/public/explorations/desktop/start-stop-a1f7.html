@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Start/Stop Button Exploration v1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+        }
+
+        /* Variant layout */
+        .variant {
+            max-width: 1820px; margin: 0 auto 56px;
+        }
+        .variant-header { text-align: center; margin-bottom: 12px; }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+        .variant-desc {
+            font-size: 10px; color: rgba(255,255,255,0.12);
+            line-height: 1.4; margin-top: 4px;
+        }
+        .variant-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 345px);
+            gap: 16px;
+            justify-content: center;
+        }
+        @media (max-width: 1820px) {
+            .variant-grid { grid-template-columns: repeat(3, 345px); }
+        }
+        @media (max-width: 1100px) {
+            .variant-grid { grid-template-columns: repeat(2, 345px); }
+        }
+        .state-wrap {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .state-label {
+            font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.15); font-family: 'Oxanium', sans-serif;
+        }
+
+        /* Popup frame */
+        .popup-frame {
+            width: 345px; border-radius: 14px; overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background)); color: hsl(var(--foreground));
+        }
+
+        /* ================================================================
+           SHARED UTILITIES
+           ================================================================ */
+        .timer-font {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            letter-spacing: 1.5px;
+        }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+
+        /* ================================================================
+           ANIMATIONS
+           ================================================================ */
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes text-glow {
+            0%, 100% { text-shadow: 0 0 8px hsl(var(--primary) / 0.4); }
+            50% { text-shadow: 0 0 20px hsl(var(--primary) / 0.7), 0 0 40px hsl(var(--primary) / 0.2); }
+        }
+        @keyframes neon-breathe {
+            0%, 100% { box-shadow: 0 0 4px hsl(var(--primary) / 0.3), 0 0 12px hsl(var(--primary) / 0.15); }
+            50% { box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.3), 0 0 48px hsl(var(--primary) / 0.1); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes liquid-drift {
+            0% { left: -10%; }
+            100% { left: 75%; }
+        }
+        @keyframes liquid-drift-2 {
+            0% { left: 80%; }
+            100% { left: 5%; }
+        }
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 0.5; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+        @keyframes press-bounce {
+            0% { transform: scale(1); }
+            40% { transform: scale(0.92); }
+            70% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        @keyframes glass-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 8px hsl(var(--destructive) / 0.3), 0 0 20px hsl(var(--destructive) / 0.1); }
+            50% { box-shadow: 0 0 16px hsl(var(--destructive) / 0.5), 0 0 40px hsl(var(--destructive) / 0.2); }
+        }
+        @keyframes morph-pill {
+            0% { border-radius: 10px; }
+            50% { border-radius: 50%; }
+            100% { border-radius: 10px; }
+        }
+        @keyframes slide-in-right {
+            from { transform: translateX(8px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slide-in-left {
+            from { transform: translateX(-8px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fade-scale-in {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* ================================================================
+           GLASS CARD — shared by all variants
+           ================================================================ */
+        .glass-card {
+            position: relative;
+            border-radius: 14px;
+            padding: 14px;
+            background: hsl(var(--card) / 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid hsl(var(--border) / 0.3);
+        }
+        .glass-card.running {
+            border-color: hsl(var(--primary) / 0.2);
+        }
+        .glass-card .glass-highlight {
+            position: absolute; left: 0; right: 0; top: 0;
+            height: 50%; pointer-events: none;
+            background: linear-gradient(180deg, hsl(var(--foreground) / 0.02) 0%, transparent 100%);
+        }
+
+        /* Header row — shared structure */
+        .timer-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 6px; position: relative;
+        }
+
+        /* Status orb */
+        .status-orb {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+            background: hsl(var(--muted-foreground) / 0.2);
+            transition: all 0.3s;
+        }
+        .running .status-orb {
+            background: hsl(var(--primary));
+            box-shadow: 0 0 8px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2);
+        }
+
+        /* Timer digits */
+        .timer-display {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            font-size: 28px; letter-spacing: 2px; line-height: 1;
+            color: hsl(var(--muted-foreground) / 0.15);
+            margin-top: 2px;
+        }
+        .running .timer-display {
+            color: hsl(var(--primary));
+        }
+
+        /* Description input */
+        .desc-input {
+            width: 100%; border: none; outline: none;
+            background: transparent; color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 500;
+            padding: 8px 10px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+        }
+        .desc-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.4);
+            font-style: italic;
+        }
+
+        /* Project pill */
+        .project-pill {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            margin-left: -8px;
+        }
+        .project-pill:hover { color: hsl(var(--foreground)); }
+
+        /* Liquid edge */
+        .liquid-edge {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 3px; overflow: hidden;
+            border-radius: 0 0 14px 14px;
+        }
+        .liquid-edge .blob-1 {
+            position: absolute; top: 0; height: 100%; width: 35%;
+            background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.6) 0%, transparent 70%);
+            animation: liquid-drift 5s ease-in-out infinite alternate;
+        }
+        .liquid-edge .blob-2 {
+            position: absolute; top: 0; height: 100%; width: 20%;
+            background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.4) 0%, transparent 70%);
+            animation: liquid-drift-2 7s ease-in-out infinite alternate;
+        }
+
+        /* Stats mini-cards */
+        .stats-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+            padding: 12px 12px 0;
+        }
+        .stat-card {
+            padding: 8px 10px;
+            background: hsl(var(--muted) / 0.2);
+            border: 1px solid hsl(var(--border) / 0.15);
+            border-radius: 8px;
+        }
+        .stat-value {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            font-size: 15px;
+        }
+        .stat-value.primary { color: hsl(var(--primary)); }
+        .stat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            margin-top: 1px;
+        }
+
+        /* Entries list */
+        .entries-section {
+            position: relative;
+            flex: 1; min-height: 0; overflow-y: auto;
+            padding: 0 12px;
+        }
+        .day-header {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 0 4px;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .day-header::before {
+            content: ''; position: absolute; inset: 0;
+            background: hsl(var(--card) / 0.9);
+            backdrop-filter: blur(8px);
+            z-index: -1;
+            margin: 0 -12px;
+            padding: 0 12px;
+        }
+        .entry-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.1);
+            font-size: 11px;
+        }
+        .entry-row:last-child { border-bottom: none; }
+        .entry-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+        .entry-desc {
+            flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: hsl(var(--foreground) / 0.7);
+        }
+        .entry-desc.empty {
+            color: hsl(var(--muted-foreground) / 0.3);
+            font-style: italic;
+        }
+        .entry-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; font-variant-numeric: tabular-nums;
+            color: hsl(var(--muted-foreground) / 0.5);
+            flex-shrink: 0;
+        }
+        .entry-resume {
+            width: 18px; height: 18px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            color: hsl(var(--muted-foreground) / 0.3);
+            cursor: pointer; flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .entry-resume:hover {
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+        }
+
+        /* Stats + entries card */
+        .entries-card {
+            position: relative;
+            border-radius: 14px;
+            border: 1px solid hsl(var(--border) / 0.3);
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            height: 300px;
+        }
+        .entries-card .glass-bg {
+            position: absolute; inset: 0;
+            background: hsl(var(--card) / 0.6);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            pointer-events: none;
+        }
+        .entries-card .glass-highlight {
+            position: absolute; left: 0; right: 0; top: 0;
+            height: 50%; pointer-events: none;
+            background: linear-gradient(180deg, hsl(var(--foreground) / 0.02) 0%, transparent 100%);
+        }
+        .entries-card > * { position: relative; }
+
+        /* Footer overlay */
+        .footer-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            z-index: 50; pointer-events: none;
+        }
+        .footer-overlay .frost {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, hsl(var(--card) / 0.95) 0%, hsl(var(--card) / 0.05) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-mask-image: linear-gradient(to top, black 30%, transparent 100%);
+            mask-image: linear-gradient(to top, black 30%, transparent 100%);
+        }
+        .footer-btn {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            padding: 12px 14px 8px;
+            pointer-events: auto;
+        }
+        .footer-btn a {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            text-decoration: none; display: flex; align-items: center; gap: 4px;
+        }
+        .footer-btn a:hover { color: hsl(var(--primary)); }
+
+        /* Play icon SVG */
+        .icon-play {
+            width: 11px; height: 11px; fill: currentColor;
+        }
+        .icon-stop {
+            width: 11px; height: 11px; fill: currentColor;
+        }
+        .icon-sm { width: 10px; height: 10px; }
+        .icon-xs { width: 8px; height: 8px; }
+
+        /* ================================================================
+           0 / CURRENT — Exact match of production button
+           ================================================================ */
+        .v0-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 30px; width: 72px;
+            border-radius: 10px; border: none;
+            cursor: pointer; gap: 6px;
+            transition: transform 0.15s;
+            margin-left: auto;
+        }
+        .v0-btn:active { transform: scale(0.95); }
+        .v0-btn-start {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .v0-btn-stop {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+
+        /* ================================================================
+           1 / GHOST GLASS — Outlined button with frosted glass fill
+           No solid fill. Border + subtle blur. Feels part of the glass card.
+           ================================================================ */
+        .v1-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 30px; width: 72px;
+            border-radius: 10px; cursor: pointer; gap: 6px;
+            margin-left: auto; position: relative;
+            overflow: hidden;
+        }
+        .v1-btn-start {
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.3);
+            color: hsl(var(--primary));
+            backdrop-filter: blur(8px);
+        }
+        .v1-btn-start:hover {
+            background: hsl(var(--primary) / 0.15);
+            border-color: hsl(var(--primary) / 0.5);
+        }
+        .v1-btn-stop {
+            background: hsl(var(--destructive) / 0.08);
+            border: 1px solid hsl(var(--destructive) / 0.3);
+            color: hsl(var(--destructive));
+            backdrop-filter: blur(8px);
+        }
+        .v1-btn-stop:hover {
+            background: hsl(var(--destructive) / 0.15);
+            border-color: hsl(var(--destructive) / 0.5);
+        }
+        .v1-btn:active { transform: scale(0.95); }
+
+        /* ================================================================
+           2 / PILL MORPH — Wider pill shape, smooth corners
+           Softer, more organic shape. Feels like a capsule.
+           ================================================================ */
+        .v2-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 28px; padding: 0 16px;
+            border-radius: 14px; border: none;
+            cursor: pointer; gap: 6px;
+            margin-left: auto;
+            transition: all 0.3s ease;
+        }
+        .v2-btn:active { transform: scale(0.95); }
+        .v2-btn-start {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .v2-btn-stop {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+
+        /* ================================================================
+           3 / NEON WIRE — Thin glowing border, dark fill
+           Cyberpunk aesthetic. Glows brighter on hover.
+           ================================================================ */
+        .v3-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 30px; width: 72px;
+            border-radius: 10px; cursor: pointer; gap: 6px;
+            margin-left: auto;
+            background: hsl(var(--background));
+            transition: all 0.3s;
+        }
+        .v3-btn-start {
+            border: 1px solid hsl(var(--primary) / 0.5);
+            color: hsl(var(--primary));
+            box-shadow: 0 0 6px hsl(var(--primary) / 0.2), inset 0 0 6px hsl(var(--primary) / 0.05);
+        }
+        .v3-btn-start:hover {
+            box-shadow: 0 0 12px hsl(var(--primary) / 0.4), 0 0 24px hsl(var(--primary) / 0.15),
+                        inset 0 0 12px hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.8);
+        }
+        .v3-btn-stop {
+            border: 1px solid hsl(var(--destructive) / 0.5);
+            color: hsl(var(--destructive));
+            box-shadow: 0 0 6px hsl(var(--destructive) / 0.2), inset 0 0 6px hsl(var(--destructive) / 0.05);
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+        .v3-btn:active { transform: scale(0.95); }
+
+        /* ================================================================
+           4 / GRADIENT FLOW — Animated gradient background
+           Liquid moving gradient that shifts while running.
+           ================================================================ */
+        .v4-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 30px; width: 72px;
+            border-radius: 10px; border: none;
+            cursor: pointer; gap: 6px;
+            margin-left: auto;
+            transition: transform 0.15s;
+        }
+        .v4-btn:active { transform: scale(0.95); }
+        .v4-btn-start {
+            background: linear-gradient(135deg, hsl(168 100% 38%), hsl(168 100% 48%), hsl(180 90% 42%));
+            background-size: 200% 200%;
+            color: hsl(var(--primary-foreground));
+        }
+        .v4-btn-stop {
+            background: linear-gradient(135deg, hsl(355 100% 58%), hsl(355 100% 68%), hsl(340 90% 60%));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease-in-out infinite;
+            color: hsl(var(--destructive-foreground));
+        }
+
+        /* ================================================================
+           5 / CIRCLE ICON — Icon-only circle button, minimal
+           Just the play/stop icon. Small, tight, like Spotify.
+           ================================================================ */
+        .v5-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 50%; border: none;
+            cursor: pointer; margin-left: auto;
+            transition: all 0.2s;
+        }
+        .v5-btn:active { transform: scale(0.9); }
+        .v5-btn:hover { transform: scale(1.1); }
+        .v5-btn-start {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .v5-btn-stop {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+        .v5-btn svg { width: 14px; height: 14px; }
+
+        /* ================================================================
+           6 / GLASS SLAB — Frosted slab with inner light stripe
+           Thick glass panel with a shimmer stripe on hover/running.
+           ================================================================ */
+        .v6-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 32px; width: 76px;
+            border-radius: 8px; cursor: pointer; gap: 6px;
+            margin-left: auto;
+            position: relative; overflow: hidden;
+            transition: transform 0.15s;
+        }
+        .v6-btn:active { transform: scale(0.95); }
+        .v6-btn-start {
+            background: hsl(var(--primary) / 0.12);
+            border: 1px solid hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .v6-btn-start::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.15), transparent);
+            transition: left 0.5s;
+        }
+        .v6-btn-start:hover::after { left: 150%; }
+        .v6-btn-stop {
+            background: hsl(var(--destructive) / 0.12);
+            border: 1px solid hsl(var(--destructive) / 0.2);
+            color: hsl(var(--destructive));
+        }
+        .v6-btn-stop::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, hsl(var(--destructive) / 0.15), transparent);
+            animation: glass-shimmer 2s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           7 / RING PULSE — Circle button with expanding ring while running
+           Radiating rings of energy when active.
+           ================================================================ */
+        .v7-btn-wrap {
+            position: relative; margin-left: auto;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .v7-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 50%; border: none;
+            cursor: pointer; position: relative; z-index: 1;
+            transition: all 0.2s;
+        }
+        .v7-btn:active { transform: scale(0.9); }
+        .v7-btn:hover { transform: scale(1.08); }
+        .v7-btn-start {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .v7-btn-stop {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+        .v7-btn svg { width: 14px; height: 14px; }
+        .v7-rings {
+            position: absolute; inset: -8px;
+            pointer-events: none;
+        }
+        .v7-ring {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 1px solid hsl(var(--destructive) / 0.3);
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        .v7-ring:nth-child(2) { animation-delay: 0.7s; }
+        .v7-ring:nth-child(3) { animation-delay: 1.4s; }
+
+        /* ================================================================
+           8 / FLUSH BAR — Full-width bar at bottom of timer card
+           Like a toolbar action. Clear call to action.
+           ================================================================ */
+        .v8-bar {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 1px;
+            height: 36px; gap: 6px;
+            border: none; cursor: pointer; width: 100%;
+            margin-top: 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .v8-bar:active { transform: scale(0.98); }
+        .v8-bar-start {
+            background: hsl(var(--primary) / 0.1);
+            border: 1px solid hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .v8-bar-start:hover {
+            background: hsl(var(--primary) / 0.18);
+            border-color: hsl(var(--primary) / 0.35);
+        }
+        .v8-bar-stop {
+            background: hsl(var(--destructive) / 0.1);
+            border: 1px solid hsl(var(--destructive) / 0.2);
+            color: hsl(var(--destructive));
+        }
+        .v8-bar-stop:hover {
+            background: hsl(var(--destructive) / 0.18);
+        }
+
+        /* ================================================================
+           9 / SPLIT TONE — Half teal, half dark. Dual personality.
+           Left side has a subtle teal tint. Geometric.
+           ================================================================ */
+        .v9-btn {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            height: 30px; width: 72px;
+            border-radius: 10px; border: none;
+            cursor: pointer; gap: 6px;
+            margin-left: auto;
+            position: relative; overflow: hidden;
+            transition: transform 0.15s;
+        }
+        .v9-btn:active { transform: scale(0.95); }
+        .v9-btn-start {
+            background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(168 80% 32%) 100%);
+            color: hsl(var(--primary-foreground));
+        }
+        .v9-btn-stop {
+            background: linear-gradient(90deg, hsl(var(--destructive)) 0%, hsl(355 80% 54%) 100%);
+            color: hsl(var(--destructive-foreground));
+        }
+
+        /* ================================================================
+           10 / MINIMAL TEXT — Just text, no background. Ultra clean.
+           Relies on color alone. Underline on hover.
+           ================================================================ */
+        .v10-btn {
+            display: flex; align-items: center;
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600; font-size: 12px;
+            text-transform: uppercase; letter-spacing: 1px;
+            background: none; border: none;
+            cursor: pointer; gap: 5px;
+            margin-left: auto;
+            padding: 4px 0;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .v10-btn::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 1px; transform: scaleX(0);
+            transition: transform 0.2s;
+        }
+        .v10-btn:hover::after { transform: scaleX(1); }
+        .v10-btn-start {
+            color: hsl(var(--primary));
+        }
+        .v10-btn-start::after { background: hsl(var(--primary) / 0.5); }
+        .v10-btn-stop {
+            color: hsl(var(--destructive));
+        }
+        .v10-btn-stop::after { background: hsl(var(--destructive) / 0.5); }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Start / Stop Button</h1>
+        <p>Exploration v1 — Visual variants for the liquid glass theme</p>
+    </div>
+
+    <!-- ============================================================
+         0 / CURRENT — Exact reproduction of production button
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">0 / Current — Production Button</div>
+            <div class="variant-desc">Exact reproduction of current Electron app. Solid fill, 72×30px, border-radius 10px, Oxanium uppercase.</div>
+        </div>
+        <div class="variant-grid">
+            <!-- Idle -->
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame">
+                    <div class="popup" data-theme="ternity-dark">
+                        <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                            <div class="glass-card">
+                                <div class="glass-highlight"></div>
+                                <div class="timer-header">
+                                    <div class="status-orb"></div>
+                                    <div class="timer-display">0:00:00</div>
+                                    <button class="v0-btn v0-btn-start">
+                                        <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                        Start
+                                    </button>
+                                </div>
+                                <input class="desc-input" placeholder="What are you working on?" readonly>
+                                <div class="project-pill">
+                                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                    <span>No project</span>
+                                    <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                            <div class="entries-card">
+                                <div class="glass-bg"></div>
+                                <div class="glass-highlight"></div>
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <div class="stat-value primary">2h 15m</div>
+                                        <div class="stat-label">Today</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" style="color: hsl(var(--foreground))">18h 42m</div>
+                                        <div class="stat-label">This Week</div>
+                                    </div>
+                                </div>
+                                <div class="entries-section" style="padding-top: 4px;">
+                                    <div class="day-header">
+                                        <span>Today</span>
+                                        <span>2h 15m</span>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(var(--primary))"></div>
+                                        <div class="entry-desc">API integration — auth flow</div>
+                                        <div class="entry-dur">1h 32m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(236 100% 77%)"></div>
+                                        <div class="entry-desc">Code review — PR #342</div>
+                                        <div class="entry-dur">43m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="day-header">
+                                        <span>Yesterday</span>
+                                        <span>6h 04m</span>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(35 100% 64%)"></div>
+                                        <div class="entry-desc">Design system — component library</div>
+                                        <div class="entry-dur">3h 21m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(var(--primary))"></div>
+                                        <div class="entry-desc empty">No description</div>
+                                        <div class="entry-dur">1h 12m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(236 100% 77%)"></div>
+                                        <div class="entry-desc">Sprint planning meeting</div>
+                                        <div class="entry-dur">1h 31m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="footer-overlay">
+                                    <div class="frost"></div>
+                                    <div class="footer-btn">
+                                        <a href="#">Open Ternity <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Running -->
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame">
+                    <div class="popup" data-theme="ternity-dark">
+                        <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                            <div class="glass-card running">
+                                <div class="glass-highlight"></div>
+                                <div class="timer-header">
+                                    <div class="status-orb"></div>
+                                    <div class="timer-display">0:47:23</div>
+                                    <button class="v0-btn v0-btn-stop">
+                                        <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                        Stop
+                                    </button>
+                                </div>
+                                <input class="desc-input" value="API integration — auth flow" readonly>
+                                <div class="project-pill">
+                                    <div class="dot" style="background: hsl(var(--primary))"></div>
+                                    <span>Ternity</span>
+                                    <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                                <div class="liquid-edge">
+                                    <div class="blob-1"></div>
+                                    <div class="blob-2"></div>
+                                </div>
+                            </div>
+                            <div class="entries-card">
+                                <div class="glass-bg"></div>
+                                <div class="glass-highlight"></div>
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <div class="stat-value primary">3h 02m</div>
+                                        <div class="stat-label">Today</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" style="color: hsl(var(--foreground))">19h 29m</div>
+                                        <div class="stat-label">This Week</div>
+                                    </div>
+                                </div>
+                                <div class="entries-section" style="padding-top: 4px;">
+                                    <div class="day-header">
+                                        <span>Today</span>
+                                        <span>3h 02m</span>
+                                    </div>
+                                    <div class="entry-row" style="background: hsl(var(--primary) / 0.04); border-radius: 6px; padding: 6px 4px; margin: 0 -4px;">
+                                        <div class="entry-dot" style="background: hsl(var(--primary)); box-shadow: 0 0 6px hsl(var(--primary) / 0.5);"></div>
+                                        <div class="entry-desc" style="color: hsl(var(--foreground))">API integration — auth flow</div>
+                                        <div class="entry-dur" style="color: hsl(var(--primary))">47m</div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(var(--primary))"></div>
+                                        <div class="entry-desc">API integration — auth flow</div>
+                                        <div class="entry-dur">1h 32m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(236 100% 77%)"></div>
+                                        <div class="entry-desc">Code review — PR #342</div>
+                                        <div class="entry-dur">43m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="day-header">
+                                        <span>Yesterday</span>
+                                        <span>6h 04m</span>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(35 100% 64%)"></div>
+                                        <div class="entry-desc">Design system — component library</div>
+                                        <div class="entry-dur">3h 21m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="entry-row">
+                                        <div class="entry-dot" style="background: hsl(var(--primary))"></div>
+                                        <div class="entry-desc empty">No description</div>
+                                        <div class="entry-dur">1h 12m</div>
+                                        <div class="entry-resume">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="footer-overlay">
+                                    <div class="frost"></div>
+                                    <div class="footer-btn">
+                                        <a href="#">Open Ternity <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         1 / GHOST GLASS — Outlined button with frosted glass fill
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">1 / Ghost Glass</div>
+            <div class="variant-desc">Outlined button with frosted glass fill. Border + subtle backdrop-blur. Feels part of the glass card — not a solid block sitting on top of it.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v1-btn v1-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v1-btn v1-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         2 / PILL MORPH — Wider pill shape
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">2 / Pill Morph</div>
+            <div class="variant-desc">Full pill/capsule shape. Softer, more organic. Auto-width from content rather than fixed. Matches the project pill aesthetic.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v2-btn v2-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v2-btn v2-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         3 / NEON WIRE — Glowing border, dark fill
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">3 / Neon Wire</div>
+            <div class="variant-desc">Dark fill with neon glowing border. Cyberpunk aesthetic. Stop button pulses with a breathing glow. Intensifies on hover.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v3-btn v3-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v3-btn v3-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         4 / GRADIENT FLOW — Animated gradient background
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">4 / Gradient Flow</div>
+            <div class="variant-desc">Animated gradient background that shifts while running. Liquid color movement. Start is a deep teal gradient, stop is an active red gradient.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v4-btn v4-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v4-btn v4-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         5 / CIRCLE ICON — Icon-only circle button
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">5 / Circle Icon</div>
+            <div class="variant-desc">Icon-only circle button. Minimal, like Spotify/Apple Music play button. No text label — the icon alone communicates the action. Small footprint.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v5-btn v5-btn-start">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21" /></svg>
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v5-btn v5-btn-stop">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         6 / GLASS SLAB — Frosted slab with inner light stripe
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">6 / Glass Slab</div>
+            <div class="variant-desc">Thick frosted glass panel with a shimmer stripe that sweeps across on hover (start) or continuously (stop). Translucent tint matches theme.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v6-btn v6-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v6-btn v6-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         7 / RING PULSE — Circle button with expanding rings
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">7 / Ring Pulse</div>
+            <div class="variant-desc">Circle icon button with expanding concentric rings radiating outward while running. Communicates active recording energy. Rings fade as they expand.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <div class="v7-btn-wrap">
+                                    <button class="v7-btn v7-btn-start">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <div class="v7-btn-wrap">
+                                    <button class="v7-btn v7-btn-stop">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    </button>
+                                    <div class="v7-rings">
+                                        <div class="v7-ring"></div>
+                                        <div class="v7-ring"></div>
+                                        <div class="v7-ring"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         8 / FLUSH BAR — Full-width bar at bottom of timer card
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">8 / Flush Bar</div>
+            <div class="variant-desc">Full-width action bar at the bottom of the timer card. No button alignment issues — stretches edge to edge. Clear call to action. Glass border treatment.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header" style="margin-bottom: 0;">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <button class="v8-bar v8-bar-start">
+                                <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                Start Timer
+                            </button>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header" style="margin-bottom: 0;">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <button class="v8-bar v8-bar-stop">
+                                <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                Stop Timer
+                            </button>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         9 / SPLIT TONE — Half teal, half dark
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">9 / Split Tone</div>
+            <div class="variant-desc">Subtle gradient gives depth. Not flat — has a gentle left-to-right tonal shift. More premium feel than solid color. Same shape as current.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v9-btn v9-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v9-btn v9-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         10 / MINIMAL TEXT — Just text, no background
+         ============================================================ -->
+    <div class="variant">
+        <div class="variant-header">
+            <div class="variant-label">10 / Minimal Text</div>
+            <div class="variant-desc">No background, no border — just colored text and icon. Ultra minimal. Underline reveals on hover. Relies on the timer display creating visual separation.</div>
+        </div>
+        <div class="variant-grid">
+            <div class="state-wrap">
+                <div class="state-label">Idle</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:00:00</div>
+                                <button class="v10-btn v10-btn-start">
+                                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21" /></svg>
+                                    Start
+                                </button>
+                            </div>
+                            <input class="desc-input" placeholder="What are you working on?" readonly>
+                            <div class="project-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+                                <span>No project</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="state-wrap">
+                <div class="state-label">Running</div>
+                <div class="popup-frame"><div class="popup" data-theme="ternity-dark">
+                    <div style="padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="glass-card running">
+                            <div class="glass-highlight"></div>
+                            <div class="timer-header">
+                                <div class="status-orb"></div>
+                                <div class="timer-display">0:47:23</div>
+                                <button class="v10-btn v10-btn-stop">
+                                    <svg class="icon-stop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                                    Stop
+                                </button>
+                            </div>
+                            <input class="desc-input" value="API integration — auth flow" readonly>
+                            <div class="project-pill">
+                                <div class="dot" style="background: hsl(var(--primary))"></div>
+                                <span>Ternity</span>
+                                <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="liquid-edge"><div class="blob-1"></div><div class="blob-2"></div></div>
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

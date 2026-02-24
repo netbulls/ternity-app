@@ -95,6 +95,13 @@ export const router = createBrowserRouter([
             return { Component: DevTimerLooksPage };
           },
         },
+        {
+          path: '/dev/switch-confirm',
+          lazy: async () => {
+            const { DevSwitchConfirmPage } = await import('@/pages/dev-switch-confirm');
+            return { Component: DevSwitchConfirmPage };
+          },
+        },
       ]
     : []),
   {

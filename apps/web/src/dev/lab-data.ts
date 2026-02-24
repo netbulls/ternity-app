@@ -258,6 +258,8 @@ export const LAB_SECTIONS: LabProductSection[] = [
         description: 'System tray popup — timer, recent entries, settings, login flow',
         date: '2026-02-16T22:00:00',
         items: [
+          { kind: 'prototype', title: 'Switch Confirm Interactive', route: '/dev/switch-confirm', description: 'Interactive prototype: V1 Ripple (fullscreen overlay + pulsing ring), V3 Gravity Drop (two cards drop from top), V9 Split Horizon (dramatic full-screen split with live timers)', date: '2026-02-23T23:00:00' },
+          { kind: 'exploration', title: 'switch-confirm-f4a9 — 10 Fresh Variants', file: 'desktop/switch-confirm-f4a9.html', description: '10 fresh confirmation variants: V1 Ripple, V2 Morph Bar, V3 Gravity Drop, V4 Slide Rail, V5 Stack Peek, V6 Crossfade, V7 Flip Card, V8 Ribbon, V9 Split Horizon, V10 Halo', date: '2026-02-23T22:30:00' },
           { kind: 'exploration', title: 'switch-confirm-b3e1 — Desktop Switch Confirmation', file: 'desktop/switch-confirm-b3e1.html', description: '5 desktop variants for 340px tray popup: D1 Overlay, D2 Slide-Up Sheet, D3 Inline Expansion, D4 Full Replacement, D5 Toast Banner', date: '2026-02-23T21:00:00' },
           { kind: 'prototype', title: 'Tray Popup v2', route: '/dev/tray-v2', description: 'v2 — stable layout (no size jump on idle↔tracking), in-progress entry indicator, persistent structure with animated content swaps', date: '2026-02-16T23:30:00' },
           { kind: 'prototype', title: 'Tray Popup Interactive', route: '/dev/tray', description: 'Interactive prototype: Layered + Hero layouts, settings panel (expand/drawer/overlay), login view, theme/scale switching', date: '2026-02-16T23:00:00' },
