@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, gte, lte, desc, inArray, isNull } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray, isNull, or, like } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   timeEntries,
@@ -31,6 +31,11 @@ function baseName(description: string): string {
   return match ? match[1]! : description;
 }
 
+/** Escape SQL LIKE special characters */
+function escapeLike(str: string): string {
+  return str.replace(/[%_\\]/g, '\\$&');
+}
+
 /** Find the next available copy number by querying existing entries */
 async function nextCopyName(
   description: string,
@@ -40,7 +45,7 @@ async function nextCopyName(
   const base = baseName(description);
   const prefix = base ? `${base} (` : '(';
 
-  // Find all sibling entries: exact base name + "base (N)" variants
+  // Only fetch the base name + its "(N)" variants — not all user entries
   const siblings = await tx
     .select({ description: timeEntries.description })
     .from(timeEntries)
@@ -48,13 +53,16 @@ async function nextCopyName(
       and(
         eq(timeEntries.userId, userId),
         eq(timeEntries.isActive, true),
+        or(
+          eq(timeEntries.description, base),
+          like(timeEntries.description, `${escapeLike(base)} (%)`),
+        ),
       ),
     );
 
   let maxN = 0;
   for (const s of siblings) {
     if (s.description === base) {
-      // The base name itself exists — at least (1) is needed
       maxN = Math.max(maxN, 0);
     }
     if (s.description.startsWith(prefix) && s.description.endsWith(')')) {
@@ -319,8 +327,16 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           .where(eq(timeEntries.id, id));
       }
 
-      // Update labels if provided
+      // Snapshot old labels BEFORE deleting (needed for audit)
+      let oldLabelIds: string[] = [];
       if (body.labelIds !== undefined) {
+        const oldLabelRows = await tx
+          .select({ id: labels.id })
+          .from(entryLabels)
+          .innerJoin(labels, eq(entryLabels.labelId, labels.id))
+          .where(eq(entryLabels.entryId, id));
+        oldLabelIds = oldLabelRows.map((r) => r.id).sort();
+
         await tx.delete(entryLabels).where(eq(entryLabels.entryId, id));
         if (body.labelIds.length > 0) {
           await tx.insert(entryLabels).values(
@@ -342,15 +358,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         changes.project = { old: oldName, new: newName };
       }
       if (body.labelIds !== undefined) {
-        const oldLabelRows = await tx
-          .select({ id: labels.id })
-          .from(entryLabels)
-          .innerJoin(labels, eq(entryLabels.labelId, labels.id))
-          .where(eq(entryLabels.entryId, id));
-        const oldIds = oldLabelRows.map((r) => r.id).sort();
         const newIds = [...body.labelIds].sort();
-        if (JSON.stringify(oldIds) !== JSON.stringify(newIds)) {
-          changes.labelIds = { old: oldIds, new: newIds };
+        if (JSON.stringify(oldLabelIds) !== JSON.stringify(newIds)) {
+          changes.labelIds = { old: oldLabelIds, new: newIds };
         }
       }
 
