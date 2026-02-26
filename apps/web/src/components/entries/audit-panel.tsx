@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronRight, Loader2, Timer, Play, Square, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, ChevronRight, Loader2, Timer, Play, Square, Pencil, Plus, Minus, Trash2, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { formatDuration, formatTime } from '@/lib/format';
@@ -34,6 +34,7 @@ const actionConfig: Record<AuditAction, {
   timer_stopped: { label: 'Stopped timer', icon: Square, iconColor: 'text-blue-500' },
   timer_resumed: { label: 'Resumed timer', icon: Timer, iconColor: 'text-blue-500' },
   adjustment_added: { label: 'Added adjustment', icon: Plus, iconColor: 'text-chart-3' },
+  block_moved: { label: 'Moved time block', icon: ArrowRightLeft, iconColor: 'text-chart-3' },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -43,7 +44,23 @@ const fieldLabels: Record<string, string> = {
   stoppedAt: 'End time',
   durationSeconds: 'Duration',
   labelIds: 'Labels',
+  segmentId: 'Time block',
+  movedToEntryId: 'Moved to entry',
+  movedFromEntryId: 'Moved from entry',
 };
+
+function formatSignedDuration(seconds: number): string {
+  const abs = Math.abs(seconds);
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  const s = abs % 60;
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0 || h > 0) parts.push(`${h > 0 ? String(m).padStart(2, '0') : String(m)}m`);
+  if (s > 0 && h === 0) parts.push(`${m > 0 ? String(s).padStart(2, '0') : String(s)}s`);
+  const sign = seconds >= 0 ? '+' : '\u2212';
+  return `${sign}${parts.join(' ') || '0s'}`;
+}
 
 function formatFieldValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return '(none)';
@@ -239,13 +256,27 @@ function SessionTimelineItem({
 /* ── Event bar ───────────────────────────────────────────────────── */
 
 function AuditEventCard({ event }: { event: AuditEvent }) {
-  const config = actionConfig[event.action];
-  const Icon = config.icon;
   const source = event.metadata && typeof (event.metadata as Record<string, unknown>).source === 'string'
     ? ((event.metadata as Record<string, unknown>).source as string).replace(/_/g, ' ')
     : null;
   const hasChanges = event.changes && Object.keys(event.changes).length > 0;
   const [expanded, setExpanded] = useState(false);
+
+  // For adjustments, derive sign-aware label, icon, and color from the durationSeconds
+  const isAdjustment = event.action === 'adjustment_added';
+  const adjDuration = isAdjustment && event.changes?.durationSeconds?.new != null
+    ? (event.changes.durationSeconds.new as number)
+    : null;
+  const isPositiveAdj = adjDuration !== null && adjDuration >= 0;
+
+  const config = isAdjustment
+    ? {
+        label: isPositiveAdj ? 'Added time' : 'Removed time',
+        icon: isPositiveAdj ? Plus : Minus,
+        iconColor: isPositiveAdj ? 'text-primary' : 'text-destructive',
+      }
+    : actionConfig[event.action];
+  const Icon = config.icon;
 
   const barContent = (
     <>
@@ -268,6 +299,19 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
       <span style={{ fontSize: scaled(12) }} className="font-medium text-foreground">
         {config.label}
       </span>
+
+      {/* Adjustment duration — shown inline on the bar */}
+      {adjDuration !== null && (
+        <span
+          className={cn(
+            'font-brand font-semibold tabular-nums',
+            isPositiveAdj ? 'text-primary' : 'text-destructive',
+          )}
+          style={{ fontSize: scaled(12) }}
+        >
+          {formatSignedDuration(adjDuration)}
+        </span>
+      )}
 
       {/* Source */}
       {source && (
@@ -312,32 +356,43 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
           </div>
 
           {/* Changes */}
-          {Object.entries(event.changes!).map(([field, change]) => (
-            <div
-              key={field}
-              className="rounded-md px-2.5 py-1.5"
-              style={{ background: 'hsl(var(--muted) / 0.2)' }}
-            >
-              <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-                {fieldLabels[field] ?? field}
+          {Object.entries(event.changes!).map(([field, change]) => {
+            // For adjustment durationSeconds, show with sign instead of formatDuration
+            const isAdjDuration = isAdjustment && field === 'durationSeconds';
+            return (
+              <div
+                key={field}
+                className="rounded-md px-2.5 py-1.5"
+                style={{ background: 'hsl(var(--muted) / 0.2)' }}
+              >
+                <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+                  {fieldLabels[field] ?? field}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5" style={{ fontSize: scaled(12) }}>
+                  {change.old !== undefined && (
+                    <span className="text-muted-foreground/50 line-through">
+                      {formatFieldValue(field, change.old)}
+                    </span>
+                  )}
+                  {change.old !== undefined && change.new !== undefined && (
+                    <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/30" />
+                  )}
+                  {change.new !== undefined && (
+                    <span className={cn(
+                      'font-medium',
+                      isAdjDuration && (change.new as number) >= 0 && 'text-primary',
+                      isAdjDuration && (change.new as number) < 0 && 'text-destructive',
+                      !isAdjDuration && 'text-foreground',
+                    )}>
+                      {isAdjDuration
+                        ? formatSignedDuration(change.new as number)
+                        : formatFieldValue(field, change.new)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5" style={{ fontSize: scaled(12) }}>
-                {change.old !== undefined && (
-                  <span className="text-muted-foreground/50 line-through">
-                    {formatFieldValue(field, change.old)}
-                  </span>
-                )}
-                {change.old !== undefined && change.new !== undefined && (
-                  <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/30" />
-                )}
-                {change.new !== undefined && (
-                  <span className="font-medium text-foreground">
-                    {formatFieldValue(field, change.new)}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
