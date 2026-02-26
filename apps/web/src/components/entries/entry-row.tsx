@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, ChevronDown, Clock } from 'lucide-react';
+import { Play, Square, Check, X, MoreHorizontal, Pencil, Trash2, History, ChevronDown, Clock, RotateCcw, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { useUpdateEntry, useDeleteEntry } from '@/hooks/use-entries';
+import { useUpdateEntry, useDeleteEntry, useRestoreEntry, useMoveBlock } from '@/hooks/use-entries';
 import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { formatTime, formatDuration } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
@@ -14,10 +14,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AuditPanel } from './audit-panel';
 import { InlineProjectDropdown } from './inline-project-dropdown';
-import { ManualEntryDialog } from './manual-entry-dialog';
+import { AdjustEntryDialog } from './adjust-entry-dialog';
 import { SwitchTimerDialog } from './switch-timer-dialog';
+import { TimeBlockDrawer } from './time-block-drawer';
 import { getPreference, setPreference } from '@/providers/preferences-provider';
 import type { Entry } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
@@ -36,6 +47,8 @@ export function EntryRow({ entry }: Props) {
   const { data: timerState } = useTimer();
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
+  const restoreEntry = useRestoreEntry();
+  const moveBlock = useMoveBlock();
   const resumeTimer = useResumeTimer();
   const stopTimer = useStopTimer();
 
@@ -47,6 +60,8 @@ export function EntryRow({ entry }: Props) {
   const [auditOpen, setAuditOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [optimisticProject, setOptimisticProject] = useState<{
     name: string;
     color: string;
@@ -87,6 +102,7 @@ export function EntryRow({ entry }: Props) {
     completedDuration,
   );
 
+  const isDeleted = !entry.isActive;
   const noProject = !entry.projectId;
   const noDesc = !entry.description;
 
@@ -118,12 +134,14 @@ export function EntryRow({ entry }: Props) {
   };
 
   const handleEditDescription = () => {
+    if (isDeleted) return;
     claim(entry.id);
     setEditDesc(entry.description);
     setEditingField('description');
   };
 
   const handleEditProject = () => {
+    if (isDeleted) return;
     claim(entry.id);
     setEditingField('project');
   };
@@ -192,8 +210,17 @@ export function EntryRow({ entry }: Props) {
     stopTimer.mutate();
   };
 
+  const handleMoveBlock = (segmentId: string) => {
+    moveBlock.mutate(
+      { entryId: entry.id, segmentId },
+      { onSuccess: () => setBlocksExpanded(false) },
+    );
+  };
+
   const isEditing = editingField !== null;
   const isEditingProject = editingField === 'project';
+
+  const hasMultipleBlocks = entry.segments.length > 1;
 
   // Use optimistic project data for display (syncs pill pop with name change)
   const displayProjectName = optimisticProject?.name ?? entry.projectName;
@@ -201,9 +228,10 @@ export function EntryRow({ entry }: Props) {
   const displayClientName = optimisticProject?.clientName ?? entry.clientName;
 
   return (
+    <div className={cn('border-b border-border last:border-b-0', isDeleted && 'opacity-60')}>
     <motion.div
       className={cn(
-        'group/row relative flex items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0',
+        'group/row relative flex items-center gap-3 px-4 py-2.5',
         isEditingProject && 'z-20',
       )}
       animate={{
@@ -393,6 +421,29 @@ export function EntryRow({ entry }: Props) {
         </div>
       </div>
 
+      {/* Block count badge — expand trigger */}
+      {hasMultipleBlocks && (
+        <button
+          onClick={() => setBlocksExpanded(!blocksExpanded)}
+          className={cn(
+            'relative z-10 flex shrink-0 items-center gap-1 rounded border px-2 py-0.5 font-brand tabular-nums transition-all',
+            blocksExpanded
+              ? 'border-primary/40 bg-primary/8 text-primary'
+              : 'border-border/50 text-muted-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary',
+          )}
+          style={{ fontSize: scaled(10) }}
+        >
+          <Layers className="h-3 w-3" />
+          {entry.segments.length}
+          <ChevronDown
+            className={cn(
+              'h-3 w-3 transition-transform duration-200',
+              blocksExpanded && 'rotate-180',
+            )}
+          />
+        </button>
+      )}
+
       {/* Time range — read-only display */}
       <div className="relative z-10 flex h-5 items-center gap-1 text-right shrink-0">
         <span
@@ -415,35 +466,37 @@ export function EntryRow({ entry }: Props) {
         {durationStr}
       </span>
 
-      {/* Play/Stop button — key forces fresh DOM node so inline styles don't leak */}
-      {isRunning ? (
-        <motion.button
-          key={`stop-${entry.id}`}
-          className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-          style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}
-          whileHover={{ backgroundColor: 'hsl(var(--destructive) / 0.2)' }}
-          whileTap={{ scale: 0.85 }}
-          onClick={handleStop}
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-        >
-          <Square className="h-3 w-3 fill-current" />
-        </motion.button>
-      ) : (
-        <motion.button
-          key={`play-${entry.id}`}
-          className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
-          whileHover={{
-            color: 'hsl(var(--primary))',
-            backgroundColor: 'hsl(var(--primary) / 0.1)',
-          }}
-          whileTap={{ scale: 0.85 }}
-          transition={{ duration: 0.15 }}
-          onClick={handlePlay}
-        >
-          <Play className="h-3.5 w-3.5 fill-current" />
-        </motion.button>
+      {/* Play/Stop button — hidden for deleted entries */}
+      {!isDeleted && (
+        isRunning ? (
+          <motion.button
+            key={`stop-${entry.id}`}
+            className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}
+            whileHover={{ backgroundColor: 'hsl(var(--destructive) / 0.2)' }}
+            whileTap={{ scale: 0.85 }}
+            onClick={handleStop}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+          >
+            <Square className="h-3 w-3 fill-current" />
+          </motion.button>
+        ) : (
+          <motion.button
+            key={`play-${entry.id}`}
+            className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
+            whileHover={{
+              color: 'hsl(var(--primary))',
+              backgroundColor: 'hsl(var(--primary) / 0.1)',
+            }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ duration: 0.15 }}
+            onClick={handlePlay}
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+          </motion.button>
+        )
       )}
 
       {/* More actions menu */}
@@ -454,30 +507,45 @@ export function EntryRow({ entry }: Props) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setAdjustOpen(true)}>
-            <Clock className="mr-2 h-3.5 w-3.5" />
-            Add adjustment
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleEditDescription}>
-            <Pencil className="mr-2 h-3.5 w-3.5" />
-            Edit description
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setAuditOpen(true)}>
-            <History className="mr-2 h-3.5 w-3.5" />
-            View history
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-destructive"
-            onClick={() => deleteEntry.mutate({ id: entry.id, source: 'inline_edit' })}
-          >
-            <Trash2 className="mr-2 h-3.5 w-3.5" />
-            Delete
-          </DropdownMenuItem>
+          {isDeleted ? (
+            <>
+              <DropdownMenuItem onClick={() => restoreEntry.mutate(entry.id)}>
+                <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                Restore
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAuditOpen(true)}>
+                <History className="mr-2 h-3.5 w-3.5" />
+                View history
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem onClick={() => setAdjustOpen(true)}>
+                <Clock className="mr-2 h-3.5 w-3.5" />
+                Add adjustment
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEditDescription}>
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Edit description
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAuditOpen(true)}>
+                <History className="mr-2 h-3.5 w-3.5" />
+                View history
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
       <AuditPanel entry={entry} open={auditOpen} onOpenChange={setAuditOpen} />
-      <ManualEntryDialog mode="adjust" entry={entry} open={adjustOpen} onOpenChange={setAdjustOpen} />
+      <AdjustEntryDialog entry={entry} open={adjustOpen} onOpenChange={setAdjustOpen} />
       {timerState?.entry && (
         <SwitchTimerDialog
           open={switchDialogOpen}
@@ -487,7 +555,35 @@ export function EntryRow({ entry }: Props) {
           onConfirm={handleSwitchConfirm}
         />
       )}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This entry will be moved to the trash. You can restore it later from the Deleted filter.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteEntry.mutate({ id: entry.id, source: 'inline_edit' })}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
+
+    {/* Time block drawer — accordion below the entry row */}
+    <AnimatePresence>
+      {blocksExpanded && (
+        <TimeBlockDrawer entry={entry} onMoveBlock={handleMoveBlock} />
+      )}
+    </AnimatePresence>
+    </div>
   );
 }
 

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Adjust Time V7: Timeline Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .instances {
+            display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+            padding: 20px 0;
+        }
+        .instance-label {
+            text-align: center;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 8px;
+        }
+
+        .dialog {
+            width: 420px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .dialog-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .dialog-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 8px;
+        }
+        .entry-info { display: flex; flex-direction: column; gap: 4px; }
+        .entry-desc {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.9);
+            font-weight: 500;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 400;
+            color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .dialog-body { padding: 20px 24px; }
+
+        /* Timeline bar */
+        .bar-container {
+            margin-bottom: 20px;
+        }
+        .bar-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            height: 16px;
+        }
+        .bar-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--muted-foreground) / 0.6);
+        }
+        .bar-label.adj-label {
+            position: absolute;
+            font-weight: 600;
+        }
+        .bar-label.adj-label.positive { color: hsl(var(--primary)); }
+        .bar-label.adj-label.negative { color: hsl(var(--destructive)); }
+
+        .bar-track {
+            position: relative;
+            width: 100%;
+            height: 32px;
+            background: hsl(var(--muted) / 0.5);
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .bar-current {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: hsl(var(--foreground) / 0.15);
+            border-radius: 6px 0 0 6px;
+            transition: width 0.2s ease;
+        }
+        .bar-adjustment {
+            position: absolute;
+            top: 0; bottom: 0;
+            transition: all 0.2s ease;
+            border-radius: 0;
+        }
+        .bar-adjustment.positive {
+            background: hsl(var(--primary) / 0.35);
+            border-right: 2px solid hsl(var(--primary));
+        }
+        .bar-adjustment.negative {
+            background: hsl(var(--destructive) / 0.25);
+            border-left: 2px solid hsl(var(--destructive));
+        }
+        .bar-handle {
+            position: absolute;
+            top: -4px; bottom: -4px;
+            width: 12px;
+            background: hsl(var(--primary));
+            border-radius: 3px;
+            cursor: ew-resize;
+            transition: background 0.15s;
+            z-index: 2;
+        }
+        .bar-handle.negative { background: hsl(var(--destructive)); }
+        .bar-handle:hover { transform: scaleX(1.2); }
+        .bar-handle::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px; height: 12px;
+            background: hsl(var(--primary-foreground) / 0.6);
+            border-radius: 1px;
+        }
+
+        .bar-labels-bottom {
+            display: flex;
+            position: relative;
+            height: 18px;
+            margin-top: 6px;
+        }
+
+        /* Quick buttons */
+        .quick-buttons {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .quick-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            transition: all 0.15s;
+            font-variant-numeric: tabular-nums;
+        }
+        .quick-btn:hover {
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.08);
+        }
+        .quick-btn.negative:hover {
+            border-color: hsl(var(--destructive));
+            color: hsl(var(--destructive));
+            background: hsl(var(--destructive) / 0.08);
+        }
+        .quick-btn.active {
+            border-color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+        }
+        .quick-btn.active.negative {
+            border-color: hsl(var(--destructive));
+            background: hsl(var(--destructive) / 0.15);
+            color: hsl(var(--destructive));
+        }
+
+        /* Summary */
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: hsl(var(--muted) / 0.3);
+            border-radius: 8px;
+            border: 1px solid hsl(var(--border) / 0.3);
+            margin-bottom: 16px;
+        }
+        .summary-item { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+        .summary-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .summary-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(18px * var(--t-scale, 1.1));
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            min-width: 100px;
+            text-align: center;
+        }
+        .summary-value.positive { color: hsl(var(--primary)); }
+        .summary-value.negative { color: hsl(var(--destructive)); }
+        .summary-value.total { color: hsl(var(--foreground)); }
+        .summary-arrow { color: hsl(var(--muted-foreground) / 0.3); font-size: 18px; }
+
+        .reason-field { margin-top: 0; }
+        .reason-label {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 6px; display: block;
+        }
+        .reason-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: 6px;
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            outline: none; transition: border-color 0.15s;
+        }
+        .reason-input::placeholder { color: hsl(var(--muted-foreground) / 0.3); }
+        .reason-input:focus { border-color: hsl(var(--ring)); }
+
+        .dialog-footer {
+            padding: 16px 24px 20px;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 8px 16px; border-radius: 6px;
+            cursor: pointer; transition: all 0.15s; border: none;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border));
+        }
+        .btn-ghost:hover { background: hsl(var(--muted)); }
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .btn-primary:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Adjust Time — V7: Timeline Bar</h1>
+        <p>Drag a handle to visually extend or retract the entry duration</p>
+    </div>
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ember">Ember</button>
+                <button data-theme="ocean">Ocean</button>
+                <button data-theme="sandstone">Sandstone</button>
+                <button data-theme="forest">Forest</button>
+                <button data-theme="arctic">Arctic</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="instances">
+        <!-- Positive instance -->
+        <div>
+            <div class="instance-label">Adding Time</div>
+            <div class="dialog" id="dialog-pos">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme · Website Redesign</div>
+                        <div class="entry-duration">Current: <span class="current-dur">2h 15m</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="bar-container">
+                        <div class="bar-labels">
+                            <span class="bar-label">0:00</span>
+                            <span class="bar-label" id="pos-bar-end">2h 45m</span>
+                        </div>
+                        <div class="bar-track" id="pos-track">
+                            <div class="bar-current" id="pos-bar-current"></div>
+                            <div class="bar-adjustment positive" id="pos-bar-adj"></div>
+                            <div class="bar-handle" id="pos-handle"></div>
+                        </div>
+                        <div class="bar-labels-bottom">
+                            <span class="bar-label" id="pos-bar-orig" style="position: absolute;">2h 15m</span>
+                            <span class="bar-label adj-label positive" id="pos-bar-delta" style="position: absolute; right: 0;">+30m</span>
+                        </div>
+                    </div>
+                    <div class="quick-buttons" id="pos-quick">
+                        <button class="quick-btn" data-sec="300">+5m</button>
+                        <button class="quick-btn" data-sec="900">+15m</button>
+                        <button class="quick-btn active" data-sec="1800">+30m</button>
+                        <button class="quick-btn" data-sec="3600">+1h</button>
+                        <button class="quick-btn negative" data-sec="-300">−5m</button>
+                        <button class="quick-btn negative" data-sec="-900">−15m</button>
+                        <button class="quick-btn negative" data-sec="-1800">−30m</button>
+                        <button class="quick-btn negative" data-sec="-3600">−1h</button>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-label">Adjustment</div>
+                            <div class="summary-value positive" id="pos-adj">+30m</div>
+                        </div>
+                        <div class="summary-arrow">→</div>
+                        <div class="summary-item">
+                            <div class="summary-label">New Total</div>
+                            <div class="summary-value total" id="pos-total">2h 45m</div>
+                        </div>
+                    </div>
+                    <div class="reason-field">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g. Forgot to start timer">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary">Apply Adjustment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Negative instance -->
+        <div>
+            <div class="instance-label">Removing Time</div>
+            <div class="dialog" id="dialog-neg">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme · Website Redesign</div>
+                        <div class="entry-duration">Current: <span class="current-dur">2h 15m</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="bar-container">
+                        <div class="bar-labels">
+                            <span class="bar-label">0:00</span>
+                            <span class="bar-label" id="neg-bar-end">2h 00m</span>
+                        </div>
+                        <div class="bar-track" id="neg-track">
+                            <div class="bar-current" id="neg-bar-current"></div>
+                            <div class="bar-adjustment negative" id="neg-bar-adj"></div>
+                            <div class="bar-handle negative" id="neg-handle"></div>
+                        </div>
+                        <div class="bar-labels-bottom">
+                            <span class="bar-label" id="neg-bar-orig" style="position: absolute;">2h 15m</span>
+                            <span class="bar-label adj-label negative" id="neg-bar-delta" style="position: absolute; right: 0;">−15m</span>
+                        </div>
+                    </div>
+                    <div class="quick-buttons" id="neg-quick">
+                        <button class="quick-btn" data-sec="300">+5m</button>
+                        <button class="quick-btn" data-sec="900">+15m</button>
+                        <button class="quick-btn" data-sec="1800">+30m</button>
+                        <button class="quick-btn" data-sec="3600">+1h</button>
+                        <button class="quick-btn negative" data-sec="-300">−5m</button>
+                        <button class="quick-btn negative active" data-sec="-900">−15m</button>
+                        <button class="quick-btn negative" data-sec="-1800">−30m</button>
+                        <button class="quick-btn negative" data-sec="-3600">−1h</button>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-label">Adjustment</div>
+                            <div class="summary-value negative" id="neg-adj">−15m</div>
+                        </div>
+                        <div class="summary-arrow">→</div>
+                        <div class="summary-item">
+                            <div class="summary-label">New Total</div>
+                            <div class="summary-value total" id="neg-total">2h 00m</div>
+                        </div>
+                    </div>
+                    <div class="reason-field">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g. Logged break time incorrectly">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary">Apply Adjustment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme/scale switching
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector('#theme-switcher [data-theme="carbon"]')?.classList.add('active');
+        document.querySelector('#scale-switcher [data-scale="default"]')?.classList.add('active');
+
+        function fmt(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            let result = '';
+            if (h > 0) result += h + 'h ';
+            if (m > 0 || h > 0) result += (h > 0 ? String(m).padStart(2, '0') : m) + 'm';
+            if (s > 0 && h === 0) result += ' ' + (m > 0 ? String(s).padStart(2, '0') : s) + 's';
+            return result || '0s';
+        }
+        function fmtFixed(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        function fmtAdj(seconds) {
+            const abs = Math.abs(seconds);
+            const sign = seconds > 0 ? '+' : seconds < 0 ? '−' : '';
+            return sign + fmt(abs);
+        }
+
+        const BASE = 8100; // 2h 15m
+        const MAX_DISPLAY = 14400; // 4h max for bar
+
+        const dialogs = {
+            pos: { adj: 1800 },
+            neg: { adj: -900 }
+        };
+
+        function updateBar(id) {
+            const d = dialogs[id];
+            const adj = d.adj;
+            const newTotal = Math.max(0, BASE + adj);
+            const maxBar = Math.max(MAX_DISPLAY, newTotal + 1800);
+            const basePct = (BASE / maxBar) * 100;
+            const totalPct = (newTotal / maxBar) * 100;
+
+            const currentBar = document.getElementById(id + '-bar-current');
+            const adjBar = document.getElementById(id + '-bar-adj');
+            const handle = document.getElementById(id + '-handle');
+
+            currentBar.style.width = Math.min(basePct, totalPct) + '%';
+
+            if (adj > 0) {
+                adjBar.className = 'bar-adjustment positive';
+                adjBar.style.left = basePct + '%';
+                adjBar.style.width = ((adj / maxBar) * 100) + '%';
+                handle.className = 'bar-handle';
+                handle.style.left = 'calc(' + totalPct + '% - 6px)';
+            } else if (adj < 0) {
+                const retractPct = (Math.abs(adj) / maxBar) * 100;
+                adjBar.className = 'bar-adjustment negative';
+                adjBar.style.left = totalPct + '%';
+                adjBar.style.width = retractPct + '%';
+                handle.className = 'bar-handle negative';
+                handle.style.left = 'calc(' + totalPct + '% - 6px)';
+            } else {
+                adjBar.style.width = '0%';
+                handle.style.left = 'calc(' + basePct + '% - 6px)';
+            }
+
+            // Labels
+            document.getElementById(id + '-bar-end').textContent = fmt(newTotal);
+            const origLabel = document.getElementById(id + '-bar-orig');
+            origLabel.textContent = fmt(BASE);
+            origLabel.style.left = basePct + '%';
+            origLabel.style.transform = 'translateX(-50%)';
+
+            const deltaLabel = document.getElementById(id + '-bar-delta');
+            deltaLabel.textContent = fmtAdj(adj);
+            deltaLabel.className = 'bar-label adj-label ' + (adj > 0 ? 'positive' : adj < 0 ? 'negative' : '');
+
+            // Summary
+            const adjEl = document.getElementById(id + '-adj');
+            adjEl.textContent = fmtAdj(adj);
+            adjEl.className = 'summary-value ' + (adj > 0 ? 'positive' : adj < 0 ? 'negative' : 'total');
+            document.getElementById(id + '-total').textContent = fmt(newTotal);
+        }
+
+        // Quick buttons
+        ['pos', 'neg'].forEach(id => {
+            document.getElementById(id + '-quick').addEventListener('click', e => {
+                const btn = e.target.closest('.quick-btn');
+                if (!btn) return;
+                const sec = parseInt(btn.dataset.sec);
+                dialogs[id].adj = sec;
+                // Update active state
+                document.querySelectorAll('#' + id + '-quick .quick-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateBar(id);
+            });
+        });
+
+        // Drag support
+        ['pos', 'neg'].forEach(id => {
+            const handle = document.getElementById(id + '-handle');
+            const track = document.getElementById(id + '-track');
+            let dragging = false;
+
+            handle.addEventListener('mousedown', e => {
+                dragging = true;
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const rect = track.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+                const pct = x / rect.width;
+                const maxBar = Math.max(MAX_DISPLAY, (BASE + dialogs[id].adj) + 1800);
+                const newTotal = Math.round(pct * maxBar);
+                // Snap to 5-minute increments
+                const snapped = Math.round(newTotal / 300) * 300;
+                const adj = snapped - BASE;
+                // Clamp: don't go below 0 total
+                dialogs[id].adj = Math.max(-BASE, adj);
+                // Clear active quick buttons
+                document.querySelectorAll('#' + id + '-quick .quick-btn').forEach(b => b.classList.remove('active'));
+                updateBar(id);
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+        });
+
+        updateBar('pos');
+        updateBar('neg');
+    </script>
+</body>
+</html>
