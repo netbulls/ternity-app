@@ -35,3 +35,7 @@ archive/screenshots/
 
 # Inbox (shared files for Claude sessions)
 inbox/
+
+# Secrets — plaintext gitignored, only .age files committed
+secrets/*.md
+!secrets/README.md

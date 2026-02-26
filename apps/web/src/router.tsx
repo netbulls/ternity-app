@@ -8,6 +8,7 @@ import { ProjectsPage } from '@/pages/projects';
 import { SettingsPage } from '@/pages/settings';
 import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
+import { JiraCallbackPage } from '@/pages/jira-callback';
 import { DashboardPage } from '@/pages/dashboard';
 import { DownloadsPage } from '@/pages/downloads';
 
@@ -15,6 +16,10 @@ export const router = createBrowserRouter([
   {
     path: '/callback',
     element: <CallbackPage />,
+  },
+  {
+    path: '/integrations/jira/callback',
+    element: <JiraCallbackPage />,
   },
   ...(import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_PAGES === 'true'
     ? [

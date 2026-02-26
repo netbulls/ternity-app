@@ -238,6 +238,35 @@ export const leaveRequests = pgTable('leave_requests', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ── Jira Connections (OAuth 2.0 3LO) ─────────────────────────────────────
+
+export const jiraConnections = pgTable(
+  'jira_connections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    atlassianAccountId: text('atlassian_account_id').notNull(),
+    atlassianDisplayName: text('atlassian_display_name').notNull(),
+    atlassianEmail: text('atlassian_email'),
+    atlassianAvatarUrl: text('atlassian_avatar_url'),
+    cloudId: text('cloud_id').notNull(),
+    siteName: text('site_name').notNull(),
+    siteUrl: text('site_url').notNull(),
+    siteAvatarUrl: text('site_avatar_url'),
+    accessToken: text('access_token').notNull(),
+    refreshToken: text('refresh_token').notNull(),
+    tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('jira_connections_user_id_idx').on(t.userId),
+    uniqueIndex('jira_connections_user_cloud_idx').on(t.userId, t.cloudId),
+  ],
+);
+
 // ── Sync Infrastructure ────────────────────────────────────────────────────
 
 export const syncScheduleTriggerEnum = pgEnum('sync_schedule_trigger', [
