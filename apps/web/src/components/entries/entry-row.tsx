@@ -243,26 +243,16 @@ export function EntryRow({ entry }: Props) {
       }}
       transition={{ duration: 0.2 }}
     >
-      {/* Running indicator — teal left border */}
+      {/* Left border indicator — amber for incomplete, teal for running */}
       <AnimatePresence>
-        {isRunning && (
+        {(isRunning || noProject || noDesc) && (
           <motion.div
             className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
-            style={{ background: 'hsl(var(--primary))' }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            exit={{ scaleY: 0 }}
-            transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Incomplete entry indicator — amber left border */}
-      <AnimatePresence>
-        {!isRunning && (noProject || noDesc) && (
-          <motion.div
-            className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
-            style={{ background: 'hsl(35 100% 60%)' }}
+            style={{
+              background: noProject || noDesc
+                ? 'hsl(35 100% 60%)'
+                : 'hsl(var(--primary))',
+            }}
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             exit={{ scaleY: 0 }}
