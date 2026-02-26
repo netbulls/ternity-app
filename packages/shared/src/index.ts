@@ -8,3 +8,4 @@ export * from './timezone.js';
 export * from './admin-projects.js';
 export * from './downloads.js';
 export * from './preferences.js';
+export * from './jira.js';

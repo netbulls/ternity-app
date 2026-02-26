@@ -8,6 +8,7 @@ import {
   getAccessibleResources,
   jiraFetch,
 } from '../lib/jira-client.js';
+import { JiraConnectionConfigSchema } from '@ternity/shared';
 
 export async function jiraRoutes(fastify: FastifyInstance) {
   // ── POST /api/jira/exchange — Token exchange + store connections ────────
@@ -136,7 +137,8 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         atlassianDisplayName: jiraConnections.atlassianDisplayName,
         atlassianEmail: jiraConnections.atlassianEmail,
         atlassianAvatarUrl: jiraConnections.atlassianAvatarUrl,
-        tokenExpiresAt: jiraConnections.tokenExpiresAt,
+        config: jiraConnections.config,
+        lastSyncedAt: jiraConnections.lastSyncedAt,
         createdAt: jiraConnections.createdAt,
       })
       .from(jiraConnections)
@@ -280,5 +282,115 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         assignee: issue.fields.assignee?.displayName ?? null,
       })),
     };
+  });
+
+  // ── GET /api/jira/connections/:id/statuses — Fetch Jira statuses ─────
+  fastify.get('/api/jira/connections/:id/statuses', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.auth.userId;
+
+    const [connection] = await db
+      .select()
+      .from(jiraConnections)
+      .where(
+        and(
+          eq(jiraConnections.id, id),
+          eq(jiraConnections.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    if (!connection) {
+      return reply.code(404).send({ error: 'Connection not found' });
+    }
+
+    // Use /rest/api/3/status (works with read:jira-work scope)
+    const res = await jiraFetch(
+      connection,
+      `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/status`,
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      request.log.error({ status: res.status, body }, 'Jira statuses API failed');
+      return reply.code(502).send({ error: 'Failed to fetch Jira statuses', detail: body });
+    }
+
+    const data = (await res.json()) as Array<{
+      id: string;
+      name: string;
+      statusCategory: { id: number; key: string; name: string };
+    }>;
+
+    // Deduplicate by name (Jira returns per-project statuses)
+    const seen = new Map<string, (typeof data)[0]>();
+    for (const status of data) {
+      if (!seen.has(status.name)) {
+        seen.set(status.name, status);
+      }
+    }
+
+    return [...seen.values()].map((s) => ({
+      id: s.id,
+      name: s.name,
+      statusCategory: { key: s.statusCategory.key, name: s.statusCategory.name },
+    }));
+  });
+
+  // ── PATCH /api/jira/connections/:id/config — Update connection config ─
+  fastify.patch('/api/jira/connections/:id/config', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.auth.userId;
+
+    const parsed = JiraConnectionConfigSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid config', detail: parsed.error.flatten() });
+    }
+
+    const [updated] = await db
+      .update(jiraConnections)
+      .set({
+        config: parsed.data,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(jiraConnections.id, id),
+          eq(jiraConnections.userId, userId),
+        ),
+      )
+      .returning({ id: jiraConnections.id });
+
+    if (!updated) {
+      return reply.code(404).send({ error: 'Connection not found' });
+    }
+
+    return { ok: true };
+  });
+
+  // ── POST /api/jira/connections/:id/sync — Trigger sync (stub) ────────
+  fastify.post('/api/jira/connections/:id/sync', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.auth.userId;
+
+    const [updated] = await db
+      .update(jiraConnections)
+      .set({
+        lastSyncedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(jiraConnections.id, id),
+          eq(jiraConnections.userId, userId),
+        ),
+      )
+      .returning({ id: jiraConnections.id, lastSyncedAt: jiraConnections.lastSyncedAt });
+
+    if (!updated) {
+      return reply.code(404).send({ error: 'Connection not found' });
+    }
+
+    return { ok: true, lastSyncedAt: updated.lastSyncedAt };
   });
 }
