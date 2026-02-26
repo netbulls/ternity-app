@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Calendar as CalendarIcon,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEntries } from '@/hooks/use-entries';
@@ -35,6 +36,7 @@ export function EntriesPage() {
   const [anchorDate, setAnchorDate] = useState(getToday);
   const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
   const [filterLabelIds, setFilterLabelIds] = useState<string[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
 
   const { targetDisplayName } = useImpersonation();
@@ -47,7 +49,7 @@ export function EntriesPage() {
     return { from: getWeekStart(anchorDate), to: getWeekEnd(anchorDate) };
   }, [viewMode, anchorDate]);
 
-  const { data: dayGroups, isLoading } = useEntries(from, to);
+  const { data: dayGroups, isLoading } = useEntries(from, to, showDeleted);
 
   // Client-side filtering by project and label
   const filteredGroups = useMemo(() => {
@@ -102,7 +104,7 @@ export function EntriesPage() {
       ? anchorDate === getToday()
       : getWeekStart(anchorDate) === getWeekStart(getToday());
 
-  const hasFilters = filterProjectId !== null || filterLabelIds.length > 0;
+  const hasFilters = filterProjectId !== null || filterLabelIds.length > 0 || showDeleted;
 
   return (
     <div>
@@ -118,15 +120,17 @@ export function EntriesPage() {
             </p>
           )}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-xs"
-          onClick={() => setManualOpen(true)}
-        >
-          <Plus className="mr-1 h-3.5 w-3.5" />
-          Manual Entry
-        </Button>
+        {!showDeleted && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => setManualOpen(true)}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Manual Entry
+          </Button>
+        )}
       </div>
 
       {/* Controls row */}
@@ -197,6 +201,18 @@ export function EntriesPage() {
             value={filterLabelIds}
             onChange={setFilterLabelIds}
           />
+          <button
+            onClick={() => setShowDeleted((d) => !d)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+              showDeleted
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-border text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Deleted
+          </button>
         </div>
 
         {hasFilters && (
@@ -204,6 +220,7 @@ export function EntriesPage() {
             onClick={() => {
               setFilterProjectId(null);
               setFilterLabelIds([]);
+              setShowDeleted(false);
             }}
             className="text-[11px] text-muted-foreground hover:text-foreground"
           >
@@ -212,7 +229,7 @@ export function EntriesPage() {
         )}
 
         {/* Period total */}
-        <div className="ml-auto">
+        <div className={cn('ml-auto', showDeleted && 'opacity-40')}>
           <span className="text-[11px] uppercase tracking-wider text-muted-foreground mr-2">
             Total
           </span>
@@ -221,6 +238,13 @@ export function EntriesPage() {
           </span>
         </div>
       </div>
+
+      {/* Deleted entries banner */}
+      {showDeleted && (
+        <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-2.5 text-xs text-destructive">
+          Showing deleted entries. These entries are excluded from stats and timers.
+        </div>
+      )}
 
       {/* Entries list */}
       {isLoading ? (

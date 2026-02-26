@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   timeEntries,
@@ -13,7 +13,7 @@ import {
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
-import type { CreateEntry, UpdateEntry, AdjustEntry, DayGroup, Entry } from '@ternity/shared';
+import type { CreateEntry, UpdateEntry, AdjustEntry, MoveBlock, DayGroup, Entry } from '@ternity/shared';
 
 /** Get the actor ID — the real user behind the action (handles impersonation) */
 function getActorId(request: { auth: { realUserId?: string; userId: string } }): string {
@@ -25,11 +25,53 @@ function getAuditSource(request: { headers: Record<string, string | string[] | u
   return (request.headers['x-audit-source'] as string) ?? 'api';
 }
 
+/** Extract base name: "name (3)" → "name", "name" → "name" */
+function baseName(description: string): string {
+  const match = description.match(/^(.*?)\s*\(\d+\)$/);
+  return match ? match[1]! : description;
+}
+
+/** Find the next available copy number by querying existing entries */
+async function nextCopyName(
+  description: string,
+  userId: string,
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+): Promise<string> {
+  const base = baseName(description);
+  const prefix = base ? `${base} (` : '(';
+
+  // Find all sibling entries: exact base name + "base (N)" variants
+  const siblings = await tx
+    .select({ description: timeEntries.description })
+    .from(timeEntries)
+    .where(
+      and(
+        eq(timeEntries.userId, userId),
+        eq(timeEntries.isActive, true),
+      ),
+    );
+
+  let maxN = 0;
+  for (const s of siblings) {
+    if (s.description === base) {
+      // The base name itself exists — at least (1) is needed
+      maxN = Math.max(maxN, 0);
+    }
+    if (s.description.startsWith(prefix) && s.description.endsWith(')')) {
+      const numStr = s.description.slice(prefix.length, -1);
+      const n = parseInt(numStr, 10);
+      if (!isNaN(n)) maxN = Math.max(maxN, n);
+    }
+  }
+
+  return `${base} (${maxN + 1})`.trimStart();
+}
+
 export async function entriesRoutes(fastify: FastifyInstance) {
   /** GET /api/entries — list entries grouped by day (batch-loaded) */
   fastify.get('/api/entries', async (request) => {
     const userId = request.auth.userId;
-    const query = request.query as { from?: string; to?: string };
+    const query = request.query as { from?: string; to?: string; deleted?: string };
 
     // Default: last 7 days
     const now = new Date();
@@ -41,6 +83,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const fromTimestamp = new Date(`${fromDate}T00:00:00.000Z`);
     const toTimestamp = new Date(`${toDate}T23:59:59.999Z`);
 
+    // deleted=true shows soft-deleted entries, default shows active only
+    const showDeleted = query.deleted === 'true';
+
     // 1. Fetch all entries for the date range
     const rows = await db
       .select()
@@ -48,6 +93,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       .where(
         and(
           eq(timeEntries.userId, userId),
+          eq(timeEntries.isActive, !showDeleted),
           gte(timeEntries.createdAt, fromTimestamp),
           lte(timeEntries.createdAt, toTimestamp),
         ),
@@ -143,6 +189,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         })),
         totalDurationSeconds,
         isRunning,
+        isActive: row.isActive,
         createdAt: row.createdAt.toISOString(),
         userId: row.userId,
       };
@@ -252,7 +299,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       .where(eq(timeEntries.id, id))
       .limit(1);
 
-    if (!existing) {
+    if (!existing || !existing.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
     }
     if (existing.userId !== userId) {
@@ -325,7 +372,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     return result;
   });
 
-  /** DELETE /api/entries/:id — delete an entry */
+  /** DELETE /api/entries/:id — soft-delete an entry */
   fastify.delete('/api/entries/:id', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
@@ -344,9 +391,42 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     if (existing.userId !== userId) {
       return reply.code(403).send({ error: 'Not your entry' });
     }
+    if (!existing.isActive) {
+      return reply.code(400).send({ error: 'Entry already deleted' });
+    }
 
     await db.transaction(async (tx) => {
-      // Record audit before deletion
+      // Stop any running timer segment on this entry
+      const [runningSegment] = await tx
+        .select()
+        .from(entrySegments)
+        .where(
+          and(
+            eq(entrySegments.entryId, id),
+            eq(entrySegments.type, 'clocked'),
+            isNull(entrySegments.stoppedAt),
+          ),
+        )
+        .limit(1);
+
+      if (runningSegment) {
+        const now = new Date();
+        const duration = Math.round(
+          (now.getTime() - (runningSegment.startedAt?.getTime() ?? now.getTime())) / 1000,
+        );
+        await tx
+          .update(entrySegments)
+          .set({ stoppedAt: now, durationSeconds: duration })
+          .where(eq(entrySegments.id, runningSegment.id));
+      }
+
+      // Soft-delete
+      await tx
+        .update(timeEntries)
+        .set({ isActive: false })
+        .where(eq(timeEntries.id, id));
+
+      // Record audit
       const deletedProjectName = await resolveProjectName(existing.projectId, tx);
       await recordAudit({
         entryId: id,
@@ -356,17 +436,60 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         changes: {
           description: { old: existing.description },
           project: { old: deletedProjectName },
+          isActive: { old: true, new: false },
         },
         metadata: { source },
         tx,
       });
-
-      // Delete labels first (FK constraint), then entry (segments cascade via FK)
-      await tx.delete(entryLabels).where(eq(entryLabels.entryId, id));
-      await tx.delete(timeEntries).where(eq(timeEntries.id, id));
     });
 
     return { success: true };
+  });
+
+  /** POST /api/entries/:id/restore — restore a soft-deleted entry */
+  fastify.post('/api/entries/:id/restore', async (request, reply) => {
+    const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const { id } = request.params as { id: string };
+
+    const [existing] = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Entry not found' });
+    }
+    if (existing.userId !== userId) {
+      return reply.code(403).send({ error: 'Not your entry' });
+    }
+    if (existing.isActive) {
+      return reply.code(400).send({ error: 'Entry is not deleted' });
+    }
+
+    const result = await db.transaction(async (tx) => {
+      await tx
+        .update(timeEntries)
+        .set({ isActive: true })
+        .where(eq(timeEntries.id, id));
+
+      await recordAudit({
+        entryId: id,
+        userId: existing.userId,
+        actorId,
+        action: 'updated',
+        changes: {
+          isActive: { old: false, new: true },
+        },
+        metadata: { source: 'restore' },
+        tx,
+      });
+
+      return buildEntryResponse(id, tx);
+    });
+
+    return result;
   });
 
   /** POST /api/entries/:id/adjust — add a manual adjustment segment */
@@ -387,7 +510,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       .where(eq(timeEntries.id, id))
       .limit(1);
 
-    if (!existing) {
+    if (!existing || !existing.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
     }
     if (existing.userId !== userId) {
@@ -418,6 +541,157 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       });
 
       return buildEntryResponse(id, tx);
+    });
+
+    return result;
+  });
+
+  /** POST /api/entries/:id/move-block — move a time block to a new entry */
+  fastify.post('/api/entries/:id/move-block', async (request, reply) => {
+    const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as MoveBlock;
+
+    // Verify ownership + active
+    const [existing] = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, id))
+      .limit(1);
+
+    if (!existing || !existing.isActive) {
+      return reply.code(404).send({ error: 'Entry not found' });
+    }
+    if (existing.userId !== userId) {
+      return reply.code(403).send({ error: 'Not your entry' });
+    }
+
+    // Verify segment belongs to this entry and is completed
+    const [segment] = await db
+      .select()
+      .from(entrySegments)
+      .where(
+        and(
+          eq(entrySegments.id, body.segmentId),
+          eq(entrySegments.entryId, id),
+        ),
+      )
+      .limit(1);
+
+    if (!segment) {
+      return reply.code(400).send({ error: 'Time block not found on this entry' });
+    }
+
+    const isRunningSegment = !segment.stoppedAt;
+
+    // Completed segments must have a duration
+    if (!isRunningSegment && !segment.durationSeconds) {
+      return reply.code(400).send({ error: 'Time block has no duration' });
+    }
+
+    const result = await db.transaction(async (tx) => {
+      // Auto-generate description: copy original with next available "(N)" suffix
+      const newDescription = body.description ?? await nextCopyName(existing.description, userId, tx);
+      const now = new Date();
+
+      // For running segments: stop the original first
+      let blockDuration: number;
+      if (isRunningSegment) {
+        blockDuration = Math.max(0, Math.round((now.getTime() - new Date(segment.startedAt!).getTime()) / 1000));
+        await tx
+          .update(entrySegments)
+          .set({ stoppedAt: now, durationSeconds: blockDuration })
+          .where(eq(entrySegments.id, segment.id));
+      } else {
+        blockDuration = segment.durationSeconds!;
+      }
+
+      // 1. Create new entry (clone createdAt + project from original)
+      const [newEntry] = await tx
+        .insert(timeEntries)
+        .values({
+          userId,
+          description: newDescription,
+          projectId: body.projectId ?? existing.projectId,
+          createdAt: existing.createdAt,
+        })
+        .returning();
+
+      // 1b. Clone labels from original entry
+      const originalLabels = await tx
+        .select({ labelId: entryLabels.labelId })
+        .from(entryLabels)
+        .where(eq(entryLabels.entryId, id));
+      if (originalLabels.length > 0) {
+        await tx.insert(entryLabels).values(
+          originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })),
+        );
+      }
+
+      // 2. Create segment on new entry
+      if (isRunningSegment) {
+        // Running: create a new clocked segment that continues running from the original startedAt
+        await tx.insert(entrySegments).values({
+          entryId: newEntry!.id,
+          type: 'clocked',
+          startedAt: segment.startedAt,
+          stoppedAt: null,
+          durationSeconds: null,
+          note: null,
+        });
+      } else {
+        // Completed: create a manual segment with the moved block's time range and duration
+        await tx.insert(entrySegments).values({
+          entryId: newEntry!.id,
+          type: 'manual',
+          startedAt: segment.startedAt,
+          stoppedAt: segment.stoppedAt,
+          durationSeconds: blockDuration,
+          note: 'Moved from another entry',
+        });
+      }
+
+      // 3. Add negative adjustment on original entry (tagged with source segment ID)
+      await tx.insert(entrySegments).values({
+        entryId: id,
+        type: 'manual',
+        durationSeconds: -blockDuration,
+        note: `moved:${body.segmentId}:${newDescription}`,
+      });
+
+      // 4. Audit original entry
+      await recordAudit({
+        entryId: id,
+        userId: existing.userId,
+        actorId,
+        action: 'block_moved',
+        changes: {
+          segmentId: { old: body.segmentId },
+          durationSeconds: { old: blockDuration },
+          movedToEntryId: { new: newEntry!.id },
+        },
+        metadata: { source: 'move_block', wasRunning: isRunningSegment },
+        tx,
+      });
+
+      // 5. Audit new entry
+      const newProjectName = await resolveProjectName(body.projectId ?? existing.projectId, tx);
+      await recordAudit({
+        entryId: newEntry!.id,
+        userId,
+        actorId,
+        action: 'created',
+        changes: {
+          description: { new: newDescription },
+          project: { new: newProjectName },
+          durationSeconds: { new: isRunningSegment ? null : blockDuration },
+        },
+        metadata: { source: 'move_block', movedFromEntryId: id, wasRunning: isRunningSegment },
+        tx,
+      });
+
+      return buildEntryResponse(newEntry!.id, tx);
     });
 
     return result;

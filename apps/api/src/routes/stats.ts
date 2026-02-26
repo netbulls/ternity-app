@@ -41,6 +41,7 @@ export async function statsRoutes(fastify: FastifyInstance) {
       .where(
         and(
           eq(timeEntries.userId, userId),
+          eq(timeEntries.isActive, true),
           gte(timeEntries.createdAt, todayStart),
           lte(timeEntries.createdAt, todayEnd),
         ),
@@ -64,6 +65,7 @@ export async function statsRoutes(fastify: FastifyInstance) {
       .where(
         and(
           eq(timeEntries.userId, userId),
+          eq(timeEntries.isActive, true),
           gte(timeEntries.createdAt, weekStart),
           lte(timeEntries.createdAt, weekEnd),
         ),

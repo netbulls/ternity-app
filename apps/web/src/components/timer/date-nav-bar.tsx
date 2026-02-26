@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { formatDateRange, formatDuration } from '@/lib/format';
@@ -17,6 +17,8 @@ interface Props {
   totalSeconds: number;
   onlyIncomplete?: boolean;
   onToggleIncomplete?: () => void;
+  showDeleted?: boolean;
+  onToggleDeleted?: () => void;
 }
 
 export function DateNavBar({
@@ -30,6 +32,8 @@ export function DateNavBar({
   totalSeconds,
   onlyIncomplete,
   onToggleIncomplete,
+  showDeleted,
+  onToggleDeleted,
 }: Props) {
   const label = formatDateRange(from, to);
 
@@ -89,11 +93,27 @@ export function DateNavBar({
         </button>
       )}
 
+      {/* Deleted filter */}
+      {onToggleDeleted && (
+        <button
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-2.5 py-1 font-brand text-[11px] font-semibold uppercase tracking-wider transition-colors',
+            showDeleted
+              ? 'bg-destructive/10 text-destructive'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          onClick={onToggleDeleted}
+        >
+          <Trash2 className="h-3 w-3" />
+          Deleted
+        </button>
+      )}
+
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Period total */}
-      <div className="flex items-center gap-2">
+      <div className={cn('flex items-center gap-2', showDeleted && 'opacity-40')}>
         <span
           className="font-brand text-muted-foreground uppercase"
           style={{ fontSize: scaled(9), letterSpacing: '1.5px' }}

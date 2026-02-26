@@ -64,6 +64,7 @@ export function useStartTimer() {
       queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
     },
     onError: (_error, variables) => {
       toast.error('Failed to start timer', {
@@ -85,6 +86,7 @@ export function useResumeTimer() {
       queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
     },
     onError: (_error, variables) => {
       toast.error('Failed to resume timer', {
@@ -106,6 +108,7 @@ export function useStopTimer() {
       queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
     },
     onError: () => {
       toast.error('Failed to stop timer', {

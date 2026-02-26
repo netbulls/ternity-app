@@ -4,8 +4,16 @@
 
 ### Added
 - Expose createdAt field in Entry API response for stable client-side sorting
+- Soft-delete entries with deleted view toggle and restore capability
+- Move time blocks between entries (block_moved audit action)
+- Clone/duplicate entries with auto-incrementing copy names
+- Time block drawer for segment-level management
 
 ### Changed
+- Standardize all dialog widths to 512px (max-w-lg) and cancel button style (ghost variant)
+- Fix switch timer dialog overflow with long descriptions and project names
+
+### Fixed
 - Redesign downloads page with framework tabs, platform tabs, and channel badges (release/snapshot)
 - Restructure downloads API to group artifacts by framework and channel
 - Wire CHANGELOG.md into downloads API to serve release notes per version

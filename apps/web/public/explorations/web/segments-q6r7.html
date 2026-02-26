@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Segments V8: Two-Row Entry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .section {
+            max-width: 900px; margin: 0 auto 48px;
+            padding-top: 24px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+        }
+        .section:first-of-type { border-top: none; padding-top: 0; }
+        .section-title {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 11px; color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 16px;
+            max-width: 700px;
+        }
+
+        .day-group {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .day-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.3);
+        }
+        .day-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .day-total {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1)); font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        /* Two-row entry: row 1 is the standard entry, row 2 is a scrollable pill strip */
+        .entry-two-row {
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+            transition: background 0.15s;
+        }
+        .entry-two-row:last-child { border-bottom: none; }
+        .entry-two-row:hover { background: hsl(var(--muted) / 0.1); }
+
+        .entry-main {
+            display: grid;
+            grid-template-columns: 6px 1fr auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px 0;
+        }
+
+        .project-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+        .entry-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .entry-desc {
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500;
+            color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+            min-width: 56px; text-align: right;
+        }
+
+        .action-btn {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.5);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+        }
+        .action-btn svg { width: 14px; height: 14px; }
+
+        /* Pill strip — second row */
+        .pill-strip {
+            display: flex;
+            gap: 6px;
+            padding: 6px 16px 10px 34px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .pill-strip::-webkit-scrollbar { display: none; }
+
+        .time-pill {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            border: 1px solid hsl(var(--border) / 0.6);
+            background: hsl(var(--muted) / 0.15);
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .time-pill:hover {
+            border-color: hsl(var(--primary) / 0.4);
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.05);
+        }
+        .time-pill .pill-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .time-pill.manual {
+            border-style: dashed;
+        }
+        .time-pill .pill-icon {
+            width: 10px; height: 10px;
+            opacity: 0;
+            transition: opacity 0.15s;
+            color: hsl(var(--primary));
+        }
+        .time-pill:hover .pill-icon {
+            opacity: 1;
+        }
+
+        /* Single block — no pills shown */
+        .pill-strip.single {
+            display: none;
+        }
+
+        /* Right-click context overlay (simulated) */
+        .context-overlay {
+            position: relative;
+            display: inline-flex;
+        }
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 50;
+            min-width: 180px;
+            background: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            box-shadow: 0 8px 30px hsl(0 0% 0% / 0.3);
+            padding: 4px;
+        }
+        .ctx-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: hsl(var(--foreground));
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .ctx-item:hover { background: hsl(var(--muted) / 0.5); }
+        .ctx-item svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground)); }
+        .ctx-sep {
+            height: 1px;
+            background: hsl(var(--border) / 0.5);
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>V8 — Two-Row Entry with Pill Strip</h1>
+        <p>Each entry gets a second row with scrollable time block pills. Always visible — no expand needed. Click a pill for actions.</p>
+    </div>
+
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ember">Ember</button>
+                <button data-theme="ocean">Ocean</button>
+                <button data-theme="sandstone">Sandstone</button>
+                <button data-theme="forest">Forest</button>
+                <button data-theme="arctic">Arctic</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Always Visible — Multi-Block Entries</div>
+        <div class="section-desc">The pill strip only appears for entries with 2+ blocks. Single-block entries show the standard single row. Hover a pill to see the arrow-out icon; click for context menu.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Today — Wed, Feb 26</span>
+                <span class="day-total">5h 30m</span>
+            </div>
+
+            <div class="entry-two-row">
+                <div class="entry-main">
+                    <div class="project-dot" style="background: #00D4AA"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">API Platform · Netbulls</div>
+                    </div>
+                    <div class="entry-duration">2h 15m</div>
+                    <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                </div>
+                <div class="pill-strip">
+                    <div class="time-pill">09:00–10:30 <span class="pill-dur">1h 30m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill">11:00–11:30 <span class="pill-dur">30m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill manual">14:00–14:15 <span class="pill-dur">15m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                </div>
+            </div>
+
+            <div class="entry-two-row">
+                <div class="entry-main">
+                    <div class="project-dot" style="background: #6366f1"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning meeting</div>
+                        <div class="entry-project">Mobile App · Netbulls</div>
+                    </div>
+                    <div class="entry-duration">1h 30m</div>
+                    <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                </div>
+                <!-- Single block — no pill strip -->
+            </div>
+
+            <div class="entry-two-row">
+                <div class="entry-main">
+                    <div class="project-dot" style="background: #f59e0b"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Design review for new dashboard</div>
+                        <div class="entry-project">Brand Refresh · Acme Corp</div>
+                    </div>
+                    <div class="entry-duration">1h 45m</div>
+                    <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                </div>
+                <div class="pill-strip">
+                    <div class="time-pill">08:00–08:20 <span class="pill-dur">20m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill">08:45–09:00 <span class="pill-dur">15m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill">10:30–11:00 <span class="pill-dur">30m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill manual">12:00–12:15 <span class="pill-dur">15m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                    <div class="time-pill">15:00–15:25 <span class="pill-dur">25m</span> <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context menu state -->
+    <div class="section">
+        <div class="section-title">Pill Context Menu</div>
+        <div class="section-desc">Clicking a time block pill opens a context menu with actions.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Today — Wed, Feb 26</span>
+                <span class="day-total">2h 15m</span>
+            </div>
+
+            <div class="entry-two-row" style="background: hsl(var(--muted) / 0.1);">
+                <div class="entry-main">
+                    <div class="project-dot" style="background: #00D4AA"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">API Platform · Netbulls</div>
+                    </div>
+                    <div class="entry-duration">2h 15m</div>
+                    <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                </div>
+                <div class="pill-strip">
+                    <div class="context-overlay">
+                        <div class="time-pill" style="border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary)); background: hsl(var(--primary) / 0.05);">09:00–10:30 <span class="pill-dur">1h 30m</span></div>
+                        <div class="context-menu">
+                            <div class="ctx-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+                                Move to new entry
+                            </div>
+                            <div class="ctx-sep"></div>
+                            <div class="ctx-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                09:00 → 10:30 · 1h 30m
+                            </div>
+                        </div>
+                    </div>
+                    <div class="time-pill">11:00–11:30 <span class="pill-dur">30m</span></div>
+                    <div class="time-pill manual">14:00–14:15 <span class="pill-dur">15m</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector(`#theme-switcher [data-theme="${document.documentElement.dataset.theme}"]`)?.classList.add('active');
+        document.querySelector(`#scale-switcher [data-scale="${document.documentElement.dataset.scale}"]`)?.classList.add('active');
+    </script>
+</body>
+</html>

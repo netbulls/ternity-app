@@ -25,6 +25,7 @@ export function TimerPage() {
   const [onlyIncomplete, setOnlyIncomplete] = useState(
     () => searchParams.get('filter') === 'incomplete',
   );
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Clear the URL param after reading it so it doesn't stick around
   useEffect(() => {
@@ -59,7 +60,7 @@ export function TimerPage() {
     setAnchor(todayStr());
   }, []);
 
-  const { data: dayGroups, isLoading } = useEntries(from, to);
+  const { data: dayGroups, isLoading } = useEntries(from, to, showDeleted);
 
   // Client-side incomplete filter
   const filteredGroups = useMemo(() => {
@@ -87,17 +88,19 @@ export function TimerPage() {
         <h1 className="font-brand text-lg font-semibold tracking-wide text-foreground">
           Timer &amp; Entries
         </h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => setManualOpen(true)}
-          >
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Manual Entry
-          </Button>
-        </div>
+        {!showDeleted && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => setManualOpen(true)}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Manual Entry
+            </Button>
+          </div>
+        )}
       </div>
 
       <StatsRow />
@@ -113,8 +116,23 @@ export function TimerPage() {
         onToday={handleToday}
         totalSeconds={totalSeconds}
         onlyIncomplete={onlyIncomplete}
-        onToggleIncomplete={() => setOnlyIncomplete((v) => !v)}
+        onToggleIncomplete={() => {
+          setOnlyIncomplete((v) => !v);
+          setShowDeleted(false);
+        }}
+        showDeleted={showDeleted}
+        onToggleDeleted={() => {
+          setShowDeleted((v) => !v);
+          setOnlyIncomplete(false);
+        }}
       />
+
+      {/* Deleted entries banner */}
+      {showDeleted && (
+        <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-2.5 text-xs text-destructive">
+          Showing deleted entries. These entries are excluded from stats and timers.
+        </div>
+      )}
 
       {/* Entries grouped by day */}
       {isLoading ? (

@@ -30,6 +30,7 @@ export const entryAuditActionEnum = pgEnum('entry_audit_action', [
   'timer_stopped',
   'timer_resumed',
   'adjustment_added',
+  'block_moved',
 ]);
 
 export const segmentTypeEnum = pgEnum('segment_type', ['clocked', 'manual']);
@@ -113,15 +114,20 @@ export const labels = pgTable('labels', {
 
 // ── Time Entries ───────────────────────────────────────────────────────────
 
-export const timeEntries = pgTable('time_entries', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id),
-  projectId: uuid('project_id').references(() => projects.id),
-  description: text('description').notNull().default(''),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const timeEntries = pgTable(
+  'time_entries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    projectId: uuid('project_id').references(() => projects.id),
+    description: text('description').notNull().default(''),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('time_entries_user_active_idx').on(t.userId, t.isActive)],
+);
 
 // ── Entry Segments ────────────────────────────────────────────────────────
 

@@ -58,7 +58,7 @@ export function SwitchTimerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Switch timer</DialogTitle>
           <DialogDescription>
@@ -66,7 +66,7 @@ export function SwitchTimerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-2 py-1">
+        <div className="flex flex-col items-center gap-2 overflow-hidden py-1">
           {/* Stopping card */}
           <div className="w-full rounded-lg border border-destructive/20 bg-destructive/5 px-3.5 py-2.5">
             <div className="flex items-center gap-2">
@@ -86,16 +86,16 @@ export function SwitchTimerDialog({
             >
               {stoppingEntry.description || 'No description'}
             </p>
-            <div className="mt-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {stoppingEntry.projectColor && (
                   <span
-                    className="h-2 w-2 rounded-full"
+                    className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: stoppingEntry.projectColor }}
                   />
                 )}
                 <span
-                  className="text-muted-foreground"
+                  className="truncate text-muted-foreground"
                   style={{ fontSize: scaled(11) }}
                 >
                   {stoppingEntry.clientName
@@ -104,7 +104,7 @@ export function SwitchTimerDialog({
                 </span>
               </div>
               <span
-                className="font-brand font-semibold tabular-nums text-destructive"
+                className="shrink-0 font-brand font-semibold tabular-nums text-destructive"
                 style={{ fontSize: scaled(13) }}
               >
                 {formatDuration(elapsed)}
@@ -136,16 +136,16 @@ export function SwitchTimerDialog({
             >
               {startingEntry.description || 'No description'}
             </p>
-            <div className="mt-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {startingEntry.projectColor && (
                   <span
-                    className="h-2 w-2 rounded-full"
+                    className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: startingEntry.projectColor }}
                   />
                 )}
                 <span
-                  className="text-muted-foreground"
+                  className="truncate text-muted-foreground"
                   style={{ fontSize: scaled(11) }}
                 >
                   {startingEntry.clientName
@@ -154,7 +154,7 @@ export function SwitchTimerDialog({
                 </span>
               </div>
               <span
-                className="font-brand font-semibold tabular-nums text-foreground"
+                className="shrink-0 font-brand font-semibold tabular-nums text-foreground"
                 style={{ fontSize: scaled(13) }}
               >
                 {formatDuration(startingEntry.totalDurationSeconds)}
@@ -175,10 +175,10 @@ export function SwitchTimerDialog({
         </label>
 
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={handleCancel}>
+          <Button variant="ghost" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleConfirm}>
+          <Button onClick={handleConfirm}>
             Switch
           </Button>
         </DialogFooter>

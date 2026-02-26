@@ -37,6 +37,7 @@ export const EntrySchema = z.object({
   segments: z.array(SegmentSchema),
   totalDurationSeconds: z.number(), // sum of all segment durations
   isRunning: z.boolean(), // any clocked segment with stoppedAt=null
+  isActive: z.boolean(), // false = soft-deleted
   createdAt: z.string(), // ISO 8601
   userId: z.string(),
 });
@@ -92,6 +93,16 @@ export const AdjustEntrySchema = z.object({
 
 export type AdjustEntry = z.infer<typeof AdjustEntrySchema>;
 
+/* ── Move block payload ────────────────────────────────────────── */
+
+export const MoveBlockSchema = z.object({
+  segmentId: z.string(),
+  description: z.string().optional(),
+  projectId: z.string().nullable().optional(),
+});
+
+export type MoveBlock = z.infer<typeof MoveBlockSchema>;
+
 /* ── Start timer payload ────────────────────────────────────────── */
 
 export const StartTimerSchema = z.object({
@@ -115,6 +126,7 @@ export const AuditEventSchema = z.object({
     'timer_stopped',
     'timer_resumed',
     'adjustment_added',
+    'block_moved',
   ]),
   actorId: z.string(),
   actorName: z.string(),

@@ -85,6 +85,7 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     })),
     totalDurationSeconds,
     isRunning,
+    isActive: entry.isActive,
     createdAt: entry.createdAt.toISOString(),
     userId: entry.userId,
   };
@@ -154,7 +155,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   fastify.get('/api/timer', async (request) => {
     const userId = request.auth.userId;
 
-    // Find entry with a running clocked segment
+    // Find entry with a running clocked segment (active entries only)
     const [runningRow] = await db
       .select({ entryId: entrySegments.entryId })
       .from(entrySegments)
@@ -162,6 +163,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
       .where(
         and(
           eq(timeEntries.userId, userId),
+          eq(timeEntries.isActive, true),
           eq(entrySegments.type, 'clocked'),
           isNull(entrySegments.stoppedAt),
         ),
@@ -246,7 +248,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
       .where(eq(timeEntries.id, id))
       .limit(1);
 
-    if (!target) {
+    if (!target || !target.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
     }
     if (target.userId !== userId) {

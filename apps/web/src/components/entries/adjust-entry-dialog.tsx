@@ -176,7 +176,7 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
         if (!v) resetForm();
       }}
     >
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Adjust Time</DialogTitle>
           <div className="flex flex-col gap-0.5 pt-1">
@@ -323,7 +323,7 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit || addAdjustment.isPending}>

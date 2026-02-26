@@ -9,7 +9,8 @@ type AuditAction =
   | 'timer_started'
   | 'timer_stopped'
   | 'timer_resumed'
-  | 'adjustment_added';
+  | 'adjustment_added'
+  | 'block_moved';
 
 interface RecordAuditParams {
   entryId: string;

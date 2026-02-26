@@ -79,7 +79,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Manual Entry</DialogTitle>
         </DialogHeader>
@@ -155,7 +155,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={createEntry.isPending || durationSec <= 0 || !note.trim()}>

@@ -64,6 +64,20 @@
       "when": 1772006400000,
       "tag": "0008_user_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772092800000,
+      "tag": "0009_entry_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772179200000,
+      "tag": "0010_block_moved_audit",
+      "breakpoints": true
     }
   ]
 }
