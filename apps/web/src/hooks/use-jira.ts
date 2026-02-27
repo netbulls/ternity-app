@@ -107,6 +107,27 @@ export function useJiraRecent() {
   return useJiraSearch('', 'recent');
 }
 
+/**
+ * Resolve the Ternity project ID for a Jira issue using the connection's project mappings.
+ * Extracts the Jira project key from the issue key (e.g. "PROJ-123" → "PROJ"),
+ * looks up the mapping, and falls back to the connection's default project.
+ */
+export function resolveJiraProject(
+  connections: JiraConnectionView[] | undefined,
+  connectionId: string,
+  jiraIssueKey: string,
+): string | null {
+  const connection = connections?.find((c) => c.id === connectionId);
+  if (!connection) return null;
+
+  const jiraProjectKey = jiraIssueKey.split('-')[0] ?? '';
+  const mappings = connection.config.projectMappings ?? {};
+  const mapped = mappings[jiraProjectKey];
+  if (mapped) return mapped;
+
+  return connection.config.defaultProjectId ?? null;
+}
+
 export function useLinkJiraIssue() {
   const queryClient = useQueryClient();
 

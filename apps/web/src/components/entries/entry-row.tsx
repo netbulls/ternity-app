@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry, useRestoreEntry, useMoveBlock } from '@/hooks/use-entries';
 import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
-import { useLinkJiraIssue, useJiraConnections } from '@/hooks/use-jira';
+import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { formatTime, formatDuration } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { useProjects } from '@/hooks/use-reference-data';
@@ -250,16 +250,21 @@ export function EntryRow({ entry }: Props) {
   // Jira handlers
   const handleJiraIssueSelect = useCallback(
     (issue: JiraIssue, connectionId: string, _siteUrl: string) => {
+      const resolvedProjectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
       linkJira.mutate({
         entryId: entry.id,
         jiraIssueKey: issue.key,
         jiraIssueSummary: issue.summary,
         jiraConnectionId: connectionId,
       });
+      // Also update the entry's project based on Jira mapping
+      if (resolvedProjectId && resolvedProjectId !== entry.projectId) {
+        updateEntry.mutate({ id: entry.id, projectId: resolvedProjectId, source: 'jira_link' });
+      }
       setJiraDropdownOpen(false);
       setHashTrigger(null);
     },
-    [entry.id, linkJira],
+    [entry.id, entry.projectId, linkJira, updateEntry, jiraConnections],
   );
 
   const handleJiraUnlink = useCallback(() => {

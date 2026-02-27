@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { useUpdateEntry } from '@/hooks/use-entries';
-import { useLinkJiraIssue, useJiraConnections } from '@/hooks/use-jira';
+import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
 import { formatTimer, getTimezoneLabel } from '@/lib/format';
@@ -167,13 +167,15 @@ export function TimerBar() {
         connectionId,
         siteUrl,
       };
+      const resolvedProjectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
 
       if (running && currentEntry) {
-        // Running timer: update description + link issue
+        // Running timer: update description + link issue + set project
         setDescription(issue.summary);
         updateEntry.mutate({
           id: currentEntry.id,
           description: issue.summary,
+          ...(resolvedProjectId ? { projectId: resolvedProjectId } : {}),
           source: 'timer_bar',
         });
         linkJira.mutate({
@@ -186,12 +188,13 @@ export function TimerBar() {
         // Not running: prepare for next start
         setDescription(issue.summary);
         setPendingJira(jiraLink);
+        if (resolvedProjectId) setProjectId(resolvedProjectId);
       }
 
       setJiraDropdownOpen(false);
       setHashTrigger(null);
     },
-    [running, currentEntry, updateEntry, linkJira],
+    [running, currentEntry, updateEntry, linkJira, jiraConnections],
   );
 
   const handleUnlink = useCallback(() => {
@@ -210,10 +213,11 @@ export function TimerBar() {
   // Listen for command palette "prepare" event (⌘Enter — fill details without starting)
   useEffect(() => {
     const handler = (e: Event) => {
-      const { summary, key, connectionId, siteUrl } = (e as CustomEvent).detail;
+      const { summary, key, connectionId, siteUrl, projectId } = (e as CustomEvent).detail;
       if (!running) {
         setDescription(summary);
         setPendingJira({ key, summary, connectionId, siteUrl });
+        if (projectId) setProjectId(projectId);
         // Focus the description input so user can edit before starting
         requestAnimationFrame(() => descriptionInputRef.current?.focus());
       }

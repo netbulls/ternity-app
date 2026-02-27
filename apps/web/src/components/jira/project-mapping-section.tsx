@@ -1,9 +1,10 @@
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { toast } from 'sonner';
-import { ArrowRight, X, Check, Sparkles, Link2 } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Link2 } from 'lucide-react';
 import { useJiraProjects } from '@/hooks/use-jira';
 import { useProjects } from '@/hooks/use-reference-data';
+import { ProjectSelector } from '@/components/timer/project-selector';
 import type { JiraProject, ProjectOption } from '@ternity/shared';
 
 // ── Mapping Row ─────────────────────────────────────────────────────
@@ -12,26 +13,14 @@ function MappingRow({
   jiraKey,
   jiraName,
   ternityProjectId,
-  ternityProjects,
   onChangeTernity,
-  onClear,
 }: {
   jiraKey: string;
   jiraName: string;
   ternityProjectId: string | null;
-  ternityProjects: ProjectOption[];
   onChangeTernity: (projectId: string | null) => void;
-  onClear: () => void;
 }) {
-  const ternityProject = ternityProjectId
-    ? ternityProjects.find((p) => p.id === ternityProjectId)
-    : null;
-  const isMapped = !!ternityProject;
-
-  // Group by client for the select dropdown
-  const clients = [
-    ...new Set(ternityProjects.map((p) => p.clientName).filter(Boolean)),
-  ] as string[];
+  const isMapped = !!ternityProjectId;
 
   return (
     <div
@@ -63,68 +52,17 @@ function MappingRow({
 
       {/* Ternity project */}
       <div className="min-w-0 flex-1">
-        {isMapped ? (
-          <div className="flex items-center gap-2">
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ background: ternityProject.color ?? undefined }}
-            />
-            <span className="truncate text-foreground" style={{ fontSize: scaled(12) }}>
-              {ternityProject.name}
-            </span>
-            {ternityProject.clientName && (
-              <span className="shrink-0 text-muted-foreground/40" style={{ fontSize: scaled(10) }}>
-                {ternityProject.clientName}
-              </span>
-            )}
-            <button
-              onClick={onClear}
-              className="ml-auto shrink-0 rounded-full p-0.5 text-muted-foreground/30 transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ) : (
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                onChangeTernity(e.target.value);
-                const name = ternityProjects.find((p) => p.id === e.target.value)?.name;
-                toast.success(`Mapped ${jiraKey} \u2192 ${name}`);
-              }
-            }}
-            className="w-full cursor-pointer appearance-none rounded-md border border-dashed border-border/50 bg-transparent px-2.5 py-1.5 text-muted-foreground/50 transition-colors hover:border-primary/30 hover:text-muted-foreground focus:border-primary/50 focus:outline-none"
-            style={{
-              fontSize: scaled(11),
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center',
-            }}
-          >
-            <option value="">Select Ternity project...</option>
-            {clients.map((client) => (
-              <optgroup key={client} label={client}>
-                {ternityProjects
-                  .filter((p) => p.clientName === client)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-            {/* Projects without a client */}
-            {ternityProjects
-              .filter((p) => !p.clientName)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-          </select>
-        )}
+        <ProjectSelector
+          value={ternityProjectId}
+          onChange={(id) => {
+            onChangeTernity(id);
+            if (id) {
+              toast.success(`Mapped ${jiraKey}`);
+            } else {
+              toast('Mapping removed');
+            }
+          }}
+        />
       </div>
 
       {/* Status indicator */}
@@ -199,11 +137,6 @@ export function ProjectMappingSection({
   const mappedCount = selectedJiraProjects.filter((p) => projectMappings[p.key]).length;
   const totalCount = selectedJiraProjects.length;
 
-  // Group Ternity projects by client for the fallback select
-  const clients = [
-    ...new Set(ternityProjects.map((p) => p.clientName).filter(Boolean)),
-  ] as string[];
-
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center justify-between">
@@ -273,12 +206,7 @@ export function ProjectMappingSection({
                 jiraKey={jp.key}
                 jiraName={jp.name}
                 ternityProjectId={projectMappings[jp.key] ?? null}
-                ternityProjects={ternityProjects}
                 onChangeTernity={(id) => onMappingChange(jp.key, id)}
-                onClear={() => {
-                  onMappingChange(jp.key, null);
-                  toast('Mapping removed');
-                }}
               />
             ))}
           </div>
@@ -288,52 +216,17 @@ export function ProjectMappingSection({
             <span className="shrink-0 text-muted-foreground/60" style={{ fontSize: scaled(11) }}>
               Default project:
             </span>
-            <select
-              value={defaultProjectId ?? ''}
-              onChange={(e) => {
-                const val = e.target.value || null;
-                onDefaultProjectChange(val);
-                if (val) {
-                  const name = ternityProjects.find((p) => p.id === val)?.name;
-                  toast.success(`Default set to ${name}`);
+            <ProjectSelector
+              value={defaultProjectId}
+              onChange={(id) => {
+                onDefaultProjectChange(id);
+                if (id) {
+                  toast.success('Default project set');
                 } else {
                   toast('Default removed \u2014 unmapped issues will be ignored');
                 }
               }}
-              className={cn(
-                'flex-1 cursor-pointer appearance-none rounded-md border bg-transparent px-2.5 py-1.5 transition-colors focus:outline-none',
-                defaultProjectId
-                  ? 'border-primary/20 text-foreground'
-                  : 'border-border/40 text-muted-foreground/50',
-              )}
-              style={{
-                fontSize: scaled(11),
-                backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 8px center',
-              }}
-            >
-              <option value="">None (unmapped ignored)</option>
-              {clients.map((client) => (
-                <optgroup key={client} label={client}>
-                  {ternityProjects
-                    .filter((p) => p.clientName === client)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-              {ternityProjects
-                .filter((p) => !p.clientName)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
+            />
             {defaultProjectId && (
               <span className="text-muted-foreground/30" style={{ fontSize: scaled(9) }}>
                 Fallback for unmapped

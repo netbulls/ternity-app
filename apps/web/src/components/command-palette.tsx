@@ -3,7 +3,7 @@ import { Command, ArrowUp, ArrowDown, CornerDownLeft, Hash, Loader2 } from 'luci
 import { motion, AnimatePresence } from 'motion/react';
 import { scaled } from '@/lib/scaled';
 import { usePalette } from '@/providers/palette-provider';
-import { useJiraAssigned, useJiraRecent, useJiraSearch } from '@/hooks/use-jira';
+import { useJiraAssigned, useJiraRecent, useJiraSearch, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import {
   useTimer,
   useStartOrResumeTimer,
@@ -36,6 +36,7 @@ export function CommandPalette() {
   const { data: timerState } = useTimer();
   const startOrResume = useStartOrResumeTimer();
   const stopTimer = useStopTimer();
+  const { data: jiraConnections } = useJiraConnections();
 
   // Pending action for confirmation dialogs
   const [pendingAction, setPendingAction] = useState<{
@@ -126,20 +127,22 @@ export function CommandPalette() {
   // Execute start-or-resume immediately (no confirmation needed)
   const doStartOrResume = useCallback(
     (issue: JiraIssue, connectionId: string) => {
+      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
       startOrResume.mutate({
         description: issue.summary,
-        projectId: null,
+        projectId,
         labelIds: [],
         jiraIssueKey: issue.key,
         jiraIssueSummary: issue.summary,
         jiraConnectionId: connectionId,
       });
     },
-    [startOrResume],
+    [startOrResume, jiraConnections],
   );
 
   // Execute prepare immediately (no confirmation needed)
   const doPrepare = useCallback((issue: JiraIssue, connectionId: string, siteUrl: string) => {
+    const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
     window.dispatchEvent(
       new CustomEvent('ternity-palette-prepare', {
         detail: {
@@ -147,10 +150,11 @@ export function CommandPalette() {
           key: issue.key,
           connectionId,
           siteUrl,
+          projectId,
         },
       }),
     );
-  }, []);
+  }, [jiraConnections]);
 
   // Enter: start or resume — may need confirmation if timer is running
   const handleStartOrResume = useCallback(
