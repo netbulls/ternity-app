@@ -93,71 +93,39 @@ export function CommandPalette() {
     isJiraMode || query.length >= 2 ? 'text' : 'assigned',
   );
 
+  // Helpers to map data into PaletteItems
+  const toEntryItems = (entries: EntrySearchHit[]): PaletteItem[] =>
+    entries.map((e) => ({ type: 'entry', entry: e }));
+
+  const toJiraItems = (groups: typeof assignedQuery.data): PaletteItem[] =>
+    (groups ?? []).flatMap((g) =>
+      g.issues.map((issue) => ({
+        type: 'jira' as const,
+        issue,
+        connectionId: g.connectionId,
+        siteUrl: g.siteUrl,
+      })),
+    );
+
   // Build sections and flat item list
   const { sections, flatItems } = useMemo(() => {
     const secs: PaletteSection[] = [];
 
     if (showSearch && isJiraMode) {
-      // # mode: only Jira results
-      const jiraItems = (jiraSearchQuery.data ?? []).flatMap((g) =>
-        g.issues.map(
-          (issue): PaletteItem => ({
-            type: 'jira',
-            issue,
-            connectionId: g.connectionId,
-            siteUrl: g.siteUrl,
-          }),
-        ),
-      );
+      // # mode: only Jira results (uncapped — user explicitly asked for Jira)
+      const jiraItems = toJiraItems(jiraSearchQuery.data);
       if (jiraItems.length > 0) secs.push({ label: 'Jira results', items: jiraItems });
     } else if (showSearch) {
-      // Text search: entries + Jira
-      const entryItems = (entrySearchQuery.data ?? []).map(
-        (e): PaletteItem => ({
-          type: 'entry',
-          entry: e,
-        }),
-      );
-      const jiraItems = (jiraSearchQuery.data ?? []).flatMap((g) =>
-        g.issues.map(
-          (issue): PaletteItem => ({
-            type: 'jira',
-            issue,
-            connectionId: g.connectionId,
-            siteUrl: g.siteUrl,
-          }),
-        ),
-      );
+      // Text search: entries first (capped), then Jira (capped)
+      const entryItems = toEntryItems(entrySearchQuery.data ?? []).slice(0, 5);
+      const jiraItems = toJiraItems(jiraSearchQuery.data).slice(0, 5);
       if (entryItems.length > 0) secs.push({ label: 'Entries', items: entryItems });
       if (jiraItems.length > 0) secs.push({ label: 'Jira', items: jiraItems });
     } else {
-      // Default browse: recent entries + Jira assigned + Jira recent
-      const entryItems = (recentEntriesQuery.data ?? []).map(
-        (e): PaletteItem => ({
-          type: 'entry',
-          entry: e,
-        }),
-      );
-      const assignedItems = (assignedQuery.data ?? []).flatMap((g) =>
-        g.issues.map(
-          (issue): PaletteItem => ({
-            type: 'jira',
-            issue,
-            connectionId: g.connectionId,
-            siteUrl: g.siteUrl,
-          }),
-        ),
-      );
-      const recentJiraItems = (recentQuery.data ?? []).flatMap((g) =>
-        g.issues.map(
-          (issue): PaletteItem => ({
-            type: 'jira',
-            issue,
-            connectionId: g.connectionId,
-            siteUrl: g.siteUrl,
-          }),
-        ),
-      );
+      // Default browse: recent entries (capped) + Jira assigned + Jira recent
+      const entryItems = toEntryItems(recentEntriesQuery.data ?? []).slice(0, 5);
+      const assignedItems = toJiraItems(assignedQuery.data).slice(0, 5);
+      const recentJiraItems = toJiraItems(recentQuery.data).slice(0, 5);
       if (entryItems.length > 0) secs.push({ label: 'Recent entries', items: entryItems });
       if (assignedItems.length > 0)
         secs.push({ label: 'Jira — Assigned to me', items: assignedItems });

@@ -64,6 +64,22 @@ function mapJiraIssues(data: JiraSearchApiResponse): JiraIssue[] {
   }));
 }
 
+/** Build JQL clauses for a text/key search term */
+function buildTextJqlParts(text: string): string[] {
+  // Detect Jira issue key patterns:
+  //   "YOS-2826" → exact key lookup
+  //   "YOS-" / "YOS-28" → project filter (shows all issues in project)
+  //   otherwise  → full-text search
+  if (/^[A-Z][A-Z0-9]+-\d+$/i.test(text)) {
+    return [`key = "${text.toUpperCase()}"`];
+  }
+  const prefixMatch = /^([A-Z][A-Z0-9]+)-\d*$/i.exec(text);
+  if (prefixMatch) {
+    return [`project = "${prefixMatch[1]!.toUpperCase()}"`];
+  }
+  return [`text ~ "${text}"`];
+}
+
 /** Build JQL from connection config + mode-specific clause */
 function buildSearchJql(
   config: JiraConnectionConfig,
@@ -89,7 +105,7 @@ function buildSearchJql(
     parts.push('assignee = currentUser()');
   }
   if (mode === 'text' && text) {
-    parts.push(`text ~ "${text}"`);
+    parts.push(...buildTextJqlParts(text));
   }
 
   const filter = parts.join(' AND ');
@@ -334,7 +350,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     if (!effectiveJql) {
       const parts: string[] = [];
       if (project) parts.push(`project = "${project}"`);
-      if (text) parts.push(`text ~ "${text}"`);
+      if (text) parts.push(...buildTextJqlParts(text));
       effectiveJql = parts.join(' AND ') || 'ORDER BY updated DESC';
     }
 
