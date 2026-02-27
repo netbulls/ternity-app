@@ -131,6 +131,19 @@ export const LAB_SECTIONS: LabProductSection[] = [
         ],
       },
       {
+        name: 'jira-project-mapping',
+        id: 'jira-project-mapping-lab',
+        description: 'Jira-to-Ternity project mapping — 5 UI approaches for mapping Jira projects to Ternity projects within connector settings',
+        date: '2026-02-27T18:00:00',
+        items: [
+          { kind: 'exploration', title: 'V1 — Paired Rows', file: 'web/jira-mapping-a1b2.html', description: 'Each Jira project gets a row with a dropdown to select the corresponding Ternity project. Default project fallback for unmapped. Simple, scannable, familiar form pattern.', date: '2026-02-27T18:00:00' },
+          { kind: 'exploration', title: 'V2 — Connection Lines', file: 'web/jira-mapping-c3d4.html', description: 'Two-column wiring diagram. Jira projects left, Ternity projects right, visual connection lines between them. Dot endpoints glow when connected. Many-to-one indicator.', date: '2026-02-27T18:10:00' },
+          { kind: 'exploration', title: 'V3 — Inline Chips', file: 'web/jira-mapping-e5f6.html', description: 'Extends existing visual query builder. Each Jira project chip gets a Ternity project badge attached to its right side. Mapping lives alongside PROJECT IN / STATUS NOT IN pattern.', date: '2026-02-27T18:20:00' },
+          { kind: 'exploration', title: 'V4 — Table Grid', file: 'web/jira-mapping-g7h8.html', description: 'Spreadsheet-style table with Jira project and Ternity project columns. Status column shows mapping health. Grouped by Ternity client. Auto-match button in footer.', date: '2026-02-27T18:30:00' },
+          { kind: 'exploration', title: 'V5 — Smart Suggest', file: 'web/jira-mapping-i9j0.html', description: 'Auto-matches by name similarity with confidence bars (high/medium/low). Accept all or override individually. Unmatchable projects get manual assign. Shows auto/overridden/manual provenance.', date: '2026-02-27T18:40:00' },
+        ],
+      },
+      {
         name: 'jira-settings',
         id: 'jira-settings-lab',
         description: 'Jira connection settings panel — 10 UI approaches for configuring search scope (projects, excluded statuses, JQL mode, refresh)',
