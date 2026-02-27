@@ -674,7 +674,7 @@ export function EntryRow({ entry }: Props) {
                   }}
                 >
                   <Clock className="mr-2 h-3.5 w-3.5" />
-                  Split off time
+                  Split time
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleEditDescription}>
                   <Pencil className="mr-2 h-3.5 w-3.5" />

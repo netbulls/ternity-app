@@ -167,7 +167,7 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Split Off Time</DialogTitle>
+          <DialogTitle>Split Time</DialogTitle>
           <div className="flex flex-col gap-0.5 pt-1">
             <span className="truncate text-[13px] font-medium text-foreground/90">
               {entry.description || 'No description'}
@@ -217,16 +217,14 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
             {/* Parse feedback */}
             <div className="min-h-[22px] py-1.5 text-center" style={{ fontSize: scaled(12) }}>
               {isEmpty ? (
-                <span className="text-muted-foreground/30">
-                  Type time to split off — e.g. 30m or 1.5h
-                </span>
+                <span className="text-muted-foreground/30">Time to split — e.g. 30m or 1.5h</span>
               ) : isValid && exceedsTotal ? (
                 <span className="italic text-destructive/60">
                   Cannot split {formatDuration(parsed.seconds)} — entry is only{' '}
                   {formatDuration(totalDuration)}
                 </span>
               ) : isValid ? (
-                <span className="text-primary">Split off {humanize(parsed.seconds)}</span>
+                <span className="text-primary">Split {humanize(parsed.seconds)}</span>
               ) : (
                 <span className="italic text-destructive/60">
                   Could not parse — try &quot;30m&quot;, &quot;1.5h&quot;, or &quot;1:30&quot;
@@ -242,7 +240,7 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
                 className="font-brand uppercase tracking-widest text-muted-foreground/50"
                 style={{ fontSize: scaled(9) }}
               >
-                Split Off
+                New Entry
               </div>
               <div
                 className={cn(
@@ -321,7 +319,7 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
             {splitEntry.isPending
               ? 'Splitting...'
               : canSubmit
-                ? `Split Off ${formatDuration(parsed!.seconds)}`
+                ? `Split ${formatDuration(parsed!.seconds)}`
                 : 'Split Entry'}
           </Button>
         </DialogFooter>
