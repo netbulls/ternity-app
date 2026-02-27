@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Day — V1 The Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ========================================
+           V1 — THE PULSE
+           Timeline-driven. Your day flows left to right.
+           The hero is a visual timeline of your work blocks,
+           with the timer embedded in the "now" position.
+           Below: today's entries as a compact list.
+           Philosophy: "See your day as it happened."
+           ======================================== */
+
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 700px;
+      }
+
+      .app-content {
+        padding: calc(24px * var(--t-scale, 1));
+        display: flex;
+        flex-direction: column;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+
+      /* --- Header --- */
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .header-left {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .header-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(15px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .header-date {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .kbd-hint {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .kbd {
+        display: inline-flex;
+        align-items: center;
+        padding: 1px 5px;
+        border-radius: 3px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* --- Day Timeline (hero) --- */
+      .timeline-hero {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 12px;
+        padding: calc(20px * var(--t-scale, 1));
+      }
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(16px * var(--t-scale, 1));
+      }
+      .timeline-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .timeline-total {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* The visual timeline strip */
+      .timeline-strip {
+        position: relative;
+        height: calc(48px * var(--t-scale, 1));
+        background: hsl(var(--muted));
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: calc(8px * var(--t-scale, 1));
+      }
+      .timeline-hour-marks {
+        position: absolute;
+        inset: 0;
+        display: flex;
+      }
+      .timeline-hour-mark {
+        flex: 1;
+        border-right: 1px solid hsl(var(--border) / 0.3);
+        position: relative;
+      }
+      .timeline-hour-mark:last-child {
+        border-right: none;
+      }
+      .timeline-hour-label {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        font-size: calc(7px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.4;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Work blocks on the timeline */
+      .timeline-block {
+        position: absolute;
+        top: 4px;
+        height: calc(100% - 20px);
+        border-radius: 4px;
+        opacity: 0.85;
+        cursor: default;
+        transition: opacity 0.15s;
+      }
+      .timeline-block:hover {
+        opacity: 1;
+      }
+      .timeline-block-label {
+        font-size: calc(8px * var(--t-scale, 1));
+        font-weight: 600;
+        color: hsl(var(--background));
+        padding: 3px 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* "Now" marker */
+      .timeline-now {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: hsl(var(--primary));
+        z-index: 2;
+      }
+      .timeline-now::before {
+        content: 'NOW';
+        position: absolute;
+        top: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(7px * var(--t-scale, 1));
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: hsl(var(--primary));
+      }
+      .timeline-now-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
+      }
+
+      /* Hour labels below */
+      .timeline-hours {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 2px;
+      }
+      .timeline-hours span {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(8px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* --- Timer Bar (embedded) --- */
+      .timer-bar {
+        display: flex;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--t-timer-bg));
+      }
+      .timer-jira {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .timer-jira svg {
+        width: 12px;
+        height: 12px;
+      }
+      .timer-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: hsl(var(--foreground));
+        font-size: calc(13px * var(--t-scale, 1));
+        font-family: 'Inter', sans-serif;
+      }
+      .timer-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .timer-project {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+      }
+      .project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: hsl(var(--t-project-1));
+      }
+      .timer-digits {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1));
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+        min-width: 80px;
+        text-align: right;
+      }
+      .timer-btn {
+        width: calc(36px * var(--t-scale, 1));
+        height: calc(36px * var(--t-scale, 1));
+        border-radius: 50%;
+        border: none;
+        background: hsl(var(--destructive));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .timer-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* --- Quick Stats Row --- */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: calc(12px * var(--t-scale, 1));
+      }
+      .stat-card {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 10px;
+        padding: calc(14px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+      }
+      .stat-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 6px;
+      }
+      .stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1));
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat-value.accent {
+        color: hsl(var(--primary));
+      }
+      .stat-sub {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--t-text-muted));
+        margin-top: 2px;
+      }
+
+      /* --- Progress arc --- */
+      .progress-ring {
+        width: 40px;
+        height: 40px;
+        float: right;
+        margin-top: -4px;
+      }
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 3;
+      }
+      .progress-ring .track {
+        stroke: hsl(var(--border));
+      }
+      .progress-ring .fill {
+        stroke: hsl(var(--primary));
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.3s;
+      }
+
+      /* --- Today's Entries (compact) --- */
+      .entries-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .entries-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(8px * var(--t-scale, 1));
+      }
+      .entries-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .entries-count {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+      }
+
+      .entry-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto auto;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(10px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        border-radius: 8px;
+        transition: background 0.1s;
+      }
+      .entry-row:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .entry-row.running {
+        background: hsl(var(--t-timer-bg));
+        border: 1px solid hsl(var(--primary) / 0.15);
+      }
+      .entry-color {
+        width: 3px;
+        height: 24px;
+        border-radius: 2px;
+      }
+      .entry-desc {
+        font-size: calc(13px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entry-desc .jira-key {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        font-weight: 600;
+        margin-right: 6px;
+      }
+      .entry-project {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .entry-time {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .entry-duration {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        min-width: 50px;
+        text-align: right;
+      }
+      .entry-duration.running-dur {
+        color: hsl(var(--primary));
+      }
+
+      /* --- Nudge card --- */
+      .nudge-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(35 100% 60% / 0.2);
+        background: hsl(35 100% 60% / 0.05);
+      }
+      .nudge-icon {
+        color: hsl(35 100% 60%);
+        flex-shrink: 0;
+      }
+      .nudge-text {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .nudge-text strong {
+        color: hsl(35 100% 60%);
+      }
+      .nudge-action {
+        margin-left: auto;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>My Day Explorations</h1>
+      <p>
+        V1 — The Pulse: your day as a visual timeline. Work blocks flow left to right. The timer
+        lives in the "now."
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" data-theme="ternity-dark" data-scale="default" id="app">
+      <div class="app-content">
+        <!-- Header -->
+        <div class="header">
+          <div class="header-left">
+            <span class="header-title">My Day</span>
+            <span class="header-date">Thursday, 27 Feb 2026</span>
+          </div>
+          <div class="header-right">
+            <span class="kbd-hint"><span class="kbd">&#8984;K</span> quick actions</span>
+          </div>
+        </div>
+
+        <!-- Day Timeline (hero element) -->
+        <div class="timeline-hero">
+          <div class="timeline-header">
+            <span class="timeline-label">Today's Timeline</span>
+            <span class="timeline-total">5h 42m tracked</span>
+          </div>
+
+          <div class="timeline-strip">
+            <!-- Hour marks (8am - 6pm = 10 hours) -->
+            <div class="timeline-hour-marks">
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">8</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">9</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">10</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">11</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">12</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">13</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">14</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">15</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">16</span></div>
+              <div class="timeline-hour-mark"><span class="timeline-hour-label">17</span></div>
+            </div>
+
+            <!-- Work blocks -->
+            <div class="timeline-block" style="left: 5%; width: 15%; background: hsl(168 100% 42%)">
+              <span class="timeline-block-label">API endpoints</span>
+            </div>
+            <div class="timeline-block" style="left: 22%; width: 8%; background: hsl(236 100% 77%)">
+              <span class="timeline-block-label">Code review</span>
+            </div>
+            <div
+              class="timeline-block"
+              style="left: 35%; width: 12%; background: hsl(168 100% 42%)"
+            >
+              <span class="timeline-block-label">DB migration</span>
+            </div>
+            <div class="timeline-block" style="left: 52%; width: 20%; background: hsl(35 100% 64%)">
+              <span class="timeline-block-label">Dashboard redesign</span>
+            </div>
+            <div
+              class="timeline-block"
+              style="
+                left: 76%;
+                width: 10%;
+                background: hsl(168 100% 42%);
+                opacity: 0.6;
+                border: 1px dashed hsl(168 100% 42%);
+              "
+            >
+              <span class="timeline-block-label">Running...</span>
+            </div>
+
+            <!-- Now marker -->
+            <div class="timeline-now" style="left: 86%">
+              <div class="timeline-now-dot"></div>
+            </div>
+          </div>
+
+          <div class="timeline-hours">
+            <span>8:00</span><span>9:00</span><span>10:00</span><span>11:00</span><span>12:00</span>
+            <span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span
+            ><span>17:00</span><span>18:00</span>
+          </div>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="timer-bar">
+          <div class="timer-jira">
+            <i data-lucide="external-link" style="width: 10px; height: 10px"></i>
+            YOS-2841
+          </div>
+          <input class="timer-input" value="Dashboard exploration — My Day concepts" readonly />
+          <div class="timer-project">
+            <span class="project-dot"></span>
+            Ternity
+          </div>
+          <div class="timer-digits">1:23:07</div>
+          <button class="timer-btn">
+            <i data-lucide="square"></i>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Today</div>
+            <div class="stat-value accent">5h 42m</div>
+            <div class="stat-sub">of 8h target</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Entries</div>
+            <div class="stat-value">5</div>
+            <div class="stat-sub">1 running</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Top Project</div>
+            <div class="stat-value" style="font-size: calc(15px * var(--t-scale, 1))">Ternity</div>
+            <div class="stat-sub">3h 28m (61%)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Week So Far</div>
+            <div class="stat-value">29h 15m</div>
+            <div class="stat-sub">of 40h &middot; 73%</div>
+          </div>
+        </div>
+
+        <!-- Nudge -->
+        <div class="nudge-card">
+          <i data-lucide="alert-circle" class="nudge-icon" style="width: 16px; height: 16px"></i>
+          <span class="nudge-text"
+            ><strong>2 entries</strong> are missing a project assignment</span
+          >
+          <span class="nudge-action">Fix now</span>
+        </div>
+
+        <!-- Today's Entries -->
+        <div class="entries-section">
+          <div class="entries-header">
+            <span class="entries-title">Today's Entries</span>
+            <span class="entries-count">5 entries</span>
+          </div>
+
+          <div class="entry-row running">
+            <div class="entry-color" style="background: hsl(168 100% 42%)"></div>
+            <div class="entry-desc">
+              <span class="jira-key">YOS-2841</span>
+              Dashboard exploration — My Day concepts
+            </div>
+            <div class="entry-project">Ternity</div>
+            <div class="entry-time">14:37 — now</div>
+            <div class="entry-duration running-dur">1:23</div>
+          </div>
+
+          <div class="entry-row">
+            <div class="entry-color" style="background: hsl(35 100% 64%)"></div>
+            <div class="entry-desc">
+              <span class="jira-key">YOS-2838</span>
+              Dashboard redesign — component refactor
+            </div>
+            <div class="entry-project">Ternity</div>
+            <div class="entry-time">12:15 — 14:15</div>
+            <div class="entry-duration">2:00</div>
+          </div>
+
+          <div class="entry-row">
+            <div class="entry-color" style="background: hsl(168 100% 42%)"></div>
+            <div class="entry-desc">
+              <span class="jira-key">YOS-2830</span>
+              DB migration — add audit columns
+            </div>
+            <div class="entry-project">Ternity</div>
+            <div class="entry-time">10:30 — 11:42</div>
+            <div class="entry-duration">1:12</div>
+          </div>
+
+          <div class="entry-row">
+            <div class="entry-color" style="background: hsl(236 100% 77%)"></div>
+            <div class="entry-desc">Code review — PR #247 auth flow</div>
+            <div class="entry-project">Ternity Auth</div>
+            <div class="entry-time">09:10 — 09:58</div>
+            <div class="entry-duration">0:48</div>
+          </div>
+
+          <div class="entry-row">
+            <div class="entry-color" style="background: hsl(168 100% 42%)"></div>
+            <div class="entry-desc">
+              <span class="jira-key">YOS-2825</span>
+              API endpoints — timer start/resume
+            </div>
+            <div class="entry-project">Ternity</div>
+            <div class="entry-time">08:05 — 09:35</div>
+            <div class="entry-duration">1:30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        const group = event.target.parentElement;
+        group.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

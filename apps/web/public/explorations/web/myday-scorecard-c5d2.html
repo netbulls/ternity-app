@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Day — V3 The Scorecard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ========================================
+           V3 — THE SCORECARD
+           Numbers-first. The day's hero number is your
+           progress toward 8h. Everything radiates from
+           a big central progress indicator.
+           Below: proportional project breakdown + entries.
+           Philosophy: "Know where you stand at a glance."
+           ======================================== */
+
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 700px;
+      }
+
+      .app-content {
+        padding: calc(24px * var(--t-scale, 1));
+        display: flex;
+        flex-direction: column;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+
+      /* --- Header --- */
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .header-left {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .header-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(15px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .header-date {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* --- Hero Score Area --- */
+      .score-hero {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(48px * var(--t-scale, 1));
+        padding: calc(32px * var(--t-scale, 1)) 0;
+      }
+
+      /* Circular progress */
+      .progress-circle {
+        position: relative;
+        width: calc(180px * var(--t-scale, 1));
+        height: calc(180px * var(--t-scale, 1));
+        flex-shrink: 0;
+      }
+      .progress-circle svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+      }
+      .progress-circle .track {
+        fill: none;
+        stroke: hsl(var(--muted));
+        stroke-width: 8;
+      }
+      .progress-circle .fill {
+        fill: none;
+        stroke: hsl(var(--primary));
+        stroke-width: 8;
+        stroke-linecap: round;
+        /* 71% of circumference (2*pi*76 ≈ 477.5) */
+        stroke-dasharray: 477.5;
+        stroke-dashoffset: 138.5;
+        transition: stroke-dashoffset 1s ease;
+      }
+      .progress-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .progress-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(40px * var(--t-scale, 1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 1px;
+        line-height: 1;
+      }
+      .progress-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 6px;
+      }
+      .progress-percent {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        margin-top: 2px;
+      }
+
+      /* Side stats */
+      .score-stats {
+        display: flex;
+        flex-direction: column;
+        gap: calc(16px * var(--t-scale, 1));
+      }
+      .score-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .score-stat-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .score-stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(22px * var(--t-scale, 1));
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .score-stat-sub {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--t-text-muted));
+      }
+
+      /* --- Timer (compact) --- */
+      .timer-compact {
+        display: flex;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--t-timer-bg));
+      }
+      .timer-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        animation: pulse-dot 2s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .timer-desc {
+        flex: 1;
+        font-size: calc(13px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .timer-desc .jira {
+        color: hsl(var(--primary));
+        font-weight: 600;
+        margin-right: 6px;
+      }
+      .timer-project {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .timer-project .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: hsl(var(--t-project-1));
+      }
+      .timer-digits {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 1px;
+      }
+      .timer-stop {
+        width: calc(32px * var(--t-scale, 1));
+        height: calc(32px * var(--t-scale, 1));
+        border-radius: 50%;
+        border: none;
+        background: hsl(var(--destructive));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .timer-stop svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      /* --- Project Breakdown --- */
+      .breakdown {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 12px;
+        padding: calc(18px * var(--t-scale, 1));
+      }
+      .breakdown-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(14px * var(--t-scale, 1));
+      }
+      .breakdown-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* Stacked bar */
+      .stacked-bar {
+        display: flex;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        gap: 2px;
+        margin-bottom: calc(14px * var(--t-scale, 1));
+      }
+      .stacked-bar-seg {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s;
+      }
+
+      /* Project rows */
+      .project-row {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+        padding: calc(8px * var(--t-scale, 1)) 0;
+        border-bottom: 1px solid hsl(var(--border) / 0.3);
+      }
+      .project-row:last-child {
+        border-bottom: none;
+      }
+      .project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .project-name {
+        flex: 1;
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .project-name .client {
+        color: hsl(var(--muted-foreground));
+        font-size: calc(10px * var(--t-scale, 1));
+        margin-left: 6px;
+      }
+      .project-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: hsl(var(--foreground));
+      }
+      .project-pct {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: hsl(var(--muted-foreground));
+        min-width: 36px;
+        text-align: right;
+      }
+
+      /* --- Compact Entry List --- */
+      .entries-compact {
+        display: flex;
+        flex-direction: column;
+      }
+      .entries-compact-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(8px * var(--t-scale, 1));
+      }
+      .entries-compact-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .entries-link {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+      .entry-mini {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+        padding: calc(7px * var(--t-scale, 1)) calc(10px * var(--t-scale, 1));
+        border-radius: 6px;
+      }
+      .entry-mini:hover {
+        background: hsl(var(--muted) / 0.4);
+      }
+      .entry-mini.running {
+        background: hsl(var(--t-timer-bg));
+      }
+      .entry-mini-color {
+        width: 3px;
+        height: 18px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .entry-mini-desc {
+        flex: 1;
+        font-size: calc(12px * var(--t-scale, 1));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entry-mini-desc .jira {
+        color: hsl(var(--primary));
+        font-weight: 600;
+        font-size: calc(10px * var(--t-scale, 1));
+        margin-right: 4px;
+      }
+      .entry-mini-time {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .entry-mini-dur {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        min-width: 40px;
+        text-align: right;
+      }
+      .entry-mini-dur.accent {
+        color: hsl(var(--primary));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>My Day Explorations</h1>
+      <p>
+        V3 — The Scorecard: numbers-first. A big progress ring anchors the view. Know where you
+        stand at a glance.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" data-theme="ternity-dark" data-scale="default" id="app">
+      <div class="app-content">
+        <!-- Header -->
+        <div class="header">
+          <div class="header-left">
+            <span class="header-title">My Day</span>
+            <span class="header-date">Thursday, 27 Feb 2026</span>
+          </div>
+        </div>
+
+        <!-- Hero Score -->
+        <div class="score-hero">
+          <div class="progress-circle">
+            <svg viewBox="0 0 160 160">
+              <circle class="track" cx="80" cy="80" r="72" />
+              <circle class="fill" cx="80" cy="80" r="72" />
+            </svg>
+            <div class="progress-center">
+              <div class="progress-value">5:42</div>
+              <div class="progress-label">of 8h target</div>
+              <div class="progress-percent">71%</div>
+            </div>
+          </div>
+
+          <div class="score-stats">
+            <div class="score-stat">
+              <span class="score-stat-label">Remaining</span>
+              <span class="score-stat-value">2h 18m</span>
+              <span class="score-stat-sub">to hit 8h</span>
+            </div>
+            <div class="score-stat">
+              <span class="score-stat-label">Entries</span>
+              <span class="score-stat-value">5</span>
+              <span class="score-stat-sub">across 2 projects</span>
+            </div>
+            <div class="score-stat">
+              <span class="score-stat-label">Week Progress</span>
+              <span class="score-stat-value">29h 15m</span>
+              <span class="score-stat-sub">of 40h &middot; 73%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Timer (compact) -->
+        <div class="timer-compact">
+          <div class="timer-status"></div>
+          <span class="timer-desc"
+            ><span class="jira">YOS-2841</span>Dashboard exploration — My Day concepts</span
+          >
+          <span class="timer-project"><span class="dot"></span> Ternity</span>
+          <span class="timer-digits">1:23:07</span>
+          <button class="timer-stop"><i data-lucide="square"></i></button>
+        </div>
+
+        <!-- Project Breakdown -->
+        <div class="breakdown">
+          <div class="breakdown-header">
+            <span class="breakdown-title">Today by Project</span>
+          </div>
+          <div class="stacked-bar">
+            <div class="stacked-bar-seg" style="width: 61%; background: hsl(168 100% 42%)"></div>
+            <div class="stacked-bar-seg" style="width: 25%; background: hsl(236 100% 77%)"></div>
+            <div class="stacked-bar-seg" style="width: 14%; background: hsl(35 100% 60%)"></div>
+          </div>
+          <div class="project-row">
+            <div class="project-dot" style="background: hsl(168 100% 42%)"></div>
+            <span class="project-name">Ternity <span class="client">Netbulls</span></span>
+            <span class="project-hours">3:28</span>
+            <span class="project-pct">61%</span>
+          </div>
+          <div class="project-row">
+            <div class="project-dot" style="background: hsl(236 100% 77%)"></div>
+            <span class="project-name">Ternity Auth <span class="client">Netbulls</span></span>
+            <span class="project-hours">1:26</span>
+            <span class="project-pct">25%</span>
+          </div>
+          <div class="project-row">
+            <div class="project-dot" style="background: hsl(35 100% 60%)"></div>
+            <span class="project-name" style="color: hsl(35 100% 60%); font-style: italic"
+              >No project</span
+            >
+            <span class="project-hours">0:48</span>
+            <span class="project-pct">14%</span>
+          </div>
+        </div>
+
+        <!-- Compact Entry List -->
+        <div class="entries-compact">
+          <div class="entries-compact-header">
+            <span class="entries-compact-title">Entries</span>
+            <span class="entries-link">View all in Entries</span>
+          </div>
+
+          <div class="entry-mini running">
+            <div class="entry-mini-color" style="background: hsl(168 100% 42%)"></div>
+            <span class="entry-mini-desc"
+              ><span class="jira">YOS-2841</span> Dashboard exploration</span
+            >
+            <span class="entry-mini-time">14:37 — now</span>
+            <span class="entry-mini-dur accent">1:23</span>
+          </div>
+          <div class="entry-mini">
+            <div class="entry-mini-color" style="background: hsl(168 100% 42%)"></div>
+            <span class="entry-mini-desc"
+              ><span class="jira">YOS-2838</span> Dashboard redesign</span
+            >
+            <span class="entry-mini-time">12:15 — 14:15</span>
+            <span class="entry-mini-dur">2:00</span>
+          </div>
+          <div class="entry-mini">
+            <div class="entry-mini-color" style="background: hsl(168 100% 42%)"></div>
+            <span class="entry-mini-desc"><span class="jira">YOS-2830</span> DB migration</span>
+            <span class="entry-mini-time">10:30 — 11:42</span>
+            <span class="entry-mini-dur">1:12</span>
+          </div>
+          <div class="entry-mini">
+            <div class="entry-mini-color" style="background: hsl(236 100% 77%)"></div>
+            <span class="entry-mini-desc">Code review — PR #247</span>
+            <span class="entry-mini-time">09:10 — 09:58</span>
+            <span class="entry-mini-dur">0:48</span>
+          </div>
+          <div class="entry-mini">
+            <div class="entry-mini-color" style="background: hsl(168 100% 42%)"></div>
+            <span class="entry-mini-desc"><span class="jira">YOS-2825</span> API endpoints</span>
+            <span class="entry-mini-time">08:05 — 09:35</span>
+            <span class="entry-mini-dur">1:30</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        const group = event.target.parentElement;
+        group.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

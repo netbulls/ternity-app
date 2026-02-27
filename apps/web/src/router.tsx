@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/app-shell';
 import { TimerPage } from '@/pages/timer';
-import { ReportsPage } from '@/pages/reports';
+import { EntriesPage } from '@/pages/entries';
 import { CalendarPage } from '@/pages/calendar';
 import { LeavePage } from '@/pages/leave';
 import { ProjectsPage } from '@/pages/projects';
@@ -183,9 +183,9 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: '/', element: <TimerPage /> },
-      { path: '/entries', element: <Navigate to="/" replace /> },
-      { path: '/dashboard', element: <DashboardPage /> },
-      { path: '/reports', element: <ReportsPage /> },
+      { path: '/entries', element: <EntriesPage /> },
+      { path: '/dashboard', element: <Navigate to="/reports" replace /> },
+      { path: '/reports', element: <DashboardPage /> },
       { path: '/calendar', element: <CalendarPage /> },
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },

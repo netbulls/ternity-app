@@ -1,12 +1,23 @@
 import { NavLink } from 'react-router-dom';
-import { Timer, LayoutDashboard, BarChart3, Calendar, Palmtree, Settings, LogOut, Users, FolderKanban, Download } from 'lucide-react';
+import {
+  Timer,
+  List,
+  BarChart3,
+  Calendar,
+  Palmtree,
+  Settings,
+  LogOut,
+  Users,
+  FolderKanban,
+  Download,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { HourglassLogo } from './hourglass-logo';
 
 const navItems = [
-  { to: '/', label: 'Timer & Entries', icon: Timer },
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/', label: 'My Day', icon: Timer },
+  { to: '/entries', label: 'Entries', icon: List },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/leave', label: 'Leave', icon: Palmtree },
   { to: '/reports', label: 'Reports', icon: BarChart3 },

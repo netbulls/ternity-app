@@ -10,15 +10,18 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
   const navigate = useNavigate();
 
   const weekFormatted = formatHM(attention.weekTotalSeconds);
-  const lowDayFormatted = attention.lowDay
-    ? formatHM(attention.lowDay.totalSeconds)
-    : null;
+  const lowDayFormatted = attention.lowDay ? formatHM(attention.lowDay.totalSeconds) : null;
 
   return (
     <div className="grid grid-cols-3 gap-3">
       {/* No Project */}
       <button
-        onClick={() => navigate({ pathname: '/', search: createSearchParams({ filter: 'incomplete' }).toString() })}
+        onClick={() =>
+          navigate({
+            pathname: '/entries',
+            search: createSearchParams({ filter: 'incomplete' }).toString(),
+          })
+        }
         className="cursor-pointer rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))] p-3.5 text-left transition-colors hover:border-[hsl(var(--primary)/0.3)]"
         style={{ borderLeft: '3px solid hsl(35, 100%, 60%)' }}
       >
@@ -50,7 +53,7 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
 
       {/* This Week */}
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/entries')}
         className="cursor-pointer rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))] p-3.5 text-left transition-colors hover:border-[hsl(var(--primary)/0.3)]"
         style={{ borderLeft: '3px solid hsl(152, 60%, 50%)' }}
       >
@@ -82,7 +85,7 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
 
       {/* Low Day */}
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/entries')}
         className="cursor-pointer rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))] p-3.5 text-left transition-colors hover:border-[hsl(var(--primary)/0.3)]"
         style={{ borderLeft: '3px solid hsl(var(--primary))' }}
       >
@@ -102,17 +105,13 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
           className="text-muted-foreground"
           style={{ fontSize: scaled(10), marginTop: scaled(4) }}
         >
-          {attention.lowDay
-            ? `only ${lowDayFormatted} logged`
-            : 'no entries yet'}
+          {attention.lowDay ? `only ${lowDayFormatted} logged` : 'no entries yet'}
         </div>
         <div
           className="text-[hsl(var(--primary))] underline underline-offset-2"
           style={{ fontSize: scaled(10), marginTop: scaled(8) }}
         >
-          {attention.lowDay
-            ? `Check ${attention.lowDay.dayLabel} →`
-            : 'View entries →'}
+          {attention.lowDay ? `Check ${attention.lowDay.dayLabel} →` : 'View entries →'}
         </div>
       </button>
     </div>

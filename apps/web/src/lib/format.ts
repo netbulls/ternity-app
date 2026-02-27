@@ -2,9 +2,11 @@ import { ORG_TIMEZONE } from '@ternity/shared';
 
 /** Get the short timezone abbreviation (e.g. "CET" or "CEST") for the org timezone */
 export function getTimezoneAbbr(): string {
-  return new Intl.DateTimeFormat('en-GB', { timeZone: ORG_TIMEZONE, timeZoneName: 'short' })
-    .formatToParts(new Date())
-    .find((p) => p.type === 'timeZoneName')?.value ?? ORG_TIMEZONE;
+  return (
+    new Intl.DateTimeFormat('en-GB', { timeZone: ORG_TIMEZONE, timeZoneName: 'short' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName')?.value ?? ORG_TIMEZONE
+  );
 }
 
 /** Get timezone label with city and GMT offset, e.g. "Warsaw (GMT+1)" or "Warsaw (GMT+2)" */
@@ -14,7 +16,9 @@ export function getTimezoneLabel(): string {
   // Compute offset: difference between UTC and org timezone in hours
   const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
   const orgStr = now.toLocaleString('en-US', { timeZone: ORG_TIMEZONE });
-  const offsetHours = Math.round((new Date(orgStr).getTime() - new Date(utcStr).getTime()) / 3600000);
+  const offsetHours = Math.round(
+    (new Date(orgStr).getTime() - new Date(utcStr).getTime()) / 3600000,
+  );
   const sign = offsetHours >= 0 ? '+' : '';
   return `${city} (GMT${sign}${offsetHours})`;
 }
@@ -35,7 +39,13 @@ export function getOrgDateParts(iso: string): { year: number; month: number; day
 }
 
 /** Convert org-timezone time parts to a UTC ISO string */
-export function orgTimeToISO(year: number, month: number, day: number, hours: number, minutes: number): string {
+export function orgTimeToISO(
+  year: number,
+  month: number,
+  day: number,
+  hours: number,
+  minutes: number,
+): string {
   // Use the target time interpreted as UTC as a reference point
   const ref = new Date(Date.UTC(year, month, day, hours, minutes, 0, 0));
   // Compute how far org timezone is from UTC at this reference moment
@@ -65,7 +75,11 @@ export function formatTimer(seconds: number): string {
 /** Format ISO timestamp as "HH:MM" in the org timezone */
 export function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: ORG_TIMEZONE });
+  return d.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: ORG_TIMEZONE,
+  });
 }
 
 /** Format date range as readable label */
@@ -78,7 +92,11 @@ export function formatDateRange(from: string, to: string): string {
   }
 
   const fromStr = fromDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const toStr = toDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const toStr = toDate.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
   return `${fromStr} – ${toStr}`;
 }
 
@@ -131,6 +149,26 @@ export function formatRelativeTime(iso: string | null): string {
 /** Format a number with locale separators */
 export function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
+}
+
+/** Get the first day of the month containing the given date */
+export function getMonthStart(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+/** Get the last day of the month containing the given date */
+export function getMonthEnd(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return last.toISOString().slice(0, 10);
+}
+
+/** Shift a date string by N months (clamped to valid day) */
+export function shiftMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Format date as relative label or formatted date */
