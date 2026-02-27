@@ -992,9 +992,6 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           userId,
           description: newDescription,
           projectId: newProjectId,
-          jiraIssueKey: existing.jiraIssueKey,
-          jiraIssueSummary: existing.jiraIssueSummary,
-          jiraConnectionId: existing.jiraConnectionId,
           createdAt: newEntryStart,
         })
         .returning();
