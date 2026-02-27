@@ -6,6 +6,8 @@ ARG VITE_LOGTO_APP_ID
 ARG VITE_SHOW_DEV_PAGES
 ARG VITE_APP_VERSION=dev
 ARG VITE_ENV_NAME
+ARG VITE_JIRA_CLIENT_ID
+ARG VITE_JIRA_CALLBACK_URL
 RUN corepack enable pnpm
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./

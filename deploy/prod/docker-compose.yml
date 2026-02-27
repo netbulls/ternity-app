@@ -18,6 +18,9 @@ services:
       - LOGTO_M2M_APP_SECRET=${LOGTO_M2M_APP_SECRET}
       - PORT=3010
       - CORS_ORIGIN=https://app.ternity.xyz
+      - JIRA_CLIENT_ID=${JIRA_CLIENT_ID}
+      - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET}
+      - JIRA_CALLBACK_URL=${JIRA_CALLBACK_URL}
       - DRIVE_INTERNAL_URL=http://ternity-drive-prod:3020
       - DRIVE_PUBLIC_URL=https://drive.ternity.xyz
       - SIGNED_URL_SECRET=${SIGNED_URL_SECRET}
@@ -29,7 +32,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
     security_opt:
       - no-new-privileges:true
@@ -44,6 +47,8 @@ services:
         - VITE_LOGTO_APP_ID=${VITE_LOGTO_APP_ID}
         - VITE_APP_VERSION=${VITE_APP_VERSION:-dev}
         - VITE_ENV_NAME=${VITE_ENV_NAME:-prod}
+        - VITE_JIRA_CLIENT_ID=${VITE_JIRA_CLIENT_ID}
+        - VITE_JIRA_CALLBACK_URL=${VITE_JIRA_CALLBACK_URL}
     container_name: ternity-app-prod-web
     networks:
       - proxy
@@ -51,7 +56,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
+          cpus: '0.5'
           memory: 256M
     security_opt:
       - no-new-privileges:true
@@ -61,7 +66,7 @@ services:
       context: ../src
       dockerfile: deploy/Dockerfile.api
     container_name: ternity-app-prod-sync
-    command: ["node", "apps/api/dist/sync-service.js"]
+    command: ['node', 'apps/api/dist/sync-service.js']
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +84,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
+          cpus: '0.5'
           memory: 256M
     security_opt:
       - no-new-privileges:true
@@ -96,7 +101,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ternity -d ternity"]
+      test: ['CMD-SHELL', 'pg_isready -U ternity -d ternity']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -104,7 +109,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
+          cpus: '0.5'
           memory: 256M
     security_opt:
       - no-new-privileges:true
