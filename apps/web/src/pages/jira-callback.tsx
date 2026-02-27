@@ -2,14 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/providers/auth-provider';
 
 export function JiraCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const exchanged = useRef(false);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
+    // Wait for auth to be ready before calling the API
+    if (isLoading) return;
+    if (!user) {
+      setError('Not authenticated — please sign in first');
+      return;
+    }
     if (exchanged.current) return;
     exchanged.current = true;
 
@@ -32,7 +40,7 @@ export function JiraCallbackPage() {
         console.error('Jira exchange failed:', err);
         setError(err instanceof Error ? err.message : 'Token exchange failed');
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
     return (
