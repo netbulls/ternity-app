@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Link2, RefreshCw, ExternalLink, Unplug } from 'lucide-react';
+import { ChevronDown, Link2, RefreshCw, ExternalLink, Unplug, AlertTriangle } from 'lucide-react';
 import { useUpdateJiraConfig, useDisconnectJira, useSyncJira } from '@/hooks/use-jira';
 import { VisualQueryBuilder } from './visual-query-builder';
 import type { JiraConnectionView, JiraConnectionConfig } from '@ternity/shared';
@@ -22,10 +22,12 @@ function formatSyncTime(dateStr: string | null): string {
 interface JiraConnectionCardProps {
   connection: JiraConnectionView;
   defaultExpanded?: boolean;
+  onReconnect?: () => void;
 }
 
-export function JiraConnectionCard({ connection, defaultExpanded }: JiraConnectionCardProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }: JiraConnectionCardProps) {
+  const isExpired = connection.tokenStatus === 'expired';
+  const [expanded, setExpanded] = useState(defaultExpanded ?? isExpired);
   const [animDone, setAnimDone] = useState(defaultExpanded ?? false);
 
   // Local state initialized from connection config
@@ -128,9 +130,16 @@ export function JiraConnectionCard({ connection, defaultExpanded }: JiraConnecti
                 <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
                   {connection.siteName}
                 </span>
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
-                  Connected
-                </span>
+                {isExpired ? (
+                  <span className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-500">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Reconnect
+                  </span>
+                ) : (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                    Connected
+                  </span>
+                )}
               </div>
               <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
                 {connection.atlassianDisplayName}
@@ -173,63 +182,99 @@ export function JiraConnectionCard({ connection, defaultExpanded }: JiraConnecti
             onAnimationStart={() => setAnimDone(false)}
           >
             <div className="border-t border-border/50 px-4 py-4">
-              {/* Sync row */}
-              <div className="mb-4 flex items-center gap-2">
-                <span className="text-muted-foreground/60" style={{ fontSize: scaled(10) }}>
-                  Last synced {formatSyncTime(connection.lastSyncedAt)}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    sync.mutate(connection.id);
-                  }}
-                  disabled={sync.isPending}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                    sync.isPending && 'pointer-events-none opacity-50',
-                  )}
-                  style={{ fontSize: scaled(10) }}
-                >
-                  <RefreshCw className={cn('h-3 w-3', sync.isPending && 'animate-spin')} />
-                  {sync.isPending ? 'Syncing...' : 'Sync now'}
-                </button>
-              </div>
+              {isExpired ? (
+                /* Expired state — reconnect prompt */
+                <div className="space-y-3">
+                  <p className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+                    Connection expired — Jira access needs to be renewed. Your configuration will be preserved.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReconnect?.();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-3 py-1.5 font-medium text-amber-500 transition-colors hover:bg-amber-500/20"
+                      style={{ fontSize: scaled(12) }}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Reconnect
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        disconnect.mutate(connection.id);
+                      }}
+                      disabled={disconnect.isPending}
+                      className="rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      title="Remove connection"
+                    >
+                      <Unplug className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Active state — normal content */
+                <>
+                  {/* Sync row */}
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="text-muted-foreground/60" style={{ fontSize: scaled(10) }}>
+                      Last synced {formatSyncTime(connection.lastSyncedAt)}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sync.mutate(connection.id);
+                      }}
+                      disabled={sync.isPending}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                        sync.isPending && 'pointer-events-none opacity-50',
+                      )}
+                      style={{ fontSize: scaled(10) }}
+                    >
+                      <RefreshCw className={cn('h-3 w-3', sync.isPending && 'animate-spin')} />
+                      {sync.isPending ? 'Syncing...' : 'Sync now'}
+                    </button>
+                  </div>
 
-              {/* Visual query builder */}
-              <VisualQueryBuilder
-                connectionId={connection.id}
-                selectedProjects={selectedProjects}
-                excludedStatuses={excludedStatuses}
-                onToggleProject={toggleProject}
-                onRemoveProject={removeProject}
-                onToggleStatus={toggleStatus}
-                onRemoveStatus={removeStatus}
-              />
+                  {/* Visual query builder */}
+                  <VisualQueryBuilder
+                    connectionId={connection.id}
+                    selectedProjects={selectedProjects}
+                    excludedStatuses={excludedStatuses}
+                    onToggleProject={toggleProject}
+                    onRemoveProject={removeProject}
+                    onToggleStatus={toggleStatus}
+                    onRemoveStatus={removeStatus}
+                  />
 
-              {/* Action buttons */}
-              <div className="mt-4 flex items-center gap-1.5 border-t border-border/50 pt-3">
-                <a
-                  href={connection.siteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
-                  title="Open in Jira"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    disconnect.mutate(connection.id);
-                  }}
-                  disabled={disconnect.isPending}
-                  className="rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  title="Disconnect"
-                >
-                  <Unplug className="h-3.5 w-3.5" />
-                </button>
-              </div>
+                  {/* Action buttons */}
+                  <div className="mt-4 flex items-center gap-1.5 border-t border-border/50 pt-3">
+                    <a
+                      href={connection.siteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
+                      title="Open in Jira"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        disconnect.mutate(connection.id);
+                      }}
+                      disabled={disconnect.isPending}
+                      className="rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      title="Disconnect"
+                    >
+                      <Unplug className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         )}

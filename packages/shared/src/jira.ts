@@ -23,6 +23,7 @@ export interface JiraConnectionView {
   atlassianEmail: string | null;
   atlassianAvatarUrl: string | null;
   config: JiraConnectionConfig;
+  tokenStatus: 'active' | 'expired';
   lastSyncedAt: string | null;
   createdAt: string;
 }

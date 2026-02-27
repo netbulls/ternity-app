@@ -256,6 +256,7 @@ export const jiraConnections = pgTable(
     siteUrl: text('site_url').notNull(),
     siteAvatarUrl: text('site_avatar_url'),
     config: jsonb('config').notNull().default({}).$type<Record<string, unknown>>(),
+    tokenStatus: text('token_status').notNull().default('active'),
     lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
     accessToken: text('access_token').notNull(),
     refreshToken: text('refresh_token').notNull(),

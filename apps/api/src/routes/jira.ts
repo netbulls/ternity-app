@@ -7,8 +7,27 @@ import {
   getAtlassianMe,
   getAccessibleResources,
   jiraFetch,
+  TokenExpiredError,
 } from '../lib/jira-client.js';
 import { JiraConnectionConfigSchema } from '@ternity/shared';
+
+/** Helper: catch TokenExpiredError, mark connection as expired in DB, return 401. */
+async function handleJiraFetchError(
+  err: unknown,
+  connectionId: string,
+  request: { log: { error: (obj: unknown, msg: string) => void } },
+  reply: { code: (n: number) => { send: (body: unknown) => unknown } },
+) {
+  if (err instanceof TokenExpiredError) {
+    await db
+      .update(jiraConnections)
+      .set({ tokenStatus: 'expired', updatedAt: new Date() })
+      .where(eq(jiraConnections.id, connectionId));
+    request.log.error(err, 'Jira token expired');
+    return reply.code(401).send({ error: 'Jira connection expired — please reconnect', code: 'TOKEN_EXPIRED' });
+  }
+  throw err; // re-throw non-token errors
+}
 
 export async function jiraRoutes(fastify: FastifyInstance) {
   // ── POST /api/jira/exchange — Token exchange + store connections ────────
@@ -70,7 +89,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (existing) {
-        // Update tokens and user info
+        // Update tokens and user info (also resets tokenStatus on reconnect)
         const [updated] = await db
           .update(jiraConnections)
           .set({
@@ -84,6 +103,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
             accessToken: access_token,
             refreshToken: refresh_token,
             tokenExpiresAt,
+            tokenStatus: 'active',
             updatedAt: new Date(),
           })
           .where(eq(jiraConnections.id, existing.id))
@@ -138,6 +158,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         atlassianEmail: jiraConnections.atlassianEmail,
         atlassianAvatarUrl: jiraConnections.atlassianAvatarUrl,
         config: jiraConnections.config,
+        tokenStatus: jiraConnections.tokenStatus,
         lastSyncedAt: jiraConnections.lastSyncedAt,
         createdAt: jiraConnections.createdAt,
       })
@@ -189,10 +210,15 @@ export async function jiraRoutes(fastify: FastifyInstance) {
       return reply.code(404).send({ error: 'Connection not found' });
     }
 
-    const res = await jiraFetch(
-      connection,
-      `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/project/search`,
-    );
+    let res: Response;
+    try {
+      res = await jiraFetch(
+        connection,
+        `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/project/search`,
+      );
+    } catch (err) {
+      return handleJiraFetchError(err, connection.id, request, reply);
+    }
 
     if (!res.ok) {
       const body = await res.text();
@@ -244,10 +270,15 @@ export async function jiraRoutes(fastify: FastifyInstance) {
       fields: 'summary,status,issuetype,priority,assignee',
     });
 
-    const res = await jiraFetch(
-      connection,
-      `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/search/jql?${params}`,
-    );
+    let res: Response;
+    try {
+      res = await jiraFetch(
+        connection,
+        `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/search/jql?${params}`,
+      );
+    } catch (err) {
+      return handleJiraFetchError(err, connection.id, request, reply);
+    }
 
     if (!res.ok) {
       const body = await res.text();
@@ -305,10 +336,15 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     }
 
     // Use /rest/api/3/status (works with read:jira-work scope)
-    const res = await jiraFetch(
-      connection,
-      `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/status`,
-    );
+    let res: Response;
+    try {
+      res = await jiraFetch(
+        connection,
+        `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/status`,
+      );
+    } catch (err) {
+      return handleJiraFetchError(err, connection.id, request, reply);
+    }
 
     if (!res.ok) {
       const body = await res.text();

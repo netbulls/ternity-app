@@ -12,6 +12,14 @@ const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000; // refresh 5 min before expiry
 
 type JiraConnection = typeof jiraConnections.$inferSelect;
 
+/** Thrown when token refresh fails due to revoked/invalid refresh token. */
+export class TokenExpiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TokenExpiredError';
+  }
+}
+
 interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -33,6 +41,10 @@ async function refreshTokens(connection: JiraConnection): Promise<JiraConnection
 
   if (!res.ok) {
     const body = await res.text();
+    // Detect revoked/invalid refresh tokens specifically
+    if (body.includes('refresh_token is invalid') || body.includes('unauthorized_client')) {
+      throw new TokenExpiredError(`Token refresh failed (${res.status}): ${body}`);
+    }
     throw new Error(`Token refresh failed (${res.status}): ${body}`);
   }
 
