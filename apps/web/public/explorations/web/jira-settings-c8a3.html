@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Jira Settings V2: Card Grid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.5); }
+        .page-header p { font-size: 11px; color: hsl(var(--muted-foreground) / 0.35); margin-top: 4px; }
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.4); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted)); color: hsl(var(--muted-foreground) / 0.6); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button.active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .instances { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; padding: 20px 0; }
+        .instance-label { text-align: center; font-family: 'Oxanium', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.35); margin-bottom: 12px; }
+
+        /* Connection header card */
+        .conn-card {
+            width: 540px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 12px;
+        }
+        .conn-avatar { width: 36px; height: 36px; border-radius: 8px; background: hsl(var(--primary) / 0.15); display: flex; align-items: center; justify-content: center; font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 700; color: hsl(var(--primary)); flex-shrink: 0; }
+        .conn-info { flex: 1; min-width: 0; }
+        .conn-name { font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 600; }
+        .conn-meta { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
+        .conn-refresh { font-size: calc(10px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground) / 0.5); display: flex; align-items: center; gap: 4px; }
+        .conn-refresh svg { width: 12px; height: 12px; }
+
+        /* Config cards grid */
+        .config-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            width: 540px;
+        }
+        .config-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .config-card.full { grid-column: 1 / -1; }
+        .config-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+            color: hsl(var(--foreground) / 0.6);
+            margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .config-count {
+            font-weight: 400;
+            color: hsl(var(--primary));
+            font-size: calc(9px * var(--t-scale, 1.1));
+        }
+
+        /* Chip list */
+        .chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            padding: 4px 10px; border-radius: 6px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.4);
+            color: hsl(var(--foreground) / 0.7);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .chip.selected {
+            background: hsl(var(--primary) / 0.12);
+            border-color: hsl(var(--primary) / 0.3);
+            color: hsl(var(--primary));
+            font-weight: 500;
+        }
+        .chip.excluded {
+            background: hsl(var(--destructive) / 0.08);
+            border-color: hsl(var(--destructive) / 0.2);
+            color: hsl(var(--destructive) / 0.7);
+            text-decoration: line-through;
+        }
+        .chip .chip-key {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        /* Mode toggle */
+        .mode-toggle { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid hsl(var(--border)); width: fit-content; margin-bottom: 10px; }
+        .mode-btn { font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1.1)); padding: 6px 16px; border: none; background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; transition: all 0.15s; }
+        .mode-btn.active { background: hsl(var(--primary) / 0.12); color: hsl(var(--primary)); font-weight: 600; }
+
+        .jql-area { background: hsl(var(--muted) / 0.4); border: 1px solid hsl(var(--border) / 0.5); border-radius: 8px; padding: 12px; font-family: 'Oxanium', monospace; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--foreground) / 0.8); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+
+        .empty-msg { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground) / 0.4); padding: 12px 0; text-align: center; }
+
+        /* Stale warning */
+        .stale-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(35 100% 50%);
+            background: hsl(35 100% 50% / 0.1);
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .stale-badge svg { width: 10px; height: 10px; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Jira Settings V2</h1>
+        <p>Card Grid — connection header + separate config cards for Projects, Statuses, and JQL</p>
+    </div>
+    <div class="switcher-row">
+        <div><div class="switcher-label">Theme</div><div class="switcher-group" id="theme-switcher">
+            <button onclick="setTheme('ternity-dark')">Ternity Dark</button>
+            <button onclick="setTheme('ternity-light')">Ternity Light</button>
+            <button onclick="setTheme('midnight')">Midnight</button>
+            <button onclick="setTheme('warm-sand')">Warm Sand</button>
+            <button class="active" onclick="setTheme('carbon')">Carbon</button>
+            <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div></div>
+        <div><div class="switcher-label">Scale</div><div class="switcher-group" id="scale-switcher">
+            <button onclick="setScale('compact')">Compact</button>
+            <button class="active" onclick="setScale('default')">Default</button>
+            <button onclick="setScale('comfortable')">Comfortable</button>
+        </div></div>
+    </div>
+
+    <div class="instances">
+        <!-- STATE 1: Empty -->
+        <div>
+            <div class="instance-label">Empty — First-time config</div>
+            <div class="conn-card">
+                <div class="conn-avatar">NB</div>
+                <div class="conn-info">
+                    <div class="conn-name">netbulls.atlassian.net</div>
+                    <div class="conn-meta">Przemek Rudzki &middot; Connected 3 days ago</div>
+                </div>
+                <div class="conn-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg> never</div>
+            </div>
+            <div class="config-grid">
+                <div class="config-card">
+                    <div class="config-title">Projects <span class="config-count">0 selected</span></div>
+                    <div class="empty-msg">Click projects to select them</div>
+                </div>
+                <div class="config-card">
+                    <div class="config-title">Excluded Statuses <span class="config-count">0 excluded</span></div>
+                    <div class="empty-msg">Click statuses to exclude them</div>
+                </div>
+                <div class="config-card full">
+                    <div class="config-title">Query</div>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active">Simple</button>
+                        <button class="mode-btn">Custom JQL</button>
+                    </div>
+                    <div class="jql-area" style="opacity:0.4; font-style:italic;">Select projects and statuses above to generate a query</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 2: Configured -->
+        <div>
+            <div class="instance-label">Configured — 3 projects, 2 excluded</div>
+            <div class="conn-card">
+                <div class="conn-avatar">NB</div>
+                <div class="conn-info">
+                    <div class="conn-name">netbulls.atlassian.net</div>
+                    <div class="conn-meta">Przemek Rudzki &middot; Connected 3 days ago</div>
+                </div>
+                <div class="conn-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg> 2h ago</div>
+            </div>
+            <div class="config-grid">
+                <div class="config-card">
+                    <div class="config-title">Projects <span class="config-count">3 of 8</span></div>
+                    <div class="chip-list">
+                        <span class="chip selected"><span class="chip-key">ADM</span> Admin Portal</span>
+                        <span class="chip selected"><span class="chip-key">BIT</span> Bitflow</span>
+                        <span class="chip"><span class="chip-key">FCON</span> Falcon</span>
+                        <span class="chip selected"><span class="chip-key">INT</span> Internal</span>
+                        <span class="chip"><span class="chip-key">YOS</span> Yoshida</span>
+                    </div>
+                </div>
+                <div class="config-card">
+                    <div class="config-title">Excluded Statuses <span class="config-count">2 excluded</span></div>
+                    <div class="chip-list">
+                        <span class="chip">To Do</span>
+                        <span class="chip">In Progress</span>
+                        <span class="chip">In Review</span>
+                        <span class="chip excluded">Done</span>
+                        <span class="chip excluded">Resolved</span>
+                    </div>
+                </div>
+                <div class="config-card full">
+                    <div class="config-title">Query</div>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active">Simple</button>
+                        <button class="mode-btn">Custom JQL</button>
+                    </div>
+                    <div class="jql-area" style="opacity:0.6;">project IN (ADM, BIT, INT) AND status NOT IN (Done, Resolved) ORDER BY updated DESC</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="instances">
+        <!-- STATE 3: Custom JQL -->
+        <div>
+            <div class="instance-label">Custom JQL — manual query mode</div>
+            <div class="conn-card">
+                <div class="conn-avatar">NB</div>
+                <div class="conn-info">
+                    <div class="conn-name">netbulls.atlassian.net</div>
+                    <div class="conn-meta">Przemek Rudzki &middot; Connected 3 days ago</div>
+                </div>
+                <div class="conn-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg> 2h ago</div>
+            </div>
+            <div class="config-grid">
+                <div class="config-card full">
+                    <div class="config-title">Query</div>
+                    <div class="mode-toggle">
+                        <button class="mode-btn">Simple</button>
+                        <button class="mode-btn active">Custom JQL</button>
+                    </div>
+                    <div class="jql-area" style="border-color: hsl(var(--primary) / 0.3);">project IN (ADM, BIT, INT) AND status NOT IN (Done, Resolved) ORDER BY updated DESC</div>
+                    <div style="margin-top:6px; font-size: calc(10px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground) / 0.4);">Pre-filled from simple mode. Edit freely.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 4: Stale -->
+        <div>
+            <div class="instance-label">Refresh — stale cached data</div>
+            <div class="conn-card" style="border-color: hsl(35 100% 50% / 0.2);">
+                <div class="conn-avatar">NB</div>
+                <div class="conn-info">
+                    <div class="conn-name">netbulls.atlassian.net</div>
+                    <div class="conn-meta">Przemek Rudzki &middot; Connected 3 days ago</div>
+                </div>
+                <span class="stale-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+                    3 days stale
+                </span>
+            </div>
+            <div class="config-grid">
+                <div class="config-card">
+                    <div class="config-title">Projects <span class="config-count">3 of 8</span></div>
+                    <div class="chip-list">
+                        <span class="chip selected"><span class="chip-key">ADM</span> Admin Portal</span>
+                        <span class="chip selected"><span class="chip-key">BIT</span> Bitflow</span>
+                        <span class="chip selected"><span class="chip-key">INT</span> Internal</span>
+                    </div>
+                </div>
+                <div class="config-card">
+                    <div class="config-title">Excluded Statuses <span class="config-count">2 excluded</span></div>
+                    <div class="chip-list">
+                        <span class="chip excluded">Done</span>
+                        <span class="chip excluded">Resolved</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTheme(t) { document.documentElement.setAttribute('data-theme', t); document.documentElement.className = ['ternity-light','warm-sand','high-contrast'].includes(t) ? 'light' : 'dark'; document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g,'-') === t)); }
+        function setScale(s) { document.documentElement.setAttribute('data-scale', s); document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === s)); }
+    </script>
+</body>
+</html>

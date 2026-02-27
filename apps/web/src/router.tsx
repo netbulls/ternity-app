@@ -107,6 +107,69 @@ export const router = createBrowserRouter([
             return { Component: DevSwitchConfirmPage };
           },
         },
+        {
+          path: '/dev/settings-v1',
+          lazy: async () => {
+            const { DevSettingsV1Page } = await import('@/pages/dev-settings-v1');
+            return { Component: DevSettingsV1Page };
+          },
+        },
+        {
+          path: '/dev/settings-v3',
+          lazy: async () => {
+            const { DevSettingsV3Page } = await import('@/pages/dev-settings-v3');
+            return { Component: DevSettingsV3Page };
+          },
+        },
+        {
+          path: '/dev/settings-v4',
+          lazy: async () => {
+            const { DevSettingsV4Page } = await import('@/pages/dev-settings-v4');
+            return { Component: DevSettingsV4Page };
+          },
+        },
+        {
+          path: '/dev/jira-search',
+          lazy: async () => {
+            const { DevJiraSearchPage } = await import('@/pages/dev-jira-search');
+            return { Component: DevJiraSearchPage };
+          },
+        },
+        {
+          path: '/dev/jira-v1',
+          lazy: async () => {
+            const { DevJiraV1Page } = await import('@/pages/dev-jira-v1');
+            return { Component: DevJiraV1Page };
+          },
+        },
+        {
+          path: '/dev/jira-v9',
+          lazy: async () => {
+            const { DevJiraV9Page } = await import('@/pages/dev-jira-v9');
+            return { Component: DevJiraV9Page };
+          },
+        },
+        {
+          path: '/dev/jira-v10',
+          lazy: async () => {
+            const { DevJiraV10Page } = await import('@/pages/dev-jira-v10');
+            return { Component: DevJiraV10Page };
+          },
+        },
+        {
+          path: '/dev/jira-v1v10',
+          lazy: async () => {
+            const { DevJiraV1V10Page } = await import('@/pages/dev-jira-v1v10');
+            return { Component: DevJiraV1V10Page };
+          },
+        },
+        {
+          path: '/dev/jira-v1v9',
+          lazy: async () => {
+            const { DevJiraV1V9Page } = await import('@/pages/dev-jira-v1v9');
+            return { Component: DevJiraV1V9Page };
+          },
+        },
       ]
     : []),
   {

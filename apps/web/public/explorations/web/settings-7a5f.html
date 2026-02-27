@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Settings V10: Minimal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; overflow: hidden; }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* ── Exploration toolbar ── */
+        .x-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; gap: 12px; padding: 5px 16px; background: hsl(0 0% 0% / 0.88); backdrop-filter: blur(8px); border-bottom: 1px solid hsl(0 0% 100% / 0.06); }
+        .x-bar .x-id { font-family: 'Oxanium',sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: hsl(0 0% 100% / 0.45); margin-right: auto; }
+        .x-bar .x-lbl { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(0 0% 100% / 0.3); }
+        .x-bar .x-grp { display: flex; gap: 2px; }
+        .x-bar button { font-family: 'Inter',sans-serif; font-size: 10px; padding: 3px 7px; border-radius: 3px; border: 1px solid hsl(0 0% 100% / 0.1); background: transparent; color: hsl(0 0% 100% / 0.45); cursor: pointer; }
+        .x-bar button.active { background: hsl(168 100% 42%); border-color: hsl(168 100% 42%); color: #000; font-weight: 600; }
+
+        /* ── App shell ── */
+        .shell { display: flex; height: 100vh; padding-top: 32px; background: hsl(var(--background)); color: hsl(var(--foreground)); }
+
+        /* ── Sidebar ── */
+        .sb { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid hsl(var(--sidebar-border)); background: hsl(var(--sidebar-background)); padding: 20px 12px; overflow: hidden; }
+        .sb-logo { display: flex; align-items: center; gap: 8px; padding: 0 10px; margin-bottom: 20px; }
+        .sb-logo svg { width: 18px; height: 22px; color: hsl(var(--primary)); }
+        .sb-logo span { font-family: 'Oxanium',sans-serif; font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; color: hsl(var(--sidebar-foreground)); }
+        .sb-hdr { font-family: 'Oxanium',sans-serif; font-size: calc(9px * var(--t-scale,1.1)); font-weight: 400; text-transform: uppercase; letter-spacing: 2px; color: hsl(var(--muted-foreground)); opacity: 0.5; padding: 8px 10px 4px; }
+        .sb-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; font-size: calc(13px * var(--t-scale,1.1)); color: hsl(var(--muted-foreground)); cursor: default; }
+        .sb-item:hover { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); }
+        .sb-item.on { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 600; }
+        .sb-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .sb-sp { flex: 1; }
+        .sb-mt { margin-top: 12px; }
+        .sb-user { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; background: hsl(var(--muted) / 0.5); margin-bottom: 0; }
+        .sb-av { width: 30px; height: 30px; border-radius: 50%; background: hsl(var(--t-avatar-bg)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: hsl(var(--t-avatar-text)); flex-shrink: 0; }
+        .sb-uname { font-size: 12px; font-weight: 500; color: hsl(var(--sidebar-foreground)); }
+        .sb-urole { font-size: 10px; color: hsl(var(--muted-foreground)); }
+        .sb-logout { padding: 6px; border-radius: 6px; border: none; background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; }
+        .sb-logout svg { width: 14px; height: 14px; }
+        .sb-build { padding: 0 10px; margin-top: 8px; font-family: monospace; font-size: 10px; color: hsl(var(--muted-foreground) / 0.7); line-height: 1.6; }
+
+        /* ── Main content ── */
+        .main { flex: 1; overflow-y: auto; padding: 32px 40px; display: flex; justify-content: center; }
+
+        /* ── V10: Minimal Single Column ── */
+        .min-wrap { width: 100%; max-width: 480px; padding-top: 8px; }
+
+        /* Profile card */
+        .profile { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+        .profile-av { width: 52px; height: 52px; border-radius: 50%; background: hsl(var(--t-avatar-bg)); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: hsl(var(--t-avatar-text)); flex-shrink: 0; font-family: 'Oxanium',sans-serif; }
+        .profile-info { flex: 1; min-width: 0; }
+        .profile-name { font-size: calc(16px * var(--t-scale,1.1)); font-weight: 600; }
+        .profile-meta { font-size: calc(11px * var(--t-scale,1.1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
+        .profile-role { display: inline-block; font-size: calc(10px * var(--t-scale,1.1)); color: hsl(var(--primary)); font-weight: 500; margin-top: 2px; }
+        .profile-edit { font-size: calc(12px * var(--t-scale,1.1)); color: hsl(var(--primary)); cursor: pointer; text-decoration: none; font-weight: 500; flex-shrink: 0; }
+        .profile-edit:hover { text-decoration: underline; }
+
+        /* Section */
+        .m-sec { margin-bottom: 20px; }
+        .m-sec-hdr { font-family: 'Oxanium',sans-serif; font-size: calc(11px * var(--t-scale,1.1)); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: hsl(var(--foreground) / 0.7); padding-bottom: 6px; border-bottom: 1px solid hsl(var(--border) / 0.3); margin-bottom: 2px; }
+
+        /* Row */
+        .m-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid hsl(var(--border) / 0.1); }
+        .m-row:last-child { border-bottom: none; }
+        .m-label { font-size: calc(13px * var(--t-scale,1.1)); color: hsl(var(--foreground) / 0.8); }
+        .m-value { font-size: calc(12px * var(--t-scale,1.1)); color: hsl(var(--muted-foreground)); }
+        .m-value-primary { font-size: calc(12px * var(--t-scale,1.1)); color: hsl(var(--primary)); font-weight: 500; }
+
+        /* Theme color dots */
+        .theme-dots { display: flex; gap: 6px; align-items: center; }
+        .theme-dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+        .theme-dot:hover { border-color: hsl(var(--foreground) / 0.3); }
+        .theme-dot.on { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3); }
+
+        /* Scale tiny pills */
+        .scale-pills { display: flex; gap: 3px; }
+        .scale-pill { font-size: calc(10px * var(--t-scale,1.1)); padding: 2px 8px; border-radius: 4px; border: 1px solid hsl(var(--border) / 0.5); background: transparent; color: hsl(var(--muted-foreground) / 0.6); cursor: pointer; font-family: 'Inter',sans-serif; }
+        .scale-pill.on { border-color: hsl(var(--primary)); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 500; }
+
+        /* Toggle */
+        .tog { width: 32px; height: 18px; border-radius: 9px; background: hsl(var(--border)); position: relative; cursor: pointer; flex-shrink: 0; }
+        .tog::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: hsl(var(--background)); position: absolute; top: 2px; left: 2px; transition: transform 0.15s; }
+        .tog.on { background: hsl(var(--primary)); }
+        .tog.on::after { transform: translateX(14px); }
+
+        /* Jira pill */
+        .jira-pill { display: inline-flex; align-items: center; gap: 6px; font-size: calc(11px * var(--t-scale,1.1)); padding: 3px 10px; border-radius: 20px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted) / 0.2); color: hsl(var(--foreground) / 0.8); }
+        .jira-dot { width: 6px; height: 6px; border-radius: 50%; background: hsl(150 80% 50%); flex-shrink: 0; }
+
+        /* Badge */
+        .badge-c { display: inline-block; font-size: 7px; padding: 1px 4px; border-radius: 3px; background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground) / 0.5); font-weight: 600; margin-left: 4px; vertical-align: 1px; }
+
+        /* Version footer */
+        .ver-footer { text-align: center; margin-top: 32px; padding-top: 20px; border-top: 1px solid hsl(var(--border) / 0.15); }
+        .ver-text { font-family: 'Oxanium',sans-serif; font-size: calc(10px * var(--t-scale,1.1)); color: hsl(var(--muted-foreground) / 0.25); letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <div class="x-bar">
+        <span class="x-id">V10 — Minimal</span>
+        <span class="x-lbl">Theme</span>
+        <div class="x-grp" id="ts">
+            <button onclick="T('ternity-dark')">Dark</button><button onclick="T('ternity-light')">Light</button><button onclick="T('midnight')">Mid</button><button onclick="T('warm-sand')">Sand</button><button class="active" onclick="T('carbon')">Carbon</button><button onclick="T('high-contrast')">HiCon</button>
+        </div>
+        <span class="x-lbl">Scale</span>
+        <div class="x-grp" id="ss">
+            <button onclick="S('compact')">Compact</button><button class="active" onclick="S('default')">Default</button><button onclick="S('comfortable')">Comfy</button>
+        </div>
+    </div>
+
+    <div class="shell">
+        <aside class="sb">
+            <div class="sb-logo"><svg viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h12M3 21h12M4.5 1v4c0 2.5 2 4.5 4.5 6-2.5 1.5-4.5 3.5-4.5 6v4M13.5 1v4c0 2.5-2 4.5-4.5 6 2.5 1.5 4.5 3.5 4.5 6v4"/></svg><span>Ternity</span></div>
+            <div class="sb-hdr">Tracking</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg>Timer &amp; Entries</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 8.5c1 1 1.5 2.5 1 4l-1 3-3 1c-1.5.5-3 0-4-1L4 9V4h5l6.5 4.5z"/><circle cx="8" cy="8" r="1.5"/></svg>Leave</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports</div>
+            <div class="sb-hdr sb-mt">Admin</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Users</div>
+            <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2h-7.93a2 2 0 01-1.66-.9l-.82-1.2A2 2 0 007.93 3H4a2 2 0 00-2 2v13a2 2 0 002 2z"/></svg>Projects</div>
+            <div class="sb-sp"></div>
+            <div class="sb-item" style="margin-bottom:2px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Downloads</div>
+            <div class="sb-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.2.65.77 1.09 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</div>
+            <div style="margin-bottom:8px;"></div>
+            <div class="sb-user">
+                <div class="sb-av">PR</div>
+                <div style="flex:1;min-width:0;"><div class="sb-uname">Przemek Rudzki</div><div class="sb-urole">Admin</div></div>
+                <button class="sb-logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+            </div>
+            <div class="sb-build">v0.3.0-12-g7c23eb6<span style="color:hsl(35 100% 60%);"> · dev</span><span style="opacity:0.5;"> · 02-26 14:32</span></div>
+        </aside>
+
+        <main class="main">
+            <div class="min-wrap">
+                <!-- Profile -->
+                <div class="profile">
+                    <div class="profile-av">PR</div>
+                    <div class="profile-info">
+                        <div class="profile-name">Przemek Rudzki</div>
+                        <div class="profile-meta">przemek@netbulls.com</div>
+                        <div class="profile-role">Admin</div>
+                    </div>
+                    <a class="profile-edit">Edit</a>
+                </div>
+
+                <!-- Appearance -->
+                <div class="m-sec">
+                    <div class="m-sec-hdr">Appearance</div>
+                    <div class="m-row">
+                        <span class="m-label">Theme</span>
+                        <div class="theme-dots">
+                            <div class="theme-dot" style="background: hsl(168 100% 42%);" title="Ternity Dark"></div>
+                            <div class="theme-dot" style="background: hsl(168 60% 45%);" title="Ternity Light"></div>
+                            <div class="theme-dot" style="background: hsl(230 40% 20%);" title="Midnight"></div>
+                            <div class="theme-dot" style="background: hsl(35 40% 70%);" title="Warm Sand"></div>
+                            <div class="theme-dot on" style="background: hsl(0 0% 30%);" title="Carbon"></div>
+                            <div class="theme-dot" style="background: hsl(0 0% 95%);" title="High Contrast"></div>
+                        </div>
+                    </div>
+                    <div class="m-row">
+                        <span class="m-label">Scale</span>
+                        <div class="scale-pills">
+                            <button class="scale-pill">S</button>
+                            <button class="scale-pill on">M</button>
+                            <button class="scale-pill">L</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="m-sec">
+                    <div class="m-sec-hdr">Timer</div>
+                    <div class="m-row">
+                        <span class="m-label">Default project</span>
+                        <span class="m-value-primary">BIT — Bitflow</span>
+                    </div>
+                    <div class="m-row">
+                        <span class="m-label">Confirm switch</span>
+                        <div class="tog on"></div>
+                    </div>
+                </div>
+
+                <!-- Work -->
+                <div class="m-sec">
+                    <div class="m-sec-hdr">Work <span class="badge-c">Coming</span></div>
+                    <div class="m-row">
+                        <span class="m-label">Schedule</span>
+                        <span class="m-value">Mon-Fri, 38h/wk</span>
+                    </div>
+                    <div class="m-row">
+                        <span class="m-label">Employment</span>
+                        <span class="m-value">Contractor (B2B)</span>
+                    </div>
+                </div>
+
+                <!-- Integrations -->
+                <div class="m-sec">
+                    <div class="m-sec-hdr">Integrations</div>
+                    <div class="m-row">
+                        <span class="m-label">Jira</span>
+                        <span class="jira-pill"><span class="jira-dot"></span>NETBULLS</span>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="m-sec">
+                    <div class="m-sec-hdr">Notifications <span class="badge-c">Coming</span></div>
+                    <div class="m-row">
+                        <span class="m-label">Leave updates</span>
+                        <div class="tog on"></div>
+                    </div>
+                    <div class="m-row">
+                        <span class="m-label">Presence changes</span>
+                        <div class="tog"></div>
+                    </div>
+                </div>
+
+                <!-- Version footer -->
+                <div class="ver-footer">
+                    <span class="ver-text">v0.3.0-12-g7c23eb6 &middot; dev</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const TM={Dark:'ternity-dark',Light:'ternity-light',Mid:'midnight',Sand:'warm-sand',Carbon:'carbon',HiCon:'high-contrast'};
+        const SM={Compact:'compact',Default:'default',Comfy:'comfortable'};
+        function T(t){document.documentElement.setAttribute('data-theme',t);document.documentElement.className=['ternity-light','warm-sand','high-contrast'].includes(t)?'light':'dark';document.querySelectorAll('#ts button').forEach(b=>b.classList.toggle('active',TM[b.textContent]===t));}
+        function S(s){document.documentElement.setAttribute('data-scale',s);document.querySelectorAll('#ss button').forEach(b=>b.classList.toggle('active',SM[b.textContent]===s));}
+    </script>
+</body>
+</html>

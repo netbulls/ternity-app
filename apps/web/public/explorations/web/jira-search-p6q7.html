@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Jira Search V8: Split Input</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.5); }
+        .page-header p { font-size: 11px; color: hsl(var(--muted-foreground) / 0.35); margin-top: 4px; }
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.4); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted)); color: hsl(var(--muted-foreground) / 0.6); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button.active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* Layout */
+        .context-group { margin-bottom: 48px; }
+        .context-title { font-family: 'Oxanium', sans-serif; font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: hsl(var(--primary)); text-align: center; margin-bottom: 24px; }
+        .states-row { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; padding: 0 20px; }
+        .state-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .state-label { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.35); }
+
+        /* Timer Bar */
+        .timer-bar {
+            display: flex; align-items: center; gap: 10px;
+            width: 560px; padding: 10px 14px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            position: relative;
+        }
+        .timer-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+            padding: 3px 8px;
+            background: hsl(var(--primary) / 0.1);
+            border-radius: 5px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .timer-start {
+            padding: 7px 16px;
+            border-radius: 7px;
+            border: none;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Split Input Container */
+        .split-input {
+            flex: 1; min-width: 0;
+            display: flex; align-items: center;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+
+        /* Left partition — Jira badge area */
+        .split-left {
+            width: 88px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 6px 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .split-left-idle {
+            border: 1px dashed hsl(var(--border) / 0.6);
+            border-right: none;
+            border-radius: 7px 0 0 7px;
+            background: hsl(var(--muted) / 0.15);
+        }
+        .split-left-idle:hover {
+            border-color: hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.03);
+        }
+        .split-left-idle .j-icon {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--muted-foreground) / 0.2);
+            transition: color 0.15s;
+        }
+        .split-left-idle:hover .j-icon { color: hsl(var(--primary) / 0.4); }
+
+        .split-left-active {
+            border: 1px solid hsl(var(--primary) / 0.3);
+            border-right: none;
+            border-radius: 7px 0 0 7px;
+            background: hsl(var(--primary) / 0.05);
+        }
+        .split-left-active .j-icon {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--primary) / 0.5);
+        }
+
+        .split-left-linked {
+            border: 1px solid hsl(var(--primary) / 0.25);
+            border-right: none;
+            border-radius: 7px 0 0 7px;
+            background: hsl(var(--primary) / 0.08);
+            gap: 4px;
+            padding: 6px 6px 6px 10px;
+        }
+        .split-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--primary));
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .split-badge-link { display: flex; color: hsl(var(--primary) / 0.4); cursor: pointer; }
+        .split-badge-link:hover { color: hsl(var(--primary)); }
+        .split-badge-link svg { width: 10px; height: 10px; }
+        .split-badge-x { display: flex; color: hsl(var(--muted-foreground) / 0.25); cursor: pointer; margin-left: 2px; }
+        .split-badge-x:hover { color: hsl(var(--destructive, 0 70% 55%)); }
+        .split-badge-x svg { width: 10px; height: 10px; }
+
+        /* Right partition — text area */
+        .split-right {
+            flex: 1; min-width: 0;
+            padding: 6px 10px;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            display: flex; align-items: center;
+        }
+        .split-right-idle {
+            border: 1px solid hsl(var(--border) / 0.3);
+            border-left: none;
+            border-radius: 0 7px 7px 0;
+            background: transparent;
+        }
+        .split-right-active {
+            border: 1px solid hsl(var(--primary) / 0.3);
+            border-left: none;
+            border-radius: 0 7px 7px 0;
+            background: transparent;
+        }
+        .split-right-linked {
+            border: 1px solid hsl(var(--primary) / 0.25);
+            border-left: none;
+            border-radius: 0 7px 7px 0;
+            background: transparent;
+        }
+        .split-placeholder { color: hsl(var(--muted-foreground) / 0.4); }
+        .split-text { color: hsl(var(--foreground)); }
+
+        /* Entry Row */
+        .entry-row {
+            display: flex; align-items: center; gap: 12px;
+            width: 560px; padding: 10px 14px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            position: relative;
+        }
+        .entry-desc {
+            flex: 1; min-width: 0;
+            display: flex; align-items: center; gap: 0;
+        }
+        .entry-meta {
+            display: flex; align-items: center; gap: 10px;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            white-space: nowrap;
+        }
+        .entry-duration { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(13px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .entry-time { font-size: calc(10px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground) / 0.6); }
+        .entry-project {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+            padding: 2px 7px;
+            background: hsl(var(--primary) / 0.1);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* Entry badge prefix (for linked entry rows) */
+        .entry-badge-prefix {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px;
+            border-radius: 5px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .entry-badge-idle {
+            border: 1px dashed hsl(var(--border) / 0.5);
+            background: hsl(var(--muted) / 0.15);
+            cursor: pointer;
+        }
+        .entry-badge-idle:hover { border-color: hsl(var(--primary) / 0.3); background: hsl(var(--primary) / 0.03); }
+        .entry-badge-idle .j-icon {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--muted-foreground) / 0.2);
+        }
+        .entry-badge-idle:hover .j-icon { color: hsl(var(--primary) / 0.4); }
+
+        .entry-badge-active {
+            border: 1px solid hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.05);
+            cursor: pointer;
+        }
+        .entry-badge-active .j-icon {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--primary) / 0.5);
+        }
+
+        .entry-badge-linked {
+            border: 1px solid hsl(var(--primary) / 0.25);
+            background: hsl(var(--primary) / 0.08);
+        }
+        .entry-badge-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--primary));
+            white-space: nowrap;
+        }
+        .entry-badge-linked svg { width: 10px; height: 10px; }
+        .entry-badge-link { color: hsl(var(--primary) / 0.4); cursor: pointer; display: flex; }
+        .entry-badge-link:hover { color: hsl(var(--primary)); }
+        .entry-badge-x { color: hsl(var(--muted-foreground) / 0.25); cursor: pointer; display: flex; }
+        .entry-badge-x:hover { color: hsl(var(--destructive, 0 70% 55%)); }
+        .entry-desc-text {
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+
+        /* Search Dropdown */
+        .search-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 14px;
+            width: 340px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            box-shadow: 0 12px 40px hsl(0 0% 0% / 0.35);
+            z-index: 10;
+            overflow: hidden;
+        }
+        .search-input-wrap {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid hsl(var(--border) / 0.4);
+        }
+        .search-input-wrap svg { width: 14px; height: 14px; color: hsl(var(--muted-foreground) / 0.4); flex-shrink: 0; }
+        .search-input {
+            flex: 1;
+            background: none; border: none; outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .search-input::placeholder { color: hsl(var(--muted-foreground) / 0.35); }
+        .search-results { max-height: 200px; overflow-y: auto; }
+        .search-result {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .search-result:hover { background: hsl(var(--muted) / 0.5); }
+        .search-result.highlighted { background: hsl(var(--primary) / 0.08); }
+        .result-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .dot-bug { background: hsl(0 65% 55%); }
+        .dot-story { background: hsl(140 55% 45%); }
+        .dot-task { background: hsl(210 60% 55%); }
+        .result-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground) / 0.7);
+            width: 72px;
+            flex-shrink: 0;
+        }
+        .result-title {
+            flex: 1; min-width: 0;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-status {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.5);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .search-hint {
+            padding: 6px 12px;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.3);
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            text-align: center;
+        }
+
+        /* Divider */
+        .divider { width: 100%; max-width: 900px; margin: 0 auto 48px; border: none; border-top: 1px solid hsl(var(--border) / 0.15); }
+
+        /* Selected chip pop animation */
+        @keyframes badge-pop { 0% { transform: scale(0.9); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+        .badge-pop { animation: badge-pop 0.2s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Jira Search &middot; V8</h1>
+        <p>Split Input &mdash; left badge partition + right freeform text within the description field</p>
+    </div>
+
+    <div class="switcher-row">
+        <div>
+            <span class="switcher-label">Theme</span>
+            <div class="switcher-group" id="theme-switcher">
+                <button onclick="setTheme('ternity-dark')">Ternity Dark</button>
+                <button onclick="setTheme('ternity-light')">Ternity Light</button>
+                <button onclick="setTheme('midnight')">Midnight</button>
+                <button onclick="setTheme('warm-sand')">Warm Sand</button>
+                <button class="active" onclick="setTheme('carbon')">Carbon</button>
+                <button onclick="setTheme('high-contrast')">High Contrast</button>
+            </div>
+        </div>
+        <div>
+            <span class="switcher-label">Scale</span>
+            <div class="switcher-group" id="scale-switcher">
+                <button onclick="setScale('compact')">Compact</button>
+                <button class="active" onclick="setScale('default')">Default</button>
+                <button onclick="setScale('comfortable')">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TIMER BAR CONTEXT ==================== -->
+    <div class="context-group">
+        <div class="context-title">Timer Bar</div>
+        <div class="states-row">
+
+            <!-- Idle -->
+            <div class="state-col">
+                <div class="state-label">Idle</div>
+                <div class="timer-bar">
+                    <div class="split-input">
+                        <div class="split-left split-left-idle">
+                            <span class="j-icon">J</span>
+                        </div>
+                        <div class="split-right split-right-idle">
+                            <span class="split-placeholder">What are you working on?</span>
+                        </div>
+                    </div>
+                    <span class="timer-project">Ternity</span>
+                    <button class="timer-start">Start</button>
+                </div>
+            </div>
+
+            <!-- Search Active -->
+            <div class="state-col">
+                <div class="state-label">Search Active</div>
+                <div class="timer-bar">
+                    <div class="split-input">
+                        <div class="split-left split-left-active">
+                            <span class="j-icon">J</span>
+                        </div>
+                        <div class="split-right split-right-active">
+                            <span class="split-text">Fix timezone</span>
+                        </div>
+                    </div>
+                    <span class="timer-project">Ternity</span>
+                    <button class="timer-start">Start</button>
+                    <!-- Search dropdown below left partition -->
+                    <div class="search-dropdown">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input class="search-input" value="timezone" placeholder="Search Jira issues..." readonly>
+                        </div>
+                        <div class="search-results">
+                            <div class="search-result highlighted">
+                                <span class="result-dot dot-bug"></span>
+                                <span class="result-key">NETB-189</span>
+                                <span class="result-title">Fix timezone handling in reports</span>
+                                <span class="result-status">In Review</span>
+                            </div>
+                            <div class="search-result">
+                                <span class="result-dot dot-bug"></span>
+                                <span class="result-key">ACME-87</span>
+                                <span class="result-title">Fix login timeout on mobile</span>
+                                <span class="result-status">In Progress</span>
+                            </div>
+                            <div class="search-result">
+                                <span class="result-dot dot-task"></span>
+                                <span class="result-key">OAK-34</span>
+                                <span class="result-title">Set up CI/CD pipeline</span>
+                                <span class="result-status">Done</span>
+                            </div>
+                        </div>
+                        <div class="search-hint">Enter to select &middot; Esc to close</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Selected -->
+            <div class="state-col">
+                <div class="state-label">Result Selected</div>
+                <div class="timer-bar">
+                    <div class="split-input">
+                        <div class="split-left split-left-linked badge-pop">
+                            <span class="split-badge">NETB-189</span>
+                        </div>
+                        <div class="split-right split-right-linked">
+                            <span class="split-text">Fix timezone handling in reports</span>
+                        </div>
+                    </div>
+                    <span class="timer-project">Ternity</span>
+                    <button class="timer-start">Start</button>
+                </div>
+            </div>
+
+            <!-- Linked -->
+            <div class="state-col">
+                <div class="state-label">Linked</div>
+                <div class="timer-bar">
+                    <div class="split-input">
+                        <div class="split-left split-left-linked">
+                            <span class="split-badge">NETB-189</span>
+                            <span class="split-badge-link" title="Open in Jira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span>
+                            <span class="split-badge-x" title="Unlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+                        </div>
+                        <div class="split-right split-right-linked">
+                            <span class="split-text">Fix timezone handling in reports</span>
+                        </div>
+                    </div>
+                    <span class="timer-project">Ternity</span>
+                    <button class="timer-start">Start</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ==================== ENTRY ROW CONTEXT ==================== -->
+    <div class="context-group">
+        <div class="context-title">Entry Row</div>
+        <div class="states-row">
+
+            <!-- Idle -->
+            <div class="state-col">
+                <div class="state-label">Idle</div>
+                <div class="entry-row">
+                    <div class="entry-desc">
+                        <span class="entry-badge-prefix entry-badge-idle">
+                            <span class="j-icon">J</span>
+                        </span>
+                        <span class="entry-desc-text">Implement user onboarding flow</span>
+                    </div>
+                    <div class="entry-meta">
+                        <span class="entry-project">Ternity</span>
+                        <span class="entry-duration">2:34</span>
+                        <span class="entry-time">09:15 — 11:49</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Active -->
+            <div class="state-col">
+                <div class="state-label">Search Active</div>
+                <div class="entry-row">
+                    <div class="entry-desc">
+                        <span class="entry-badge-prefix entry-badge-active">
+                            <span class="j-icon">J</span>
+                        </span>
+                        <span class="entry-desc-text">Implement user onboarding flow</span>
+                    </div>
+                    <div class="entry-meta">
+                        <span class="entry-project">Ternity</span>
+                        <span class="entry-duration">2:34</span>
+                        <span class="entry-time">09:15 — 11:49</span>
+                    </div>
+                    <div class="search-dropdown">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input class="search-input" value="onboarding" placeholder="Search Jira issues..." readonly>
+                        </div>
+                        <div class="search-results">
+                            <div class="search-result highlighted">
+                                <span class="result-dot dot-story"></span>
+                                <span class="result-key">NETB-142</span>
+                                <span class="result-title">Implement user onboarding flow</span>
+                                <span class="result-status">In Progress</span>
+                            </div>
+                            <div class="search-result">
+                                <span class="result-dot dot-task"></span>
+                                <span class="result-key">NETB-201</span>
+                                <span class="result-title">Add export to PDF feature</span>
+                                <span class="result-status">To Do</span>
+                            </div>
+                            <div class="search-result">
+                                <span class="result-dot dot-story"></span>
+                                <span class="result-key">ACME-112</span>
+                                <span class="result-title">Update billing page design</span>
+                                <span class="result-status">To Do</span>
+                            </div>
+                        </div>
+                        <div class="search-hint">Enter to select &middot; Esc to close</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Selected -->
+            <div class="state-col">
+                <div class="state-label">Result Selected</div>
+                <div class="entry-row">
+                    <div class="entry-desc">
+                        <span class="entry-badge-prefix entry-badge-linked badge-pop">
+                            <span class="entry-badge-key">NETB-142</span>
+                        </span>
+                        <span class="entry-desc-text">Implement user onboarding flow</span>
+                    </div>
+                    <div class="entry-meta">
+                        <span class="entry-project">Ternity</span>
+                        <span class="entry-duration">2:34</span>
+                        <span class="entry-time">09:15 — 11:49</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linked -->
+            <div class="state-col">
+                <div class="state-label">Linked</div>
+                <div class="entry-row">
+                    <div class="entry-desc">
+                        <span class="entry-badge-prefix entry-badge-linked">
+                            <span class="entry-badge-key">NETB-142</span>
+                            <span class="entry-badge-link" title="Open in Jira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span>
+                            <span class="entry-badge-x" title="Unlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+                        </span>
+                        <span class="entry-desc-text">Implement user onboarding flow</span>
+                    </div>
+                    <div class="entry-meta">
+                        <span class="entry-project">Ternity</span>
+                        <span class="entry-duration">2:34</span>
+                        <span class="entry-time">09:15 — 11:49</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function setTheme(t) { document.documentElement.setAttribute('data-theme', t); document.documentElement.className = ['ternity-light','warm-sand','high-contrast'].includes(t) ? 'light' : 'dark'; document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g,'-') === t)); }
+        function setScale(s) { document.documentElement.setAttribute('data-scale', s); document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === s)); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Jira Search V4: Side Panel / Drawer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.5); }
+        .page-header p { font-size: 11px; color: hsl(var(--muted-foreground) / 0.35); margin-top: 4px; max-width: 620px; margin-inline: auto; }
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.4); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted)); color: hsl(var(--muted-foreground) / 0.6); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button.active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* Section labels */
+        .context-title { font-family: 'Oxanium', sans-serif; font-size: calc(14px * var(--t-scale, 1.1)); font-weight: 600; color: hsl(var(--foreground)); margin: 40px 0 8px; text-align: center; }
+        .context-title:first-of-type { margin-top: 16px; }
+        .context-desc { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground) / 0.4); text-align: center; margin-bottom: 20px; }
+        .states-row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; padding-bottom: 24px; }
+        .state-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .state-label { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.35); }
+
+        /* ===== TIMER BAR ===== */
+        .timer-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+        }
+        .timer-desc {
+            flex: 1; display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px;
+            background: hsl(var(--muted) / 0.2);
+            border: 1px solid hsl(var(--border) / 0.5);
+            border-radius: 6px;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            min-height: 36px;
+        }
+        .timer-desc.empty { color: hsl(var(--muted-foreground) / 0.35); }
+        .timer-project {
+            padding: 5px 10px; border-radius: 6px;
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border) / 0.5);
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.6);
+            white-space: nowrap;
+        }
+        .timer-start {
+            padding: 6px 16px; border-radius: 6px;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .jira-trigger {
+            display: flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px;
+            border-radius: 5px;
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border) / 0.4);
+            color: hsl(var(--muted-foreground) / 0.35);
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .jira-trigger:hover { border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary)); }
+        .jira-trigger svg { width: 14px; height: 14px; }
+        .jira-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: hsl(217 90% 55% / 0.12);
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(217 90% 60%);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .jira-chip svg { width: 11px; height: 11px; opacity: 0.6; }
+
+        /* ===== ENTRY ROW ===== */
+        .entry-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+        }
+        .entry-desc {
+            flex: 1; display: flex; align-items: center; gap: 6px;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .entry-time {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground) / 0.7);
+            white-space: nowrap;
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            white-space: nowrap;
+            min-width: 50px; text-align: right;
+        }
+        .entry-jira-trigger {
+            display: flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            color: hsl(var(--muted-foreground) / 0.25);
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .entry-jira-trigger:hover { color: hsl(var(--primary)); }
+        .entry-jira-trigger svg { width: 13px; height: 13px; }
+
+        /* ===== COMPOSITE: BAR + DRAWER ===== */
+        .composite {
+            display: flex;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid hsl(var(--border) / 0.3);
+            background: hsl(var(--background));
+        }
+        .composite-main {
+            flex: 1;
+            padding: 16px;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .composite-main.dimmed { opacity: 0.5; }
+        .composite-main .timer-bar,
+        .composite-main .entry-row { width: 100%; border: none; border-radius: 0; background: transparent; }
+
+        /* ===== DRAWER ===== */
+        .drawer {
+            width: 320px;
+            background: hsl(var(--card));
+            border-left: 1px solid hsl(var(--border));
+            display: flex; flex-direction: column;
+            flex-shrink: 0;
+        }
+        .drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .drawer-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            display: flex; align-items: center; gap: 6px;
+        }
+        .drawer-title svg { width: 14px; height: 14px; color: hsl(var(--primary)); }
+        .drawer-close {
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.4);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .drawer-close:hover { background: hsl(var(--muted) / 0.3); color: hsl(var(--foreground)); }
+        .drawer-close svg { width: 14px; height: 14px; }
+
+        .drawer-search {
+            padding: 10px 14px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .drawer-search-input {
+            width: 100%;
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 10px;
+            background: hsl(var(--muted) / 0.2);
+            border: 1px solid hsl(var(--border) / 0.5);
+            border-radius: 6px;
+        }
+        .drawer-search-input svg { width: 13px; height: 13px; color: hsl(var(--muted-foreground) / 0.35); flex-shrink: 0; }
+        .drawer-search-input input {
+            flex: 1; border: none; background: transparent; outline: none;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-family: 'Inter', sans-serif;
+            color: hsl(var(--foreground));
+        }
+        .drawer-search-input input::placeholder { color: hsl(var(--muted-foreground) / 0.3); }
+
+        .drawer-filters {
+            padding: 8px 14px;
+            display: flex; gap: 4px; flex-wrap: wrap;
+            border-bottom: 1px solid hsl(var(--border) / 0.2);
+        }
+        .filter-chip {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid hsl(var(--border) / 0.5);
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.5);
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+        .filter-chip:hover { border-color: hsl(var(--border)); }
+        .filter-chip.active {
+            background: hsl(var(--primary) / 0.1);
+            border-color: hsl(var(--primary) / 0.3);
+            color: hsl(var(--primary));
+        }
+
+        .drawer-results {
+            flex: 1; overflow-y: auto; padding: 4px 0;
+        }
+        .drawer-group-header {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.3);
+            padding: 10px 14px 4px;
+        }
+        .drawer-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .drawer-item:hover { background: hsl(var(--muted) / 0.2); }
+        .drawer-item.selected { background: hsl(var(--primary) / 0.08); }
+        .drawer-item.selected .di-key { color: hsl(var(--primary)); }
+        .type-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+        .type-dot.story { background: hsl(145 60% 50%); }
+        .type-dot.task { background: hsl(217 90% 60%); }
+        .type-dot.bug { background: hsl(0 75% 55%); }
+        .di-content { flex: 1; min-width: 0; }
+        .di-top { display: flex; align-items: center; gap: 6px; }
+        .di-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            white-space: nowrap;
+        }
+        .di-status {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 1px 6px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .di-status.in-progress { background: hsl(217 90% 55% / 0.12); color: hsl(217 90% 60%); }
+        .di-status.to-do { background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground) / 0.5); }
+        .di-status.in-review { background: hsl(35 90% 50% / 0.12); color: hsl(35 90% 50%); }
+        .di-status.done { background: hsl(145 60% 45% / 0.12); color: hsl(145 60% 50%); }
+        .di-title {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.6);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .drawer-preview {
+            padding: 10px 14px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            background: hsl(var(--primary) / 0.03);
+        }
+        .preview-label {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.35);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Oxanium', sans-serif;
+            margin-bottom: 4px;
+        }
+        .preview-text {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.7);
+        }
+        .preview-text .jira-chip { font-size: calc(10px * var(--t-scale, 1.1)); }
+
+        .divider {
+            width: 100%; height: 1px;
+            background: hsl(var(--border) / 0.3);
+            margin: 16px 0;
+        }
+
+        /* Standalone idle/linked rows need fixed width */
+        .standalone { width: 520px; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Jira Search V4</h1>
+        <p>Side Panel / Drawer approach. Right-side drawer slides in with search + results. The timer bar or entry row stays visible on the left so the user retains full context.</p>
+    </div>
+    <div class="switcher-row">
+        <div><div class="switcher-label">Theme</div><div class="switcher-group" id="theme-switcher">
+            <button onclick="setTheme('ternity-dark')">Ternity Dark</button><button onclick="setTheme('ternity-light')">Ternity Light</button><button onclick="setTheme('midnight')">Midnight</button><button onclick="setTheme('warm-sand')">Warm Sand</button><button class="active" onclick="setTheme('carbon')">Carbon</button><button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div></div>
+        <div><div class="switcher-label">Scale</div><div class="switcher-group" id="scale-switcher">
+            <button onclick="setScale('compact')">Compact</button><button class="active" onclick="setScale('default')">Default</button><button onclick="setScale('comfortable')">Comfortable</button>
+        </div></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TIMER BAR CONTEXT                                            -->
+    <!-- ============================================================ -->
+    <div class="context-title">Timer Bar</div>
+    <div class="context-desc">The always-visible bar where users start timers</div>
+
+    <div class="states-row">
+        <!-- Timer: Idle -->
+        <div class="state-col">
+            <div class="state-label">Idle</div>
+            <div class="timer-bar standalone">
+                <div class="timer-desc empty">What are you working on?</div>
+                <div class="jira-trigger" title="Link Jira issue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <div class="timer-project">Project</div>
+                <button class="timer-start">Start</button>
+            </div>
+        </div>
+
+        <!-- Timer: Linked -->
+        <div class="state-col">
+            <div class="state-label">Linked</div>
+            <div class="timer-bar standalone">
+                <div class="timer-desc">
+                    <span class="jira-chip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        NETB-142
+                    </span>
+                    Implement user onboarding flow
+                </div>
+                <div class="timer-project">Ternity</div>
+                <button class="timer-start">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer: Search Active -->
+    <div class="states-row">
+        <div class="state-col">
+            <div class="state-label">Search Active</div>
+            <div class="composite" style="width: 820px;">
+                <div class="composite-main dimmed">
+                    <div class="timer-bar">
+                        <div class="timer-desc empty">What are you working on?</div>
+                        <div class="jira-trigger" style="border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary));">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        </div>
+                        <div class="timer-project">Project</div>
+                        <button class="timer-start">Start</button>
+                    </div>
+                </div>
+                <div class="drawer">
+                    <div class="drawer-header">
+                        <div class="drawer-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            Link Jira Issue
+                        </div>
+                        <button class="drawer-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                    <div class="drawer-search">
+                        <div class="drawer-search-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input value="onboard" readonly placeholder="Search issues...">
+                        </div>
+                    </div>
+                    <div class="drawer-filters">
+                        <span class="filter-chip active">All sites</span>
+                        <span class="filter-chip">NETB</span>
+                        <span class="filter-chip">ACME</span>
+                        <span class="filter-chip">OAK</span>
+                    </div>
+                    <div class="drawer-results">
+                        <div class="drawer-group-header">netbulls.atlassian.net</div>
+                        <div class="drawer-item">
+                            <div class="type-dot story"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-142</span>
+                                    <span class="di-status in-progress">In Progress</span>
+                                </div>
+                                <div class="di-title">Implement user onboarding flow</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot task"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-201</span>
+                                    <span class="di-status to-do">To Do</span>
+                                </div>
+                                <div class="di-title">Add export to PDF feature</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot bug"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-189</span>
+                                    <span class="di-status in-review">In Review</span>
+                                </div>
+                                <div class="di-title">Fix timezone handling in reports</div>
+                            </div>
+                        </div>
+                        <div class="drawer-group-header">acme.atlassian.net</div>
+                        <div class="drawer-item">
+                            <div class="type-dot bug"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">ACME-87</span>
+                                    <span class="di-status in-progress">In Progress</span>
+                                </div>
+                                <div class="di-title">Fix login timeout on mobile</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer: Result Selected -->
+    <div class="states-row">
+        <div class="state-col">
+            <div class="state-label">Result Selected</div>
+            <div class="composite" style="width: 820px;">
+                <div class="composite-main dimmed">
+                    <div class="timer-bar">
+                        <div class="timer-desc empty">What are you working on?</div>
+                        <div class="jira-trigger" style="border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary));">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        </div>
+                        <div class="timer-project">Project</div>
+                        <button class="timer-start">Start</button>
+                    </div>
+                </div>
+                <div class="drawer">
+                    <div class="drawer-header">
+                        <div class="drawer-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            Link Jira Issue
+                        </div>
+                        <button class="drawer-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                    <div class="drawer-search">
+                        <div class="drawer-search-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input value="login timeout" readonly placeholder="Search issues...">
+                        </div>
+                    </div>
+                    <div class="drawer-filters">
+                        <span class="filter-chip">All sites</span>
+                        <span class="filter-chip">NETB</span>
+                        <span class="filter-chip active">ACME</span>
+                        <span class="filter-chip">OAK</span>
+                    </div>
+                    <div class="drawer-results">
+                        <div class="drawer-group-header">acme.atlassian.net</div>
+                        <div class="drawer-item selected">
+                            <div class="type-dot bug"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">ACME-87</span>
+                                    <span class="di-status in-progress">In Progress</span>
+                                </div>
+                                <div class="di-title">Fix login timeout on mobile</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot story"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">ACME-112</span>
+                                    <span class="di-status to-do">To Do</span>
+                                </div>
+                                <div class="di-title">Update billing page design</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="drawer-preview">
+                        <div class="preview-label">Will set description to</div>
+                        <div class="preview-text">
+                            <span class="jira-chip">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                                ACME-87
+                            </span>
+                            Fix login timeout on mobile
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ============================================================ -->
+    <!-- ENTRY ROW CONTEXT                                            -->
+    <!-- ============================================================ -->
+    <div class="context-title">Entry Row</div>
+    <div class="context-desc">A completed time entry in the entries list</div>
+
+    <div class="states-row">
+        <!-- Entry: Idle -->
+        <div class="state-col">
+            <div class="state-label">Idle</div>
+            <div class="entry-row standalone">
+                <div class="entry-desc">
+                    Update billing page design
+                    <div class="entry-jira-trigger" title="Link Jira issue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    </div>
+                </div>
+                <span class="entry-project">ACME Corp</span>
+                <span class="entry-time">09:15 - 11:30</span>
+                <span class="entry-duration">2:15</span>
+            </div>
+        </div>
+
+        <!-- Entry: Linked -->
+        <div class="state-col">
+            <div class="state-label">Linked</div>
+            <div class="entry-row standalone">
+                <div class="entry-desc">
+                    <span class="jira-chip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        ACME-112
+                    </span>
+                    Update billing page design
+                </div>
+                <span class="entry-project">ACME Corp</span>
+                <span class="entry-time">09:15 - 11:30</span>
+                <span class="entry-duration">2:15</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry: Search Active -->
+    <div class="states-row">
+        <div class="state-col">
+            <div class="state-label">Search Active</div>
+            <div class="composite" style="width: 820px;">
+                <div class="composite-main dimmed">
+                    <div class="entry-row">
+                        <div class="entry-desc">
+                            Set up CI/CD pipeline
+                            <div class="entry-jira-trigger" style="color: hsl(var(--primary));">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            </div>
+                        </div>
+                        <span class="entry-project">Oak Studio</span>
+                        <span class="entry-time">14:00 - 16:45</span>
+                        <span class="entry-duration">2:45</span>
+                    </div>
+                </div>
+                <div class="drawer">
+                    <div class="drawer-header">
+                        <div class="drawer-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            Link Jira Issue
+                        </div>
+                        <button class="drawer-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                    <div class="drawer-search">
+                        <div class="drawer-search-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input value="CI/CD" readonly placeholder="Search issues...">
+                        </div>
+                    </div>
+                    <div class="drawer-filters">
+                        <span class="filter-chip active">All sites</span>
+                        <span class="filter-chip">NETB</span>
+                        <span class="filter-chip">ACME</span>
+                        <span class="filter-chip">OAK</span>
+                    </div>
+                    <div class="drawer-results">
+                        <div class="drawer-group-header">netbulls.atlassian.net</div>
+                        <div class="drawer-item">
+                            <div class="type-dot task"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">OAK-34</span>
+                                    <span class="di-status done">Done</span>
+                                </div>
+                                <div class="di-title">Set up CI/CD pipeline</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot task"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-201</span>
+                                    <span class="di-status to-do">To Do</span>
+                                </div>
+                                <div class="di-title">Add export to PDF feature</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot story"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-142</span>
+                                    <span class="di-status in-progress">In Progress</span>
+                                </div>
+                                <div class="di-title">Implement user onboarding flow</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry: Result Selected -->
+    <div class="states-row">
+        <div class="state-col">
+            <div class="state-label">Result Selected</div>
+            <div class="composite" style="width: 820px;">
+                <div class="composite-main dimmed">
+                    <div class="entry-row">
+                        <div class="entry-desc">
+                            Set up CI/CD pipeline
+                            <div class="entry-jira-trigger" style="color: hsl(var(--primary));">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            </div>
+                        </div>
+                        <span class="entry-project">Oak Studio</span>
+                        <span class="entry-time">14:00 - 16:45</span>
+                        <span class="entry-duration">2:45</span>
+                    </div>
+                </div>
+                <div class="drawer">
+                    <div class="drawer-header">
+                        <div class="drawer-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                            Link Jira Issue
+                        </div>
+                        <button class="drawer-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                    <div class="drawer-search">
+                        <div class="drawer-search-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input value="pipeline" readonly placeholder="Search issues...">
+                        </div>
+                    </div>
+                    <div class="drawer-filters">
+                        <span class="filter-chip active">All sites</span>
+                        <span class="filter-chip">NETB</span>
+                        <span class="filter-chip">ACME</span>
+                        <span class="filter-chip">OAK</span>
+                    </div>
+                    <div class="drawer-results">
+                        <div class="drawer-group-header">netbulls.atlassian.net</div>
+                        <div class="drawer-item selected">
+                            <div class="type-dot task"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">OAK-34</span>
+                                    <span class="di-status done">Done</span>
+                                </div>
+                                <div class="di-title">Set up CI/CD pipeline</div>
+                            </div>
+                        </div>
+                        <div class="drawer-item">
+                            <div class="type-dot bug"></div>
+                            <div class="di-content">
+                                <div class="di-top">
+                                    <span class="di-key">NETB-189</span>
+                                    <span class="di-status in-review">In Review</span>
+                                </div>
+                                <div class="di-title">Fix timezone handling in reports</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="drawer-preview">
+                        <div class="preview-label">Will set description to</div>
+                        <div class="preview-text">
+                            <span class="jira-chip">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                                OAK-34
+                            </span>
+                            Set up CI/CD pipeline
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTheme(t) { document.documentElement.setAttribute('data-theme', t); document.documentElement.className = ['ternity-light','warm-sand','high-contrast'].includes(t) ? 'light' : 'dark'; document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g,'-') === t)); }
+        function setScale(s) { document.documentElement.setAttribute('data-scale', s); document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === s)); }
+    </script>
+</body>
+</html>
