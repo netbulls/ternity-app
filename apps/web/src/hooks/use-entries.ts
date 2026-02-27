@@ -2,7 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { useImpersonation } from '@/providers/impersonation-provider';
-import type { DayGroup, Entry, CreateEntry, UpdateEntry, AdjustEntry, MoveBlock, AuditEvent } from '@ternity/shared';
+import type {
+  DayGroup,
+  Entry,
+  EntrySearchHit,
+  CreateEntry,
+  UpdateEntry,
+  AdjustEntry,
+  MoveBlock,
+  AuditEvent,
+} from '@ternity/shared';
 
 export function useEntries(from: string, to: string, deleted = false) {
   const { effectiveUserId } = useImpersonation();
@@ -95,8 +104,7 @@ export function useRestoreEntry() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<Entry>(`/entries/${id}/restore`, { method: 'POST' }),
+    mutationFn: (id: string) => apiFetch<Entry>(`/entries/${id}/restore`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
@@ -155,6 +163,24 @@ export function useMoveBlock() {
     },
   });
   return mutation;
+}
+
+export function useRecentEntries() {
+  return useQuery({
+    queryKey: ['entries-recent'],
+    queryFn: () => apiFetch<EntrySearchHit[]>('/entries/recent?limit=10'),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useEntrySearch(query: string) {
+  return useQuery({
+    queryKey: ['entries-search', query],
+    queryFn: () => apiFetch<EntrySearchHit[]>(`/entries/search?q=${encodeURIComponent(query)}`),
+    enabled: query.length >= 2,
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
 }
 
 export function useEntryAudit(entryId: string | null) {

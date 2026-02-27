@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Command, ArrowUp, ArrowDown, CornerDownLeft, Hash, Loader2 } from 'lucide-react';
+import { Command, ArrowUp, ArrowDown, CornerDownLeft, Hash, Loader2, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { scaled } from '@/lib/scaled';
 import { usePalette } from '@/providers/palette-provider';
-import { useJiraAssigned, useJiraRecent, useJiraSearch, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
+import {
+  useJiraAssigned,
+  useJiraRecent,
+  useJiraSearch,
+  useJiraConnections,
+  resolveJiraProject,
+} from '@/hooks/use-jira';
+import { useRecentEntries, useEntrySearch } from '@/hooks/use-entries';
 import {
   useTimer,
   useStartOrResumeTimer,
+  useResumeTimer,
   useStopTimer,
   useElapsedSeconds,
 } from '@/hooks/use-timer';
@@ -24,7 +32,23 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { IssueRow } from '@/components/jira/issue-row';
-import type { JiraIssue, JiraSearchResult, Entry } from '@ternity/shared';
+import { JiraIcon } from '@/components/jira/jira-icon';
+import type { JiraIssue, Entry, EntrySearchHit } from '@ternity/shared';
+
+// ── Unified palette item ────────────────────────────────────────────
+
+type PaletteItem =
+  | { type: 'entry'; entry: EntrySearchHit }
+  | { type: 'jira'; issue: JiraIssue; connectionId: string; siteUrl: string };
+
+// ── Section definition ──────────────────────────────────────────────
+
+interface PaletteSection {
+  label: string;
+  items: PaletteItem[];
+}
+
+// ── Main component ──────────────────────────────────────────────────
 
 export function CommandPalette() {
   const { open, setOpen } = usePalette();
@@ -35,8 +59,10 @@ export function CommandPalette() {
 
   const { data: timerState } = useTimer();
   const startOrResume = useStartOrResumeTimer();
+  const resumeTimer = useResumeTimer();
   const stopTimer = useStopTimer();
   const { data: jiraConnections } = useJiraConnections();
+  const hasJira = (jiraConnections?.length ?? 0) > 0;
 
   // Pending action for confirmation dialogs
   const [pendingAction, setPendingAction] = useState<{
@@ -45,65 +71,128 @@ export function CommandPalette() {
     connectionId: string;
     siteUrl: string;
   } | null>(null);
+  const [pendingEntryAction, setPendingEntryAction] = useState<{
+    type: 'resume';
+    entry: EntrySearchHit;
+  } | null>(null);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [stopDialogOpen, setStopDialogOpen] = useState(false);
 
-  // Detect # prefix for Jira search mode
+  // Detect # prefix for Jira-only search mode
   const isJiraMode = query.startsWith('#');
   const jiraQuery = isJiraMode ? query.substring(1) : query;
-
-  // Queries
-  const assignedQuery = useJiraAssigned();
-  const recentQuery = useJiraRecent();
-  const searchQuery = useJiraSearch(
-    jiraQuery || query,
-    isJiraMode || query.length >= 2 ? 'text' : 'assigned', // unused when disabled
-  );
   const showSearch = isJiraMode || query.length >= 2;
 
-  // Flatten results for keyboard navigation
-  const flatResults = useMemo(() => {
-    if (showSearch) {
-      return (searchQuery.data ?? []).flatMap((group) =>
-        group.issues.map((issue) => ({
-          issue,
-          connectionId: group.connectionId,
-          siteUrl: group.siteUrl,
-        })),
+  // Data sources
+  const recentEntriesQuery = useRecentEntries();
+  const entrySearchQuery = useEntrySearch(showSearch && !isJiraMode ? query : '');
+  const assignedQuery = useJiraAssigned();
+  const recentQuery = useJiraRecent();
+  const jiraSearchQuery = useJiraSearch(
+    jiraQuery || query,
+    isJiraMode || query.length >= 2 ? 'text' : 'assigned',
+  );
+
+  // Build sections and flat item list
+  const { sections, flatItems } = useMemo(() => {
+    const secs: PaletteSection[] = [];
+
+    if (showSearch && isJiraMode) {
+      // # mode: only Jira results
+      const jiraItems = (jiraSearchQuery.data ?? []).flatMap((g) =>
+        g.issues.map(
+          (issue): PaletteItem => ({
+            type: 'jira',
+            issue,
+            connectionId: g.connectionId,
+            siteUrl: g.siteUrl,
+          }),
+        ),
       );
+      if (jiraItems.length > 0) secs.push({ label: 'Jira results', items: jiraItems });
+    } else if (showSearch) {
+      // Text search: entries + Jira
+      const entryItems = (entrySearchQuery.data ?? []).map(
+        (e): PaletteItem => ({
+          type: 'entry',
+          entry: e,
+        }),
+      );
+      const jiraItems = (jiraSearchQuery.data ?? []).flatMap((g) =>
+        g.issues.map(
+          (issue): PaletteItem => ({
+            type: 'jira',
+            issue,
+            connectionId: g.connectionId,
+            siteUrl: g.siteUrl,
+          }),
+        ),
+      );
+      if (entryItems.length > 0) secs.push({ label: 'Entries', items: entryItems });
+      if (jiraItems.length > 0) secs.push({ label: 'Jira', items: jiraItems });
+    } else {
+      // Default browse: recent entries + Jira assigned + Jira recent
+      const entryItems = (recentEntriesQuery.data ?? []).map(
+        (e): PaletteItem => ({
+          type: 'entry',
+          entry: e,
+        }),
+      );
+      const assignedItems = (assignedQuery.data ?? []).flatMap((g) =>
+        g.issues.map(
+          (issue): PaletteItem => ({
+            type: 'jira',
+            issue,
+            connectionId: g.connectionId,
+            siteUrl: g.siteUrl,
+          }),
+        ),
+      );
+      const recentJiraItems = (recentQuery.data ?? []).flatMap((g) =>
+        g.issues.map(
+          (issue): PaletteItem => ({
+            type: 'jira',
+            issue,
+            connectionId: g.connectionId,
+            siteUrl: g.siteUrl,
+          }),
+        ),
+      );
+      if (entryItems.length > 0) secs.push({ label: 'Recent entries', items: entryItems });
+      if (assignedItems.length > 0)
+        secs.push({ label: 'Jira — Assigned to me', items: assignedItems });
+      if (recentJiraItems.length > 0)
+        secs.push({ label: 'Jira — Recently viewed', items: recentJiraItems });
     }
-    // Default: assigned + recent
-    const assigned = (assignedQuery.data ?? []).flatMap((group) =>
-      group.issues.map((issue) => ({
-        issue,
-        connectionId: group.connectionId,
-        siteUrl: group.siteUrl,
-      })),
-    );
-    const recent = (recentQuery.data ?? []).flatMap((group) =>
-      group.issues.map((issue) => ({
-        issue,
-        connectionId: group.connectionId,
-        siteUrl: group.siteUrl,
-      })),
-    );
-    return [...assigned, ...recent];
-  }, [showSearch, searchQuery.data, assignedQuery.data, recentQuery.data]);
+
+    // Filter out Jira sections if no connections
+    const filtered = hasJira ? secs : secs.filter((s) => !s.label.startsWith('Jira'));
+    const flat = filtered.flatMap((s) => s.items);
+    return { sections: filtered, flatItems: flat };
+  }, [
+    showSearch,
+    isJiraMode,
+    hasJira,
+    entrySearchQuery.data,
+    jiraSearchQuery.data,
+    recentEntriesQuery.data,
+    assignedQuery.data,
+    recentQuery.data,
+  ]);
 
   // Reset on open/close
   useEffect(() => {
     if (open) {
       setQuery('');
       setSelectedIdx(0);
-      // Focus next tick after render
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [open]);
 
   // Clamp selectedIdx when results change
   useEffect(() => {
-    setSelectedIdx((prev) => Math.min(prev, Math.max(0, flatResults.length - 1)));
-  }, [flatResults.length]);
+    setSelectedIdx((prev) => Math.min(prev, Math.max(0, flatItems.length - 1)));
+  }, [flatItems.length]);
 
   // Global ⌘K / Ctrl+K listener
   useEffect(() => {
@@ -124,8 +213,10 @@ export function CommandPalette() {
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [selectedIdx]);
 
-  // Execute start-or-resume immediately (no confirmation needed)
-  const doStartOrResume = useCallback(
+  // ── Action handlers ──────────────────────────────────────────────
+
+  // Jira: start-or-resume
+  const doJiraStart = useCallback(
     (issue: JiraIssue, connectionId: string) => {
       const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
       startOrResume.mutate({
@@ -140,82 +231,133 @@ export function CommandPalette() {
     [startOrResume, jiraConnections],
   );
 
-  // Execute prepare immediately (no confirmation needed)
-  const doPrepare = useCallback((issue: JiraIssue, connectionId: string, siteUrl: string) => {
-    const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+  // Jira: prepare
+  const doJiraPrepare = useCallback(
+    (issue: JiraIssue, connectionId: string, siteUrl: string) => {
+      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+      window.dispatchEvent(
+        new CustomEvent('ternity-palette-prepare', {
+          detail: { summary: issue.summary, key: issue.key, connectionId, siteUrl, projectId },
+        }),
+      );
+    },
+    [jiraConnections],
+  );
+
+  // Entry: resume
+  const doEntryResume = useCallback(
+    (entry: EntrySearchHit) => {
+      resumeTimer.mutate(entry.id);
+    },
+    [resumeTimer],
+  );
+
+  // Entry: prepare (fill timer bar without starting)
+  const doEntryPrepare = useCallback((entry: EntrySearchHit) => {
     window.dispatchEvent(
       new CustomEvent('ternity-palette-prepare', {
         detail: {
-          summary: issue.summary,
-          key: issue.key,
-          connectionId,
-          siteUrl,
-          projectId,
+          summary: entry.description,
+          projectId: entry.projectId,
+          ...(entry.jiraIssueKey ? { key: entry.jiraIssueKey } : {}),
         },
       }),
     );
-  }, [jiraConnections]);
+  }, []);
 
-  // Enter: start or resume — may need confirmation if timer is running
-  const handleStartOrResume = useCallback(
-    (issue: JiraIssue, connectionId: string, siteUrl: string) => {
-      setOpen(false); // always dismiss palette first
-      if (timerState?.running && getPreference('confirmTimerSwitch')) {
-        setPendingAction({ type: 'start', issue, connectionId, siteUrl });
-        setSwitchDialogOpen(true);
-        return;
+  // Enter handler: dispatch based on item type
+  const handleEnter = useCallback(
+    (item: PaletteItem) => {
+      setOpen(false);
+      if (item.type === 'entry') {
+        if (timerState?.running && getPreference('confirmTimerSwitch')) {
+          setPendingEntryAction({ type: 'resume', entry: item.entry });
+          setSwitchDialogOpen(true);
+          return;
+        }
+        doEntryResume(item.entry);
+      } else {
+        if (timerState?.running && getPreference('confirmTimerSwitch')) {
+          setPendingAction({
+            type: 'start',
+            issue: item.issue,
+            connectionId: item.connectionId,
+            siteUrl: item.siteUrl,
+          });
+          setSwitchDialogOpen(true);
+          return;
+        }
+        doJiraStart(item.issue, item.connectionId);
       }
-      doStartOrResume(issue, connectionId);
     },
-    [timerState?.running, doStartOrResume, setOpen],
+    [timerState?.running, doEntryResume, doJiraStart, setOpen],
   );
 
-  // Cmd+Enter: prepare — may need confirmation to stop running timer
-  const handlePrepare = useCallback(
-    (issue: JiraIssue, connectionId: string, siteUrl: string) => {
-      setOpen(false); // always dismiss palette first
-      if (timerState?.running) {
-        setPendingAction({ type: 'prepare', issue, connectionId, siteUrl });
-        setStopDialogOpen(true);
-        return;
+  // Cmd+Enter handler
+  const handleCmdEnter = useCallback(
+    (item: PaletteItem) => {
+      setOpen(false);
+      if (item.type === 'entry') {
+        if (timerState?.running) {
+          setPendingEntryAction({ type: 'resume', entry: item.entry });
+          setStopDialogOpen(true);
+          return;
+        }
+        doEntryPrepare(item.entry);
+      } else {
+        if (timerState?.running) {
+          setPendingAction({
+            type: 'prepare',
+            issue: item.issue,
+            connectionId: item.connectionId,
+            siteUrl: item.siteUrl,
+          });
+          setStopDialogOpen(true);
+          return;
+        }
+        doJiraPrepare(item.issue, item.connectionId, item.siteUrl);
       }
-      doPrepare(issue, connectionId, siteUrl);
     },
-    [timerState?.running, doPrepare, setOpen],
+    [timerState?.running, doEntryPrepare, doJiraPrepare, setOpen],
   );
 
-  // Switch dialog confirm (Enter with running timer)
+  // Switch dialog confirm
   const handleSwitchConfirm = useCallback(
     (dontAskAgain: boolean) => {
-      if (dontAskAgain) {
-        setPreference('confirmTimerSwitch', false);
-      }
+      if (dontAskAgain) setPreference('confirmTimerSwitch', false);
       setSwitchDialogOpen(false);
-      if (pendingAction?.type === 'start') {
-        doStartOrResume(pendingAction.issue, pendingAction.connectionId);
+      if (pendingEntryAction?.type === 'resume') {
+        doEntryResume(pendingEntryAction.entry);
+      } else if (pendingAction?.type === 'start') {
+        doJiraStart(pendingAction.issue, pendingAction.connectionId);
       }
       setPendingAction(null);
+      setPendingEntryAction(null);
     },
-    [pendingAction, doStartOrResume],
+    [pendingAction, pendingEntryAction, doEntryResume, doJiraStart],
   );
 
-  // Stop dialog confirm (Cmd+Enter with running timer)
+  // Stop dialog confirm
   const handleStopConfirm = useCallback(() => {
     setStopDialogOpen(false);
-    if (pendingAction?.type === 'prepare') {
+    if (pendingEntryAction) {
       stopTimer.mutate(undefined, {
-        onSuccess: () => {
-          doPrepare(pendingAction.issue, pendingAction.connectionId, pendingAction.siteUrl);
-        },
+        onSuccess: () => doEntryPrepare(pendingEntryAction.entry),
+      });
+    } else if (pendingAction?.type === 'prepare') {
+      stopTimer.mutate(undefined, {
+        onSuccess: () =>
+          doJiraPrepare(pendingAction.issue, pendingAction.connectionId, pendingAction.siteUrl),
       });
     }
     setPendingAction(null);
-  }, [pendingAction, stopTimer, doPrepare]);
+    setPendingEntryAction(null);
+  }, [pendingAction, pendingEntryAction, stopTimer, doEntryPrepare, doJiraPrepare]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIdx((i) => Math.min(i + 1, flatResults.length - 1));
+      setSelectedIdx((i) => Math.min(i + 1, flatItems.length - 1));
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -225,22 +367,22 @@ export function CommandPalette() {
       e.preventDefault();
       setOpen(false);
     }
-    const selected = flatResults[selectedIdx];
+    const selected = flatItems[selectedIdx];
     if (e.key === 'Enter' && selected) {
       e.preventDefault();
       if (e.metaKey || e.ctrlKey) {
-        // ⌘Enter / Ctrl+Enter: copy to timer bar (prepare only)
-        handlePrepare(selected.issue, selected.connectionId, selected.siteUrl);
+        handleCmdEnter(selected);
       } else {
-        // Enter: start or resume timer
-        handleStartOrResume(selected.issue, selected.connectionId, selected.siteUrl);
+        handleEnter(selected);
       }
     }
   };
 
   const isLoading = showSearch
-    ? searchQuery.isLoading
-    : assignedQuery.isLoading || recentQuery.isLoading;
+    ? isJiraMode
+      ? jiraSearchQuery.isLoading
+      : entrySearchQuery.isLoading || jiraSearchQuery.isLoading
+    : recentEntriesQuery.isLoading || assignedQuery.isLoading || recentQuery.isLoading;
 
   return (
     <>
@@ -258,7 +400,7 @@ export function CommandPalette() {
 
             {/* Palette */}
             <motion.div
-              className="relative w-[600px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
+              className="relative w-[600px] overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               initial={{ opacity: 0, y: -20, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.96 }}
@@ -267,12 +409,14 @@ export function CommandPalette() {
             >
               {/* Search input */}
               <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-                <Command className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <Command className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 <input
                   ref={inputRef}
                   className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                   style={{ fontSize: scaled(14) }}
-                  placeholder="Search... (# for Jira issues)"
+                  placeholder={
+                    hasJira ? 'Search entries & Jira... (# for Jira only)' : 'Search entries...'
+                  }
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
@@ -302,25 +446,28 @@ export function CommandPalette() {
               <div ref={listRef} className="max-h-[380px] overflow-y-auto p-2">
                 {isLoading ? (
                   <div
-                    className="flex items-center justify-center py-12 text-muted-foreground gap-2"
+                    className="flex items-center justify-center gap-2 py-12 text-muted-foreground"
                     style={{ fontSize: scaled(12) }}
                   >
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {showSearch ? 'Searching...' : 'Loading...'}
                   </div>
-                ) : showSearch ? (
-                  <SearchResults
-                    query={jiraQuery || query}
-                    results={searchQuery.data ?? []}
-                    selectedIdx={selectedIdx}
-                    onSelect={handleStartOrResume}
-                  />
+                ) : flatItems.length === 0 ? (
+                  <div
+                    className="py-12 text-center text-muted-foreground"
+                    style={{ fontSize: scaled(12) }}
+                  >
+                    {showSearch && query.length >= 2 ? (
+                      <>No results for &ldquo;{query}&rdquo;</>
+                    ) : (
+                      'No entries yet. Start tracking to see results here.'
+                    )}
+                  </div>
                 ) : (
-                  <BrowseResults
-                    assigned={assignedQuery.data ?? []}
-                    recent={recentQuery.data ?? []}
+                  <PaletteSections
+                    sections={sections}
                     selectedIdx={selectedIdx}
-                    onSelect={handleStartOrResume}
+                    onSelect={handleEnter}
                   />
                 )}
               </div>
@@ -336,7 +483,7 @@ export function CommandPalette() {
                     <ArrowDown className="h-3 w-3" /> Navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <CornerDownLeft className="h-3 w-3" /> Start timer
+                    <CornerDownLeft className="h-3 w-3" /> Resume / Start
                   </span>
                   <span className="flex items-center gap-1">
                     <kbd
@@ -347,9 +494,11 @@ export function CommandPalette() {
                     </kbd>{' '}
                     Prepare entry
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Hash className="h-3 w-3" /> Jira mode
-                  </span>
+                  {hasJira && (
+                    <span className="flex items-center gap-1">
+                      <Hash className="h-3 w-3" /> Jira only
+                    </span>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -358,85 +507,105 @@ export function CommandPalette() {
       </AnimatePresence>
 
       {/* Switch timer dialog (Enter while timer is running) */}
-      {timerState?.entry && pendingAction?.type === 'start' && (
-        <PaletteSwitchDialog
-          open={switchDialogOpen}
-          onOpenChange={(v) => {
-            setSwitchDialogOpen(v);
-            if (!v) setPendingAction(null);
-          }}
-          stoppingEntry={timerState.entry}
-          startingIssue={pendingAction.issue}
-          onConfirm={handleSwitchConfirm}
-        />
-      )}
+      {timerState?.entry &&
+        switchDialogOpen &&
+        (pendingAction?.type === 'start' || pendingEntryAction) && (
+          <PaletteSwitchDialog
+            open={switchDialogOpen}
+            onOpenChange={(v) => {
+              setSwitchDialogOpen(v);
+              if (!v) {
+                setPendingAction(null);
+                setPendingEntryAction(null);
+              }
+            }}
+            stoppingEntry={timerState.entry}
+            startingLabel={
+              pendingEntryAction
+                ? pendingEntryAction.entry.description || 'No description'
+                : (pendingAction?.issue.summary ?? '')
+            }
+            startingDetail={
+              pendingEntryAction
+                ? (pendingEntryAction.entry.projectName ?? undefined)
+                : pendingAction?.issue.key
+            }
+            onConfirm={handleSwitchConfirm}
+          />
+        )}
 
       {/* Stop timer dialog (⌘Enter while timer is running) */}
-      {timerState?.entry && pendingAction?.type === 'prepare' && (
-        <PaletteStopDialog
-          open={stopDialogOpen}
-          onOpenChange={(v) => {
-            setStopDialogOpen(v);
-            if (!v) setPendingAction(null);
-          }}
-          stoppingEntry={timerState.entry}
-          preparingIssue={pendingAction.issue}
-          onConfirm={handleStopConfirm}
-        />
-      )}
+      {timerState?.entry &&
+        stopDialogOpen &&
+        (pendingAction?.type === 'prepare' || pendingEntryAction) && (
+          <PaletteStopDialog
+            open={stopDialogOpen}
+            onOpenChange={(v) => {
+              setStopDialogOpen(v);
+              if (!v) {
+                setPendingAction(null);
+                setPendingEntryAction(null);
+              }
+            }}
+            stoppingEntry={timerState.entry}
+            preparingLabel={
+              pendingEntryAction
+                ? pendingEntryAction.entry.description || 'No description'
+                : (pendingAction?.issue.summary ?? '')
+            }
+            preparingDetail={
+              pendingEntryAction
+                ? (pendingEntryAction.entry.projectName ?? undefined)
+                : pendingAction?.issue.key
+            }
+            onConfirm={handleStopConfirm}
+          />
+        )}
     </>
   );
 }
 
-// ── Sub-components ──────────────────────────────────────────────────
+// ── Sections renderer ───────────────────────────────────────────────
 
-function SearchResults({
-  query,
-  results,
+function PaletteSections({
+  sections,
   selectedIdx,
   onSelect,
 }: {
-  query: string;
-  results: JiraSearchResult[];
+  sections: PaletteSection[];
   selectedIdx: number;
-  onSelect: (issue: JiraIssue, connectionId: string, siteUrl: string) => void;
+  onSelect: (item: PaletteItem) => void;
 }) {
-  if (results.length === 0 && query.length >= 2) {
-    return (
-      <div className="py-12 text-center text-muted-foreground" style={{ fontSize: scaled(12) }}>
-        No results for &ldquo;{query}&rdquo;
-      </div>
-    );
-  }
-
-  if (results.length === 0) {
-    return (
-      <div className="py-12 text-center text-muted-foreground" style={{ fontSize: scaled(12) }}>
-        Keep typing to search...
-      </div>
-    );
-  }
-
   let globalIdx = 0;
+
   return (
     <>
-      {results.map((group) => (
-        <div key={group.connectionId} className="mb-2">
+      {sections.map((section) => (
+        <div key={section.label} className="mb-2">
           <div
-            className="px-3 py-1.5 font-brand text-muted-foreground/60 uppercase tracking-wider"
+            className="px-3 py-1.5 font-brand uppercase tracking-wider text-muted-foreground/60"
             style={{ fontSize: scaled(9) }}
           >
-            {group.siteName}
+            {section.label}
           </div>
-          {group.issues.map((issue) => {
+          {section.items.map((item) => {
             const idx = globalIdx++;
+            const isSelected = idx === selectedIdx;
             return (
-              <div key={issue.key} data-selected={idx === selectedIdx}>
-                <IssueRow
-                  issue={issue}
-                  selected={idx === selectedIdx}
-                  onSelect={() => onSelect(issue, group.connectionId, group.siteUrl)}
-                />
+              <div key={itemKey(item)} data-selected={isSelected}>
+                {item.type === 'entry' ? (
+                  <EntryResultRow
+                    entry={item.entry}
+                    selected={isSelected}
+                    onSelect={() => onSelect(item)}
+                  />
+                ) : (
+                  <IssueRow
+                    issue={item.issue}
+                    selected={isSelected}
+                    onSelect={() => onSelect(item)}
+                  />
+                )}
               </div>
             );
           })}
@@ -446,20 +615,95 @@ function SearchResults({
   );
 }
 
+function itemKey(item: PaletteItem): string {
+  return item.type === 'entry' ? `entry-${item.entry.id}` : `jira-${item.issue.key}`;
+}
+
+// ── Entry result row ────────────────────────────────────────────────
+
+function EntryResultRow({
+  entry,
+  selected,
+  onSelect,
+}: {
+  entry: EntrySearchHit;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
+        selected ? 'bg-primary/10 text-foreground' : 'text-foreground/80 hover:bg-muted/50',
+      )}
+      onClick={onSelect}
+    >
+      {/* Play icon or running indicator */}
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+        {entry.isRunning ? (
+          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+        ) : (
+          <Play className="h-3.5 w-3.5 text-muted-foreground/40" />
+        )}
+      </div>
+
+      {/* Description + project */}
+      <div className="min-w-0 flex-1">
+        <div className="truncate" style={{ fontSize: scaled(13) }}>
+          {entry.description || 'No description'}
+        </div>
+        <div className="flex items-center gap-1.5" style={{ fontSize: scaled(10) }}>
+          {entry.projectColor && (
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: entry.projectColor }}
+            />
+          )}
+          <span className="truncate text-muted-foreground">
+            {entry.clientName
+              ? `${entry.clientName} · ${entry.projectName}`
+              : entry.projectName || 'No project'}
+          </span>
+        </div>
+      </div>
+
+      {/* Jira key badge */}
+      {entry.jiraIssueKey && (
+        <span
+          className="flex shrink-0 items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 font-brand font-semibold text-primary"
+          style={{ fontSize: scaled(9) }}
+        >
+          <JiraIcon className="h-2.5 w-2.5" />
+          {entry.jiraIssueKey}
+        </span>
+      )}
+
+      {/* Duration */}
+      <span
+        className="shrink-0 font-brand tabular-nums text-muted-foreground"
+        style={{ fontSize: scaled(11) }}
+      >
+        {formatDuration(entry.totalDurationSeconds)}
+      </span>
+    </button>
+  );
+}
+
 // ── Confirmation dialogs ────────────────────────────────────────────
 
-/** Switch dialog — shown when pressing Enter while a timer is running */
 function PaletteSwitchDialog({
   open,
   onOpenChange,
   stoppingEntry,
-  startingIssue,
+  startingLabel,
+  startingDetail,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stoppingEntry: Entry;
-  startingIssue: JiraIssue;
+  startingLabel: string;
+  startingDetail?: string;
   onConfirm: (dontAskAgain: boolean) => void;
 }) {
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -524,7 +768,7 @@ function PaletteSwitchDialog({
             <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
 
-          {/* Starting card — Jira issue */}
+          {/* Starting card */}
           <div className="w-full rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2.5">
             <span
               className="font-medium uppercase tracking-wider text-primary/70"
@@ -533,24 +777,13 @@ function PaletteSwitchDialog({
               Starting
             </span>
             <p className="mt-1 truncate text-foreground" style={{ fontSize: scaled(13) }}>
-              {startingIssue.summary}
+              {startingLabel}
             </p>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span
-                className="font-brand font-semibold text-primary"
-                style={{ fontSize: scaled(11) }}
-              >
-                {startingIssue.key}
+            {startingDetail && (
+              <span className="mt-1 font-brand text-primary" style={{ fontSize: scaled(11) }}>
+                {startingDetail}
               </span>
-              {startingIssue.status && (
-                <span
-                  className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground"
-                  style={{ fontSize: scaled(9) }}
-                >
-                  {startingIssue.status}
-                </span>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -587,18 +820,19 @@ function PaletteSwitchDialog({
   );
 }
 
-/** Stop dialog — shown when pressing ⌘Enter while a timer is running */
 function PaletteStopDialog({
   open,
   onOpenChange,
   stoppingEntry,
-  preparingIssue,
+  preparingLabel,
+  preparingDetail,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stoppingEntry: Entry;
-  preparingIssue: JiraIssue;
+  preparingLabel: string;
+  preparingDetail?: string;
   onConfirm: () => void;
 }) {
   const completedDuration = stoppingEntry.segments
@@ -672,27 +906,16 @@ function PaletteStopDialog({
               Preparing
             </span>
             <p className="mt-1 truncate text-foreground" style={{ fontSize: scaled(13) }}>
-              {preparingIssue.summary}
+              {preparingLabel}
             </p>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span
-                className="font-brand font-semibold text-primary"
-                style={{ fontSize: scaled(11) }}
-              >
-                {preparingIssue.key}
+            {preparingDetail && (
+              <span className="mt-1 font-brand text-primary" style={{ fontSize: scaled(11) }}>
+                {preparingDetail}
               </span>
-              {preparingIssue.status && (
-                <span
-                  className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground"
-                  style={{ fontSize: scaled(9) }}
-                >
-                  {preparingIssue.status}
-                </span>
-              )}
-              <span className="text-muted-foreground italic" style={{ fontSize: scaled(10) }}>
-                Timer won&apos;t start automatically
-              </span>
-            </div>
+            )}
+            <p className="mt-1 text-muted-foreground italic" style={{ fontSize: scaled(10) }}>
+              Timer won&apos;t start automatically
+            </p>
           </div>
         </div>
 
@@ -706,94 +929,5 @@ function PaletteStopDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function BrowseResults({
-  assigned,
-  recent,
-  selectedIdx,
-  onSelect,
-}: {
-  assigned: JiraSearchResult[];
-  recent: JiraSearchResult[];
-  selectedIdx: number;
-  onSelect: (issue: JiraIssue, connectionId: string, siteUrl: string) => void;
-}) {
-  const assignedItems = assigned.flatMap((g) =>
-    g.issues.map((issue) => ({ issue, connectionId: g.connectionId, siteUrl: g.siteUrl })),
-  );
-  const recentItems = recent.flatMap((g) =>
-    g.issues.map((issue) => ({ issue, connectionId: g.connectionId, siteUrl: g.siteUrl })),
-  );
-
-  if (assignedItems.length === 0 && recentItems.length === 0) {
-    return (
-      <div className="py-12 text-center text-muted-foreground" style={{ fontSize: scaled(12) }}>
-        No Jira connections found. Connect Jira in Settings.
-      </div>
-    );
-  }
-
-  let globalIdx = 0;
-
-  return (
-    <>
-      {/* Assigned to me */}
-      <div className="mb-3">
-        <div
-          className="px-3 py-1.5 font-brand text-muted-foreground/60 uppercase tracking-wider"
-          style={{ fontSize: scaled(9) }}
-        >
-          Jira — Assigned to me
-        </div>
-        {assignedItems.length > 0 ? (
-          assignedItems.map((item) => {
-            const idx = globalIdx++;
-            return (
-              <div key={item.issue.key} data-selected={idx === selectedIdx}>
-                <IssueRow
-                  issue={item.issue}
-                  selected={idx === selectedIdx}
-                  onSelect={() => onSelect(item.issue, item.connectionId, item.siteUrl)}
-                />
-              </div>
-            );
-          })
-        ) : (
-          <div className="px-3 py-2 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-            No assigned issues
-          </div>
-        )}
-      </div>
-
-      {/* Recently viewed */}
-      <div>
-        <div
-          className="px-3 py-1.5 font-brand text-muted-foreground/60 uppercase tracking-wider"
-          style={{ fontSize: scaled(9) }}
-        >
-          Recently viewed
-        </div>
-        {recentItems.length > 0 ? (
-          recentItems.map((item) => {
-            const idx = globalIdx++;
-            return (
-              <div key={item.issue.key} data-selected={idx === selectedIdx}>
-                <IssueRow
-                  issue={item.issue}
-                  selected={idx === selectedIdx}
-                  onSelect={() => onSelect(item.issue, item.connectionId, item.siteUrl)}
-                />
-              </div>
-            );
-          })
-        ) : (
-          <div className="px-3 py-2 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-            No recent issues
-          </div>
-        )}
-      </div>
-    </>
   );
 }

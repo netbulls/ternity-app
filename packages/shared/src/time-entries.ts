@@ -163,6 +163,23 @@ export const AuditEventSchema = z.object({
 
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
+/* ── Entry search hit (lightweight, for command palette) ─────────── */
+
+export const EntrySearchHitSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  projectId: z.string().nullable(),
+  projectName: z.string().nullable(),
+  projectColor: z.string().nullable(),
+  clientName: z.string().nullable(),
+  jiraIssueKey: z.string().nullable(),
+  totalDurationSeconds: z.number(),
+  lastSegmentAt: z.string(),
+  isRunning: z.boolean(),
+});
+
+export type EntrySearchHit = z.infer<typeof EntrySearchHitSchema>;
+
 /* ── Stats ──────────────────────────────────────────────────────── */
 
 export const StatsSchema = z.object({

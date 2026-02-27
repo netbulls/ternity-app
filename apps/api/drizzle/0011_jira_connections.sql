@@ -1,4 +1,4 @@
-CREATE TABLE "jira_connections" (
+CREATE TABLE IF NOT EXISTS "jira_connections" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"atlassian_account_id" text NOT NULL,
@@ -16,6 +16,9 @@ CREATE TABLE "jira_connections" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX "jira_connections_user_id_idx" ON "jira_connections" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "jira_connections_user_cloud_idx" ON "jira_connections" USING btree ("user_id","cloud_id");--> statement-breakpoint
-ALTER TABLE "jira_connections" ADD CONSTRAINT "jira_connections_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+CREATE INDEX IF NOT EXISTS "jira_connections_user_id_idx" ON "jira_connections" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "jira_connections_user_cloud_idx" ON "jira_connections" USING btree ("user_id","cloud_id");--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "jira_connections" ADD CONSTRAINT "jira_connections_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

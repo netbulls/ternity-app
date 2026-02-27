@@ -314,6 +314,136 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     return dayGroups;
   });
 
+  /** GET /api/entries/recent — recent unique entries for command palette */
+  fastify.get('/api/entries/recent', async (request) => {
+    const userId = request.auth.userId;
+    const limit = Math.min(Number((request.query as any).limit) || 10, 20);
+
+    // Get the most recent entries, deduplicated by description (keep latest)
+    const rows = await db.execute(sql`
+      WITH ranked AS (
+        SELECT DISTINCT ON (te.description)
+          te.id,
+          te.description,
+          te.project_id,
+          p.name AS project_name,
+          p.color AS project_color,
+          c.name AS client_name,
+          te.jira_issue_key,
+          te.created_at,
+          COALESCE(
+            (SELECT SUM(EXTRACT(EPOCH FROM COALESCE(es.stopped_at, NOW()) - es.started_at))
+             FROM entry_segments es
+             WHERE es.entry_id = te.id AND es.started_at IS NOT NULL),
+            0
+          )::int AS total_duration_seconds,
+          COALESCE(
+            (SELECT MAX(es.started_at) FROM entry_segments es WHERE es.entry_id = te.id),
+            te.created_at
+          ) AS last_segment_at,
+          EXISTS(
+            SELECT 1 FROM entry_segments es
+            WHERE es.entry_id = te.id AND es.type = 'clocked' AND es.stopped_at IS NULL
+          ) AS is_running
+        FROM time_entries te
+        LEFT JOIN projects p ON p.id = te.project_id
+        LEFT JOIN clients c ON c.id = p.client_id
+        WHERE te.user_id = ${userId}
+          AND te.is_active = true
+          AND te.description != ''
+        ORDER BY te.description, te.created_at DESC
+      )
+      SELECT * FROM ranked
+      ORDER BY last_segment_at DESC
+      LIMIT ${limit}
+    `);
+
+    return rows.rows.map((row: any) => ({
+      id: row.id,
+      description: row.description,
+      projectId: row.project_id,
+      projectName: row.project_name,
+      projectColor: row.project_color,
+      clientName: row.client_name,
+      jiraIssueKey: row.jira_issue_key,
+      totalDurationSeconds: Number(row.total_duration_seconds),
+      lastSegmentAt:
+        typeof row.last_segment_at === 'string'
+          ? row.last_segment_at
+          : (row.last_segment_at?.toISOString?.() ?? new Date().toISOString()),
+      isRunning: row.is_running === true,
+    }));
+  });
+
+  /** GET /api/entries/search — fuzzy search entries for command palette */
+  fastify.get('/api/entries/search', async (request) => {
+    const userId = request.auth.userId;
+    const query = ((request.query as any).q ?? '').trim();
+    const limit = Math.min(Number((request.query as any).limit) || 10, 20);
+
+    if (query.length < 2) return [];
+
+    // Use pg_trgm similarity + ILIKE for fuzzy matching, deduplicated by description
+    const rows = await db.execute(sql`
+      WITH ranked AS (
+        SELECT DISTINCT ON (te.description)
+          te.id,
+          te.description,
+          te.project_id,
+          p.name AS project_name,
+          p.color AS project_color,
+          c.name AS client_name,
+          te.jira_issue_key,
+          te.created_at,
+          COALESCE(
+            (SELECT SUM(EXTRACT(EPOCH FROM COALESCE(es.stopped_at, NOW()) - es.started_at))
+             FROM entry_segments es
+             WHERE es.entry_id = te.id AND es.started_at IS NOT NULL),
+            0
+          )::int AS total_duration_seconds,
+          COALESCE(
+            (SELECT MAX(es.started_at) FROM entry_segments es WHERE es.entry_id = te.id),
+            te.created_at
+          ) AS last_segment_at,
+          EXISTS(
+            SELECT 1 FROM entry_segments es
+            WHERE es.entry_id = te.id AND es.type = 'clocked' AND es.stopped_at IS NULL
+          ) AS is_running,
+          similarity(te.description, ${query}) AS sim
+        FROM time_entries te
+        LEFT JOIN projects p ON p.id = te.project_id
+        LEFT JOIN clients c ON c.id = p.client_id
+        WHERE te.user_id = ${userId}
+          AND te.is_active = true
+          AND te.description != ''
+          AND (
+            te.description % ${query}
+            OR te.description ILIKE ${'%' + query + '%'}
+          )
+        ORDER BY te.description, te.created_at DESC
+      )
+      SELECT * FROM ranked
+      ORDER BY sim DESC, last_segment_at DESC
+      LIMIT ${limit}
+    `);
+
+    return rows.rows.map((row: any) => ({
+      id: row.id,
+      description: row.description,
+      projectId: row.project_id,
+      projectName: row.project_name,
+      projectColor: row.project_color,
+      clientName: row.client_name,
+      jiraIssueKey: row.jira_issue_key,
+      totalDurationSeconds: Number(row.total_duration_seconds),
+      lastSegmentAt:
+        typeof row.last_segment_at === 'string'
+          ? row.last_segment_at
+          : (row.last_segment_at?.toISOString?.() ?? new Date().toISOString()),
+      isRunning: row.is_running === true,
+    }));
+  });
+
   /** POST /api/entries — create a manual entry */
   fastify.post('/api/entries', async (request) => {
     const userId = request.auth.userId;
