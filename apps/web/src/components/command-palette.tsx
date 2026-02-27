@@ -186,7 +186,8 @@ export function CommandPalette() {
   // Jira: start-or-resume
   const doJiraStart = useCallback(
     (issue: JiraIssue, connectionId: string) => {
-      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+      const userDefault = getPreference('defaultProjectId');
+      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key, userDefault);
       startOrResume.mutate({
         description: issue.summary,
         projectId,
@@ -202,7 +203,8 @@ export function CommandPalette() {
   // Jira: prepare
   const doJiraPrepare = useCallback(
     (issue: JiraIssue, connectionId: string, siteUrl: string) => {
-      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+      const userDefault = getPreference('defaultProjectId');
+      const projectId = resolveJiraProject(jiraConnections, connectionId, issue.key, userDefault);
       window.dispatchEvent(
         new CustomEvent('ternity-palette-prepare', {
           detail: { summary: issue.summary, key: issue.key, connectionId, siteUrl, projectId },
@@ -221,17 +223,31 @@ export function CommandPalette() {
   );
 
   // Entry: prepare (fill timer bar without starting)
-  const doEntryPrepare = useCallback((entry: EntrySearchHit) => {
-    window.dispatchEvent(
-      new CustomEvent('ternity-palette-prepare', {
-        detail: {
-          summary: entry.description,
-          projectId: entry.projectId,
-          ...(entry.jiraIssueKey ? { key: entry.jiraIssueKey } : {}),
-        },
-      }),
-    );
-  }, []);
+  const doEntryPrepare = useCallback(
+    (entry: EntrySearchHit) => {
+      // Look up Jira connection for siteUrl if the entry has a linked issue
+      const connection = entry.jiraConnectionId
+        ? jiraConnections?.find((c) => c.id === entry.jiraConnectionId)
+        : undefined;
+
+      window.dispatchEvent(
+        new CustomEvent('ternity-palette-prepare', {
+          detail: {
+            summary: entry.description,
+            projectId: entry.projectId ?? getPreference('defaultProjectId'),
+            ...(entry.jiraIssueKey && connection
+              ? {
+                  key: entry.jiraIssueKey,
+                  connectionId: connection.id,
+                  siteUrl: connection.siteUrl,
+                }
+              : {}),
+          },
+        }),
+      );
+    },
+    [jiraConnections],
+  );
 
   // Enter handler: dispatch based on item type
   const handleEnter = useCallback(

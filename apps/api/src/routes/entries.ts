@@ -330,6 +330,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           p.color AS project_color,
           c.name AS client_name,
           te.jira_issue_key,
+          te.jira_issue_summary,
+          te.jira_connection_id,
           te.created_at,
           COALESCE(
             (SELECT SUM(EXTRACT(EPOCH FROM COALESCE(es.stopped_at, NOW()) - es.started_at))
@@ -366,6 +368,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       projectColor: row.project_color,
       clientName: row.client_name,
       jiraIssueKey: row.jira_issue_key,
+      jiraIssueSummary: row.jira_issue_summary,
+      jiraConnectionId: row.jira_connection_id,
       totalDurationSeconds: Number(row.total_duration_seconds),
       lastSegmentAt:
         typeof row.last_segment_at === 'string'
@@ -383,7 +387,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
     if (query.length < 2) return [];
 
-    // Use pg_trgm similarity + ILIKE for fuzzy matching, deduplicated by description
+    // Search by description (fuzzy + ILIKE) and jira_issue_key (ILIKE)
+    // Deduplicate by description, keeping the most recent entry per unique description
     const rows = await db.execute(sql`
       WITH ranked AS (
         SELECT DISTINCT ON (te.description)
@@ -394,6 +399,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           p.color AS project_color,
           c.name AS client_name,
           te.jira_issue_key,
+          te.jira_issue_summary,
+          te.jira_connection_id,
           te.created_at,
           COALESCE(
             (SELECT SUM(EXTRACT(EPOCH FROM COALESCE(es.stopped_at, NOW()) - es.started_at))
@@ -409,7 +416,10 @@ export async function entriesRoutes(fastify: FastifyInstance) {
             SELECT 1 FROM entry_segments es
             WHERE es.entry_id = te.id AND es.type = 'clocked' AND es.stopped_at IS NULL
           ) AS is_running,
-          similarity(te.description, ${query}) AS sim
+          GREATEST(
+            similarity(te.description, ${query}),
+            CASE WHEN te.jira_issue_key ILIKE ${'%' + query + '%'} THEN 0.8 ELSE 0 END
+          ) AS sim
         FROM time_entries te
         LEFT JOIN projects p ON p.id = te.project_id
         LEFT JOIN clients c ON c.id = p.client_id
@@ -419,6 +429,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           AND (
             te.description % ${query}
             OR te.description ILIKE ${'%' + query + '%'}
+            OR te.jira_issue_key ILIKE ${'%' + query + '%'}
           )
         ORDER BY te.description, te.created_at DESC
       )
@@ -435,6 +446,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       projectColor: row.project_color,
       clientName: row.client_name,
       jiraIssueKey: row.jira_issue_key,
+      jiraIssueSummary: row.jira_issue_summary,
+      jiraConnectionId: row.jira_connection_id,
       totalDurationSeconds: Number(row.total_duration_seconds),
       lastSegmentAt:
         typeof row.last_segment_at === 'string'

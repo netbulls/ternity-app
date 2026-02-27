@@ -250,7 +250,12 @@ export function EntryRow({ entry }: Props) {
   // Jira handlers
   const handleJiraIssueSelect = useCallback(
     (issue: JiraIssue, connectionId: string, _siteUrl: string) => {
-      const resolvedProjectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+      const resolvedProjectId = resolveJiraProject(
+        jiraConnections,
+        connectionId,
+        issue.key,
+        getPreference('defaultProjectId'),
+      );
       linkJira.mutate({
         entryId: entry.id,
         jiraIssueKey: issue.key,

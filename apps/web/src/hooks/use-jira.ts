@@ -39,7 +39,13 @@ export function useUpdateJiraConfig() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ connectionId, config }: { connectionId: string; config: JiraConnectionConfig }) =>
+    mutationFn: ({
+      connectionId,
+      config,
+    }: {
+      connectionId: string;
+      config: JiraConnectionConfig;
+    }) =>
       apiFetch(`/jira/connections/${connectionId}/config`, {
         method: 'PATCH',
         body: JSON.stringify(config),
@@ -110,22 +116,26 @@ export function useJiraRecent() {
 /**
  * Resolve the Ternity project ID for a Jira issue using the connection's project mappings.
  * Extracts the Jira project key from the issue key (e.g. "PROJ-123" → "PROJ"),
- * looks up the mapping, and falls back to the connection's default project.
+ * looks up the mapping, and falls back through:
+ *   1. Jira project mapping for the issue's project key
+ *   2. Jira connection's default project
+ *   3. User's default project (from preferences)
  */
 export function resolveJiraProject(
   connections: JiraConnectionView[] | undefined,
   connectionId: string,
   jiraIssueKey: string,
+  userDefaultProjectId?: string | null,
 ): string | null {
   const connection = connections?.find((c) => c.id === connectionId);
-  if (!connection) return null;
+  if (!connection) return userDefaultProjectId ?? null;
 
   const jiraProjectKey = jiraIssueKey.split('-')[0] ?? '';
   const mappings = connection.config.projectMappings ?? {};
   const mapped = mappings[jiraProjectKey];
   if (mapped) return mapped;
 
-  return connection.config.defaultProjectId ?? null;
+  return connection.config.defaultProjectId ?? userDefaultProjectId ?? null;
 }
 
 export function useLinkJiraIssue() {

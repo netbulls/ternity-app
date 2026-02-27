@@ -173,6 +173,8 @@ export const EntrySearchHitSchema = z.object({
   projectColor: z.string().nullable(),
   clientName: z.string().nullable(),
   jiraIssueKey: z.string().nullable(),
+  jiraIssueSummary: z.string().nullable(),
+  jiraConnectionId: z.string().nullable(),
   totalDurationSeconds: z.number(),
   lastSegmentAt: z.string(),
   isRunning: z.boolean(),

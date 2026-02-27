@@ -137,8 +137,18 @@ export function TimerBar() {
       handleStart();
     }
     if (e.key === 'Escape') {
-      setHashTrigger(null);
-      setJiraDropdownOpen(false);
+      if (hashTrigger !== null || jiraDropdownOpen) {
+        // First Esc: close dropdowns
+        setHashTrigger(null);
+        setJiraDropdownOpen(false);
+      } else if (!running) {
+        // Second Esc (or no dropdown open): reset to vanilla state
+        setDescription('');
+        setProjectId(getPreference('defaultProjectId'));
+        setLabelIds([]);
+        setPendingJira(null);
+        descriptionInputRef.current?.blur();
+      }
     }
   };
 
@@ -167,7 +177,12 @@ export function TimerBar() {
         connectionId,
         siteUrl,
       };
-      const resolvedProjectId = resolveJiraProject(jiraConnections, connectionId, issue.key);
+      const resolvedProjectId = resolveJiraProject(
+        jiraConnections,
+        connectionId,
+        issue.key,
+        getPreference('defaultProjectId'),
+      );
 
       if (running && currentEntry) {
         // Running timer: update description + link issue + set project
@@ -216,7 +231,12 @@ export function TimerBar() {
       const { summary, key, connectionId, siteUrl, projectId } = (e as CustomEvent).detail;
       if (!running) {
         setDescription(summary);
-        setPendingJira({ key, summary, connectionId, siteUrl });
+        // Only set pendingJira if we have a valid Jira key + connection
+        if (key && connectionId && siteUrl) {
+          setPendingJira({ key, summary, connectionId, siteUrl });
+        } else {
+          setPendingJira(null);
+        }
         if (projectId) setProjectId(projectId);
         // Focus the description input so user can edit before starting
         requestAnimationFrame(() => descriptionInputRef.current?.focus());

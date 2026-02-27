@@ -64,19 +64,25 @@ function mapJiraIssues(data: JiraSearchApiResponse): JiraIssue[] {
   }));
 }
 
-/** Build JQL clauses for a text/key search term */
-function buildTextJqlParts(text: string): string[] {
-  // Detect Jira issue key patterns:
-  //   "YOS-2826" → exact key lookup
-  //   "YOS-" / "YOS-28" → project filter (shows all issues in project)
-  //   otherwise  → full-text search
+/** Build JQL clauses for a text/key search term.
+ *  `projects` is the list of selected project keys from the connection config —
+ *  used to expand bare numbers (e.g. "2826") into key lookups ("YOS-2826", "DEV-2826"). */
+function buildTextJqlParts(text: string, projects: string[] = []): string[] {
+  // "YOS-2826" → exact key lookup
   if (/^[A-Z][A-Z0-9]+-\d+$/i.test(text)) {
     return [`key = "${text.toUpperCase()}"`];
   }
+  // "YOS-" or "YOS-28" → project filter
   const prefixMatch = /^([A-Z][A-Z0-9]+)-\d*$/i.exec(text);
   if (prefixMatch) {
     return [`project = "${prefixMatch[1]!.toUpperCase()}"`];
   }
+  // Pure number like "2826" → expand to key lookup across configured projects
+  if (/^\d+$/.test(text) && projects.length > 0) {
+    const keys = projects.map((p) => `"${p}-${text}"`).join(', ');
+    return [`key IN (${keys})`];
+  }
+  // Fallback: full-text search
   return [`text ~ "${text}"`];
 }
 
@@ -105,7 +111,7 @@ function buildSearchJql(
     parts.push('assignee = currentUser()');
   }
   if (mode === 'text' && text) {
-    parts.push(...buildTextJqlParts(text));
+    parts.push(...buildTextJqlParts(text, config.selectedProjects));
   }
 
   const filter = parts.join(' AND ');
@@ -348,9 +354,10 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     // Build JQL: either raw JQL param, or construct from project + text
     let effectiveJql = jql;
     if (!effectiveJql) {
+      const config = JiraConnectionConfigSchema.parse(connection.config);
       const parts: string[] = [];
       if (project) parts.push(`project = "${project}"`);
-      if (text) parts.push(...buildTextJqlParts(text));
+      if (text) parts.push(...buildTextJqlParts(text, config.selectedProjects));
       effectiveJql = parts.join(' AND ') || 'ORDER BY updated DESC';
     }
 
