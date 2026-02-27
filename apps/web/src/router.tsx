@@ -170,6 +170,13 @@ export const router = createBrowserRouter([
             return { Component: DevJiraV1V9Page };
           },
         },
+        {
+          path: '/dev/jira-mapping',
+          lazy: async () => {
+            const { DevJiraMappingPage } = await import('@/pages/dev-jira-mapping');
+            return { Component: DevJiraMappingPage };
+          },
+        },
       ]
     : []),
   {

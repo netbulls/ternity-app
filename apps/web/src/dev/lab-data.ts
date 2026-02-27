@@ -141,6 +141,7 @@ export const LAB_SECTIONS: LabProductSection[] = [
           { kind: 'exploration', title: 'V3 — Inline Chips', file: 'web/jira-mapping-e5f6.html', description: 'Extends existing visual query builder. Each Jira project chip gets a Ternity project badge attached to its right side. Mapping lives alongside PROJECT IN / STATUS NOT IN pattern.', date: '2026-02-27T18:20:00' },
           { kind: 'exploration', title: 'V4 — Table Grid', file: 'web/jira-mapping-g7h8.html', description: 'Spreadsheet-style table with Jira project and Ternity project columns. Status column shows mapping health. Grouped by Ternity client. Auto-match button in footer.', date: '2026-02-27T18:30:00' },
           { kind: 'exploration', title: 'V5 — Smart Suggest', file: 'web/jira-mapping-i9j0.html', description: 'Auto-matches by name similarity with confidence bars (high/medium/low). Accept all or override individually. Unmatchable projects get manual assign. Shows auto/overridden/manual provenance.', date: '2026-02-27T18:40:00' },
+          { kind: 'prototype', title: 'V1 — Paired Rows Prototype', route: '/dev/jira-mapping', description: 'Interactive prototype: full app emulation with sidebar and settings tabs. Expandable connection cards with search scope (visual query builder) and project mapping section. Paired rows with Jira project → Ternity project dropdown, auto-match, default fallback, mapped counter badge.', date: '2026-02-27T19:00:00' },
         ],
       },
       {
