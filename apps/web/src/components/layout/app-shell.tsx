@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './sidebar';
 import { ImpersonationBanner } from './impersonation-banner';
 import { IdentityShift } from './identity-shift';
+import { CommandPalette } from '@/components/command-palette';
 import { useAuth } from '@/providers/auth-provider';
 
 const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
@@ -67,6 +68,7 @@ export function AppShell() {
         </main>
       </div>
       <IdentityShift />
+      <CommandPalette />
     </div>
   );
 }

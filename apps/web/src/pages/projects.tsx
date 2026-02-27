@@ -147,9 +147,7 @@ export function ProjectsPage() {
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       items = items.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.clientName.toLowerCase().includes(q),
+        (p) => p.name.toLowerCase().includes(q) || p.clientName.toLowerCase().includes(q),
       );
     }
     return items;
@@ -223,9 +221,7 @@ export function ProjectsPage() {
 
   const handleDeactivateClient = useCallback(
     (client: AdminClient) => {
-      const affected = allProjects?.filter(
-        (p) => p.clientId === client.id && p.isActive,
-      ) ?? [];
+      const affected = allProjects?.filter((p) => p.clientId === client.id && p.isActive) ?? [];
       setConfirmDialog({
         type: 'client',
         action: 'deactivate',
@@ -247,7 +243,13 @@ export function ProjectsPage() {
         onClientClick: drilldownClient ? undefined : handleClientClick,
         showClient: !drilldownClient,
       }),
-    [handleEditProject, handleActivateProject, handleDeactivateProject, handleClientClick, drilldownClient],
+    [
+      handleEditProject,
+      handleActivateProject,
+      handleDeactivateProject,
+      handleClientClick,
+      drilldownClient,
+    ],
   );
 
   const clientColumns = useMemo(
@@ -291,7 +293,9 @@ export function ProjectsPage() {
   });
 
   // Cast to unknown table type for bulk actions (which only reads selection state)
-  const activeTable = (scope === 'clients' && !drilldownClient ? clientTable : projectTable) as TanStackTable<unknown>;
+  const activeTable = (
+    scope === 'clients' && !drilldownClient ? clientTable : projectTable
+  ) as TanStackTable<unknown>;
 
   // ── Selection ───────────────────────────────────────────────────────
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
@@ -304,16 +308,20 @@ export function ProjectsPage() {
     } else {
       bulkActivateProjects.mutate(selectedIds, { onSuccess: () => clearSelection() });
     }
-  }, [scope, drilldownClient, selectedIds, bulkActivateProjects, bulkActivateClients, clearSelection]);
+  }, [
+    scope,
+    drilldownClient,
+    selectedIds,
+    bulkActivateProjects,
+    bulkActivateClients,
+    clearSelection,
+  ]);
 
   const handleBulkDeactivate = useCallback(() => {
     if (scope === 'clients' && !drilldownClient) {
-      const names = allClients
-        ?.filter((c) => selectedIds.includes(c.id))
-        .map((c) => c.name) ?? [];
-      const affected = allProjects?.filter(
-        (p) => selectedIds.includes(p.clientId) && p.isActive,
-      ) ?? [];
+      const names = allClients?.filter((c) => selectedIds.includes(c.id)).map((c) => c.name) ?? [];
+      const affected =
+        allProjects?.filter((p) => selectedIds.includes(p.clientId) && p.isActive) ?? [];
       setConfirmDialog({
         type: 'client',
         action: 'deactivate',
@@ -322,7 +330,7 @@ export function ProjectsPage() {
         affectedProjects: affected,
       });
     } else {
-      const names = (drilldownClient ? filteredProjects : allProjects ?? [])
+      const names = (drilldownClient ? filteredProjects : (allProjects ?? []))
         .filter((p) => selectedIds.includes(p.id))
         .map((p) => p.name);
       setConfirmDialog({
@@ -356,20 +364,24 @@ export function ProjectsPage() {
         bulkDeactivateClients.mutate(ids, { onSettled });
       }
     }
-  }, [confirmDialog, deactivateProject, bulkDeactivateProjects, deactivateClient, bulkDeactivateClients, clearSelection]);
+  }, [
+    confirmDialog,
+    deactivateProject,
+    bulkDeactivateProjects,
+    deactivateClient,
+    bulkDeactivateClients,
+    clearSelection,
+  ]);
 
   // ── Scope/drill-down navigation ─────────────────────────────────────
-  const handleScopeChange = useCallback(
-    (newScope: Scope) => {
-      setScope(newScope);
-      setDrilldownClient(null);
-      setStatusFilter('active');
-      setSearchQuery('');
-      setDebouncedSearch('');
-      setRowSelection({});
-    },
-    [],
-  );
+  const handleScopeChange = useCallback((newScope: Scope) => {
+    setScope(newScope);
+    setDrilldownClient(null);
+    setStatusFilter('active');
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setRowSelection({});
+  }, []);
 
   const handleBackFromDrilldown = useCallback(() => {
     setDrilldownClient(null);
@@ -440,11 +452,10 @@ export function ProjectsPage() {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p
-                className="mt-0.5 text-muted-foreground"
-                style={{ fontSize: scaled(12) }}
-              >
-                {drilldownClient.activeProjectCount} active project{drilldownClient.activeProjectCount === 1 ? '' : 's'} · {formatNumber(drilldownClient.entryCount)} entries
+              <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+                {drilldownClient.activeProjectCount} active project
+                {drilldownClient.activeProjectCount === 1 ? '' : 's'} ·{' '}
+                {formatNumber(drilldownClient.entryCount)} entries
               </p>
             </>
           ) : (
@@ -455,10 +466,7 @@ export function ProjectsPage() {
               >
                 Projects
               </h1>
-              <p
-                className="mt-0.5 text-muted-foreground"
-                style={{ fontSize: scaled(12) }}
-              >
+              <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
                 Manage clients and projects
               </p>
             </>
@@ -483,10 +491,10 @@ export function ProjectsPage() {
       {/* Scope Tabs (only when not in drill-down) */}
       {!drilldownClient && (
         <div className="mb-5 flex gap-1 border-b border-border pb-px">
-          {([
+          {[
             { id: 'projects' as Scope, label: 'Projects', icon: FolderKanban },
             { id: 'clients' as Scope, label: 'Clients', icon: Building2 },
-          ]).map((tab) => (
+          ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleScopeChange(tab.id)}
@@ -510,7 +518,9 @@ export function ProjectsPage() {
         <StatCard
           label="Active"
           value={stats.active}
-          subtitle={scope === 'clients' && !drilldownClient ? 'visible in pickers' : 'visible in pickers'}
+          subtitle={
+            scope === 'clients' && !drilldownClient ? 'visible in pickers' : 'visible in pickers'
+          }
           accent
           onClick={() => setStatusFilter('active')}
           selected={statusFilter === 'active'}
@@ -538,9 +548,7 @@ export function ProjectsPage() {
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             placeholder={
-              scope === 'clients' && !drilldownClient
-                ? 'Search clients...'
-                : 'Search projects...'
+              scope === 'clients' && !drilldownClient ? 'Search clients...' : 'Search projects...'
             }
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
@@ -714,29 +722,32 @@ export function ProjectsPage() {
                     <p>
                       Deactivating{' '}
                       {(confirmDialog?.ids.length ?? 0) === 1 ? 'this client' : 'these clients'}{' '}
-                      will hide{' '}
-                      {(confirmDialog?.ids.length ?? 0) === 1 ? 'it' : 'them'} and all their
-                      projects from pickers.
+                      will hide {(confirmDialog?.ids.length ?? 0) === 1 ? 'it' : 'them'} and all
+                      their projects from pickers.
                     </p>
-                    {confirmDialog?.affectedProjects && confirmDialog.affectedProjects.length > 0 && (
-                      <div className="mt-3">
-                        <p className="mb-2 font-medium text-foreground" style={{ fontSize: scaled(12) }}>
-                          {confirmDialog.affectedProjects.length} active project
-                          {confirmDialog.affectedProjects.length === 1 ? '' : 's'} will be hidden:
-                        </p>
-                        <div className="max-h-[120px] overflow-auto rounded-md border border-border p-2">
-                          {confirmDialog.affectedProjects.map((p) => (
-                            <div key={p.id} className="flex items-center gap-2 py-0.5">
-                              <span
-                                className="h-2.5 w-2.5 shrink-0 rounded"
-                                style={{ backgroundColor: p.color }}
-                              />
-                              <span style={{ fontSize: scaled(12) }}>{p.name}</span>
-                            </div>
-                          ))}
+                    {confirmDialog?.affectedProjects &&
+                      confirmDialog.affectedProjects.length > 0 && (
+                        <div className="mt-3">
+                          <p
+                            className="mb-2 font-medium text-foreground"
+                            style={{ fontSize: scaled(12) }}
+                          >
+                            {confirmDialog.affectedProjects.length} active project
+                            {confirmDialog.affectedProjects.length === 1 ? '' : 's'} will be hidden:
+                          </p>
+                          <div className="max-h-[120px] overflow-auto rounded-md border border-border p-2">
+                            {confirmDialog.affectedProjects.map((p) => (
+                              <div key={p.id} className="flex items-center gap-2 py-0.5">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded"
+                                  style={{ backgroundColor: p.color }}
+                                />
+                                <span style={{ fontSize: scaled(12) }}>{p.name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </>
                 ) : (
                   <p>
@@ -756,6 +767,7 @@ export function ProjectsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button
+              autoFocus
               variant="destructive"
               onClick={executeConfirm}
               disabled={

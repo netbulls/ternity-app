@@ -8,9 +8,10 @@ import {
   projects,
   clients,
   labels,
+  jiraConnections,
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
-import type { StartTimer, Entry } from '@ternity/shared';
+import type { StartTimer, Entry, JiraIssueLink } from '@ternity/shared';
 
 /** Build a full entry response with segments, project + labels joined */
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
@@ -60,6 +61,22 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     .innerJoin(labels, eq(entryLabels.labelId, labels.id))
     .where(eq(entryLabels.entryId, entryId));
 
+  // Get Jira issue link
+  let jiraIssue: JiraIssueLink | null = null;
+  if (entry.jiraIssueKey && entry.jiraConnectionId) {
+    const [jc] = await conn
+      .select({ siteUrl: jiraConnections.siteUrl })
+      .from(jiraConnections)
+      .where(eq(jiraConnections.id, entry.jiraConnectionId))
+      .limit(1);
+    jiraIssue = {
+      key: entry.jiraIssueKey,
+      summary: entry.jiraIssueSummary ?? '',
+      connectionId: entry.jiraConnectionId,
+      siteUrl: jc?.siteUrl ?? '',
+    };
+  }
+
   // Compute totals
   const totalDurationSeconds = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
   const isRunning = segments.some((s) => s.type === 'clocked' && s.stoppedAt === null);
@@ -78,6 +95,7 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     projectName,
     projectColor,
     clientName,
+    jiraIssue,
     labels: entryLabelRows,
     segments: segments.map((s) => ({
       id: s.id,
@@ -192,6 +210,9 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
     const labelIds = body.labelIds ?? [];
+    const jiraIssueKey = body.jiraIssueKey ?? null;
+    const jiraIssueSummary = body.jiraIssueSummary ?? null;
+    const jiraConnectionId = body.jiraConnectionId ?? null;
 
     const result = await db.transaction(async (tx) => {
       // Stop any running segment first
@@ -202,7 +223,14 @@ export async function timerRoutes(fastify: FastifyInstance) {
       // Create new entry (metadata only)
       const [created] = await tx
         .insert(timeEntries)
-        .values({ userId, description, projectId })
+        .values({
+          userId,
+          description,
+          projectId,
+          jiraIssueKey,
+          jiraIssueSummary,
+          jiraConnectionId,
+        })
         .returning();
 
       // Create first clocked segment
@@ -303,6 +331,132 @@ export async function timerRoutes(fastify: FastifyInstance) {
       });
 
       return buildEntryResponse(id, tx);
+    });
+
+    return { running: true, entry: result };
+  });
+
+  /** POST /api/timer/start-or-resume — resume existing entry by jiraIssueKey, or start new */
+  fastify.post('/api/timer/start-or-resume', async (request) => {
+    const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const body = (request.body ?? {}) as StartTimer;
+    const description = body.description ?? '';
+    const projectId = body.projectId ?? null;
+    const labelIds = body.labelIds ?? [];
+    const jiraIssueKey = body.jiraIssueKey ?? null;
+    const jiraIssueSummary = body.jiraIssueSummary ?? null;
+    const jiraConnectionId = body.jiraConnectionId ?? null;
+
+    // If we have a jiraIssueKey, look for an existing stopped entry to resume
+    if (jiraIssueKey) {
+      const [existing] = await db
+        .select({ id: timeEntries.id })
+        .from(timeEntries)
+        .where(
+          and(
+            eq(timeEntries.userId, userId),
+            eq(timeEntries.isActive, true),
+            eq(timeEntries.jiraIssueKey, jiraIssueKey),
+          ),
+        )
+        .orderBy(desc(timeEntries.createdAt))
+        .limit(1);
+
+      if (existing) {
+        // Check it's not already running
+        const [runningSegment] = await db
+          .select()
+          .from(entrySegments)
+          .where(
+            and(
+              eq(entrySegments.entryId, existing.id),
+              eq(entrySegments.type, 'clocked'),
+              isNull(entrySegments.stoppedAt),
+            ),
+          )
+          .limit(1);
+
+        if (runningSegment) {
+          // Already running — just return it
+          const entry = await buildEntryResponse(existing.id);
+          return { running: true, entry };
+        }
+
+        // Resume existing entry
+        const result = await db.transaction(async (tx) => {
+          await stopRunningSegment(tx, userId, actorId, 'auto_stop_on_resume');
+
+          const now = new Date();
+          await tx.insert(entrySegments).values({
+            entryId: existing.id,
+            type: 'clocked',
+            startedAt: now,
+          });
+
+          await recordAudit({
+            entryId: existing.id,
+            userId,
+            actorId,
+            action: 'timer_resumed',
+            changes: { startedAt: { new: now.toISOString() } },
+            metadata: { source: 'command_palette' },
+            tx,
+          });
+
+          return buildEntryResponse(existing.id, tx);
+        });
+
+        return { running: true, entry: result };
+      }
+    }
+
+    // No existing entry found — create a new one (same as /timer/start)
+    const result = await db.transaction(async (tx) => {
+      await stopRunningSegment(tx, userId, actorId, 'auto_stop_on_new_start');
+
+      const now = new Date();
+
+      const [created] = await tx
+        .insert(timeEntries)
+        .values({
+          userId,
+          description,
+          projectId,
+          jiraIssueKey,
+          jiraIssueSummary,
+          jiraConnectionId,
+        })
+        .returning();
+
+      await tx.insert(entrySegments).values({
+        entryId: created!.id,
+        type: 'clocked',
+        startedAt: now,
+      });
+
+      if (labelIds.length > 0) {
+        await tx
+          .insert(entryLabels)
+          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
+      }
+
+      const startedProjectName = await resolveProjectName(projectId, tx);
+      await recordAudit({
+        entryId: created!.id,
+        userId,
+        actorId,
+        action: 'timer_started',
+        changes: {
+          description: { new: description },
+          project: { new: startedProjectName },
+          startedAt: { new: now.toISOString() },
+        },
+        metadata: { source: 'command_palette' },
+        tx,
+      });
+
+      return buildEntryResponse(created!.id, tx);
     });
 
     return { running: true, entry: result };

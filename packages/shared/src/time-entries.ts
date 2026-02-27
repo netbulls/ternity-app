@@ -26,6 +26,13 @@ export type Segment = z.infer<typeof SegmentSchema>;
 
 /* ── Entry (returned from API) ──────────────────────────────────── */
 
+export const JiraIssueLinkSchema = z.object({
+  key: z.string(),
+  summary: z.string(),
+  connectionId: z.string(),
+  siteUrl: z.string(),
+});
+
 export const EntrySchema = z.object({
   id: z.string(),
   description: z.string(),
@@ -33,6 +40,7 @@ export const EntrySchema = z.object({
   projectName: z.string().nullable(),
   projectColor: z.string().nullable(),
   clientName: z.string().nullable(),
+  jiraIssue: JiraIssueLinkSchema.nullable(),
   labels: z.array(EntryLabelSchema),
   segments: z.array(SegmentSchema),
   totalDurationSeconds: z.number(), // sum of all segment durations
@@ -73,6 +81,9 @@ export const CreateEntrySchema = z.object({
   startedAt: z.string(), // ISO 8601
   stoppedAt: z.string(), // ISO 8601
   note: z.string().min(1), // required justification for manually entered time
+  jiraIssueKey: z.string().nullable().optional(),
+  jiraIssueSummary: z.string().nullable().optional(),
+  jiraConnectionId: z.string().nullable().optional(),
 });
 
 export type CreateEntry = z.infer<typeof CreateEntrySchema>;
@@ -81,6 +92,9 @@ export const UpdateEntrySchema = z.object({
   description: z.string().optional(),
   projectId: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
+  jiraIssueKey: z.string().nullable().optional(),
+  jiraIssueSummary: z.string().nullable().optional(),
+  jiraConnectionId: z.string().nullable().optional(),
 });
 
 export type UpdateEntry = z.infer<typeof UpdateEntrySchema>;
@@ -110,6 +124,9 @@ export const StartTimerSchema = z.object({
   description: z.string().default(''),
   projectId: z.string().nullable().optional(),
   labelIds: z.array(z.string()).default([]),
+  jiraIssueKey: z.string().nullable().optional(),
+  jiraIssueSummary: z.string().nullable().optional(),
+  jiraConnectionId: z.string().nullable().optional(),
 });
 
 export type StartTimer = z.infer<typeof StartTimerSchema>;

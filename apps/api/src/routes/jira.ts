@@ -9,7 +9,7 @@ import {
   jiraFetch,
   TokenExpiredError,
 } from '../lib/jira-client.js';
-import { JiraConnectionConfigSchema } from '@ternity/shared';
+import { JiraConnectionConfigSchema, type JiraIssue, type JiraConnectionConfig } from '@ternity/shared';
 
 /** Helper: catch TokenExpiredError, mark connection as expired in DB, return 401. */
 async function handleJiraFetchError(
@@ -27,6 +27,70 @@ async function handleJiraFetchError(
     return reply.code(401).send({ error: 'Jira connection expired — please reconnect', code: 'TOKEN_EXPIRED' });
   }
   throw err; // re-throw non-token errors
+}
+
+/** Jira search API response shape */
+interface JiraSearchApiResponse {
+  issues: Array<{
+    key: string;
+    fields: {
+      summary: string;
+      status: { name: string };
+      issuetype: { name: string; iconUrl?: string };
+      priority: { name: string; iconUrl?: string } | null;
+      assignee: { displayName: string; avatarUrls?: Record<string, string> } | null;
+    };
+  }>;
+  total: number;
+}
+
+/** Map raw Jira API response to our JiraIssue shape */
+function mapJiraIssues(data: JiraSearchApiResponse): JiraIssue[] {
+  return data.issues.map((issue) => ({
+    key: issue.key,
+    summary: issue.fields.summary,
+    status: issue.fields.status.name,
+    type: issue.fields.issuetype.name,
+    typeIcon: issue.fields.issuetype.iconUrl ?? null,
+    priority: issue.fields.priority?.name ?? null,
+    priorityIcon: issue.fields.priority?.iconUrl ?? null,
+    assignee: issue.fields.assignee?.displayName ?? null,
+  }));
+}
+
+/** Build JQL from connection config + mode-specific clause */
+function buildSearchJql(
+  config: JiraConnectionConfig,
+  mode: 'assigned' | 'recent' | 'text',
+  text?: string,
+): string {
+  const parts: string[] = [];
+
+  // Project filter from config
+  if (config.selectedProjects.length > 0) {
+    const projectList = config.selectedProjects.map((p) => `"${p}"`).join(', ');
+    parts.push(`project IN (${projectList})`);
+  }
+
+  // Status exclusion from config
+  if (config.excludedStatuses.length > 0) {
+    const statusList = config.excludedStatuses.map((s) => `"${s}"`).join(', ');
+    parts.push(`status NOT IN (${statusList})`);
+  }
+
+  // Mode-specific clause
+  if (mode === 'assigned') {
+    parts.push('assignee = currentUser()');
+  }
+  if (mode === 'text' && text) {
+    parts.push(`text ~ "${text}"`);
+  }
+
+  const filter = parts.join(' AND ');
+
+  // Order clause
+  const order = 'ORDER BY updated DESC';
+  return filter ? `${filter} ${order}` : order;
 }
 
 export async function jiraRoutes(fastify: FastifyInstance) {
@@ -286,33 +350,74 @@ export async function jiraRoutes(fastify: FastifyInstance) {
       return reply.code(502).send({ error: 'Jira search failed', detail: body });
     }
 
-    const data = (await res.json()) as {
-      issues: Array<{
-        key: string;
-        fields: {
-          summary: string;
-          status: { name: string };
-          issuetype: { name: string; iconUrl?: string };
-          priority: { name: string; iconUrl?: string } | null;
-          assignee: { displayName: string; avatarUrls?: Record<string, string> } | null;
-        };
-      }>;
-      total: number;
-    };
+    const data = (await res.json()) as JiraSearchApiResponse;
 
     return {
       total: data.total,
-      issues: data.issues.map((issue) => ({
-        key: issue.key,
-        summary: issue.fields.summary,
-        status: issue.fields.status.name,
-        type: issue.fields.issuetype.name,
-        typeIcon: issue.fields.issuetype.iconUrl,
-        priority: issue.fields.priority?.name ?? null,
-        priorityIcon: issue.fields.priority?.iconUrl ?? null,
-        assignee: issue.fields.assignee?.displayName ?? null,
-      })),
+      issues: mapJiraIssues(data),
     };
+  });
+
+  // ── GET /api/jira/search — Aggregated search across all connections ──
+  fastify.get('/api/jira/search', async (request) => {
+    const userId = request.auth.userId;
+    const { text, mode } = request.query as {
+      text?: string;
+      mode?: 'assigned' | 'recent' | 'text';
+    };
+    const searchMode = mode ?? 'recent';
+
+    // Fetch all active connections
+    const connections = await db
+      .select()
+      .from(jiraConnections)
+      .where(
+        and(
+          eq(jiraConnections.userId, userId),
+          eq(jiraConnections.tokenStatus, 'active'),
+        ),
+      );
+
+    if (connections.length === 0) return [];
+
+    // Search each connection in parallel
+    const results = await Promise.allSettled(
+      connections.map(async (connection) => {
+        const config = JiraConnectionConfigSchema.parse(connection.config);
+        const jql = buildSearchJql(config, searchMode, text);
+
+        const params = new URLSearchParams({
+          jql,
+          maxResults: '10',
+          fields: 'summary,status,issuetype,priority,assignee',
+        });
+
+        const res = await jiraFetch(
+          connection,
+          `https://api.atlassian.com/ex/jira/${connection.cloudId}/rest/api/3/search/jql?${params}`,
+        );
+
+        if (!res.ok) {
+          throw new Error(`Jira search failed for ${connection.siteName}: ${res.status}`);
+        }
+
+        const data = (await res.json()) as JiraSearchApiResponse;
+
+        return {
+          connectionId: connection.id,
+          siteName: connection.siteName,
+          siteUrl: connection.siteUrl,
+          issues: mapJiraIssues(data),
+        };
+      }),
+    );
+
+    // Return only successful results (ignore failed connections)
+    return results
+      .filter((r): r is PromiseFulfilledResult<{ connectionId: string; siteName: string; siteUrl: string; issues: JiraIssue[] }> =>
+        r.status === 'fulfilled')
+      .map((r) => r.value)
+      .filter((r) => r.issues.length > 0);
   });
 
   // ── GET /api/jira/connections/:id/statuses — Fetch Jira statuses ─────

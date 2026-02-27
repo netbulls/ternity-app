@@ -123,10 +123,16 @@ export const timeEntries = pgTable(
       .references(() => users.id),
     projectId: uuid('project_id').references(() => projects.id),
     description: text('description').notNull().default(''),
+    jiraIssueKey: text('jira_issue_key'),
+    jiraIssueSummary: text('jira_issue_summary'),
+    jiraConnectionId: uuid('jira_connection_id').references(() => jiraConnections.id),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('time_entries_user_active_idx').on(t.userId, t.isActive)],
+  (t) => [
+    index('time_entries_user_active_idx').on(t.userId, t.isActive),
+    index('time_entries_jira_issue_idx').on(t.jiraIssueKey),
+  ],
 );
 
 // ── Entry Segments ────────────────────────────────────────────────────────

@@ -43,3 +43,30 @@ export interface JiraStatus {
     name: string;
   };
 }
+
+// ── Issue types (search results + linking) ──────────────────────────
+
+export interface JiraIssue {
+  key: string;
+  summary: string;
+  status: string;
+  type: string;
+  typeIcon: string | null;
+  priority: string | null;
+  priorityIcon: string | null;
+  assignee: string | null;
+}
+
+export interface JiraIssueLink {
+  key: string;
+  summary: string;
+  connectionId: string;
+  siteUrl: string;
+}
+
+export interface JiraSearchResult {
+  connectionId: string;
+  siteName: string;
+  siteUrl: string;
+  issues: JiraIssue[];
+}

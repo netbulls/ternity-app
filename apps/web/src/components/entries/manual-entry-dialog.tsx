@@ -25,7 +25,9 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
 
   const today = new Date().toISOString().slice(0, 10);
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(() => getPreference('defaultProjectId'));
+  const [projectId, setProjectId] = useState<string | null>(() =>
+    getPreference('defaultProjectId'),
+  );
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [date, setDate] = useState(today);
   const [startTime, setStartTime] = useState('09:00');
@@ -80,88 +82,96 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Manual Entry</DialogTitle>
-        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (durationSec > 0 && note.trim()) handleSubmit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Add Manual Entry</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              placeholder="What did you work on?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="note">Reason</Label>
-            <Input
-              id="note"
-              placeholder="Why are you adding this manually?"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
+          <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Project</Label>
-              <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Labels</Label>
-              <LabelSelector value={labelIds} onChange={setLabelIds} />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="start">Start Time</Label>
+              <Label htmlFor="description">Description</Label>
               <Input
-                id="start"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                id="description"
+                placeholder="What did you work on?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
             <div className="grid gap-2">
-              <Label htmlFor="end">End Time</Label>
+              <Label htmlFor="note">Reason</Label>
               <Input
-                id="end"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                id="note"
+                placeholder="Why are you adding this manually?"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
               />
             </div>
+
+            <div className="flex items-center gap-3">
+              <div className="grid gap-2">
+                <Label>Project</Label>
+                <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Labels</Label>
+                <LabelSelector value={labelIds} onChange={setLabelIds} />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="date">Date</Label>
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="start">Start Time</Label>
+                <Input
+                  id="start"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="end">End Time</Label>
+                <Input
+                  id="end"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {durationSec > 0 && (
+              <div className="text-center text-sm text-muted-foreground">
+                Duration:{' '}
+                <span className="font-brand font-semibold text-foreground">
+                  {formatDuration(durationSec)}
+                </span>
+              </div>
+            )}
           </div>
 
-          {durationSec > 0 && (
-            <div className="text-center text-sm text-muted-foreground">
-              Duration: <span className="font-brand font-semibold text-foreground">{formatDuration(durationSec)}</span>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={createEntry.isPending || durationSec <= 0 || !note.trim()}>
-            {createEntry.isPending ? 'Creating...' : 'Create Entry'}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={createEntry.isPending || durationSec <= 0 || !note.trim()}
+            >
+              {createEntry.isPending ? 'Creating...' : 'Create Entry'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

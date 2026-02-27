@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
-import type { JiraConnectionView, JiraConnectionConfig, JiraProject, JiraStatus } from '@ternity/shared';
+import type {
+  JiraConnectionView,
+  JiraConnectionConfig,
+  JiraProject,
+  JiraStatus,
+  JiraSearchResult,
+} from '@ternity/shared';
 
 export function useJiraConnections() {
   return useQuery({
@@ -74,6 +80,55 @@ export function useSyncJira() {
     },
     onError: () => {
       toast.error('Sync failed');
+    },
+  });
+}
+
+// ── Issue search & linking ──────────────────────────────────────────
+
+export function useJiraSearch(query: string, mode: 'assigned' | 'recent' | 'text') {
+  const params = new URLSearchParams({ mode });
+  if (mode === 'text' && query) params.set('text', query);
+
+  return useQuery({
+    queryKey: ['jira-search', query, mode],
+    queryFn: () => apiFetch<JiraSearchResult[]>(`/jira/search?${params}`),
+    enabled: mode !== 'text' || query.length >= 2,
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useJiraAssigned() {
+  return useJiraSearch('', 'assigned');
+}
+
+export function useJiraRecent() {
+  return useJiraSearch('', 'recent');
+}
+
+export function useLinkJiraIssue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      entryId,
+      jiraIssueKey,
+      jiraIssueSummary,
+      jiraConnectionId,
+    }: {
+      entryId: string;
+      jiraIssueKey: string | null;
+      jiraIssueSummary: string | null;
+      jiraConnectionId: string | null;
+    }) =>
+      apiFetch(`/entries/${entryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ jiraIssueKey, jiraIssueSummary, jiraConnectionId }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['timer'] });
     },
   });
 }

@@ -89,6 +89,7 @@ const RUNNING_ENTRY: Entry = {
   projectName: 'API Platform',
   projectColor: '#00D4AA',
   clientName: 'Netbulls',
+  jiraIssue: null,
   labels: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
   segments: [
     {
@@ -117,6 +118,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectName: 'Mobile App',
     projectColor: '#6366f1',
     clientName: 'Netbulls',
+    jiraIssue: null,
     labels: [{ id: 'l4', name: 'Meeting', color: '#3b82f6' }],
     segments: [
       {
@@ -143,6 +145,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectName: 'API Platform',
     projectColor: '#00D4AA',
     clientName: 'Netbulls',
+    jiraIssue: null,
     labels: [
       { id: 'l1', name: 'Development', color: '#22c55e' },
       { id: 'l3', name: 'Bug Fix', color: '#ef4444' },
@@ -190,6 +193,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectName: 'Brand Refresh',
     projectColor: '#f59e0b',
     clientName: 'Acme Corp',
+    jiraIssue: null,
     labels: [{ id: 'l2', name: 'Design', color: '#a855f7' }],
     segments: [
       {
@@ -216,6 +220,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectName: null,
     projectColor: null,
     clientName: null,
+    jiraIssue: null,
     labels: [],
     segments: [
       {
@@ -256,6 +261,7 @@ export const MOCK_DAY_GROUPS: DayGroup[] = [
         projectName: 'Data Pipeline',
         projectColor: '#ef4444',
         clientName: 'Acme Corp',
+        jiraIssue: null,
         labels: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
         segments: [
           {

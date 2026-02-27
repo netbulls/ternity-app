@@ -97,13 +97,37 @@ export function useResumeTimer() {
   return mutation;
 }
 
+export function useStartOrResumeTimer() {
+  const queryClient = useQueryClient();
+  const { effectiveUserId } = useImpersonation();
+
+  const mutation = useMutation({
+    mutationFn: (data: StartTimer) =>
+      apiFetch<TimerState>('/timer/start-or-resume', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
+      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+    },
+    onError: (_error, variables) => {
+      toast.error('Failed to start timer', {
+        action: { label: 'Retry', onClick: () => mutation.mutate(variables) },
+      });
+    },
+  });
+  return mutation;
+}
+
 export function useStopTimer() {
   const queryClient = useQueryClient();
   const { effectiveUserId } = useImpersonation();
 
   const mutation = useMutation({
-    mutationFn: () =>
-      apiFetch<TimerState>('/timer/stop', { method: 'POST' }),
+    mutationFn: () => apiFetch<TimerState>('/timer/stop', { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });

@@ -10,6 +10,7 @@ import {
   users,
   projects,
   clients,
+  jiraConnections,
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
@@ -166,8 +167,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     // Index rows by id for lookup
     const rowMap = new Map(rows.map((r) => [r.id, r]));
 
-    // 3. Batch-load segments, labels, and projects in parallel
-    const [allSegments, allLabelRows, allProjectRows] = await Promise.all([
+    // 3. Batch-load segments, labels, projects, and jira connections in parallel
+    const [allSegments, allLabelRows, allProjectRows, allJiraConnRows] = await Promise.all([
       db
         .select()
         .from(entrySegments)
@@ -196,6 +197,16 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           .from(projects)
           .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(inArray(projects.id, projectIds));
+      })(),
+      (() => {
+        const jiraConnIds = [
+          ...new Set(rows.map((r) => r.jiraConnectionId).filter(Boolean)),
+        ] as string[];
+        if (jiraConnIds.length === 0) return Promise.resolve([]);
+        return db
+          .select({ id: jiraConnections.id, siteUrl: jiraConnections.siteUrl })
+          .from(jiraConnections)
+          .where(inArray(jiraConnections.id, jiraConnIds));
       })(),
     ]);
 
@@ -228,6 +239,11 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       projectMap.set(p.id, { name: p.name, color: p.color, clientName: p.clientName });
     }
 
+    const jiraConnMap = new Map<string, string>();
+    for (const jc of allJiraConnRows) {
+      jiraConnMap.set(jc.id, jc.siteUrl);
+    }
+
     // 5. Assemble entries in lastSegmentAt DESC order (preserved from entryHits)
     const entries: Entry[] = entryHits.map((hit) => {
       const row = rowMap.get(hit.entryId)!;
@@ -244,6 +260,15 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         projectName: proj?.name ?? null,
         projectColor: proj?.color ?? null,
         clientName: proj?.clientName ?? null,
+        jiraIssue:
+          row.jiraIssueKey && row.jiraConnectionId
+            ? {
+                key: row.jiraIssueKey,
+                summary: row.jiraIssueSummary ?? '',
+                connectionId: row.jiraConnectionId,
+                siteUrl: jiraConnMap.get(row.jiraConnectionId) ?? '',
+              }
+            : null,
         labels: labelsByEntry.get(row.id) ?? [],
         segments: segments.map((s) => ({
           id: s.id,
@@ -258,7 +283,10 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         isRunning,
         isActive: row.isActive,
         createdAt: row.createdAt.toISOString(),
-        lastSegmentAt: hit.lastSegmentAt.toISOString(),
+        lastSegmentAt:
+          hit.lastSegmentAt instanceof Date
+            ? hit.lastSegmentAt.toISOString()
+            : String(hit.lastSegmentAt),
         userId: row.userId,
       };
     });
@@ -305,6 +333,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           userId,
           description: body.description ?? '',
           projectId: body.projectId ?? null,
+          jiraIssueKey: body.jiraIssueKey ?? null,
+          jiraIssueSummary: body.jiraIssueSummary ?? null,
+          jiraConnectionId: body.jiraConnectionId ?? null,
         })
         .returning();
 
@@ -373,6 +404,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       const updateSet: Record<string, unknown> = {};
       if (body.description !== undefined) updateSet.description = body.description;
       if (body.projectId !== undefined) updateSet.projectId = body.projectId;
+      if (body.jiraIssueKey !== undefined) updateSet.jiraIssueKey = body.jiraIssueKey;
+      if (body.jiraIssueSummary !== undefined) updateSet.jiraIssueSummary = body.jiraIssueSummary;
+      if (body.jiraConnectionId !== undefined) updateSet.jiraConnectionId = body.jiraConnectionId;
 
       if (Object.keys(updateSet).length > 0) {
         await tx.update(timeEntries).set(updateSet).where(eq(timeEntries.id, id));
@@ -413,6 +447,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         if (JSON.stringify(oldLabelIds) !== JSON.stringify(newIds)) {
           changes.labelIds = { old: oldLabelIds, new: newIds };
         }
+      }
+      if (body.jiraIssueKey !== undefined && body.jiraIssueKey !== existing.jiraIssueKey) {
+        changes.jiraIssueKey = { old: existing.jiraIssueKey, new: body.jiraIssueKey };
       }
 
       if (Object.keys(changes).length > 0) {

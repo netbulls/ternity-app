@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useUpdateEntry, useDeleteEntry, useRestoreEntry, useMoveBlock } from '@/hooks/use-entries';
 import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
+import { useLinkJiraIssue } from '@/hooks/use-jira';
 import { formatTime, formatDuration } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { useProjects } from '@/hooks/use-reference-data';
@@ -29,8 +30,12 @@ import { InlineProjectDropdown } from './inline-project-dropdown';
 import { AdjustEntryDialog } from './adjust-entry-dialog';
 import { SwitchTimerDialog } from './switch-timer-dialog';
 import { TimeBlockDrawer } from './time-block-drawer';
+import { JiraChip } from '@/components/jira/jira-chip';
+import { JiraIcon } from '@/components/jira/jira-icon';
+import { JiraSearchDropdown } from '@/components/jira/jira-search-dropdown';
+import { HashAutocomplete } from '@/components/jira/hash-autocomplete';
 import { getPreference, setPreference } from '@/providers/preferences-provider';
-import type { Entry } from '@ternity/shared';
+import type { Entry, JiraIssue } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
 
@@ -51,8 +56,11 @@ export function EntryRow({ entry }: Props) {
   const moveBlock = useMoveBlock();
   const resumeTimer = useResumeTimer();
   const stopTimer = useStopTimer();
+  const linkJira = useLinkJiraIssue();
 
   const [editingField, setEditingField] = useState<EditingField>(null);
+  const [jiraDropdownOpen, setJiraDropdownOpen] = useState(false);
+  const [hashTrigger, setHashTrigger] = useState<string | null>(null);
   const [editDesc, setEditDesc] = useState(entry.description);
   const [savedFlash, setSavedFlash] = useState(false);
   const [pillPop, setPillPop] = useState(false);
@@ -217,6 +225,44 @@ export function EntryRow({ entry }: Props) {
     );
   };
 
+  // Jira handlers
+  const handleJiraIssueSelect = useCallback(
+    (issue: JiraIssue, connectionId: string, _siteUrl: string) => {
+      linkJira.mutate({
+        entryId: entry.id,
+        jiraIssueKey: issue.key,
+        jiraIssueSummary: issue.summary,
+        jiraConnectionId: connectionId,
+      });
+      setJiraDropdownOpen(false);
+      setHashTrigger(null);
+    },
+    [entry.id, linkJira],
+  );
+
+  const handleJiraUnlink = useCallback(() => {
+    linkJira.mutate({
+      entryId: entry.id,
+      jiraIssueKey: null,
+      jiraIssueSummary: null,
+      jiraConnectionId: null,
+    });
+  }, [entry.id, linkJira]);
+
+  // Close jira dropdown/autocomplete on outside click
+  const jiraWrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!jiraDropdownOpen && hashTrigger === null) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (jiraWrapperRef.current && !jiraWrapperRef.current.contains(e.target as Node)) {
+        setJiraDropdownOpen(false);
+        setHashTrigger(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [jiraDropdownOpen, hashTrigger]);
+
   const isEditing = editingField !== null;
   const isEditingProject = editingField === 'project';
 
@@ -232,7 +278,7 @@ export function EntryRow({ entry }: Props) {
     <motion.div
       className={cn(
         'group/row relative flex items-center gap-3 px-4 py-2.5',
-        isEditingProject && 'z-20',
+        (isEditingProject || jiraDropdownOpen) && 'z-20',
       )}
       animate={{
         backgroundColor: isRunning
@@ -270,14 +316,14 @@ export function EntryRow({ entry }: Props) {
       </AnimatePresence>
 
       {/* Description + project */}
-      <div className="relative z-10 flex-1 min-w-0">
+      <div ref={jiraWrapperRef} className="relative z-10 flex-1 min-w-0">
         {/* Description — fixed height */}
-        <div className="flex h-5 items-center">
+        <div className="flex h-5 items-center gap-1.5">
           {editingField === 'description' ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex w-full items-center gap-2"
+              className="relative flex w-full items-center gap-2"
             >
               <motion.input
                 className="flex-1 rounded-md bg-muted/40 px-2 text-[13px] leading-5 text-foreground outline-none"
@@ -285,11 +331,24 @@ export function EntryRow({ entry }: Props) {
                 animate={breathingBorderAnimation}
                 transition={breathingBorderTransition}
                 value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEditDesc(val);
+                  // Detect # trigger
+                  const hashIdx = val.lastIndexOf('#');
+                  if (hashIdx >= 0 && (hashIdx === 0 || val[hashIdx - 1] === ' ')) {
+                    const afterHash = val.substring(hashIdx + 1);
+                    if (!afterHash.includes(' ')) {
+                      setHashTrigger(afterHash);
+                      return;
+                    }
+                  }
+                  setHashTrigger(null);
+                }}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveDescription();
-                  if (e.key === 'Escape') handleCancel();
+                  if (e.key === 'Escape') { handleCancel(); setHashTrigger(null); }
                 }}
               />
               <motion.button
@@ -301,27 +360,72 @@ export function EntryRow({ entry }: Props) {
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.85 }}
-                onClick={handleCancel}
+                onClick={() => { handleCancel(); setHashTrigger(null); }}
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
               >
                 <X className="h-2.5 w-2.5" />
               </motion.button>
+
+              {/* Hash autocomplete overlay */}
+              <AnimatePresence>
+                {hashTrigger !== null && (
+                  <HashAutocomplete
+                    query={hashTrigger}
+                    onSelect={(issue, connectionId, siteUrl) => {
+                      // Replace #query with issue summary
+                      const hashIdx = editDesc.lastIndexOf('#');
+                      const newDesc = hashIdx >= 0
+                        ? editDesc.substring(0, hashIdx) + issue.summary
+                        : issue.summary;
+                      setEditDesc(newDesc);
+                      setHashTrigger(null);
+                      handleJiraIssueSelect(issue, connectionId, siteUrl);
+                    }}
+                  />
+                )}
+              </AnimatePresence>
             </motion.div>
           ) : (
-            <motion.span
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-              className={cn(
-                'cursor-pointer truncate text-[13px] leading-5 hover:text-primary',
-                noDesc ? 'italic text-muted-foreground' : isRunning ? 'text-primary' : 'text-foreground',
+            <>
+              {/* Jira chip before description when linked */}
+              {entry.jiraIssue && (
+                <JiraChip issue={entry.jiraIssue} onUnlink={handleJiraUnlink} compact />
               )}
-              onClick={handleEditDescription}
-            >
-              {entry.description || 'No description'}
-            </motion.span>
+              <motion.span
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                className={cn(
+                  'cursor-pointer truncate text-[13px] leading-5 hover:text-primary',
+                  noDesc ? 'italic text-muted-foreground' : isRunning ? 'text-primary' : 'text-foreground',
+                )}
+                onClick={handleEditDescription}
+              >
+                {entry.description || 'No description'}
+              </motion.span>
+              {/* Jira icon button — visible on hover when no issue linked */}
+              {!entry.jiraIssue && !isDeleted && (
+                <button
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
+                  onClick={() => setJiraDropdownOpen((v) => !v)}
+                  title="Link Jira issue"
+                >
+                  <JiraIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </>
           )}
         </div>
+
+        {/* Jira search dropdown */}
+        <AnimatePresence>
+          {jiraDropdownOpen && (
+            <JiraSearchDropdown
+              onSelect={handleJiraIssueSelect}
+              onClose={() => setJiraDropdownOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Project line — fixed height */}
         <div className="relative mt-1 flex h-[18px] items-center gap-1.5">

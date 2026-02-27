@@ -53,9 +53,7 @@ export function UserManagementPage() {
   } | null>(null);
 
   // TanStack Table state
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'displayName', desc: false },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'displayName', desc: false }]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   // Debounce search
@@ -93,16 +91,13 @@ export function UserManagementPage() {
     if (!allUsers) return [];
     let filtered = allUsers;
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((u) =>
-        statusFilter === 'active' ? u.active : !u.active,
-      );
+      filtered = filtered.filter((u) => (statusFilter === 'active' ? u.active : !u.active));
     }
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (u) =>
-          u.displayName.toLowerCase().includes(q) ||
-          (u.email && u.email.toLowerCase().includes(q)),
+          u.displayName.toLowerCase().includes(q) || (u.email && u.email.toLowerCase().includes(q)),
       );
     }
     return filtered;
@@ -169,9 +164,7 @@ export function UserManagementPage() {
 
   const handleBulkDeactivate = useCallback(() => {
     if (!allUsers) return;
-    const names = allUsers
-      .filter((u) => selectedIds.includes(u.id))
-      .map((u) => u.displayName);
+    const names = allUsers.filter((u) => selectedIds.includes(u.id)).map((u) => u.displayName);
     setConfirmDialog({ action: 'deactivate', userIds: selectedIds, names });
   }, [selectedIds, allUsers]);
 
@@ -204,10 +197,7 @@ export function UserManagementPage() {
         >
           Users
         </h1>
-        <p
-          className="mt-0.5 text-muted-foreground"
-          style={{ fontSize: scaled(12) }}
-        >
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
           Manage team access and licenses
         </p>
       </div>
@@ -241,9 +231,7 @@ export function UserManagementPage() {
       {/* Toolbar */}
       <div className="mb-3 flex items-center gap-2">
         {/* Search */}
-        <div
-          className="flex max-w-[280px] flex-1 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-[7px]"
-        >
+        <div className="flex max-w-[280px] flex-1 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-[7px]">
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             placeholder="Search by name or email..."
@@ -349,18 +337,17 @@ export function UserManagementPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               This will prevent{' '}
-              {(confirmDialog?.userIds.length ?? 0) === 1 ? 'this user' : 'these users'}{' '}
-              from logging in:
+              {(confirmDialog?.userIds.length ?? 0) === 1 ? 'this user' : 'these users'} from
+              logging in:
               <br />
               <br />
-              <span className="font-medium text-foreground">
-                {confirmDialog?.names.join(', ')}
-              </span>
+              <span className="font-medium text-foreground">{confirmDialog?.names.join(', ')}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button
+              autoFocus
               variant="destructive"
               onClick={executeConfirm}
               disabled={deactivateUser.isPending || bulkDeactivate.isPending}

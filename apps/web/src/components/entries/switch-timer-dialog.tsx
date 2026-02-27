@@ -37,9 +37,7 @@ export function SwitchTimerDialog({
   const completedDuration = stoppingEntry.segments
     .filter((s) => s.durationSeconds != null)
     .reduce((sum, s) => sum + s.durationSeconds!, 0);
-  const runningSegment = stoppingEntry.segments.find(
-    (s) => s.type === 'clocked' && !s.stoppedAt,
-  );
+  const runningSegment = stoppingEntry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
   const elapsed = useElapsedSeconds(
     runningSegment?.startedAt ?? null,
     open, // tick only while dialog is open
@@ -61,9 +59,7 @@ export function SwitchTimerDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Switch timer</DialogTitle>
-          <DialogDescription>
-            Another timer is running. Switch to the new entry?
-          </DialogDescription>
+          <DialogDescription>Another timer is running. Switch to the new entry?</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-2 overflow-hidden py-1">
@@ -94,10 +90,7 @@ export function SwitchTimerDialog({
                     style={{ backgroundColor: stoppingEntry.projectColor }}
                   />
                 )}
-                <span
-                  className="truncate text-muted-foreground"
-                  style={{ fontSize: scaled(11) }}
-                >
+                <span className="truncate text-muted-foreground" style={{ fontSize: scaled(11) }}>
                   {stoppingEntry.clientName
                     ? `${stoppingEntry.clientName} · ${stoppingEntry.projectName}`
                     : stoppingEntry.projectName || 'No project'}
@@ -144,10 +137,7 @@ export function SwitchTimerDialog({
                     style={{ backgroundColor: startingEntry.projectColor }}
                   />
                 )}
-                <span
-                  className="truncate text-muted-foreground"
-                  style={{ fontSize: scaled(11) }}
-                >
+                <span className="truncate text-muted-foreground" style={{ fontSize: scaled(11) }}>
                   {startingEntry.clientName
                     ? `${startingEntry.clientName} · ${startingEntry.projectName}`
                     : startingEntry.projectName || 'No project'}
@@ -169,16 +159,14 @@ export function SwitchTimerDialog({
             checked={dontAskAgain}
             onCheckedChange={(checked) => setDontAskAgain(checked === true)}
           />
-          <span className="text-[12px] text-muted-foreground">
-            Don&apos;t ask again
-          </span>
+          <span className="text-[12px] text-muted-foreground">Don&apos;t ask again</span>
         </label>
 
         <DialogFooter>
           <Button variant="ghost" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>
+          <Button autoFocus onClick={handleConfirm}>
             Switch
           </Button>
         </DialogFooter>

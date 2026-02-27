@@ -8,6 +8,7 @@ import { PreferencesProvider } from '@/providers/preferences-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { PreferencesSync } from '@/providers/preferences-sync';
 import { ImpersonationProvider } from '@/providers/impersonation-provider';
+import { PaletteProvider } from '@/providers/palette-provider';
 import { getSimulateError, setSimulateError } from '@/lib/api';
 import { router } from '@/router';
 
@@ -62,8 +63,10 @@ export function App() {
           <AuthProvider>
             <PreferencesSync />
             <ImpersonationProvider>
-              <RouterProvider router={router} />
-              <Toaster />
+              <PaletteProvider>
+                <RouterProvider router={router} />
+                <Toaster />
+              </PaletteProvider>
             </ImpersonationProvider>
           </AuthProvider>
         </LogtoWrapper>
