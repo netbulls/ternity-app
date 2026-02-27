@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Link2, RefreshCw, ExternalLink, Unplug, AlertTriangle } from 'lucide-react';
 import { useUpdateJiraConfig, useDisconnectJira, useSyncJira } from '@/hooks/use-jira';
 import { VisualQueryBuilder } from './visual-query-builder';
+import { ProjectMappingSection } from './project-mapping-section';
 import type { JiraConnectionView, JiraConnectionConfig } from '@ternity/shared';
 
 function formatSyncTime(dateStr: string | null): string {
@@ -25,7 +26,11 @@ interface JiraConnectionCardProps {
   onReconnect?: () => void;
 }
 
-export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }: JiraConnectionCardProps) {
+export function JiraConnectionCard({
+  connection,
+  defaultExpanded,
+  onReconnect,
+}: JiraConnectionCardProps) {
   const isExpired = connection.tokenStatus === 'expired';
   const [expanded, setExpanded] = useState(defaultExpanded ?? isExpired);
   const [animDone, setAnimDone] = useState(defaultExpanded ?? false);
@@ -37,6 +42,12 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
   const [excludedStatuses, setExcludedStatuses] = useState<Set<string>>(
     () => new Set(connection.config.excludedStatuses ?? []),
   );
+  const [projectMappings, setProjectMappings] = useState<Record<string, string>>(
+    () => connection.config.projectMappings ?? {},
+  );
+  const [defaultProjectId, setDefaultProjectId] = useState<string | null>(
+    () => connection.config.defaultProjectId ?? null,
+  );
 
   const updateConfig = useUpdateJiraConfig();
   const disconnect = useDisconnectJira();
@@ -46,18 +57,33 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scheduleSave = useCallback(
-    (projects: Set<string>, statuses: Set<string>) => {
+    (opts: {
+      projects?: Set<string>;
+      statuses?: Set<string>;
+      mappings?: Record<string, string>;
+      defaultProject?: string | null;
+    }) => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         const config: JiraConnectionConfig = {
-          selectedProjects: [...projects],
-          excludedStatuses: [...statuses],
+          selectedProjects: [...(opts.projects ?? selectedProjects)],
+          excludedStatuses: [...(opts.statuses ?? excludedStatuses)],
           queryMode: 'visual',
+          projectMappings: opts.mappings ?? projectMappings,
+          defaultProjectId:
+            opts.defaultProject !== undefined ? opts.defaultProject : defaultProjectId,
         };
         updateConfig.mutate({ connectionId: connection.id, config });
       }, 500);
     },
-    [connection.id, updateConfig],
+    [
+      connection.id,
+      updateConfig,
+      selectedProjects,
+      excludedStatuses,
+      projectMappings,
+      defaultProjectId,
+    ],
   );
 
   // Cleanup timeout on unmount
@@ -72,7 +98,7 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      scheduleSave(next, excludedStatuses);
+      scheduleSave({ projects: next });
       return next;
     });
   };
@@ -81,7 +107,7 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
     setSelectedProjects((prev) => {
       const next = new Set(prev);
       next.delete(key);
-      scheduleSave(next, excludedStatuses);
+      scheduleSave({ projects: next });
       return next;
     });
   };
@@ -91,7 +117,7 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      scheduleSave(selectedProjects, next);
+      scheduleSave({ statuses: next });
       return next;
     });
   };
@@ -100,12 +126,42 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
     setExcludedStatuses((prev) => {
       const next = new Set(prev);
       next.delete(id);
-      scheduleSave(selectedProjects, next);
+      scheduleSave({ statuses: next });
       return next;
     });
   };
 
-  const summary = `${selectedProjects.size} project${selectedProjects.size !== 1 ? 's' : ''} · ${excludedStatuses.size} excluded · ${formatSyncTime(connection.lastSyncedAt)}`;
+  const handleMappingChange = (jiraKey: string, ternityProjectId: string | null) => {
+    setProjectMappings((prev) => {
+      const next = { ...prev };
+      if (ternityProjectId) {
+        next[jiraKey] = ternityProjectId;
+      } else {
+        delete next[jiraKey];
+      }
+      scheduleSave({ mappings: next });
+      return next;
+    });
+  };
+
+  const handleBulkMappingChange = (mappings: Record<string, string>) => {
+    setProjectMappings(mappings);
+    scheduleSave({ mappings });
+  };
+
+  const handleDefaultProjectChange = (projectId: string | null) => {
+    setDefaultProjectId(projectId);
+    scheduleSave({ defaultProject: projectId });
+  };
+
+  const mappedCount = Object.keys(projectMappings).filter((k) => selectedProjects.has(k)).length;
+  const summaryParts = [
+    `${selectedProjects.size} project${selectedProjects.size !== 1 ? 's' : ''}`,
+  ];
+  if (mappedCount > 0) summaryParts.push(`${mappedCount} mapped`);
+  if (excludedStatuses.size > 0) summaryParts.push(`${excludedStatuses.size} excluded`);
+  summaryParts.push(formatSyncTime(connection.lastSyncedAt));
+  const summary = summaryParts.join(' \u00b7 ');
 
   return (
     <div
@@ -153,10 +209,7 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
             </div>
           </div>
         </div>
-        <motion.div
-          animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.15 }}
-        >
+        <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.15 }}>
           <ChevronDown
             className={cn(
               'h-4 w-4 shrink-0 transition-colors',
@@ -177,7 +230,8 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className={animDone ? 'overflow-visible' : 'overflow-hidden'}
             onAnimationComplete={(def) => {
-              if (typeof def === 'object' && 'height' in def && def.height === 'auto') setAnimDone(true);
+              if (typeof def === 'object' && 'height' in def && def.height === 'auto')
+                setAnimDone(true);
             }}
             onAnimationStart={() => setAnimDone(false)}
           >
@@ -186,7 +240,8 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
                 /* Expired state — reconnect prompt */
                 <div className="space-y-3">
                   <p className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-                    Connection expired — Jira access needs to be renewed. Your configuration will be preserved.
+                    Connection expired — Jira access needs to be renewed. Your configuration will be
+                    preserved.
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -248,6 +303,19 @@ export function JiraConnectionCard({ connection, defaultExpanded, onReconnect }:
                     onToggleStatus={toggleStatus}
                     onRemoveStatus={removeStatus}
                   />
+
+                  {/* Project mapping */}
+                  <div className="mt-4">
+                    <ProjectMappingSection
+                      connectionId={connection.id}
+                      selectedProjectKeys={selectedProjects}
+                      projectMappings={projectMappings}
+                      defaultProjectId={defaultProjectId}
+                      onMappingChange={handleMappingChange}
+                      onBulkMappingChange={handleBulkMappingChange}
+                      onDefaultProjectChange={handleDefaultProjectChange}
+                    />
+                  </div>
 
                   {/* Action buttons */}
                   <div className="mt-4 flex items-center gap-1.5 border-t border-border/50 pt-3">

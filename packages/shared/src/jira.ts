@@ -7,6 +7,8 @@ export const JiraConnectionConfigSchema = z.object({
   excludedStatuses: z.array(z.string()).default([]),
   queryMode: z.enum(['visual', 'custom']).default('visual'),
   customJql: z.string().optional(),
+  projectMappings: z.record(z.string(), z.string()).default({}),
+  defaultProjectId: z.string().nullable().default(null),
 });
 
 export type JiraConnectionConfig = z.infer<typeof JiraConnectionConfigSchema>;
