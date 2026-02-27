@@ -39,6 +39,7 @@ export const EntrySchema = z.object({
   isRunning: z.boolean(), // any clocked segment with stoppedAt=null
   isActive: z.boolean(), // false = soft-deleted
   createdAt: z.string(), // ISO 8601
+  lastSegmentAt: z.string(), // ISO 8601 — most recent segment startedAt (or createdAt for adjustments)
   userId: z.string(),
 });
 

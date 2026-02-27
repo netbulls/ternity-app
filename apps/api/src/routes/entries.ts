@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, gte, lte, desc, inArray, isNull, or, like } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray, isNull, or, like, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   timeEntries,
@@ -13,7 +13,14 @@ import {
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
-import type { CreateEntry, UpdateEntry, AdjustEntry, MoveBlock, DayGroup, Entry } from '@ternity/shared';
+import type {
+  CreateEntry,
+  UpdateEntry,
+  AdjustEntry,
+  MoveBlock,
+  DayGroup,
+  Entry,
+} from '@ternity/shared';
 
 /** Get the actor ID — the real user behind the action (handles impersonation) */
 function getActorId(request: { auth: { realUserId?: string; userId: string } }): string {
@@ -21,7 +28,9 @@ function getActorId(request: { auth: { realUserId?: string; userId: string } }):
 }
 
 /** Get audit source from X-Audit-Source header, defaulting to 'api' */
-function getAuditSource(request: { headers: Record<string, string | string[] | undefined> }): string {
+function getAuditSource(request: {
+  headers: Record<string, string | string[] | undefined>;
+}): string {
   return (request.headers['x-audit-source'] as string) ?? 'api';
 }
 
@@ -94,25 +103,70 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     // deleted=true shows soft-deleted entries, default shows active only
     const showDeleted = query.deleted === 'true';
 
-    // 1. Fetch all entries for the date range
-    const rows = await db
-      .select()
+    // 1. Find entry IDs that have segments overlapping the date range,
+    //    OR entries created in the range (fallback for entries without segments).
+    //    For each entry, compute lastSegmentAt = most recent segment start time.
+    const entryHits = await db
+      .select({
+        entryId: timeEntries.id,
+        lastSegmentAt: sql<Date>`COALESCE(
+          MAX(${entrySegments.startedAt}),
+          MAX(${entrySegments.createdAt}),
+          ${timeEntries.createdAt}
+        )`.as('last_segment_at'),
+      })
       .from(timeEntries)
+      .leftJoin(entrySegments, eq(entrySegments.entryId, timeEntries.id))
       .where(
         and(
           eq(timeEntries.userId, userId),
           eq(timeEntries.isActive, !showDeleted),
-          gte(timeEntries.createdAt, fromTimestamp),
-          lte(timeEntries.createdAt, toTimestamp),
+          // Entry qualifies if any segment falls in range OR entry created in range
+          or(
+            and(
+              gte(
+                sql`COALESCE(${entrySegments.startedAt}, ${entrySegments.createdAt})`,
+                fromTimestamp,
+              ),
+              lte(
+                sql`COALESCE(${entrySegments.startedAt}, ${entrySegments.createdAt})`,
+                toTimestamp,
+              ),
+            ),
+            // Also catch entries with a currently running segment (no stoppedAt)
+            // whose startedAt is before the range end
+            and(
+              isNull(entrySegments.stoppedAt),
+              eq(entrySegments.type, 'clocked'),
+              lte(sql`${entrySegments.startedAt}`, toTimestamp),
+            ),
+            // Fallback: entries created in range with no segments
+            and(
+              isNull(entrySegments.id),
+              gte(timeEntries.createdAt, fromTimestamp),
+              lte(timeEntries.createdAt, toTimestamp),
+            ),
+          ),
         ),
       )
-      .orderBy(desc(timeEntries.createdAt));
+      .groupBy(timeEntries.id)
+      .orderBy(desc(sql`last_segment_at`));
 
-    if (rows.length === 0) return [];
+    if (entryHits.length === 0) return [];
 
-    const entryIds = rows.map((r) => r.id);
+    const entryIds = entryHits.map((r) => r.entryId);
+    const lastSegmentAtMap = new Map<string, Date>();
+    for (const hit of entryHits) {
+      lastSegmentAtMap.set(hit.entryId, hit.lastSegmentAt);
+    }
 
-    // 2. Batch-load segments, labels, and projects in parallel
+    // 2. Fetch full entry rows
+    const rows = await db.select().from(timeEntries).where(inArray(timeEntries.id, entryIds));
+
+    // Index rows by id for lookup
+    const rowMap = new Map(rows.map((r) => [r.id, r]));
+
+    // 3. Batch-load segments, labels, and projects in parallel
     const [allSegments, allLabelRows, allProjectRows] = await Promise.all([
       db
         .select()
@@ -145,38 +199,43 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       })(),
     ]);
 
-    // 3. Index by entryId / projectId for O(1) lookup
+    // 4. Index by entryId / projectId for O(1) lookup
     const segmentsByEntry = new Map<string, typeof allSegments>();
     for (const seg of allSegments) {
       let arr = segmentsByEntry.get(seg.entryId);
-      if (!arr) { arr = []; segmentsByEntry.set(seg.entryId, arr); }
+      if (!arr) {
+        arr = [];
+        segmentsByEntry.set(seg.entryId, arr);
+      }
       arr.push(seg);
     }
 
     const labelsByEntry = new Map<string, { id: string; name: string; color: string | null }[]>();
     for (const row of allLabelRows) {
       let arr = labelsByEntry.get(row.entryId);
-      if (!arr) { arr = []; labelsByEntry.set(row.entryId, arr); }
+      if (!arr) {
+        arr = [];
+        labelsByEntry.set(row.entryId, arr);
+      }
       arr.push({ id: row.id, name: row.name, color: row.color });
     }
 
-    const projectMap = new Map<string, { name: string; color: string | null; clientName: string | null }>();
+    const projectMap = new Map<
+      string,
+      { name: string; color: string | null; clientName: string | null }
+    >();
     for (const p of allProjectRows) {
       projectMap.set(p.id, { name: p.name, color: p.color, clientName: p.clientName });
     }
 
-    // 4. Assemble entries
-    const entries: Entry[] = rows.map((row) => {
+    // 5. Assemble entries in lastSegmentAt DESC order (preserved from entryHits)
+    const entries: Entry[] = entryHits.map((hit) => {
+      const row = rowMap.get(hit.entryId)!;
       const segments = segmentsByEntry.get(row.id) ?? [];
-      const proj = row.projectId ? projectMap.get(row.projectId) ?? null : null;
+      const proj = row.projectId ? (projectMap.get(row.projectId) ?? null) : null;
 
-      const totalDurationSeconds = segments.reduce(
-        (sum, s) => sum + (s.durationSeconds ?? 0),
-        0,
-      );
-      const isRunning = segments.some(
-        (s) => s.type === 'clocked' && s.stoppedAt === null,
-      );
+      const totalDurationSeconds = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+      const isRunning = segments.some((s) => s.type === 'clocked' && s.stoppedAt === null);
 
       return {
         id: row.id,
@@ -199,14 +258,15 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         isRunning,
         isActive: row.isActive,
         createdAt: row.createdAt.toISOString(),
+        lastSegmentAt: hit.lastSegmentAt.toISOString(),
         userId: row.userId,
       };
     });
 
-    // 5. Group by createdAt date
+    // 6. Group by lastSegmentAt date (entries appear in the day of their most recent segment)
     const groups = new Map<string, { totalSeconds: number; entries: Entry[] }>();
     for (const entry of entries) {
-      const date = entry.createdAt.slice(0, 10);
+      const date = entry.lastSegmentAt.slice(0, 10);
       if (!groups.has(date)) {
         groups.set(date, { totalSeconds: 0, entries: [] });
       }
@@ -235,9 +295,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
     const startedAt = new Date(body.startedAt);
     const stoppedAt = new Date(body.stoppedAt);
-    const durationSeconds = Math.round(
-      (stoppedAt.getTime() - startedAt.getTime()) / 1000,
-    );
+    const durationSeconds = Math.round((stoppedAt.getTime() - startedAt.getTime()) / 1000);
 
     const result = await db.transaction(async (tx) => {
       // Insert entry (metadata only)
@@ -263,9 +321,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       // Attach labels
       const labelIds = body.labelIds ?? [];
       if (labelIds.length > 0) {
-        await tx.insert(entryLabels).values(
-          labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })),
-        );
+        await tx
+          .insert(entryLabels)
+          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
       }
 
       // Record audit
@@ -301,11 +359,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const body = request.body as UpdateEntry;
 
     // Owner check
-    const [existing] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!existing || !existing.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
@@ -321,10 +375,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       if (body.projectId !== undefined) updateSet.projectId = body.projectId;
 
       if (Object.keys(updateSet).length > 0) {
-        await tx
-          .update(timeEntries)
-          .set(updateSet)
-          .where(eq(timeEntries.id, id));
+        await tx.update(timeEntries).set(updateSet).where(eq(timeEntries.id, id));
       }
 
       // Snapshot old labels BEFORE deleting (needed for audit)
@@ -339,9 +390,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
         await tx.delete(entryLabels).where(eq(entryLabels.entryId, id));
         if (body.labelIds.length > 0) {
-          await tx.insert(entryLabels).values(
-            body.labelIds.map((labelId: string) => ({ entryId: id, labelId })),
-          );
+          await tx
+            .insert(entryLabels)
+            .values(body.labelIds.map((labelId: string) => ({ entryId: id, labelId })));
         }
       }
 
@@ -389,11 +440,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const source = getAuditSource(request);
     const { id } = request.params as { id: string };
 
-    const [existing] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!existing) {
       return reply.code(404).send({ error: 'Entry not found' });
@@ -431,10 +478,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       }
 
       // Soft-delete
-      await tx
-        .update(timeEntries)
-        .set({ isActive: false })
-        .where(eq(timeEntries.id, id));
+      await tx.update(timeEntries).set({ isActive: false }).where(eq(timeEntries.id, id));
 
       // Record audit
       const deletedProjectName = await resolveProjectName(existing.projectId, tx);
@@ -462,11 +506,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
 
-    const [existing] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!existing) {
       return reply.code(404).send({ error: 'Entry not found' });
@@ -479,10 +519,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     }
 
     const result = await db.transaction(async (tx) => {
-      await tx
-        .update(timeEntries)
-        .set({ isActive: true })
-        .where(eq(timeEntries.id, id));
+      await tx.update(timeEntries).set({ isActive: true }).where(eq(timeEntries.id, id));
 
       await recordAudit({
         entryId: id,
@@ -514,11 +551,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     }
 
     // Verify ownership
-    const [existing] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!existing || !existing.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
@@ -564,11 +597,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const body = request.body as MoveBlock;
 
     // Verify ownership + active
-    const [existing] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!existing || !existing.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
@@ -581,12 +610,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const [segment] = await db
       .select()
       .from(entrySegments)
-      .where(
-        and(
-          eq(entrySegments.id, body.segmentId),
-          eq(entrySegments.entryId, id),
-        ),
-      )
+      .where(and(eq(entrySegments.id, body.segmentId), eq(entrySegments.entryId, id)))
       .limit(1);
 
     if (!segment) {
@@ -602,13 +626,17 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
     const result = await db.transaction(async (tx) => {
       // Auto-generate description: copy original with next available "(N)" suffix
-      const newDescription = body.description ?? await nextCopyName(existing.description, userId, tx);
+      const newDescription =
+        body.description ?? (await nextCopyName(existing.description, userId, tx));
       const now = new Date();
 
       // For running segments: stop the original first
       let blockDuration: number;
       if (isRunningSegment) {
-        blockDuration = Math.max(0, Math.round((now.getTime() - new Date(segment.startedAt!).getTime()) / 1000));
+        blockDuration = Math.max(
+          0,
+          Math.round((now.getTime() - new Date(segment.startedAt!).getTime()) / 1000),
+        );
         await tx
           .update(entrySegments)
           .set({ stoppedAt: now, durationSeconds: blockDuration })
@@ -634,9 +662,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         .from(entryLabels)
         .where(eq(entryLabels.entryId, id));
       if (originalLabels.length > 0) {
-        await tx.insert(entryLabels).values(
-          originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })),
-        );
+        await tx
+          .insert(entryLabels)
+          .values(originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })));
       }
 
       // 2. Create segment on new entry
@@ -713,11 +741,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
 
     // Verify ownership
-    const [entry] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [entry] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!entry) {
       return reply.code(404).send({ error: 'Entry not found' });

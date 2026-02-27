@@ -1,8 +1,22 @@
-import { useState } from 'react';
-import { ArrowRight, ChevronRight, Loader2, Timer, Play, Square, Pencil, Plus, Minus, Trash2, ArrowRightLeft } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import {
+  ArrowRight,
+  ChevronRight,
+  Loader2,
+  Timer,
+  Play,
+  Square,
+  Pencil,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowRightLeft,
+  ArrowUpRight,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
-import { formatDuration, formatTime } from '@/lib/format';
+import { formatDuration, formatTime, formatDateLabel } from '@/lib/format';
+import { ORG_TIMEZONE } from '@ternity/shared';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +26,7 @@ import {
 } from '@/components/ui/sheet';
 import { useEntryAudit } from '@/hooks/use-entries';
 import { useElapsedSeconds } from '@/hooks/use-timer';
-import type { Entry, AuditEvent } from '@ternity/shared';
+import type { Entry, Segment, AuditEvent } from '@ternity/shared';
 
 interface Props {
   entry: Entry | null;
@@ -22,11 +36,14 @@ interface Props {
 
 type AuditAction = AuditEvent['action'];
 
-const actionConfig: Record<AuditAction, {
-  label: string;
-  icon: typeof Plus;
-  iconColor: string;
-}> = {
+const actionConfig: Record<
+  AuditAction,
+  {
+    label: string;
+    icon: typeof Plus;
+    iconColor: string;
+  }
+> = {
   created: { label: 'Created entry', icon: Plus, iconColor: 'text-primary' },
   updated: { label: 'Updated entry', icon: Pencil, iconColor: 'text-chart-3' },
   deleted: { label: 'Deleted entry', icon: Trash2, iconColor: 'text-destructive' },
@@ -62,6 +79,23 @@ function formatSignedDuration(seconds: number): string {
   return `${sign}${parts.join(' ') || '0s'}`;
 }
 
+/** Like formatDuration but shows seconds when under 1 minute */
+function formatBlockDuration(seconds: number): string {
+  const abs = Math.abs(seconds);
+  if (abs < 60) return `${abs}s`;
+  return formatDuration(abs);
+}
+
+/** Always includes seconds — used for running segments */
+function formatLiveDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`;
+  return `${s}s`;
+}
+
 function formatFieldValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return '(none)';
   if (field === 'durationSeconds' && typeof value === 'number') {
@@ -90,183 +124,222 @@ function formatRelativeTime(iso: string): string {
   });
 }
 
-/* ── Timer sessions & timeline ───────────────────────────────────── */
-
-interface TimelineSession {
-  startedAt: string;       // ISO
-  stoppedAt: string | null; // null = still running
-  durationSeconds: number | null;
-  events: AuditEvent[];    // chronological order within session
+/** Get the YYYY-MM-DD date of an ISO timestamp in the org timezone */
+function getOrgDate(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ORG_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(iso));
+  const y = parts.find((p) => p.type === 'year')!.value;
+  const m = parts.find((p) => p.type === 'month')!.value;
+  const d = parts.find((p) => p.type === 'day')!.value;
+  return `${y}-${m}-${d}`;
 }
 
-type TimelineItem =
-  | { kind: 'event'; event: AuditEvent }
-  | { kind: 'session'; session: TimelineSession; index: number };
+/* ── Day-grouped segment timeline ────────────────────────────────── */
 
-/** Build timer sessions from audit events (expects DESC order — newest first) */
-function buildTimelineSessions(events: AuditEvent[]): TimelineSession[] {
-  const chronological = [...events].reverse();
-  const sessions: TimelineSession[] = [];
-  let currentStart: string | null = null;
-  let currentEvents: AuditEvent[] = [];
+interface SegmentDayGroup {
+  date: string; // YYYY-MM-DD
+  totalSeconds: number;
+  segments: Segment[];
+  auditEvents: AuditEvent[]; // non-timer audit events that belong to this day
+}
 
-  for (const event of chronological) {
-    if (event.action === 'timer_started' || event.action === 'timer_resumed') {
-      const c = event.changes as Record<string, { old?: unknown; new?: unknown }> | null;
-      currentStart = (c?.startedAt?.new as string) ?? event.createdAt;
-      currentEvents = [event];
-    } else if (event.action === 'timer_stopped' && currentStart) {
-      const c = event.changes as Record<string, { old?: unknown; new?: unknown }> | null;
-      const stoppedAt = (c?.stoppedAt?.new as string) ?? event.createdAt;
-      const duration = (c?.durationSeconds?.new as number) ?? null;
-      currentEvents.push(event);
-      sessions.push({
-        startedAt: currentStart, stoppedAt, durationSeconds: duration,
-        events: [...currentEvents],
-      });
-      currentStart = null;
-      currentEvents = [];
+/** Parse move-adjustment notes: "moved:{segmentId}:{description}" */
+function parseMoveNote(note: string | null): { segmentId: string; targetName: string } | null {
+  if (!note) return null;
+  const match = note.match(/^moved:([^:]+)(?::(.*))?$/);
+  if (!match) return null;
+  return { segmentId: match[1]!, targetName: match[2] ?? '' };
+}
+
+/** Group segments by day (org timezone), newest day first, segments chronological within day */
+function buildSegmentDayGroups(segments: Segment[], auditEvents: AuditEvent[]): SegmentDayGroup[] {
+  // Filter out move-adjustment segments
+  const visibleSegments = segments.filter((s) => !parseMoveNote(s.note));
+
+  const dayMap = new Map<
+    string,
+    { totalSeconds: number; segments: Segment[]; auditEvents: AuditEvent[] }
+  >();
+
+  for (const seg of visibleSegments) {
+    const date = getOrgDate(seg.startedAt ?? seg.createdAt);
+    if (!dayMap.has(date)) {
+      dayMap.set(date, { totalSeconds: 0, segments: [], auditEvents: [] });
     }
+    const group = dayMap.get(date)!;
+    group.segments.push(seg);
+    group.totalSeconds += seg.durationSeconds ?? 0;
   }
 
-  // Running session (open start with no stop)
-  if (currentStart && currentEvents.length > 0) {
-    sessions.push({
-      startedAt: currentStart, stoppedAt: null, durationSeconds: null,
-      events: [...currentEvents],
-    });
-  }
-
-  return sessions.reverse(); // newest first
-}
-
-/** Interleave sessions and non-timer events into a single timeline */
-function buildTimelineItems(events: AuditEvent[], sessions: TimelineSession[]): TimelineItem[] {
-  // Map each timer event ID → its session index
-  const eventToSession = new Map<string, number>();
-  for (let i = 0; i < sessions.length; i++) {
-    const session = sessions[i]!;
-    for (const ev of session.events) {
-      eventToSession.set(ev.id, i);
+  // Place non-timer audit events into their respective days
+  const timerActions = new Set<string>(['timer_started', 'timer_stopped', 'timer_resumed']);
+  for (const event of auditEvents) {
+    if (timerActions.has(event.action)) continue;
+    const date = getOrgDate(event.createdAt);
+    if (!dayMap.has(date)) {
+      dayMap.set(date, { totalSeconds: 0, segments: [], auditEvents: [] });
     }
+    dayMap.get(date)!.auditEvents.push(event);
   }
 
-  const renderedSessions = new Set<number>();
-  const items: TimelineItem[] = [];
+  // Sort days newest first
+  const sortedDates = Array.from(dayMap.keys()).sort((a, b) => b.localeCompare(a));
 
-  for (const event of events) {
-    const sessionIdx = eventToSession.get(event.id);
-    if (sessionIdx !== undefined) {
-      // First timer event of this session → insert the session block
-      if (!renderedSessions.has(sessionIdx)) {
-        renderedSessions.add(sessionIdx);
-        items.push({ kind: 'session', session: sessions[sessionIdx]!, index: sessionIdx });
-      }
-      // Subsequent timer events for this session → skip (inside the collapsed block)
-    } else {
-      items.push({ kind: 'event', event });
-    }
-  }
-
-  return items;
+  return sortedDates.map((date) => {
+    const group = dayMap.get(date)!;
+    // Segments are already in chronological order from the API
+    return {
+      date,
+      totalSeconds: group.totalSeconds,
+      segments: group.segments,
+      auditEvents: group.auditEvents,
+    };
+  });
 }
 
-function LiveDuration({ startedAt, offset = 0 }: { startedAt: string; offset?: number }) {
-  const elapsed = useElapsedSeconds(startedAt, true, offset);
-  return (
-    <span className="font-brand font-semibold text-primary">
-      {formatDuration(elapsed)}
-    </span>
-  );
-}
+/* ── Segment row (timeline item within a day) ────────────────────── */
 
-function SessionTimelineItem({
-  session, expanded, onToggle,
+function SegmentRow({
+  segment,
+  isLast,
+  isMoved,
+  movedToName,
 }: {
-  session: TimelineSession;
-  expanded: boolean;
-  onToggle: () => void;
+  segment: Segment;
+  isLast: boolean;
+  isMoved: boolean;
+  movedToName?: string;
 }) {
-  const isRunning = session.stoppedAt === null;
+  const isAdjustment = !segment.startedAt;
+  const isRunning = segment.type === 'clocked' && !segment.stoppedAt;
+  const liveElapsed = useElapsedSeconds(segment.startedAt, isRunning);
+  const displayDuration = segment.durationSeconds ?? (isRunning ? liveElapsed : null);
+  const isNegative = (displayDuration ?? 0) < 0;
+  const isClocked = segment.type === 'clocked';
 
   return (
-    <div>
-      {/* Clickable session bar */}
-      <button
-        onClick={onToggle}
-        className={cn(
-          'flex w-full items-center gap-2.5 rounded-md px-3 py-2 tabular-nums text-left transition-colors',
-          isRunning ? 'border border-primary/20' : '',
-        )}
-        style={{ background: isRunning ? 'hsl(var(--primary) / 0.04)' : 'hsl(var(--muted) / 0.3)' }}
-      >
-        {/* Chevron */}
-        <ChevronRight
-          className={cn(
-            'h-3 w-3 shrink-0 text-muted-foreground/40 transition-transform duration-200',
-            expanded && 'rotate-90',
-          )}
-        />
+    <div
+      className={cn('group/block relative grid items-center gap-2', isMoved && 'opacity-50')}
+      style={{
+        gridTemplateColumns: '16px 1fr auto',
+        padding: '6px 0',
+      }}
+    >
+      {/* Timeline connector line */}
+      {!isLast && (
+        <div className="absolute left-[7px] top-[24px] bottom-[-6px] w-px bg-border/50" />
+      )}
 
-        {/* Running pulse or static dot */}
-        {isRunning ? (
-          <span className="relative flex h-2 w-2 shrink-0">
+      {/* Timeline dot */}
+      <div className="flex justify-center">
+        {isAdjustment ? (
+          <div className="relative z-[1] flex h-2 w-2 items-center justify-center">
+            {isNegative ? (
+              <Minus className="h-2.5 w-2.5 text-muted-foreground/40" />
+            ) : (
+              <Plus className="h-2.5 w-2.5 text-muted-foreground/40" />
+            )}
+          </div>
+        ) : isRunning ? (
+          <span className="relative z-[1] flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
         ) : (
-          <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500/50" />
+          <div
+            className={cn(
+              'relative z-[1] h-2 w-2 rounded-full border-2 bg-background',
+              isMoved
+                ? 'border-muted-foreground/30 border-dashed'
+                : isClocked
+                  ? 'border-primary'
+                  : 'border-muted-foreground/40 border-dashed',
+            )}
+          />
         )}
+      </div>
 
-        {/* Time range */}
-        <span style={{ fontSize: scaled(12) }} className="text-foreground">
-          {formatTime(session.startedAt)}
-          <span className="mx-1 text-muted-foreground/40">–</span>
-          {isRunning ? (
-            <span className="text-primary">now</span>
-          ) : (
-            formatTime(session.stoppedAt!)
-          )}
-        </span>
-
-        {/* Duration */}
-        <span className="ml-auto" style={{ fontSize: scaled(12) }}>
-          {isRunning ? (
-            <LiveDuration startedAt={session.startedAt} />
-          ) : session.durationSeconds != null ? (
-            <span className="font-brand font-semibold text-foreground">
-              {formatDuration(session.durationSeconds)}
+      {/* Time info */}
+      <div style={{ fontSize: scaled(11) }}>
+        {isAdjustment ? (
+          <span className="text-muted-foreground">{segment.note || 'Adjustment'}</span>
+        ) : (
+          <span className="text-muted-foreground">
+            <span
+              className={cn(
+                'font-medium',
+                isMoved ? 'text-muted-foreground line-through' : 'text-foreground',
+              )}
+            >
+              {formatTime(segment.startedAt!)}
             </span>
-          ) : null}
-        </span>
-      </button>
+            <span className="mx-1 opacity-40">&ndash;</span>
+            <span
+              className={cn(
+                'font-medium',
+                isMoved ? 'text-muted-foreground line-through' : 'text-foreground',
+              )}
+            >
+              {segment.stoppedAt ? formatTime(segment.stoppedAt) : 'now'}
+            </span>
+            {isMoved ? (
+              <span
+                className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border/50 px-1 py-px text-muted-foreground/60"
+                style={{ fontSize: scaled(9) }}
+              >
+                <ArrowUpRight className="h-2 w-2" />
+                {movedToName || 'Moved'}
+              </span>
+            ) : isClocked ? (
+              <Timer className="ml-1.5 inline h-2.5 w-2.5 text-primary/50" />
+            ) : (
+              <Pencil className="ml-1.5 inline h-2.5 w-2.5 text-muted-foreground/40" />
+            )}
+          </span>
+        )}
+      </div>
 
-      {/* Expanded: individual timer events */}
-      {expanded && (
-        <div className="ml-5 mt-1.5 space-y-1.5 border-l border-border/50 pl-3">
-          {session.events.map((event) => (
-            <AuditEventCard key={event.id} event={event} />
-          ))}
-        </div>
-      )}
+      {/* Duration */}
+      <span
+        className={cn(
+          'font-brand text-right font-semibold tabular-nums',
+          isMoved
+            ? 'text-muted-foreground/40 line-through'
+            : isNegative
+              ? 'text-destructive/70'
+              : 'text-foreground',
+        )}
+        style={{ fontSize: scaled(11), minWidth: '44px' }}
+      >
+        {displayDuration != null
+          ? (isNegative ? '\u2212' : '') +
+            (isRunning ? formatLiveDuration(displayDuration) : formatBlockDuration(displayDuration))
+          : '\u2014'}
+      </span>
     </div>
   );
 }
 
-/* ── Event bar ───────────────────────────────────────────────────── */
+/* ── Audit event card (for non-timer events shown within day groups) */
 
 function AuditEventCard({ event }: { event: AuditEvent }) {
-  const source = event.metadata && typeof (event.metadata as Record<string, unknown>).source === 'string'
-    ? ((event.metadata as Record<string, unknown>).source as string).replace(/_/g, ' ')
-    : null;
+  const source =
+    event.metadata && typeof (event.metadata as Record<string, unknown>).source === 'string'
+      ? ((event.metadata as Record<string, unknown>).source as string).replace(/_/g, ' ')
+      : null;
   const hasChanges = event.changes && Object.keys(event.changes).length > 0;
   const [expanded, setExpanded] = useState(false);
 
   // For adjustments, derive sign-aware label, icon, and color from the durationSeconds
   const isAdjustment = event.action === 'adjustment_added';
-  const adjDuration = isAdjustment && event.changes?.durationSeconds?.new != null
-    ? (event.changes.durationSeconds.new as number)
-    : null;
+  const adjDuration =
+    isAdjustment && event.changes?.durationSeconds?.new != null
+      ? (event.changes.durationSeconds.new as number)
+      : null;
   const isPositiveAdj = adjDuration !== null && adjDuration >= 0;
 
   const config = isAdjustment
@@ -321,7 +394,10 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
       )}
 
       {/* Timestamp */}
-      <span className="ml-auto shrink-0 tabular-nums text-muted-foreground/60" style={{ fontSize: scaled(11) }}>
+      <span
+        className="ml-auto shrink-0 tabular-nums text-muted-foreground/60"
+        style={{ fontSize: scaled(11) }}
+      >
         {formatRelativeTime(event.createdAt)}
       </span>
     </>
@@ -351,7 +427,10 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
       {hasChanges && expanded && (
         <div className="ml-5 mt-1 space-y-1.5 border-l border-border/50 pl-3 pb-1">
           {/* Actor */}
-          <div className="flex items-center gap-1.5 py-1 text-muted-foreground" style={{ fontSize: scaled(11) }}>
+          <div
+            className="flex items-center gap-1.5 py-1 text-muted-foreground"
+            style={{ fontSize: scaled(11) }}
+          >
             <span>{event.actorName}</span>
           </div>
 
@@ -378,12 +457,14 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
                     <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/30" />
                   )}
                   {change.new !== undefined && (
-                    <span className={cn(
-                      'font-medium',
-                      isAdjDuration && (change.new as number) >= 0 && 'text-primary',
-                      isAdjDuration && (change.new as number) < 0 && 'text-destructive',
-                      !isAdjDuration && 'text-foreground',
-                    )}>
+                    <span
+                      className={cn(
+                        'font-medium',
+                        isAdjDuration && (change.new as number) >= 0 && 'text-primary',
+                        isAdjDuration && (change.new as number) < 0 && 'text-destructive',
+                        !isAdjDuration && 'text-foreground',
+                      )}
+                    >
                       {isAdjDuration
                         ? formatSignedDuration(change.new as number)
                         : formatFieldValue(field, change.new)}
@@ -399,39 +480,107 @@ function AuditEventCard({ event }: { event: AuditEvent }) {
   );
 }
 
+/* ── Day group in the timeline ───────────────────────────────────── */
+
+function DayTimelineGroup({
+  group,
+  movedSegmentIds,
+  movedToNames,
+}: {
+  group: SegmentDayGroup;
+  movedSegmentIds: Set<string>;
+  movedToNames: Map<string, string>;
+}) {
+  const runningSegment = group.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
+  const liveElapsed = useElapsedSeconds(runningSegment?.startedAt ?? null, !!runningSegment);
+  const dayTotal = group.totalSeconds + (runningSegment ? liveElapsed : 0);
+
+  return (
+    <div className="mb-3">
+      {/* Day header */}
+      <div
+        className="flex items-center justify-between rounded-md px-3 py-1.5"
+        style={{ background: 'hsl(var(--muted) / 0.4)' }}
+      >
+        <span
+          className="font-brand font-semibold uppercase tracking-wider text-muted-foreground"
+          style={{ fontSize: scaled(10) }}
+        >
+          {formatDateLabel(group.date)}
+        </span>
+        <span
+          className="font-brand font-semibold tabular-nums text-foreground"
+          style={{ fontSize: scaled(11) }}
+        >
+          {runningSegment ? formatLiveDuration(dayTotal) : formatDuration(group.totalSeconds)}
+        </span>
+      </div>
+
+      {/* Segments timeline within this day */}
+      <div className="mt-1 px-2">
+        {group.segments.map((segment, i) => (
+          <SegmentRow
+            key={segment.id}
+            segment={segment}
+            isLast={i === group.segments.length - 1 && group.auditEvents.length === 0}
+            isMoved={movedSegmentIds.has(segment.id)}
+            movedToName={movedToNames.get(segment.id)}
+          />
+        ))}
+      </div>
+
+      {/* Non-timer audit events for this day */}
+      {group.auditEvents.length > 0 && (
+        <div className="mt-1 space-y-1">
+          {group.auditEvents.map((event) => (
+            <AuditEventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Live duration ───────────────────────────────────────────────── */
+
+function LiveDuration({ startedAt, offset = 0 }: { startedAt: string; offset?: number }) {
+  const elapsed = useElapsedSeconds(startedAt, true, offset);
+  return <span className="font-brand font-semibold text-primary">{formatDuration(elapsed)}</span>;
+}
+
 /* ── Panel ────────────────────────────────────────────────────────── */
 
 export function AuditPanel({ entry, open, onOpenChange }: Props) {
   const { data: events, isLoading } = useEntryAudit(open && entry ? entry.id : null);
-  const [expandedSessions, setExpandedSessions] = useState<Set<number>>(new Set());
 
   if (!entry) return null;
 
-  const dateStr = new Date(entry.createdAt).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-  const timedSegments = entry.segments.filter((s) => s.startedAt != null);
-  const firstStartedAt = timedSegments[0]?.startedAt ?? entry.createdAt;
-  const lastStoppedAt = timedSegments[timedSegments.length - 1]?.stoppedAt ?? null;
-  const startTime = formatTime(firstStartedAt);
-  const endTime = lastStoppedAt ? formatTime(lastStoppedAt) : null;
   const isRunning = entry.isRunning;
   const completedDuration = entry.segments
     .filter((s) => s.durationSeconds != null)
     .reduce((sum, s) => sum + s.durationSeconds!, 0);
   const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
 
-  // Build unified timeline: sessions (collapsible) interleaved with regular events
-  const sessions = events ? buildTimelineSessions(events) : [];
-  const timelineItems = events ? buildTimelineItems(events, sessions) : [];
+  // Build moved segment tracking
+  const movedSegmentIds = new Set<string>();
+  const movedToNames = new Map<string, string>();
+  for (const seg of entry.segments) {
+    const move = parseMoveNote(seg.note);
+    if (move) {
+      movedSegmentIds.add(move.segmentId);
+      movedToNames.set(move.segmentId, move.targetName);
+    }
+  }
+
+  // Build day-grouped segment timeline
+  const dayGroups = useMemo(
+    () => buildSegmentDayGroups(entry.segments, events ?? []),
+    [entry.segments, events],
+  );
 
   // Find the creation event (oldest = last in our DESC-sorted array)
   const creationEvent = events
-    ? [...events].reverse().find(
-        (e) => e.action === 'created' || e.action === 'timer_started',
-      )
+    ? [...events].reverse().find((e) => e.action === 'created' || e.action === 'timer_started')
     : undefined;
   const createdAtStr = creationEvent
     ? new Date(creationEvent.createdAt).toLocaleString('en-GB', {
@@ -441,15 +590,6 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
         minute: '2-digit',
       })
     : null;
-
-  const toggleSession = (index: number) => {
-    setExpandedSessions((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -461,16 +601,16 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
           >
             Entry History
           </SheetTitle>
-          <SheetDescription className="sr-only">
-            Audit timeline for this entry
-          </SheetDescription>
+          <SheetDescription className="sr-only">Audit timeline for this entry</SheetDescription>
         </SheetHeader>
 
         {/* Entry summary */}
-        <div className={cn(
-          'mt-4 rounded-lg border p-3',
-          isRunning ? 'border-primary/30' : 'border-border',
-        )}>
+        <div
+          className={cn(
+            'mt-4 rounded-lg border p-3',
+            isRunning ? 'border-primary/30' : 'border-border',
+          )}
+        >
           <div style={{ fontSize: scaled(13) }} className="truncate font-medium text-foreground">
             {entry.description || 'No description'}
           </div>
@@ -488,18 +628,11 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
               </div>
             )}
             <div className="flex items-center gap-3 tabular-nums text-muted-foreground">
-              <span>{dateStr}</span>
-              {/* Show time range only when no sessions (sessions have their own ranges) */}
-              {sessions.length === 0 && (
-                <>
-                  <span className="opacity-30">|</span>
-                  <span>
-                    {startTime} – {isRunning ? (
-                      <span className="text-primary">now</span>
-                    ) : endTime}
-                  </span>
-                </>
-              )}
+              <span>
+                {dayGroups.length === 1
+                  ? formatDateLabel(dayGroups[0]!.date)
+                  : `${dayGroups.length} days`}
+              </span>
               <span className="opacity-30">|</span>
               {isRunning && runningSegment?.startedAt ? (
                 <LiveDuration startedAt={runningSegment.startedAt} offset={completedDuration} />
@@ -518,45 +651,41 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
           </div>
         </div>
 
-        {/* Timeline count */}
-        {events && events.length > 0 && (
+        {/* Segment count + day count */}
+        {entry.segments.length > 0 && (
           <div className="mt-4 flex items-center gap-2">
             <span
               className="font-brand uppercase tracking-wider text-muted-foreground/50"
               style={{ fontSize: scaled(9) }}
             >
-              {events.length} {events.length === 1 ? 'event' : 'events'}
-              {sessions.length > 0 && ` · ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`}
+              {entry.segments.length} {entry.segments.length === 1 ? 'block' : 'blocks'}
+              {dayGroups.length > 1 && ` · ${dayGroups.length} days`}
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
         )}
 
-        {/* Unified timeline */}
+        {/* Day-grouped timeline */}
         <div className="mt-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-[13px] text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading history...
             </div>
-          ) : timelineItems.length === 0 ? (
+          ) : dayGroups.length === 0 ? (
             <div className="py-8 text-center text-[13px] text-muted-foreground/50">
               No history recorded yet
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {timelineItems.map((item) =>
-                item.kind === 'session' ? (
-                  <SessionTimelineItem
-                    key={`session-${item.index}`}
-                    session={item.session}
-                    expanded={expandedSessions.has(item.index)}
-                    onToggle={() => toggleSession(item.index)}
-                  />
-                ) : (
-                  <AuditEventCard key={item.event.id} event={item.event} />
-                ),
-              )}
+            <div>
+              {dayGroups.map((group) => (
+                <DayTimelineGroup
+                  key={group.date}
+                  group={group}
+                  movedSegmentIds={movedSegmentIds}
+                  movedToNames={movedToNames}
+                />
+              ))}
             </div>
           )}
         </div>
