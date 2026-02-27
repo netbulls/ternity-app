@@ -118,6 +118,15 @@ export const MoveBlockSchema = z.object({
 
 export type MoveBlock = z.infer<typeof MoveBlockSchema>;
 
+/* ── Split entry payload ────────────────────────────────────────── */
+
+export const SplitEntrySchema = z.object({
+  durationSeconds: z.number().positive(),
+  note: z.string().optional(),
+});
+
+export type SplitEntry = z.infer<typeof SplitEntrySchema>;
+
 /* ── Start timer payload ────────────────────────────────────────── */
 
 export const StartTimerSchema = z.object({

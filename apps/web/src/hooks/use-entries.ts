@@ -165,6 +165,38 @@ export function useMoveBlock() {
   return mutation;
 }
 
+export function useSplitEntry() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({
+      entryId,
+      durationSeconds,
+      note,
+    }: {
+      entryId: string;
+      durationSeconds: number;
+      note?: string;
+    }) =>
+      apiFetch<Entry>(`/entries/${entryId}/split`, {
+        method: 'POST',
+        body: JSON.stringify({ durationSeconds, note }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      toast.success('Entry split — new entry created');
+    },
+    onError: (_error, variables) => {
+      toast.error('Failed to split entry', {
+        action: { label: 'Retry', onClick: () => mutation.mutate(variables) },
+      });
+    },
+  });
+  return mutation;
+}
+
 export function useRecentEntries() {
   return useQuery({
     queryKey: ['entries-recent'],

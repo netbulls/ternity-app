@@ -19,9 +19,21 @@ import type {
   UpdateEntry,
   AdjustEntry,
   MoveBlock,
+  SplitEntry,
   DayGroup,
   Entry,
 } from '@ternity/shared';
+
+/** Format seconds into h:mm or h:mm:ss */
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 /** Get the actor ID — the real user behind the action (handles impersonation) */
 function getActorId(request: { auth: { realUserId?: string; userId: string } }): string {
@@ -906,6 +918,141 @@ export async function entriesRoutes(fastify: FastifyInstance) {
           durationSeconds: { new: isRunningSegment ? null : blockDuration },
         },
         metadata: { source: 'move_block', movedFromEntryId: id, wasRunning: isRunningSegment },
+        tx,
+      });
+
+      return buildEntryResponse(newEntry!.id, tx);
+    });
+
+    return result;
+  });
+
+  /** POST /api/entries/:id/split — split off time from an entry into a new entry */
+  fastify.post('/api/entries/:id/split', async (request, reply) => {
+    const userId = request.auth.userId;
+    const actorId = getActorId(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as SplitEntry;
+
+    // Verify entry exists and belongs to user
+    const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
+
+    if (!existing || !existing.isActive) {
+      return reply.code(404).send({ error: 'Entry not found' });
+    }
+    if (existing.userId !== userId) {
+      return reply.code(403).send({ error: 'Not your entry' });
+    }
+
+    // Get all segments for this entry to calculate total duration and end time
+    const segments = await db
+      .select()
+      .from(entrySegments)
+      .where(eq(entrySegments.entryId, id))
+      .orderBy(entrySegments.startedAt);
+
+    if (segments.length === 0) {
+      return reply.code(400).send({ error: 'Entry has no time segments' });
+    }
+
+    // Calculate total duration from segments
+    const totalDuration = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+
+    // Find the end time: either last stopped segment or now (if running)
+    const runningSegment = segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
+    let endTime: Date;
+    if (runningSegment?.startedAt) {
+      endTime = new Date(Date.now()); // Current time if running
+    } else {
+      // Last stopped segment's end time
+      const lastStopped = [...segments].reverse().find((s) => s.stoppedAt);
+      if (!lastStopped?.stoppedAt) {
+        return reply.code(400).send({ error: 'Could not determine entry end time' });
+      }
+      endTime = lastStopped.stoppedAt;
+    }
+
+    // Validate split duration
+    if (body.durationSeconds >= totalDuration) {
+      return reply.code(400).send({
+        error: `Cannot split ${formatDuration(body.durationSeconds)} — entry total is ${formatDuration(totalDuration)}`,
+      });
+    }
+
+    const result = await db.transaction(async (tx) => {
+      // 1. Calculate new entry's start time (end time - split duration)
+      const newEntryStart = new Date(endTime.getTime() - body.durationSeconds * 1000);
+
+      // 2. Create new entry (clone description and project from original)
+      const [newEntry] = await tx
+        .insert(timeEntries)
+        .values({
+          userId,
+          description: existing.description,
+          projectId: existing.projectId,
+          jiraIssueKey: existing.jiraIssueKey,
+          jiraIssueSummary: existing.jiraIssueSummary,
+          jiraConnectionId: existing.jiraConnectionId,
+          createdAt: newEntryStart,
+        })
+        .returning();
+
+      // 2b. Clone labels from original entry
+      const originalLabels = await tx
+        .select({ labelId: entryLabels.labelId })
+        .from(entryLabels)
+        .where(eq(entryLabels.entryId, id));
+      if (originalLabels.length > 0) {
+        await tx
+          .insert(entryLabels)
+          .values(originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })));
+      }
+
+      // 3. Create a manual segment on the new entry with the split duration
+      await tx.insert(entrySegments).values({
+        entryId: newEntry!.id,
+        type: 'manual',
+        startedAt: newEntryStart,
+        stoppedAt: endTime,
+        durationSeconds: body.durationSeconds,
+        note: body.note ?? 'Split from another entry',
+      });
+
+      // 4. Add negative adjustment on original entry
+      await tx.insert(entrySegments).values({
+        entryId: id,
+        type: 'manual',
+        durationSeconds: -body.durationSeconds,
+        note: `split:${newEntry!.id}:${body.note ?? ''}`,
+      });
+
+      // 5. Audit original entry
+      await recordAudit({
+        entryId: id,
+        userId: existing.userId,
+        actorId,
+        action: 'entry_split',
+        changes: {
+          durationSeconds: { old: totalDuration, new: totalDuration - body.durationSeconds },
+          splitToEntryId: { new: newEntry!.id },
+        },
+        metadata: { source: 'entry_split', splitDuration: body.durationSeconds },
+        tx,
+      });
+
+      // 6. Audit new entry
+      const newProjectName = await resolveProjectName(existing.projectId, tx);
+      await recordAudit({
+        entryId: newEntry!.id,
+        userId,
+        actorId,
+        action: 'created',
+        changes: {
+          description: { new: existing.description },
+          project: { new: newProjectName },
+          durationSeconds: { new: body.durationSeconds },
+        },
+        metadata: { source: 'entry_split', splitFromEntryId: id },
         tx,
       });
 

@@ -46,6 +46,7 @@ import {
 import { AuditPanel } from './audit-panel';
 import { InlineProjectDropdown } from './inline-project-dropdown';
 import { AdjustEntryDialog } from './adjust-entry-dialog';
+import { SplitEntryDialog } from './split-entry-dialog';
 import { SwitchTimerDialog } from './switch-timer-dialog';
 import { TimeBlockDrawer } from './time-block-drawer';
 import { JiraChip } from '@/components/jira/jira-chip';
@@ -87,6 +88,7 @@ export function EntryRow({ entry }: Props) {
   const [projectSearch, setProjectSearch] = useState('');
   const [auditOpen, setAuditOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [splitOpen, setSplitOpen] = useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blocksExpanded, setBlocksExpanded] = useState(false);
@@ -661,6 +663,10 @@ export function EntryRow({ entry }: Props) {
                   <Clock className="mr-2 h-3.5 w-3.5" />
                   Add adjustment
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSplitOpen(true)}>
+                  <Clock className="mr-2 h-3.5 w-3.5" />
+                  Split off time
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleEditDescription}>
                   <Pencil className="mr-2 h-3.5 w-3.5" />
                   Edit description
@@ -683,6 +689,7 @@ export function EntryRow({ entry }: Props) {
 
         <AuditPanel entry={entry} open={auditOpen} onOpenChange={setAuditOpen} />
         <AdjustEntryDialog entry={entry} open={adjustOpen} onOpenChange={setAdjustOpen} />
+        <SplitEntryDialog entry={entry} open={splitOpen} onOpenChange={setSplitOpen} />
         {timerState?.entry && (
           <SwitchTimerDialog
             open={switchDialogOpen}

@@ -10,7 +10,8 @@ type AuditAction =
   | 'timer_stopped'
   | 'timer_resumed'
   | 'adjustment_added'
-  | 'block_moved';
+  | 'block_moved'
+  | 'entry_split';
 
 interface RecordAuditParams {
   entryId: string;
@@ -23,7 +24,10 @@ interface RecordAuditParams {
 }
 
 /** Resolve a project UUID to its name. Returns null for null/missing projects. */
-export async function resolveProjectName(projectId: string | null | undefined, tx?: Database): Promise<string | null> {
+export async function resolveProjectName(
+  projectId: string | null | undefined,
+  tx?: Database,
+): Promise<string | null> {
   if (!projectId) return null;
   const conn = tx ?? db;
   const [row] = await conn

@@ -31,6 +31,7 @@ export const entryAuditActionEnum = pgEnum('entry_audit_action', [
   'timer_resumed',
   'adjustment_added',
   'block_moved',
+  'entry_split',
 ]);
 
 export const segmentTypeEnum = pgEnum('segment_type', ['clocked', 'manual']);
@@ -396,6 +397,10 @@ export const syncScheduleState = pgTable('sync_schedule_state', {
   lastDailyRunAt: timestamp('last_daily_run_at', { withTimezone: true }),
   nextFrequentRunAt: timestamp('next_frequent_run_at', { withTimezone: true }),
   nextDailyRunAt: timestamp('next_daily_run_at', { withTimezone: true }),
-  schedulerStartedAt: timestamp('scheduler_started_at', { withTimezone: true }).notNull().defaultNow(),
-  schedulerHeartbeatAt: timestamp('scheduler_heartbeat_at', { withTimezone: true }).notNull().defaultNow(),
+  schedulerStartedAt: timestamp('scheduler_started_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  schedulerHeartbeatAt: timestamp('scheduler_heartbeat_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
