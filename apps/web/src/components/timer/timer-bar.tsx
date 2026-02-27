@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { useUpdateEntry } from '@/hooks/use-entries';
-import { useLinkJiraIssue } from '@/hooks/use-jira';
+import { useLinkJiraIssue, useJiraConnections } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
 import { formatTimer, getTimezoneLabel } from '@/lib/format';
@@ -24,6 +24,8 @@ export function TimerBar() {
   const stopTimer = useStopTimer();
   const updateEntry = useUpdateEntry();
   const linkJira = useLinkJiraIssue();
+  const { data: jiraConnections } = useJiraConnections();
+  const hasJira = (jiraConnections?.length ?? 0) > 0;
 
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
@@ -248,25 +250,27 @@ export function TimerBar() {
         {/* F3c Liquid Edge — two fluid blobs along the bottom */}
         {running && <LiquidEdge />}
 
-        {/* Jira chip or icon */}
-        <div className="relative z-10 flex-shrink-0">
-          {linkedJiraIssue ? (
-            <JiraChip issue={linkedJiraIssue} onUnlink={handleUnlink} />
-          ) : (
-            <button
-              className={cn(
-                'flex items-center justify-center rounded-md border p-1.5 transition-colors',
-                jiraDropdownOpen
-                  ? 'border-primary/30 bg-primary/10 text-primary'
-                  : 'border-border text-muted-foreground hover:border-primary/20 hover:text-primary',
-              )}
-              onClick={() => setJiraDropdownOpen((v) => !v)}
-              title="Link Jira issue"
-            >
-              <JiraIcon className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        {/* Jira chip or icon — only show when connections exist or issue already linked */}
+        {(hasJira || linkedJiraIssue) && (
+          <div className="relative z-10 flex-shrink-0">
+            {linkedJiraIssue ? (
+              <JiraChip issue={linkedJiraIssue} onUnlink={handleUnlink} />
+            ) : (
+              <button
+                className={cn(
+                  'flex items-center justify-center rounded-md border p-1.5 transition-colors',
+                  jiraDropdownOpen
+                    ? 'border-primary/30 bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/20 hover:text-primary',
+                )}
+                onClick={() => setJiraDropdownOpen((v) => !v)}
+                title="Link Jira issue"
+              >
+                <JiraIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="relative z-10 flex-1">
           <input
@@ -361,7 +365,7 @@ export function TimerBar() {
 
       {/* Hash autocomplete */}
       <AnimatePresence>
-        {hashTrigger !== null && !jiraDropdownOpen && (
+        {hasJira && hashTrigger !== null && !jiraDropdownOpen && (
           <HashAutocomplete
             query={hashTrigger}
             onSelect={(issue, connectionId, siteUrl) => {
