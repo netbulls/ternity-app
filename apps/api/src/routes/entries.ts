@@ -955,22 +955,21 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Entry has no time segments' });
     }
 
+    // Reject split on running entries — must be stopped first
+    const runningSegment = segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
+    if (runningSegment) {
+      return reply.code(400).send({ error: 'Cannot split a running entry. Stop the timer first.' });
+    }
+
     // Calculate total duration from segments
     const totalDuration = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
 
-    // Find the end time: either last stopped segment or now (if running)
-    const runningSegment = segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
-    let endTime: Date;
-    if (runningSegment?.startedAt) {
-      endTime = new Date(Date.now()); // Current time if running
-    } else {
-      // Last stopped segment's end time
-      const lastStopped = [...segments].reverse().find((s) => s.stoppedAt);
-      if (!lastStopped?.stoppedAt) {
-        return reply.code(400).send({ error: 'Could not determine entry end time' });
-      }
-      endTime = lastStopped.stoppedAt;
+    // Find end time from last stopped segment
+    const lastStopped = [...segments].reverse().find((s) => s.stoppedAt);
+    if (!lastStopped?.stoppedAt) {
+      return reply.code(400).send({ error: 'Could not determine entry end time' });
     }
+    const endTime = lastStopped.stoppedAt;
 
     // Validate split duration
     if (body.durationSeconds >= totalDuration) {

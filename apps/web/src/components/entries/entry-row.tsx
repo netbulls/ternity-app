@@ -89,6 +89,7 @@ export function EntryRow({ entry }: Props) {
   const [auditOpen, setAuditOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
+  const [stopAndSplitConfirmOpen, setStopAndSplitConfirmOpen] = useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blocksExpanded, setBlocksExpanded] = useState(false);
@@ -663,7 +664,15 @@ export function EntryRow({ entry }: Props) {
                   <Clock className="mr-2 h-3.5 w-3.5" />
                   Add adjustment
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSplitOpen(true)}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isRunning) {
+                      setStopAndSplitConfirmOpen(true);
+                    } else {
+                      setSplitOpen(true);
+                    }
+                  }}
+                >
                   <Clock className="mr-2 h-3.5 w-3.5" />
                   Split off time
                 </DropdownMenuItem>
@@ -716,6 +725,30 @@ export function EntryRow({ entry }: Props) {
                 onClick={() => deleteEntry.mutate({ id: entry.id, source: 'inline_edit' })}
               >
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={stopAndSplitConfirmOpen} onOpenChange={setStopAndSplitConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Stop timer to split?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This entry is currently running. The timer will be stopped before splitting off
+                time.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  stopTimer.mutate(undefined, {
+                    onSuccess: () => setSplitOpen(true),
+                  });
+                }}
+              >
+                Stop &amp; Split
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
