@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { formatDuration } from '@/lib/format';
 import { useSplitEntry } from '@/hooks/use-entries';
+import { ProjectSelector } from '@/components/timer/project-selector';
 import type { Entry } from '@ternity/shared';
 
 interface Props {
@@ -92,6 +93,16 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
 
   const [rawInput, setRawInput] = useState('');
   const [note, setNote] = useState('');
+  const [description, setDescription] = useState(entry.description ?? '');
+  const [projectId, setProjectId] = useState<string | null>(entry.projectId ?? null);
+
+  // Reset form fields when entry changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setDescription(entry.description ?? '');
+      setProjectId(entry.projectId ?? null);
+    }
+  }, [open, entry.description, entry.projectId]);
 
   const parsed = useMemo(() => parseTimeInput(rawInput), [rawInput]);
   const isEmpty = rawInput.trim() === '';
@@ -114,13 +125,25 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
   const resetForm = () => {
     setRawInput('');
     setNote('');
+    setDescription(entry.description ?? '');
+    setProjectId(entry.projectId ?? null);
   };
 
   const handleSubmit = () => {
     if (!canSubmit || !parsed) return;
 
+    // Only send description/projectId if they differ from the original
+    const descChanged = description !== (entry.description ?? '');
+    const projChanged = projectId !== (entry.projectId ?? null);
+
     splitEntry.mutate(
-      { entryId: entry.id, durationSeconds: parsed.seconds, note: note.trim() || undefined },
+      {
+        entryId: entry.id,
+        durationSeconds: parsed.seconds,
+        note: note.trim() || undefined,
+        description: descChanged ? description : undefined,
+        projectId: projChanged ? projectId : undefined,
+      },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -130,7 +153,7 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
     );
   };
 
-  const projectLabel = entry.clientName
+  const originalProjectLabel = entry.clientName
     ? `${entry.clientName} · ${entry.projectName}`
     : entry.projectName;
 
@@ -149,9 +172,9 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
             <span className="truncate text-[13px] font-medium text-foreground/90">
               {entry.description || 'No description'}
             </span>
-            {projectLabel && (
+            {originalProjectLabel && (
               <span className="truncate text-primary" style={{ fontSize: scaled(11) }}>
-                {projectLabel}
+                {originalProjectLabel}
               </span>
             )}
             <span
@@ -164,7 +187,7 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          {/* Main input */}
+          {/* Duration input */}
           <div>
             <input
               type="text"
@@ -246,6 +269,32 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
               >
                 {formatDuration(isValid && !exceedsTotal ? remainingAfterSplit : totalDuration)}
               </div>
+            </div>
+          </div>
+
+          {/* New entry details */}
+          <div className="grid gap-3">
+            <div
+              className="font-brand uppercase tracking-widest text-muted-foreground/50"
+              style={{ fontSize: scaled(9) }}
+            >
+              New Entry Details
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="split-description">Description</Label>
+              <Input
+                id="split-description"
+                placeholder="What was this time for?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && canSubmit) handleSubmit();
+                }}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Project</Label>
+              <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
             </div>
           </div>
 

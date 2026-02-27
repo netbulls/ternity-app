@@ -173,14 +173,18 @@ export function useSplitEntry() {
       entryId,
       durationSeconds,
       note,
+      description,
+      projectId,
     }: {
       entryId: string;
       durationSeconds: number;
       note?: string;
+      description?: string;
+      projectId?: string | null;
     }) =>
       apiFetch<Entry>(`/entries/${entryId}/split`, {
         method: 'POST',
-        body: JSON.stringify({ durationSeconds, note }),
+        body: JSON.stringify({ durationSeconds, note, description, projectId }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['entries'] });

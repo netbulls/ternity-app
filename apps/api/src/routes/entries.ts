@@ -983,13 +983,16 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       // 1. Calculate new entry's start time (end time - split duration)
       const newEntryStart = new Date(endTime.getTime() - body.durationSeconds * 1000);
 
-      // 2. Create new entry (clone description and project from original)
+      // 2. Create new entry (use provided description/project or clone from original)
+      const newDescription =
+        body.description !== undefined ? body.description : existing.description;
+      const newProjectId = body.projectId !== undefined ? body.projectId : existing.projectId;
       const [newEntry] = await tx
         .insert(timeEntries)
         .values({
           userId,
-          description: existing.description,
-          projectId: existing.projectId,
+          description: newDescription,
+          projectId: newProjectId,
           jiraIssueKey: existing.jiraIssueKey,
           jiraIssueSummary: existing.jiraIssueSummary,
           jiraConnectionId: existing.jiraConnectionId,
@@ -1041,14 +1044,14 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       });
 
       // 6. Audit new entry
-      const newProjectName = await resolveProjectName(existing.projectId, tx);
+      const newProjectName = await resolveProjectName(newProjectId, tx);
       await recordAudit({
         entryId: newEntry!.id,
         userId,
         actorId,
         action: 'created',
         changes: {
-          description: { new: existing.description },
+          description: { new: newDescription },
           project: { new: newProjectName },
           durationSeconds: { new: body.durationSeconds },
         },

@@ -123,6 +123,8 @@ export type MoveBlock = z.infer<typeof MoveBlockSchema>;
 export const SplitEntrySchema = z.object({
   durationSeconds: z.number().positive(),
   note: z.string().optional(),
+  description: z.string().optional(),
+  projectId: z.string().nullable().optional(),
 });
 
 export type SplitEntry = z.infer<typeof SplitEntrySchema>;
