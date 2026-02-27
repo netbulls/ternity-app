@@ -156,6 +156,7 @@ export const AuditEventSchema = z.object({
     'timer_resumed',
     'adjustment_added',
     'block_moved',
+    'entry_split',
   ]),
   actorId: z.string(),
   actorName: z.string(),

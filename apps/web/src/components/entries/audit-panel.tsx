@@ -52,6 +52,7 @@ const actionConfig: Record<
   timer_resumed: { label: 'Resumed timer', icon: Timer, iconColor: 'text-blue-500' },
   adjustment_added: { label: 'Added adjustment', icon: Plus, iconColor: 'text-chart-3' },
   block_moved: { label: 'Moved time block', icon: ArrowRightLeft, iconColor: 'text-chart-3' },
+  entry_split: { label: 'Split time', icon: ArrowUpRight, iconColor: 'text-chart-3' },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -64,6 +65,8 @@ const fieldLabels: Record<string, string> = {
   segmentId: 'Time block',
   movedToEntryId: 'Moved to entry',
   movedFromEntryId: 'Moved from entry',
+  splitToEntryId: 'Split to entry',
+  splitFromEntryId: 'Split from entry',
 };
 
 function formatSignedDuration(seconds: number): string {
