@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { jiraConnections } from '../db/schema.js';
+import { jiraConnections, timeEntries } from '../db/schema.js';
 import {
   exchangeCode,
   getAtlassianMe,
@@ -9,7 +9,11 @@ import {
   jiraFetch,
   TokenExpiredError,
 } from '../lib/jira-client.js';
-import { JiraConnectionConfigSchema, type JiraIssue, type JiraConnectionConfig } from '@ternity/shared';
+import {
+  JiraConnectionConfigSchema,
+  type JiraIssue,
+  type JiraConnectionConfig,
+} from '@ternity/shared';
 
 /** Helper: catch TokenExpiredError, mark connection as expired in DB, return 401. */
 async function handleJiraFetchError(
@@ -24,7 +28,9 @@ async function handleJiraFetchError(
       .set({ tokenStatus: 'expired', updatedAt: new Date() })
       .where(eq(jiraConnections.id, connectionId));
     request.log.error(err, 'Jira token expired');
-    return reply.code(401).send({ error: 'Jira connection expired — please reconnect', code: 'TOKEN_EXPIRED' });
+    return reply
+      .code(401)
+      .send({ error: 'Jira connection expired — please reconnect', code: 'TOKEN_EXPIRED' });
   }
   throw err; // re-throw non-token errors
 }
@@ -138,18 +144,19 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     }
 
     // 4. Upsert a connection row per site
-    const connections: Array<{ id: string; cloudId: string; siteName: string; siteUrl: string; siteAvatarUrl: string | null }> = [];
+    const connections: Array<{
+      id: string;
+      cloudId: string;
+      siteName: string;
+      siteUrl: string;
+      siteAvatarUrl: string | null;
+    }> = [];
     for (const site of sites) {
       // Check for existing connection (same user + cloud)
       const [existing] = await db
         .select()
         .from(jiraConnections)
-        .where(
-          and(
-            eq(jiraConnections.userId, userId),
-            eq(jiraConnections.cloudId, site.id),
-          ),
-        )
+        .where(and(eq(jiraConnections.userId, userId), eq(jiraConnections.cloudId, site.id)))
         .limit(1);
 
       if (existing) {
@@ -172,7 +179,13 @@ export async function jiraRoutes(fastify: FastifyInstance) {
           })
           .where(eq(jiraConnections.id, existing.id))
           .returning();
-        connections.push({ id: updated!.id, cloudId: updated!.cloudId, siteName: updated!.siteName, siteUrl: updated!.siteUrl, siteAvatarUrl: updated!.siteAvatarUrl });
+        connections.push({
+          id: updated!.id,
+          cloudId: updated!.cloudId,
+          siteName: updated!.siteName,
+          siteUrl: updated!.siteUrl,
+          siteAvatarUrl: updated!.siteAvatarUrl,
+        });
       } else {
         // Create new connection
         const [created] = await db
@@ -192,7 +205,13 @@ export async function jiraRoutes(fastify: FastifyInstance) {
             tokenExpiresAt,
           })
           .returning();
-        connections.push({ id: created!.id, cloudId: created!.cloudId, siteName: created!.siteName, siteUrl: created!.siteUrl, siteAvatarUrl: created!.siteAvatarUrl });
+        connections.push({
+          id: created!.id,
+          cloudId: created!.cloudId,
+          siteName: created!.siteName,
+          siteUrl: created!.siteUrl,
+          siteAvatarUrl: created!.siteAvatarUrl,
+        });
       }
     }
 
@@ -237,14 +256,15 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const userId = request.auth.userId;
 
+    // Nullify FK references on time entries before deleting the connection
+    await db
+      .update(timeEntries)
+      .set({ jiraConnectionId: null })
+      .where(eq(timeEntries.jiraConnectionId, id));
+
     const [deleted] = await db
       .delete(jiraConnections)
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .returning({ id: jiraConnections.id });
 
     if (!deleted) {
@@ -262,12 +282,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     const [connection] = await db
       .select()
       .from(jiraConnections)
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .limit(1);
 
     if (!connection) {
@@ -307,12 +322,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     const [connection] = await db
       .select()
       .from(jiraConnections)
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .limit(1);
 
     if (!connection) {
@@ -371,12 +381,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     const connections = await db
       .select()
       .from(jiraConnections)
-      .where(
-        and(
-          eq(jiraConnections.userId, userId),
-          eq(jiraConnections.tokenStatus, 'active'),
-        ),
-      );
+      .where(and(eq(jiraConnections.userId, userId), eq(jiraConnections.tokenStatus, 'active')));
 
     if (connections.length === 0) return [];
 
@@ -414,8 +419,16 @@ export async function jiraRoutes(fastify: FastifyInstance) {
 
     // Return only successful results (ignore failed connections)
     return results
-      .filter((r): r is PromiseFulfilledResult<{ connectionId: string; siteName: string; siteUrl: string; issues: JiraIssue[] }> =>
-        r.status === 'fulfilled')
+      .filter(
+        (
+          r,
+        ): r is PromiseFulfilledResult<{
+          connectionId: string;
+          siteName: string;
+          siteUrl: string;
+          issues: JiraIssue[];
+        }> => r.status === 'fulfilled',
+      )
       .map((r) => r.value)
       .filter((r) => r.issues.length > 0);
   });
@@ -428,12 +441,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
     const [connection] = await db
       .select()
       .from(jiraConnections)
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .limit(1);
 
     if (!connection) {
@@ -494,12 +502,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         config: parsed.data,
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .returning({ id: jiraConnections.id });
 
     if (!updated) {
@@ -520,12 +523,7 @@ export async function jiraRoutes(fastify: FastifyInstance) {
         lastSyncedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(jiraConnections.id, id),
-          eq(jiraConnections.userId, userId),
-        ),
-      )
+      .where(and(eq(jiraConnections.id, id), eq(jiraConnections.userId, userId)))
       .returning({ id: jiraConnections.id, lastSyncedAt: jiraConnections.lastSyncedAt });
 
     if (!updated) {
