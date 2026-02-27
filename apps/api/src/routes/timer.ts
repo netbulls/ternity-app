@@ -1,7 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import { db, type Database } from '../db/index.js';
-import { timeEntries, entryLabels, entrySegments, projects, clients, labels } from '../db/schema.js';
+import {
+  timeEntries,
+  entryLabels,
+  entrySegments,
+  projects,
+  clients,
+  labels,
+} from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { StartTimer, Entry } from '@ternity/shared';
 
@@ -9,11 +16,7 @@ import type { StartTimer, Entry } from '@ternity/shared';
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
   const conn = tx ?? db;
 
-  const [entry] = await conn
-    .select()
-    .from(timeEntries)
-    .where(eq(timeEntries.id, entryId))
-    .limit(1);
+  const [entry] = await conn.select().from(timeEntries).where(eq(timeEntries.id, entryId)).limit(1);
 
   if (!entry) return null;
 
@@ -58,13 +61,15 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     .where(eq(entryLabels.entryId, entryId));
 
   // Compute totals
-  const totalDurationSeconds = segments.reduce(
-    (sum, s) => sum + (s.durationSeconds ?? 0),
-    0,
-  );
-  const isRunning = segments.some(
-    (s) => s.type === 'clocked' && s.stoppedAt === null,
-  );
+  const totalDurationSeconds = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+  const isRunning = segments.some((s) => s.type === 'clocked' && s.stoppedAt === null);
+
+  // lastSegmentAt = most recent segment startedAt, falling back to createdAt
+  let lastSegmentAt = entry.createdAt;
+  for (const s of segments) {
+    const ts = s.startedAt ?? s.createdAt;
+    if (ts > lastSegmentAt) lastSegmentAt = ts;
+  }
 
   return {
     id: entry.id,
@@ -87,6 +92,7 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     isRunning,
     isActive: entry.isActive,
     createdAt: entry.createdAt.toISOString(),
+    lastSegmentAt: lastSegmentAt.toISOString(),
     userId: entry.userId,
   };
 }
@@ -208,9 +214,9 @@ export async function timerRoutes(fastify: FastifyInstance) {
 
       // Attach labels
       if (labelIds.length > 0) {
-        await tx.insert(entryLabels).values(
-          labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })),
-        );
+        await tx
+          .insert(entryLabels)
+          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
       }
 
       // Audit: timer started
@@ -242,11 +248,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
 
     // Verify ownership
-    const [target] = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, id))
-      .limit(1);
+    const [target] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
 
     if (!target || !target.isActive) {
       return reply.code(404).send({ error: 'Entry not found' });
