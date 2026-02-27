@@ -1,14 +1,6 @@
-import { useEffect, useState } from 'react';
-import {
-  Settings2,
-  User,
-  Briefcase,
-  Link2,
-  Bell,
-  Globe,
-  Mail,
-  Phone,
-} from 'lucide-react';
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Settings2, User, Briefcase, Link2, Bell, Globe, Mail, Phone } from 'lucide-react';
 import { THEMES, ORG_TIMEZONE, type ThemeId } from '@ternity/shared';
 import { useAuth } from '@/providers/auth-provider';
 import { SCALES, usePreferences } from '@/providers/preferences-provider';
@@ -27,11 +19,21 @@ const ENV_COLORS: Record<string, string> = {
   prod: 'text-red-400',
 };
 
-function InfoRow({ icon: Icon, value, title }: { icon: React.ElementType; value: React.ReactNode; title?: string }) {
+function InfoRow({
+  icon: Icon,
+  value,
+  title,
+}: {
+  icon: React.ElementType;
+  value: React.ReactNode;
+  title?: string;
+}) {
   return (
     <div className="flex min-w-0 items-center gap-2.5 py-1" title={title}>
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-      <span className="min-w-0 truncate text-foreground/80" style={{ fontSize: scaled(12) }}>{value}</span>
+      <span className="min-w-0 truncate text-foreground/80" style={{ fontSize: scaled(12) }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -64,13 +66,24 @@ const TABS: Tab[] = [
 // ── Tab panels ───────────────────────────────────────────────────────────
 
 function GeneralPanel() {
-  const { theme, setTheme, scale, setScale, defaultProjectId, setDefaultProject, confirmTimerSwitch, setConfirmTimerSwitch } = usePreferences();
+  const {
+    theme,
+    setTheme,
+    scale,
+    setScale,
+    defaultProjectId,
+    setDefaultProject,
+    confirmTimerSwitch,
+    setConfirmTimerSwitch,
+  } = usePreferences();
 
   return (
     <div>
       {/* Appearance */}
       <div>
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Appearance</h2>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Appearance
+        </h2>
         <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
           Customize the look and feel
         </p>
@@ -95,7 +108,9 @@ function GeneralPanel() {
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>Scale</span>
+          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Scale
+          </span>
           <div className="flex gap-1.5">
             {SCALES.map((s) => (
               <button
@@ -126,7 +141,10 @@ function GeneralPanel() {
           <p className="mt-1 text-muted-foreground" style={{ fontSize: scaled(13) }}>
             Weekly summary across all projects and labels.
           </p>
-          <p className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(10) }}>
+          <p
+            className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground"
+            style={{ fontSize: scaled(10) }}
+          >
             This week
           </p>
         </div>
@@ -134,7 +152,9 @@ function GeneralPanel() {
 
       {/* Default Project */}
       <div className="mt-6">
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Default Project</h2>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Default Project
+        </h2>
         <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
           Pre-fills the project when starting a new timer or creating an entry.
         </p>
@@ -145,14 +165,20 @@ function GeneralPanel() {
 
       {/* Timer */}
       <div className="mt-6">
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Timer</h2>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Timer
+        </h2>
         <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
           Controls how the timer behaves when switching between entries.
         </p>
         <label className="mt-2 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
           <div>
-            <div className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>Confirm before switching timers</div>
-            <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>Show a confirmation dialog when starting a new timer while another is running.</div>
+            <div className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
+              Confirm before switching timers
+            </div>
+            <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+              Show a confirmation dialog when starting a new timer while another is running.
+            </div>
           </div>
           <Switch checked={confirmTimerSwitch} onCheckedChange={setConfirmTimerSwitch} />
         </label>
@@ -177,19 +203,32 @@ function ProfilePanel() {
 
   return (
     <div>
-      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Account</h2>
+      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+        Account
+      </h2>
       <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
         Your profile information
       </p>
 
       <div className="mt-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
         <div className="mb-2 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]" style={{ fontSize: scaled(12) }}>
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
+            style={{ fontSize: scaled(12) }}
+          >
             {initials}
           </div>
           <div className="min-w-0">
-            <div className="truncate font-medium text-foreground" style={{ fontSize: scaled(13) }}>{user?.displayName ?? '—'}</div>
-            <span className={cn('font-medium', user?.globalRole === 'admin' ? 'text-primary' : 'text-muted-foreground')} style={{ fontSize: scaled(11) }}>
+            <div className="truncate font-medium text-foreground" style={{ fontSize: scaled(13) }}>
+              {user?.displayName ?? '—'}
+            </div>
+            <span
+              className={cn(
+                'font-medium',
+                user?.globalRole === 'admin' ? 'text-primary' : 'text-muted-foreground',
+              )}
+              style={{ fontSize: scaled(11) }}
+            >
               {user?.globalRole === 'admin' ? 'Admin' : 'Employee'}
             </span>
           </div>
@@ -201,7 +240,10 @@ function ProfilePanel() {
             icon={Globe}
             value={
               <span>
-                {ORG_TIMEZONE} <span className="text-muted-foreground/60" style={{ fontSize: scaled(10) }}>({getTimezoneAbbr()})</span>
+                {ORG_TIMEZONE}{' '}
+                <span className="text-muted-foreground/60" style={{ fontSize: scaled(10) }}>
+                  ({getTimezoneAbbr()})
+                </span>
               </span>
             }
           />
@@ -210,8 +252,13 @@ function ProfilePanel() {
 
       {/* Build info */}
       <div className="mt-6">
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Build</h2>
-        <div className="mt-2 flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-4 py-3 font-mono" style={{ fontSize: scaled(11) }}>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Build
+        </h2>
+        <div
+          className="mt-2 flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-4 py-3 font-mono"
+          style={{ fontSize: scaled(11) }}
+        >
           <div className="flex items-center gap-2.5">
             <span className="w-12 text-muted-foreground/70">Ver</span>
             <span className="text-foreground">{__APP_VERSION__}</span>
@@ -222,7 +269,9 @@ function ProfilePanel() {
           </div>
           <div className="flex items-center gap-2.5">
             <span className="w-12 text-muted-foreground/70">Built</span>
-            <span className="text-muted-foreground">{new Date(__BUILD_TIME__).toLocaleDateString()}</span>
+            <span className="text-muted-foreground">
+              {new Date(__BUILD_TIME__).toLocaleDateString()}
+            </span>
           </div>
         </div>
       </div>
@@ -234,21 +283,29 @@ function WorkPanel() {
   return (
     <div>
       <div>
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Working Hours</h2>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Working Hours
+        </h2>
         <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
           Your standard work schedule. Used for overtime calculations and capacity planning.
         </p>
         <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>Coming soon</p>
+          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Coming soon
+          </p>
         </div>
       </div>
       <div className="mt-6">
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Attendance</h2>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Attendance
+        </h2>
         <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
           Your employment type determines leave accrual and reporting rules.
         </p>
         <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>Coming soon</p>
+          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Coming soon
+          </p>
         </div>
       </div>
     </div>
@@ -258,7 +315,9 @@ function WorkPanel() {
 function IntegrationsPanel() {
   return (
     <div>
-      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Integrations</h2>
+      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+        Integrations
+      </h2>
       <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
         Connect external tools to link data with your time entries.
       </p>
@@ -272,12 +331,16 @@ function IntegrationsPanel() {
 function NotificationsPanel() {
   return (
     <div>
-      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>Notifications</h2>
+      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+        Notifications
+      </h2>
       <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
         Control what you get notified about.
       </p>
       <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-        <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>Coming soon</p>
+        <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+          Coming soon
+        </p>
       </div>
     </div>
   );
@@ -285,11 +348,21 @@ function NotificationsPanel() {
 
 // ── Settings Page ────────────────────────────────────────────────────────
 
+const VALID_TABS = new Set(TABS.map((t) => t.id));
+
 export function SettingsPage() {
   const { refreshFromServer } = usePreferences();
-  const [activeTab, setActiveTab] = useState('general');
+  const { tab } = useParams<{ tab?: string }>();
+  const navigate = useNavigate();
+  const activeTab = tab && VALID_TABS.has(tab) ? tab : 'general';
 
-  useEffect(() => { refreshFromServer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const setActiveTab = (id: string) => {
+    navigate(`/settings/${id}`, { replace: true });
+  };
+
+  useEffect(() => {
+    refreshFromServer();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const panels: Record<string, () => React.ReactNode> = {
     general: GeneralPanel,
