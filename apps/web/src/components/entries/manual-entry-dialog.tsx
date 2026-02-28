@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ProjectSelector } from '@/components/timer/project-selector';
-import { LabelSelector } from '@/components/timer/label-selector';
+import { TagSelector } from '@/components/timer/tag-selector';
 import { useCreateEntry } from '@/hooks/use-entries';
-import { getPreference } from '@/providers/preferences-provider';
+import { getPreference, usePreferences } from '@/providers/preferences-provider';
 import { formatDuration, orgTimeToISO } from '@/lib/format';
 
 interface Props {
@@ -22,13 +22,14 @@ interface Props {
 
 export function ManualEntryDialog({ open, onOpenChange }: Props) {
   const createEntry = useCreateEntry();
+  const { tagsEnabled } = usePreferences();
 
   const today = new Date().toISOString().slice(0, 10);
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string | null>(() =>
     getPreference('defaultProjectId'),
   );
-  const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [date, setDate] = useState(today);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
@@ -52,7 +53,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
   const resetForm = () => {
     setDescription('');
     setProjectId(getPreference('defaultProjectId'));
-    setLabelIds([]);
+    setTagIds([]);
     setDate(today);
     setStartTime('09:00');
     setEndTime('10:00');
@@ -64,7 +65,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
       {
         description,
         projectId,
-        labelIds,
+        tagIds,
         startedAt: startIso,
         stoppedAt: endIso,
         note,
@@ -118,10 +119,12 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
                 <Label>Project</Label>
                 <ProjectSelector value={projectId} onChange={(id) => setProjectId(id)} />
               </div>
-              <div className="grid gap-2">
-                <Label>Labels</Label>
-                <LabelSelector value={labelIds} onChange={setLabelIds} />
-              </div>
+              {tagsEnabled && (
+                <div className="grid gap-2">
+                  <Label>Tags</Label>
+                  <TagSelector value={tagIds} onChange={setTagIds} />
+                </div>
+              )}
             </div>
 
             <div className="grid gap-2">

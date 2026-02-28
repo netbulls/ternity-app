@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { stgTogglTags, labels } from '../../db/schema.js';
+import { stgTogglTags, tags } from '../../db/schema.js';
 import { log } from '../logger.js';
 import { findTargetId, upsertMapping } from './mappings.js';
 
-export async function transformLabels() {
+export async function transformTags() {
   const counts = { created: 0, updated: 0, skipped: 0 };
   const rows = await db.select().from(stgTogglTags);
 
@@ -16,15 +16,18 @@ export async function transformLabels() {
     const existingId = await findTargetId('toggl', 'tags', externalId);
 
     if (existingId) {
-      await db.update(labels).set({ name }).where(eq(labels.id, existingId));
+      await db.update(tags).set({ name }).where(eq(tags.id, existingId));
       counts.updated++;
     } else {
-      const [created] = await db.insert(labels).values({ name }).returning();
-      await upsertMapping('toggl', 'tags', externalId, 'labels', created!.id);
-      counts.created++;
+      // Tags from Toggl are workspace-level — user_id is assigned later
+      // by the time-entries transform when it creates per-user tag copies.
+      // For now, skip creation here; the time-entries transform handles it.
+      counts.skipped++;
     }
   }
 
-  log.info(`Transform labels: ${counts.created} created, ${counts.updated} updated, ${counts.skipped} skipped`);
+  log.info(
+    `Transform tags: ${counts.created} created, ${counts.updated} updated, ${counts.skipped} skipped`,
+  );
   return counts;
 }

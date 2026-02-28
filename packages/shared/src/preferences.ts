@@ -5,6 +5,7 @@ export const UserPreferencesSchema = z.object({
   scale: z.number().default(1.1),
   confirmTimerSwitch: z.boolean().default(true),
   defaultProjectId: z.string().nullable().default(null),
+  tagsEnabled: z.boolean().default(false),
 });
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;

@@ -61,7 +61,7 @@ const fieldLabels: Record<string, string> = {
   startedAt: 'Start time',
   stoppedAt: 'End time',
   durationSeconds: 'Duration',
-  labelIds: 'Labels',
+  tagIds: 'Tags',
   segmentId: 'Time block',
   movedToEntryId: 'Moved to entry',
   movedFromEntryId: 'Moved from entry',
@@ -108,7 +108,7 @@ function formatFieldValue(field: string, value: unknown): string {
     return formatTime(value);
   }
   if (typeof value === 'string' && value === '') return '(empty)';
-  if (Array.isArray(value)) return value.length === 0 ? '(none)' : `${value.length} labels`;
+  if (Array.isArray(value)) return value.length === 0 ? '(none)' : `${value.length} tags`;
   return String(value);
 }
 

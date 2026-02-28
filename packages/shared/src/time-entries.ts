@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
-/* ── Label nested in an entry ───────────────────────────────────── */
+/* ── Tag nested in an entry ─────────────────────────────────────── */
 
-export const EntryLabelSchema = z.object({
+export const EntryTagSchema = z.object({
   id: z.string(),
   name: z.string(),
   color: z.string().nullable(),
 });
 
-export type EntryLabel = z.infer<typeof EntryLabelSchema>;
+export type EntryTag = z.infer<typeof EntryTagSchema>;
 
 /* ── Segment (immutable timer record) ───────────────────────────── */
 
@@ -41,7 +41,7 @@ export const EntrySchema = z.object({
   projectColor: z.string().nullable(),
   clientName: z.string().nullable(),
   jiraIssue: JiraIssueLinkSchema.nullable(),
-  labels: z.array(EntryLabelSchema),
+  tags: z.array(EntryTagSchema),
   segments: z.array(SegmentSchema),
   totalDurationSeconds: z.number(), // sum of all segment durations
   isRunning: z.boolean(), // any clocked segment with stoppedAt=null
@@ -77,7 +77,7 @@ export type DayGroup = z.infer<typeof DayGroupSchema>;
 export const CreateEntrySchema = z.object({
   description: z.string().default(''),
   projectId: z.string().nullable().optional(),
-  labelIds: z.array(z.string()).default([]),
+  tagIds: z.array(z.string()).default([]),
   startedAt: z.string(), // ISO 8601
   stoppedAt: z.string(), // ISO 8601
   note: z.string().min(1), // required justification for manually entered time
@@ -91,7 +91,7 @@ export type CreateEntry = z.infer<typeof CreateEntrySchema>;
 export const UpdateEntrySchema = z.object({
   description: z.string().optional(),
   projectId: z.string().nullable().optional(),
-  labelIds: z.array(z.string()).optional(),
+  tagIds: z.array(z.string()).optional(),
   jiraIssueKey: z.string().nullable().optional(),
   jiraIssueSummary: z.string().nullable().optional(),
   jiraConnectionId: z.string().nullable().optional(),
@@ -134,7 +134,7 @@ export type SplitEntry = z.infer<typeof SplitEntrySchema>;
 export const StartTimerSchema = z.object({
   description: z.string().default(''),
   projectId: z.string().nullable().optional(),
-  labelIds: z.array(z.string()).default([]),
+  tagIds: z.array(z.string()).default([]),
   jiraIssueKey: z.string().nullable().optional(),
   jiraIssueSummary: z.string().nullable().optional(),
   jiraConnectionId: z.string().nullable().optional(),

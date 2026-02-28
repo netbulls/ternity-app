@@ -9,13 +9,27 @@ export const ProjectOptionSchema = z.object({
 
 export type ProjectOption = z.infer<typeof ProjectOptionSchema>;
 
-export const LabelOptionSchema = z.object({
+export const TagOptionSchema = z.object({
   id: z.string(),
   name: z.string(),
   color: z.string().nullable(),
 });
 
-export type LabelOption = z.infer<typeof LabelOptionSchema>;
+export type TagOption = z.infer<typeof TagOptionSchema>;
+
+export const CreateTagSchema = z.object({
+  name: z.string().min(1).max(100),
+  color: z.string().nullable().optional(),
+});
+
+export type CreateTag = z.infer<typeof CreateTagSchema>;
+
+export const UpdateTagSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().nullable().optional(),
+});
+
+export type UpdateTag = z.infer<typeof UpdateTagSchema>;
 
 export const UserOptionSchema = z.object({
   id: z.string(),

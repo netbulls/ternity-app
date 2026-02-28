@@ -30,12 +30,12 @@ export function TimerBar() {
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
 
-  // Local state for the "next timer" description/project/labels
+  // Local state for the "next timer" description/project/tags
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string | null>(() =>
     getPreference('defaultProjectId'),
   );
-  const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
 
   // Track palette state to ignore leaked Enter keydown after palette closes
   const { open: paletteOpen } = usePalette();
@@ -61,7 +61,7 @@ export function TimerBar() {
   if (running && currentEntry && syncedEntryId !== currentEntry.id) {
     setDescription(currentEntry.description);
     setProjectId(currentEntry.projectId);
-    setLabelIds(currentEntry.labels.map((l) => l.id));
+    setTagIds(currentEntry.tags.map((t) => t.id));
     setPendingJira(null); // linked issue comes from entry, not local state
     setSyncedEntryId(currentEntry.id);
   }
@@ -106,7 +106,7 @@ export function TimerBar() {
     startTimer.mutate({
       description,
       projectId,
-      labelIds,
+      tagIds,
       ...(pendingJira
         ? {
             jiraIssueKey: pendingJira.key,
@@ -115,14 +115,14 @@ export function TimerBar() {
           }
         : {}),
     });
-  }, [description, projectId, labelIds, pendingJira, startTimer]);
+  }, [description, projectId, tagIds, pendingJira, startTimer]);
 
   const handleStop = useCallback(() => {
     stopTimer.mutate(undefined, {
       onSuccess: () => {
         setDescription('');
         setProjectId(getPreference('defaultProjectId'));
-        setLabelIds([]);
+        setTagIds([]);
         setPendingJira(null);
       },
     });
@@ -145,7 +145,7 @@ export function TimerBar() {
         // Second Esc (or no dropdown open): reset to vanilla state
         setDescription('');
         setProjectId(getPreference('defaultProjectId'));
-        setLabelIds([]);
+        setTagIds([]);
         setPendingJira(null);
         descriptionInputRef.current?.blur();
       }

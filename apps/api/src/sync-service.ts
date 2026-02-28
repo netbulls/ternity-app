@@ -9,7 +9,7 @@ import { extractTtAbsences } from './sync/timetastic/extract.js';
 import { matchUsers } from './sync/transform/users.js';
 import { transformClients } from './sync/transform/clients.js';
 import { transformProjects } from './sync/transform/projects.js';
-import { transformLabels } from './sync/transform/labels.js';
+import { transformTags } from './sync/transform/tags.js';
 import { transformTimeEntries } from './sync/transform/time-entries.js';
 import { transformLeaveTypes } from './sync/transform/leave-types.js';
 import { transformAbsences } from './sync/transform/absences.js';
@@ -117,7 +117,7 @@ async function runFrequentSync() {
     ['match users', () => matchUsers(true)],
     ['transform clients', () => transformClients()],
     ['transform projects', () => transformProjects()],
-    ['transform labels', () => transformLabels()],
+    ['transform tags', () => transformTags()],
     ['transform leave_types', () => transformLeaveTypes()],
     ['transform time_entries', () => transformTimeEntries()],
     ['transform absences', () => transformAbsences()],
@@ -131,7 +131,9 @@ async function runFrequentSync() {
   if (failures.length === 0) {
     log.info(`── Frequent Sync: Complete (${elapsed}s) ──`);
   } else {
-    log.warn(`── Frequent Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`);
+    log.warn(
+      `── Frequent Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`,
+    );
   }
 }
 
@@ -147,7 +149,7 @@ async function runFullSync() {
     ['match users', () => matchUsers(true)],
     ['transform clients', () => transformClients()],
     ['transform projects', () => transformProjects()],
-    ['transform labels', () => transformLabels()],
+    ['transform tags', () => transformTags()],
     ['transform leave_types', () => transformLeaveTypes()],
     ['transform time_entries', () => transformTimeEntries()],
     ['transform absences', () => transformAbsences()],
@@ -161,7 +163,9 @@ async function runFullSync() {
   if (failures.length === 0) {
     log.info(`── Full Sync: Complete (${elapsed}s) ──`);
   } else {
-    log.warn(`── Full Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`);
+    log.warn(
+      `── Full Sync: Partial (${elapsed}s) — ${failures.length} failed: ${failures.join(', ')} ──`,
+    );
   }
 }
 

@@ -4,7 +4,7 @@ import { extractAllTimetastic } from '../sync/timetastic/extract.js';
 import { matchUsers } from '../sync/transform/users.js';
 import { transformClients } from '../sync/transform/clients.js';
 import { transformProjects } from '../sync/transform/projects.js';
-import { transformLabels } from '../sync/transform/labels.js';
+import { transformTags } from '../sync/transform/tags.js';
 import { transformTimeEntries } from '../sync/transform/time-entries.js';
 import { transformLeaveTypes } from '../sync/transform/leave-types.js';
 import { transformAbsences } from '../sync/transform/absences.js';
@@ -30,15 +30,13 @@ async function main() {
   // Step 2: User matching (auto-apply)
   log.info('\n── User Matching ──');
   const userReport = await matchUsers(true);
-  log.info(
-    `Users: ${userReport.matched.length} matched, ${userReport.created.length} created`,
-  );
+  log.info(`Users: ${userReport.matched.length} matched, ${userReport.created.length} created`);
 
   // Step 3: Transform (dependency order)
   log.info('\n── Transform ──');
   await transformClients();
   await transformProjects();
-  await transformLabels();
+  await transformTags();
   await transformLeaveTypes();
   await transformTimeEntries();
   await transformAbsences();

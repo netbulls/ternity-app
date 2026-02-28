@@ -41,7 +41,7 @@ The old model stored `startedAt`, `stoppedAt`, and `durationSeconds` directly on
 
 The new model separates concerns:
 
-- **Entry** = pure metadata (description, project, labels, createdAt)
+- **Entry** = pure metadata (description, project, tags, createdAt)
 - **Segments** = immutable time records (when the timer was actually running)
 
 Resume now creates a **new segment** instead of rewriting `startedAt`. The entry stays in its original day group. The full timing history is preserved.
@@ -56,17 +56,18 @@ Each entry has zero or more **segments**. There are two types:
 
 Created by the timer. Represent actual periods when the timer was running.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | UUID |
-| `type` | `"clocked"` | Always `"clocked"` |
-| `startedAt` | `string` | ISO 8601 timestamp — when the timer started |
-| `stoppedAt` | `string \| null` | ISO 8601 — when stopped. **`null` = currently running** |
-| `durationSeconds` | `number \| null` | Computed on stop. **`null` while running** |
-| `note` | `null` | Always null for clocked segments |
-| `createdAt` | `string` | ISO 8601 |
+| Field             | Type             | Description                                             |
+| ----------------- | ---------------- | ------------------------------------------------------- |
+| `id`              | `string`         | UUID                                                    |
+| `type`            | `"clocked"`      | Always `"clocked"`                                      |
+| `startedAt`       | `string`         | ISO 8601 timestamp — when the timer started             |
+| `stoppedAt`       | `string \| null` | ISO 8601 — when stopped. **`null` = currently running** |
+| `durationSeconds` | `number \| null` | Computed on stop. **`null` while running**              |
+| `note`            | `null`           | Always null for clocked segments                        |
+| `createdAt`       | `string`         | ISO 8601                                                |
 
 **Lifecycle:**
+
 - Timer start → segment created with `startedAt=now`, `stoppedAt=null`, `durationSeconds=null`
 - Timer stop → segment updated with `stoppedAt=now`, `durationSeconds=computed`
 - Timer resume → **new** segment created (the old one stays as-is)
@@ -79,27 +80,27 @@ There are two subtypes based on context:
 
 **Manual entry segments** — created when a user manually logs time with a start/end time:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | UUID |
-| `type` | `"manual"` | Always `"manual"` |
-| `startedAt` | `string` | ISO 8601 — the start time the user entered |
-| `stoppedAt` | `string` | ISO 8601 — the end time the user entered |
-| `durationSeconds` | `number` | Computed from `stoppedAt - startedAt` |
-| `note` | `string` | Required — justification for the manual entry (e.g., "Forgot to start timer") |
-| `createdAt` | `string` | ISO 8601 |
+| Field             | Type       | Description                                                                   |
+| ----------------- | ---------- | ----------------------------------------------------------------------------- |
+| `id`              | `string`   | UUID                                                                          |
+| `type`            | `"manual"` | Always `"manual"`                                                             |
+| `startedAt`       | `string`   | ISO 8601 — the start time the user entered                                    |
+| `stoppedAt`       | `string`   | ISO 8601 — the end time the user entered                                      |
+| `durationSeconds` | `number`   | Computed from `stoppedAt - startedAt`                                         |
+| `note`            | `string`   | Required — justification for the manual entry (e.g., "Forgot to start timer") |
+| `createdAt`       | `string`   | ISO 8601                                                                      |
 
 **Adjustment segments** — created when a user adds/removes time from an existing entry:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | UUID |
-| `type` | `"manual"` | Always `"manual"` |
-| `startedAt` | `null` | Always null for adjustments |
-| `stoppedAt` | `null` | Always null for adjustments |
-| `durationSeconds` | `number` | Seconds to add (can be **negative** for deductions) |
-| `note` | `string` | Required — justification for the adjustment |
-| `createdAt` | `string` | ISO 8601 |
+| Field             | Type       | Description                                         |
+| ----------------- | ---------- | --------------------------------------------------- |
+| `id`              | `string`   | UUID                                                |
+| `type`            | `"manual"` | Always `"manual"`                                   |
+| `startedAt`       | `null`     | Always null for adjustments                         |
+| `stoppedAt`       | `null`     | Always null for adjustments                         |
+| `durationSeconds` | `number`   | Seconds to add (can be **negative** for deductions) |
+| `note`            | `string`   | Required — justification for the adjustment         |
+| `createdAt`       | `string`   | ISO 8601                                            |
 
 **How to distinguish them:** Both have `type: "manual"`. Manual entry segments have `startedAt` set; adjustment segments have `startedAt: null`.
 
@@ -125,10 +126,10 @@ There are two subtypes based on context:
   "projectName": "API Platform",
   "projectColor": "#00D4AA",
   "clientName": "Netbulls",
-  "labels": [{ "id": "l1", "name": "Development", "color": "#22c55e" }],
-  "startedAt": "2026-02-21T09:00:00.000Z",     // ← REMOVED
-  "stoppedAt": "2026-02-21T10:30:00.000Z",      // ← REMOVED
-  "durationSeconds": 5400,                       // ← REMOVED
+  "tags": [{ "id": "l1", "name": "Development", "color": "#22c55e" }],
+  "startedAt": "2026-02-21T09:00:00.000Z", // ← REMOVED
+  "stoppedAt": "2026-02-21T10:30:00.000Z", // ← REMOVED
+  "durationSeconds": 5400, // ← REMOVED
   "createdAt": "2026-02-21T09:00:00.000Z",
   "userId": "user-001"
 }
@@ -144,8 +145,9 @@ There are two subtypes based on context:
   "projectName": "API Platform",
   "projectColor": "#00D4AA",
   "clientName": "Netbulls",
-  "labels": [{ "id": "l1", "name": "Development", "color": "#22c55e" }],
-  "segments": [                                   // ← NEW
+  "tags": [{ "id": "l1", "name": "Development", "color": "#22c55e" }],
+  "segments": [
+    // ← NEW
     {
       "id": "seg-001",
       "type": "clocked",
@@ -156,8 +158,8 @@ There are two subtypes based on context:
       "createdAt": "2026-02-21T09:00:00.000Z"
     }
   ],
-  "totalDurationSeconds": 5400,                   // ← NEW (server-computed)
-  "isRunning": false,                              // ← NEW (server-computed)
+  "totalDurationSeconds": 5400, // ← NEW (server-computed)
+  "isRunning": false, // ← NEW (server-computed)
   "createdAt": "2026-02-21T09:00:00.000Z",
   "userId": "user-001"
 }
@@ -165,19 +167,19 @@ There are two subtypes based on context:
 
 ### Removed Fields
 
-| Field | Replacement |
-|-------|-------------|
-| `entry.startedAt` | First timed segment's `startedAt` (filter by `startedAt != null`) |
-| `entry.stoppedAt` | Last timed segment's `stoppedAt` (filter by `startedAt != null`) |
-| `entry.durationSeconds` | `entry.totalDurationSeconds` |
+| Field                   | Replacement                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| `entry.startedAt`       | First timed segment's `startedAt` (filter by `startedAt != null`) |
+| `entry.stoppedAt`       | Last timed segment's `stoppedAt` (filter by `startedAt != null`)  |
+| `entry.durationSeconds` | `entry.totalDurationSeconds`                                      |
 
 ### New Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `segments` | `Segment[]` | All segments, ordered by `createdAt` |
-| `totalDurationSeconds` | `number` | Sum of all segments with non-null `durationSeconds`. Always 0+ (never null) |
-| `isRunning` | `boolean` | `true` if any clocked segment has `stoppedAt === null` |
+| Field                  | Type        | Description                                                                 |
+| ---------------------- | ----------- | --------------------------------------------------------------------------- |
+| `segments`             | `Segment[]` | All segments, ordered by `createdAt`                                        |
+| `totalDurationSeconds` | `number`    | Sum of all segments with non-null `durationSeconds`. Always 0+ (never null) |
+| `isRunning`            | `boolean`   | `true` if any clocked segment has `stoppedAt === null`                      |
 
 ---
 
@@ -192,6 +194,7 @@ All endpoints require authentication via Bearer token. All timestamps are ISO 86
 Returns the current timer state.
 
 **Response:**
+
 ```json
 // Timer running:
 { "running": true, "entry": { /* Entry with segments */ } }
@@ -205,20 +208,28 @@ Returns the current timer state.
 Start a new timer. Automatically stops any currently running timer.
 
 **Request body:**
+
 ```json
 {
-  "description": "Working on feature X",   // optional, defaults to ""
-  "projectId": "p1",                       // optional, nullable
-  "labelIds": ["l1", "l2"]                 // optional, defaults to []
+  "description": "Working on feature X", // optional, defaults to ""
+  "projectId": "p1", // optional, nullable
+  "tagIds": ["l1", "l2"] // optional, defaults to []
 }
 ```
 
 **Response:**
+
 ```json
-{ "running": true, "entry": { /* new Entry with one running clocked segment */ } }
+{
+  "running": true,
+  "entry": {
+    /* new Entry with one running clocked segment */
+  }
+}
 ```
 
 **Behavior:**
+
 - If another timer is running, it is automatically stopped first (new segment gets `stoppedAt` + `durationSeconds`)
 - A new entry is created with one clocked segment (`startedAt=now`, `stoppedAt=null`, `durationSeconds=null`)
 
@@ -229,8 +240,14 @@ Stop the currently running timer.
 **Request body:** none (empty POST)
 
 **Response:**
+
 ```json
-{ "running": false, "entry": { /* Entry with all segments stopped */ } }
+{
+  "running": false,
+  "entry": {
+    /* Entry with all segments stopped */
+  }
+}
 ```
 
 **Error:** `404` if no timer is currently running.
@@ -242,17 +259,25 @@ Resume a previously stopped entry. This is the key behavioral change — resume 
 **Request body:** none (empty POST)
 
 **Response:**
+
 ```json
-{ "running": true, "entry": { /* Entry now has an additional running segment */ } }
+{
+  "running": true,
+  "entry": {
+    /* Entry now has an additional running segment */
+  }
+}
 ```
 
 **Behavior:**
+
 - If the entry is already running, returns it as-is (idempotent)
 - If another entry's timer is running, it is automatically stopped first
 - A **new** clocked segment is added to this entry (`startedAt=now`, `stoppedAt=null`)
 - The entry now has multiple segments — the old stopped ones + the new running one
 
 **Example: Entry after start → stop → resume → stop:**
+
 ```json
 {
   "segments": [
@@ -281,17 +306,22 @@ Resume a previously stopped entry. This is the key behavioral change — resume 
 List entries grouped by day.
 
 **Response:**
+
 ```json
 [
   {
     "date": "2026-02-21",
     "totalSeconds": 14400,
-    "entries": [ /* Entry[] with segments */ ]
+    "entries": [
+      /* Entry[] with segments */
+    ]
   },
   {
     "date": "2026-02-20",
     "totalSeconds": 28800,
-    "entries": [ /* ... */ ]
+    "entries": [
+      /* ... */
+    ]
   }
 ]
 ```
@@ -303,14 +333,15 @@ List entries grouped by day.
 Create a manual entry (not via timer).
 
 **Request body:**
+
 ```json
 {
   "description": "Retrospective meeting",
   "projectId": "p1",
-  "labelIds": ["l4"],
-  "startedAt": "2026-02-21T13:00:00.000Z",   // required
-  "stoppedAt": "2026-02-21T14:00:00.000Z",   // required
-  "note": "Forgot to start timer"             // REQUIRED, non-empty
+  "tagIds": ["l4"],
+  "startedAt": "2026-02-21T13:00:00.000Z", // required
+  "stoppedAt": "2026-02-21T14:00:00.000Z", // required
+  "note": "Forgot to start timer" // REQUIRED, non-empty
 }
 ```
 
@@ -323,11 +354,12 @@ Create a manual entry (not via timer).
 Update entry **metadata only**. You can no longer change time fields via this endpoint.
 
 **Request body:**
+
 ```json
 {
-  "description": "Updated description",    // optional
-  "projectId": "p2",                       // optional, nullable (null = remove project)
-  "labelIds": ["l1", "l2"]                 // optional (replaces all labels)
+  "description": "Updated description", // optional
+  "projectId": "p2", // optional, nullable (null = remove project)
+  "tagIds": ["l1", "l2"] // optional (replaces all tags)
 }
 ```
 
@@ -346,10 +378,11 @@ Delete an entry and all its segments.
 Add a manual time adjustment to an entry.
 
 **Request body:**
+
 ```json
 {
-  "durationSeconds": 1800,     // seconds to add (can be negative)
-  "note": "Forgot to start timer for morning standup"  // REQUIRED, non-empty
+  "durationSeconds": 1800, // seconds to add (can be negative)
+  "note": "Forgot to start timer for morning standup" // REQUIRED, non-empty
 }
 ```
 
@@ -362,6 +395,7 @@ Add a manual time adjustment to an entry.
 Get the audit trail for an entry. Returns events in reverse chronological order (newest first).
 
 **Response:**
+
 ```json
 [
   {
@@ -398,6 +432,7 @@ Get the audit trail for an entry. Returns events in reverse chronological order 
 Returns today and this week totals. **Includes currently running time** (computed server-side).
 
 **Response:**
+
 ```json
 {
   "todaySeconds": 14400,
@@ -428,11 +463,7 @@ elapsed = completedDuration + Math.round((now - runningSegment.startedAt) / 1000
 ### Reference Implementation (TypeScript/React)
 
 ```typescript
-function useElapsedSeconds(
-  startedAt: string | null,
-  running: boolean,
-  offset: number = 0,
-): number {
+function useElapsedSeconds(startedAt: string | null, running: boolean, offset: number = 0): number {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -456,11 +487,10 @@ function useElapsedSeconds(
 
 // Usage in a timer component:
 const completedDuration = entry.segments
-  .filter(s => s.durationSeconds != null)
+  .filter((s) => s.durationSeconds != null)
   .reduce((sum, s) => sum + s.durationSeconds!, 0);
 
-const runningSegment = entry.segments
-  .find(s => s.type === 'clocked' && !s.stoppedAt);
+const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
 
 const elapsed = useElapsedSeconds(
   runningSegment?.startedAt ?? null,
@@ -472,6 +502,7 @@ const elapsed = useElapsedSeconds(
 ### For Non-React Platforms
 
 The pattern is the same regardless of framework:
+
 1. Find the completed duration (sum of all non-null `durationSeconds`)
 2. Find the running segment (if any)
 3. Start a 1-second interval timer
@@ -486,7 +517,7 @@ To show a time range like "09:00 – 10:30" for an entry:
 
 ```typescript
 // Filter segments that have a time range (clocked + manual entries — excludes pure adjustments)
-const timedSegments = entry.segments.filter(s => s.startedAt != null);
+const timedSegments = entry.segments.filter((s) => s.startedAt != null);
 const firstStartedAt = timedSegments[0]?.startedAt ?? entry.createdAt;
 const lastSegment = timedSegments[timedSegments.length - 1];
 const lastStoppedAt = lastSegment?.stoppedAt ?? null; // null if running
@@ -503,6 +534,7 @@ For entries with multiple segments (resumed entries), this shows the span from t
 ### Duration Display
 
 For stopped entries, just use `entry.totalDurationSeconds`:
+
 ```typescript
 if (!entry.isRunning) {
   display = formatDuration(entry.totalDurationSeconds);
@@ -522,6 +554,7 @@ Entries are grouped by `entry.createdAt` (the date the entry was first created),
 - The `createdAt` field is immutable — it is set once when the entry is created and never changes
 
 The API returns entries pre-grouped in the `GET /api/entries` response. Each group has:
+
 - `date`: YYYY-MM-DD (derived from `entry.createdAt.slice(0, 10)`)
 - `totalSeconds`: sum of all `entry.totalDurationSeconds` in the group
 - `entries`: array of `Entry` objects
@@ -583,6 +616,7 @@ All API errors now return structured JSON:
 ```
 
 HTTP status codes:
+
 - `400` — Bad request (validation failure)
 - `403` — Forbidden (not your entry)
 - `404` — Not found
@@ -636,15 +670,17 @@ function normalizeEntry(raw: any): Entry {
   return {
     ...raw,
     segments: startedAt
-      ? [{
-          id: `compat-${raw.id}`,
-          type: 'clocked' as const,
-          startedAt,
-          stoppedAt,
-          durationSeconds,
-          note: null,
-          createdAt: raw.createdAt,
-        }]
+      ? [
+          {
+            id: `compat-${raw.id}`,
+            type: 'clocked' as const,
+            startedAt,
+            stoppedAt,
+            durationSeconds,
+            note: null,
+            createdAt: raw.createdAt,
+          },
+        ]
       : [],
     totalDurationSeconds: durationSeconds ?? 0,
     isRunning: startedAt != null && stoppedAt == null,
@@ -668,6 +704,7 @@ Wrap your data-dependent UI in a React Error Boundary (or equivalent for your fr
 ```
 
 The error boundary should:
+
 - Log the error for debugging
 - Show a minimal UI with the error message
 - Offer a "Retry" button that resets the boundary (re-mounts children)
@@ -683,6 +720,7 @@ Layer 1 prevents known issues. Layer 2 catches everything else. Both are cheap t
 Every `Entry` now includes a `segments[]` array. For most entries this is a single segment, but entries that have been resumed multiple times or have manual adjustments will have more. A week of entries for an active user can easily be 200+ entries, each with 1-3 segments.
 
 **What this means for your app:**
+
 - The `GET /api/entries` response is larger than before
 - Don't fetch more data than needed — always pass `from` and `to` query parameters
 - If rendering a list, consider virtualizing long lists (especially for users with 50+ entries per day)
@@ -764,7 +802,7 @@ Use this checklist to track your migration progress. Each item is independent �
 
 - [ ] **Update entry edit/save logic**
   - `PATCH /api/entries/:id` no longer accepts `startedAt` or `stoppedAt`
-  - Only send: `description`, `projectId`, `labelIds`
+  - Only send: `description`, `projectId`, `tagIds`
   - If your app has inline time editing, you need to either remove it or redesign it to target segments
 
 - [ ] **Manual entry creation — segment type changed + note required**
@@ -835,7 +873,7 @@ Work through these scenarios to verify your migration is complete. Each scenario
 3. Verify the segment has a `note` field matching what was sent
 4. Verify `totalDurationSeconds` matches
 5. **Try creating without `note`** — should get a `400` error
-5. Verify the time range display works (since the manual segment has `startedAt`/`stoppedAt`)
+6. Verify the time range display works (since the manual segment has `startedAt`/`stoppedAt`)
 
 ### 11.5 Entry Metadata Update
 
@@ -882,14 +920,14 @@ For reference, here are the complete TypeScript types. Adapt to your platform's 
 interface Segment {
   id: string;
   type: 'clocked' | 'manual';
-  startedAt: string | null;       // ISO 8601. Set for clocked + manual entries. null for adjustments.
-  stoppedAt: string | null;       // ISO 8601. null while running (clocked) or for adjustments.
+  startedAt: string | null; // ISO 8601. Set for clocked + manual entries. null for adjustments.
+  stoppedAt: string | null; // ISO 8601. null while running (clocked) or for adjustments.
   durationSeconds: number | null; // null while running. Can be negative for manual adjustments.
-  note: string | null;            // null for clocked. Set for manual entries + adjustments.
-  createdAt: string;              // ISO 8601
+  note: string | null; // null for clocked. Set for manual entries + adjustments.
+  createdAt: string; // ISO 8601
 }
 
-interface EntryLabel {
+interface EntryTag {
   id: string;
   name: string;
   color: string | null;
@@ -902,11 +940,11 @@ interface Entry {
   projectName: string | null;
   projectColor: string | null;
   clientName: string | null;
-  labels: EntryLabel[];
+  tags: EntryTag[];
   segments: Segment[];
-  totalDurationSeconds: number;   // Server-computed. Sum of all non-null durationSeconds.
-  isRunning: boolean;             // Server-computed. true if any clocked segment has stoppedAt=null.
-  createdAt: string;              // ISO 8601. Stable — never changes.
+  totalDurationSeconds: number; // Server-computed. Sum of all non-null durationSeconds.
+  isRunning: boolean; // Server-computed. true if any clocked segment has stoppedAt=null.
+  createdAt: string; // ISO 8601. Stable — never changes.
   userId: string;
 }
 
@@ -916,7 +954,7 @@ interface TimerState {
 }
 
 interface DayGroup {
-  date: string;                   // YYYY-MM-DD (based on entry.createdAt)
+  date: string; // YYYY-MM-DD (based on entry.createdAt)
   totalSeconds: number;
   entries: Entry[];
 }
@@ -924,30 +962,30 @@ interface DayGroup {
 // Request payloads
 
 interface StartTimer {
-  description?: string;           // defaults to ""
+  description?: string; // defaults to ""
   projectId?: string | null;
-  labelIds?: string[];            // defaults to []
+  tagIds?: string[]; // defaults to []
 }
 
 interface CreateEntry {
-  description?: string;           // defaults to ""
+  description?: string; // defaults to ""
   projectId?: string | null;
-  labelIds?: string[];            // defaults to []
-  startedAt: string;              // ISO 8601, required
-  stoppedAt: string;              // ISO 8601, required
-  note: string;                   // required, non-empty — justification for manual entry
+  tagIds?: string[]; // defaults to []
+  startedAt: string; // ISO 8601, required
+  stoppedAt: string; // ISO 8601, required
+  note: string; // required, non-empty — justification for manual entry
 }
 
 interface UpdateEntry {
   description?: string;
   projectId?: string | null;
-  labelIds?: string[];
+  tagIds?: string[];
   // NOTE: startedAt and stoppedAt are NOT accepted here
 }
 
 interface AdjustEntry {
-  durationSeconds: number;        // can be negative
-  note: string;                   // required, non-empty
+  durationSeconds: number; // can be negative
+  note: string; // required, non-empty
 }
 
 // Stats (unchanged)

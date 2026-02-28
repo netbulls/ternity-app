@@ -29,6 +29,7 @@ Timetastic API  →  sync_tt_*  (staging)  ─┘
 ```
 
 **Why staging tables?**
+
 - **Target tables stay clean** — no sync columns (`external_id`, `external_source`) polluting Ternity's model
 - **Raw data preserved** — if transform logic changes, re-process from staging without re-fetching from APIs
 - **Clear audit trail** — compare raw vs. transformed to debug sync issues
@@ -38,7 +39,7 @@ Timetastic API  →  sync_tt_*  (staging)  ─┘
 
 Ternity has its own data model, designed for Ternity's needs — not a mirror of Toggl or Timetastic schemas. The staging tables preserve external data as-is. The transform step interprets and adapts it into Ternity's smarter model:
 
-- Toggl has flat tags → Ternity has structured labels (potentially hierarchical, typed, with colors)
+- Toggl has flat tags → Ternity has per-user tags (personal, opt-in via `tagsEnabled` preference)
 - Toggl has no client→project→entry enforcement → Ternity has a strict hierarchy
 - Timetastic has basic absence records → Ternity has richer leave requests with approval workflows, notes, and project context
 - Both tools have separate user pools → Ternity unifies identity across time tracking and leave
@@ -51,18 +52,19 @@ The transform step normalizes, enriches, and validates. It doesn't preserve quir
 
 What we pull and how it translates:
 
-| Toggl concept | Ternity equivalent | Translation |
-|---|---|---|
-| Clients | `clients` | Direct mapping by name |
-| Projects | `projects` | Linked to matched client, color preserved |
-| Project users | `project_members` | All imported as `user` role (managers assigned manually in Ternity) |
-| Time entries | `time_entries` | Timestamps, duration, description preserved. Project/client linkage resolved. |
-| Tags | `labels` | Flat tags become Ternity labels. Ternity may later add structure (categories, colors) beyond what Toggl supports. |
-| Workspace users | `users` | Email-based matching. Toggl-specific fields (workspace role, rate) are not imported. |
+| Toggl concept   | Ternity equivalent | Translation                                                                                                                                                                        |
+| --------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clients         | `clients`          | Direct mapping by name                                                                                                                                                             |
+| Projects        | `projects`         | Linked to matched client, color preserved                                                                                                                                          |
+| Project users   | `project_members`  | All imported as `user` role (managers assigned manually in Ternity)                                                                                                                |
+| Time entries    | `time_entries`     | Timestamps, duration, description preserved. Project/client linkage resolved.                                                                                                      |
+| Tags            | `tags`             | Flat tags become per-user Ternity tags. Tags are personal — each user gets their own copy, keyed by `${userId}:${lowerName}`. Users must enable tags via `tagsEnabled` preference. |
+| Workspace users | `users`            | Email-based matching. Toggl-specific fields (workspace role, rate) are not imported.                                                                                               |
 
 **API:** Toggl Track API v9. Basic Auth with API token. Rate limit: 240 requests/hour (Starter plan). Reports API v3 for bulk time entry export. Supports `since` parameter for incremental sync (entries modified after a given date).
 
 **Sync approach:**
+
 - Initial: Full historical dump via Reports API (paginated, all workspaces)
 - Daily: Incremental pull using `since` = last sync timestamp. Catches edits and deletes.
 
@@ -70,17 +72,18 @@ What we pull and how it translates:
 
 What we pull and how it translates:
 
-| Timetastic concept | Ternity equivalent | Translation |
-|---|---|---|
-| Users | `users` | Email-based matching. Timetastic-specific fields (start date, approver chain) are not imported. |
-| Departments | (no direct mapping) | Stored as metadata for reference during migration. Ternity uses project-based structure, not departments. |
-| Leave types | `leave_types` | Name-matched or created. Ternity may rename or consolidate types to fit its own categorization. |
-| Absences | `leave_requests` | Status mapped (Approved/Pending/Declined → Ternity equivalents). No project linkage in Timetastic — left unlinked or assigned by admin. |
-| Allowances | `leave_allowances` | Per-user, per-type, per-year. Ternity may recalculate based on its own rules rather than blindly copying balances. |
+| Timetastic concept | Ternity equivalent  | Translation                                                                                                                             |
+| ------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Users              | `users`             | Email-based matching. Timetastic-specific fields (start date, approver chain) are not imported.                                         |
+| Departments        | (no direct mapping) | Stored as metadata for reference during migration. Ternity uses project-based structure, not departments.                               |
+| Leave types        | `leave_types`       | Name-matched or created. Ternity may rename or consolidate types to fit its own categorization.                                         |
+| Absences           | `leave_requests`    | Status mapped (Approved/Pending/Declined → Ternity equivalents). No project linkage in Timetastic — left unlinked or assigned by admin. |
+| Allowances         | `leave_allowances`  | Per-user, per-type, per-year. Ternity may recalculate based on its own rules rather than blindly copying balances.                      |
 
 **API:** Timetastic REST API. Bearer token auth (admin-level token). Rate limit: 1 request/second on absences endpoint. Absence queries limited to 31-day windows.
 
 **Sync approach:**
+
 - Initial: Walk full history in 31-day windows from earliest date to today
 - Daily: Re-pull a rolling recent window (e.g., last 60 days) since there's no reliable `updatedAt` field on absences. Compare and upsert.
 
@@ -104,21 +107,21 @@ External IDs and source metadata live on the **staging tables**, not on Ternity'
 
 ## Prod vs Dev Behavior
 
-| | Dev | Prod |
-|---|---|---|
-| **Sync** | On-demand (manual trigger) | Daily automated |
-| **UI mode** | Full read-write | Read-only (viewer) |
-| **Data edits** | Allowed (for testing) | Blocked (synced data is immutable) |
-| **User accounts** | Stub auth OK | Real Logto accounts required |
+|                   | Dev                        | Prod                               |
+| ----------------- | -------------------------- | ---------------------------------- |
+| **Sync**          | On-demand (manual trigger) | Daily automated                    |
+| **UI mode**       | Full read-write            | Read-only (viewer)                 |
+| **Data edits**    | Allowed (for testing)      | Blocked (synced data is immutable) |
+| **User accounts** | Stub auth OK               | Real Logto accounts required       |
 
 **Viewer mode in prod:** Users can browse entries, reports, calendar, and leave data. All create/edit/delete actions are disabled in the UI with a "This data is synced from Toggl/Timetastic" notice. This is a temporary state until native entry features are ready.
 
 ## Rate Limits & Scheduling
 
-| Service | Limit | Daily sync budget | Comfortable? |
-|---|---|---|---|
-| Toggl Track | 240 req/hour | ~50 requests (incremental) | Yes |
-| Timetastic | 1 req/sec (absences) | ~120 requests (60-day window) | Yes |
+| Service     | Limit                | Daily sync budget             | Comfortable? |
+| ----------- | -------------------- | ----------------------------- | ------------ |
+| Toggl Track | 240 req/hour         | ~50 requests (incremental)    | Yes          |
+| Timetastic  | 1 req/sec (absences) | ~120 requests (60-day window) | Yes          |
 
 Daily sync runs during off-hours (e.g., 3 AM). No risk of hitting rate limits with ~75 users and daily incremental pulls.
 

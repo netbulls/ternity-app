@@ -96,9 +96,7 @@ function EntryRowPreview({ entry }: { entry: (typeof MOCK_ENTRIES)[number] }) {
   const timedSegments = entry.segments.filter((s) => s.startedAt != null);
   const firstStartedAt = timedSegments[0]?.startedAt ?? entry.createdAt;
   const lastStoppedAt = timedSegments[timedSegments.length - 1]?.stoppedAt ?? null;
-  const durationStr = isRunning
-    ? formatDuration(3661)
-    : formatDuration(entry.totalDurationSeconds);
+  const durationStr = isRunning ? formatDuration(3661) : formatDuration(entry.totalDurationSeconds);
   const timeRange = isRunning
     ? `${formatTime(firstStartedAt)} – now`
     : `${formatTime(firstStartedAt)} – ${formatTime(lastStoppedAt!)}`;
@@ -127,15 +125,15 @@ function EntryRowPreview({ entry }: { entry: (typeof MOCK_ENTRIES)[number] }) {
               {entry.projectName}
             </span>
           )}
-          {entry.labels.map((label) => (
-            <Badge key={label.id} variant="outline" className="h-[18px] px-1.5 text-[10px]">
-              {label.color && (
+          {entry.tags.map((tag) => (
+            <Badge key={tag.id} variant="outline" className="h-[18px] px-1.5 text-[10px]">
+              {tag.color && (
                 <span
                   className="mr-1 h-1.5 w-1.5 rounded-full"
-                  style={{ backgroundColor: label.color }}
+                  style={{ backgroundColor: tag.color }}
                 />
               )}
-              {label.name}
+              {tag.name}
             </Badge>
           ))}
         </div>
@@ -361,9 +359,7 @@ const BASIC_TABLE_COLUMNS: ColumnDef<ProjectRow>[] = [
   {
     accessorKey: 'entries',
     header: 'Entries',
-    cell: ({ row }) => (
-      <span className="font-brand tabular-nums">{row.original.entries}</span>
-    ),
+    cell: ({ row }) => <span className="font-brand tabular-nums">{row.original.entries}</span>,
   },
 ];
 
@@ -431,9 +427,7 @@ export function PatternsSection() {
             data={MOCK_ADMIN_USERS}
             table={selectionTable}
             entityName="user"
-            rowClassName={(user) =>
-              !user.active ? 'opacity-50 hover:opacity-70' : undefined
-            }
+            rowClassName={(user) => (!user.active ? 'opacity-50 hover:opacity-70' : undefined)}
           />
           <DataTableBulkActions table={selectionTable} entityName="user">
             <button

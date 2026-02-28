@@ -2,7 +2,7 @@ import { GlobalRole } from '@ternity/shared';
 import type {
   AuthContext,
   ProjectOption,
-  LabelOption,
+  TagOption,
   UserOption,
   Entry,
   TimerState,
@@ -32,7 +32,7 @@ export const MOCK_PROJECTS: ProjectOption[] = [
   { id: 'p4', name: 'Data Pipeline', color: '#ef4444', clientName: 'Acme Corp' },
 ];
 
-export const MOCK_LABELS: LabelOption[] = [
+export const MOCK_TAGS: TagOption[] = [
   { id: 'l1', name: 'Development', color: '#22c55e' },
   { id: 'l2', name: 'Design', color: '#a855f7' },
   { id: 'l3', name: 'Bug Fix', color: '#ef4444' },
@@ -90,7 +90,7 @@ const RUNNING_ENTRY: Entry = {
   projectColor: '#00D4AA',
   clientName: 'Netbulls',
   jiraIssue: null,
-  labels: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
+  tags: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
   segments: [
     {
       id: 'seg-running-1',
@@ -119,7 +119,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectColor: '#6366f1',
     clientName: 'Netbulls',
     jiraIssue: null,
-    labels: [{ id: 'l4', name: 'Meeting', color: '#3b82f6' }],
+    tags: [{ id: 'l4', name: 'Meeting', color: '#3b82f6' }],
     segments: [
       {
         id: 'seg-e1-1',
@@ -146,7 +146,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectColor: '#00D4AA',
     clientName: 'Netbulls',
     jiraIssue: null,
-    labels: [
+    tags: [
       { id: 'l1', name: 'Development', color: '#22c55e' },
       { id: 'l3', name: 'Bug Fix', color: '#ef4444' },
     ],
@@ -194,7 +194,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectColor: '#f59e0b',
     clientName: 'Acme Corp',
     jiraIssue: null,
-    labels: [{ id: 'l2', name: 'Design', color: '#a855f7' }],
+    tags: [{ id: 'l2', name: 'Design', color: '#a855f7' }],
     segments: [
       {
         id: 'seg-e3-1',
@@ -221,7 +221,7 @@ const COMPLETED_ENTRIES: Entry[] = [
     projectColor: null,
     clientName: null,
     jiraIssue: null,
-    labels: [],
+    tags: [],
     segments: [
       {
         id: 'seg-e4-1',
@@ -262,7 +262,7 @@ export const MOCK_DAY_GROUPS: DayGroup[] = [
         projectColor: '#ef4444',
         clientName: 'Acme Corp',
         jiraIssue: null,
-        labels: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
+        tags: [{ id: 'l1', name: 'Development', color: '#22c55e' }],
         segments: [
           {
             id: 'seg-ey1-1',

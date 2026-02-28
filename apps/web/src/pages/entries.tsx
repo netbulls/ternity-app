@@ -10,7 +10,7 @@ import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
 import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { Button } from '@/components/ui/button';
 import { ProjectSelector } from '@/components/timer/project-selector';
-import { LabelSelector } from '@/components/timer/label-selector';
+import { TagSelector } from '@/components/timer/tag-selector';
 import {
   formatDuration,
   formatDateRange,
@@ -21,6 +21,7 @@ import {
   shiftDays,
   shiftMonths,
 } from '@/lib/format';
+import { usePreferences } from '@/providers/preferences-provider';
 import { scaled } from '@/lib/scaled';
 import { useSearchParams } from 'react-router-dom';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
@@ -36,7 +37,7 @@ export function EntriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [anchorDate, setAnchorDate] = useState(getToday);
   const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
-  const [filterLabelIds, setFilterLabelIds] = useState<string[]>([]);
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [onlyIncomplete, setOnlyIncomplete] = useState(
     () => searchParams.get('filter') === 'incomplete',
   );
@@ -50,6 +51,7 @@ export function EntriesPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { tagsEnabled } = usePreferences();
   const { targetDisplayName } = useImpersonation();
 
   // Compute date range from view mode + anchor
@@ -68,7 +70,7 @@ export function EntriesPage() {
   // Client-side filtering by project, label, and incomplete
   const filteredGroups = useMemo(() => {
     if (!dayGroups) return [];
-    if (!filterProjectId && filterLabelIds.length === 0 && !onlyIncomplete) return dayGroups;
+    if (!filterProjectId && filterTagIds.length === 0 && !onlyIncomplete) return dayGroups;
 
     const result: DayGroupType[] = [];
     for (const group of dayGroups) {
@@ -76,8 +78,8 @@ export function EntriesPage() {
         if (onlyIncomplete && entry.projectId && entry.description) return false;
         if (filterProjectId && entry.projectId !== filterProjectId) return false;
         if (
-          filterLabelIds.length > 0 &&
-          !filterLabelIds.some((lid) => entry.labels.some((l) => l.id === lid))
+          filterTagIds.length > 0 &&
+          !filterTagIds.some((tid) => entry.tags.some((t) => t.id === tid))
         )
           return false;
         return true;
@@ -88,7 +90,7 @@ export function EntriesPage() {
       }
     }
     return result;
-  }, [dayGroups, filterProjectId, filterLabelIds, onlyIncomplete]);
+  }, [dayGroups, filterProjectId, filterTagIds, onlyIncomplete]);
 
   // Grand total for the period
   const periodTotal = useMemo(
@@ -123,7 +125,7 @@ export function EntriesPage() {
   }, []);
 
   const hasFilters =
-    filterProjectId !== null || filterLabelIds.length > 0 || showDeleted || onlyIncomplete;
+    filterProjectId !== null || filterTagIds.length > 0 || showDeleted || onlyIncomplete;
 
   return (
     <div>
@@ -217,11 +219,13 @@ export function EntriesPage() {
           onChange={(id) => setFilterProjectId(id)}
           triggerClassName="font-brand font-semibold tracking-wide"
         />
-        <LabelSelector
-          value={filterLabelIds}
-          onChange={setFilterLabelIds}
-          triggerClassName="font-brand font-semibold tracking-wide"
-        />
+        {tagsEnabled && (
+          <TagSelector
+            value={filterTagIds}
+            onChange={setFilterTagIds}
+            triggerClassName="font-brand font-semibold tracking-wide"
+          />
+        )}
 
         <button
           onClick={() => {
@@ -260,7 +264,7 @@ export function EntriesPage() {
           <button
             onClick={() => {
               setFilterProjectId(null);
-              setFilterLabelIds([]);
+              setFilterTagIds([]);
               setShowDeleted(false);
               setOnlyIncomplete(false);
             }}

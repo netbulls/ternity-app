@@ -3,10 +3,10 @@ import { eq, and, gte, lte, desc, inArray, isNull, or, like, sql } from 'drizzle
 import { db } from '../db/index.js';
 import {
   timeEntries,
-  entryLabels,
+  entryTags,
   entrySegments,
   entryAuditLog,
-  labels,
+  tags,
   users,
   projects,
   clients,
@@ -179,8 +179,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     // Index rows by id for lookup
     const rowMap = new Map(rows.map((r) => [r.id, r]));
 
-    // 3. Batch-load segments, labels, projects, and jira connections in parallel
-    const [allSegments, allLabelRows, allProjectRows, allJiraConnRows] = await Promise.all([
+    // 3. Batch-load segments, tags, projects, and jira connections in parallel
+    const [allSegments, allTagRows, allProjectRows, allJiraConnRows] = await Promise.all([
       db
         .select()
         .from(entrySegments)
@@ -188,14 +188,14 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         .orderBy(entrySegments.createdAt),
       db
         .select({
-          entryId: entryLabels.entryId,
-          id: labels.id,
-          name: labels.name,
-          color: labels.color,
+          entryId: entryTags.entryId,
+          id: tags.id,
+          name: tags.name,
+          color: tags.color,
         })
-        .from(entryLabels)
-        .innerJoin(labels, eq(entryLabels.labelId, labels.id))
-        .where(inArray(entryLabels.entryId, entryIds)),
+        .from(entryTags)
+        .innerJoin(tags, eq(entryTags.tagId, tags.id))
+        .where(inArray(entryTags.entryId, entryIds)),
       (() => {
         const projectIds = [...new Set(rows.map((r) => r.projectId).filter(Boolean))] as string[];
         if (projectIds.length === 0) return Promise.resolve([]);
@@ -233,12 +233,12 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       arr.push(seg);
     }
 
-    const labelsByEntry = new Map<string, { id: string; name: string; color: string | null }[]>();
-    for (const row of allLabelRows) {
-      let arr = labelsByEntry.get(row.entryId);
+    const tagsByEntry = new Map<string, { id: string; name: string; color: string | null }[]>();
+    for (const row of allTagRows) {
+      let arr = tagsByEntry.get(row.entryId);
       if (!arr) {
         arr = [];
-        labelsByEntry.set(row.entryId, arr);
+        tagsByEntry.set(row.entryId, arr);
       }
       arr.push({ id: row.id, name: row.name, color: row.color });
     }
@@ -281,7 +281,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
                 siteUrl: jiraConnMap.get(row.jiraConnectionId) ?? '',
               }
             : null,
-        labels: labelsByEntry.get(row.id) ?? [],
+        tags: tagsByEntry.get(row.id) ?? [],
         segments: segments.map((s) => ({
           id: s.id,
           type: s.type,
@@ -504,12 +504,12 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         note: body.note.trim(),
       });
 
-      // Attach labels
-      const labelIds = body.labelIds ?? [];
-      if (labelIds.length > 0) {
+      // Attach tags
+      const tagIds = body.tagIds ?? [];
+      if (tagIds.length > 0) {
         await tx
-          .insert(entryLabels)
-          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
+          .insert(entryTags)
+          .values(tagIds.map((tagId: string) => ({ entryId: created!.id, tagId })));
       }
 
       // Record audit
@@ -567,21 +567,21 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         await tx.update(timeEntries).set(updateSet).where(eq(timeEntries.id, id));
       }
 
-      // Snapshot old labels BEFORE deleting (needed for audit)
-      let oldLabelIds: string[] = [];
-      if (body.labelIds !== undefined) {
-        const oldLabelRows = await tx
-          .select({ id: labels.id })
-          .from(entryLabels)
-          .innerJoin(labels, eq(entryLabels.labelId, labels.id))
-          .where(eq(entryLabels.entryId, id));
-        oldLabelIds = oldLabelRows.map((r) => r.id).sort();
+      // Snapshot old tags BEFORE deleting (needed for audit)
+      let oldTagIds: string[] = [];
+      if (body.tagIds !== undefined) {
+        const oldTagRows = await tx
+          .select({ id: tags.id })
+          .from(entryTags)
+          .innerJoin(tags, eq(entryTags.tagId, tags.id))
+          .where(eq(entryTags.entryId, id));
+        oldTagIds = oldTagRows.map((r) => r.id).sort();
 
-        await tx.delete(entryLabels).where(eq(entryLabels.entryId, id));
-        if (body.labelIds.length > 0) {
+        await tx.delete(entryTags).where(eq(entryTags.entryId, id));
+        if (body.tagIds.length > 0) {
           await tx
-            .insert(entryLabels)
-            .values(body.labelIds.map((labelId: string) => ({ entryId: id, labelId })));
+            .insert(entryTags)
+            .values(body.tagIds.map((tagId: string) => ({ entryId: id, tagId })));
         }
       }
 
@@ -597,10 +597,10 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         ]);
         changes.project = { old: oldName, new: newName };
       }
-      if (body.labelIds !== undefined) {
-        const newIds = [...body.labelIds].sort();
-        if (JSON.stringify(oldLabelIds) !== JSON.stringify(newIds)) {
-          changes.labelIds = { old: oldLabelIds, new: newIds };
+      if (body.tagIds !== undefined) {
+        const newIds = [...body.tagIds].sort();
+        if (JSON.stringify(oldTagIds) !== JSON.stringify(newIds)) {
+          changes.tagIds = { old: oldTagIds, new: newIds };
         }
       }
       if (body.jiraIssueKey !== undefined && body.jiraIssueKey !== existing.jiraIssueKey) {
@@ -848,15 +848,15 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         })
         .returning();
 
-      // 1b. Clone labels from original entry
-      const originalLabels = await tx
-        .select({ labelId: entryLabels.labelId })
-        .from(entryLabels)
-        .where(eq(entryLabels.entryId, id));
-      if (originalLabels.length > 0) {
+      // 1b. Clone tags from original entry
+      const originalTags = await tx
+        .select({ tagId: entryTags.tagId })
+        .from(entryTags)
+        .where(eq(entryTags.entryId, id));
+      if (originalTags.length > 0) {
         await tx
-          .insert(entryLabels)
-          .values(originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })));
+          .insert(entryTags)
+          .values(originalTags.map((t) => ({ entryId: newEntry!.id, tagId: t.tagId })));
       }
 
       // 2. Create segment on new entry
@@ -996,15 +996,15 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         })
         .returning();
 
-      // 2b. Clone labels from original entry
-      const originalLabels = await tx
-        .select({ labelId: entryLabels.labelId })
-        .from(entryLabels)
-        .where(eq(entryLabels.entryId, id));
-      if (originalLabels.length > 0) {
+      // 2b. Clone tags from original entry
+      const originalTags = await tx
+        .select({ tagId: entryTags.tagId })
+        .from(entryTags)
+        .where(eq(entryTags.entryId, id));
+      if (originalTags.length > 0) {
         await tx
-          .insert(entryLabels)
-          .values(originalLabels.map((l) => ({ entryId: newEntry!.id, labelId: l.labelId })));
+          .insert(entryTags)
+          .values(originalTags.map((t) => ({ entryId: newEntry!.id, tagId: t.tagId })));
       }
 
       // 3. Create a manual segment on the new entry with the split duration

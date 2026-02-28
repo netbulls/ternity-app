@@ -4,9 +4,9 @@ import {
   stgTogglTimeEntries,
   stgTogglTags,
   timeEntries,
-  entryLabels,
+  entryTags,
   entrySegments,
-  labels,
+  tags,
 } from '../../db/schema.js';
 import { log } from '../logger.js';
 import { findTargetId, upsertMapping } from './mappings.js';
@@ -15,9 +15,12 @@ export async function transformTimeEntries() {
   const counts = { created: 0, updated: 0, skipped: 0 };
   const rows = await db.select().from(stgTogglTimeEntries);
 
-  // Pre-load label name→id map for tag resolution
-  const allLabels = await db.select().from(labels);
-  const labelByName = new Map(allLabels.map((l) => [l.name.toLowerCase(), l.id]));
+  // Pre-load tag name→id map per user for tag resolution
+  const allTags = await db.select().from(tags);
+  // Map: `${userId}:${lowerName}` → tagId
+  const tagByUserAndName = new Map(
+    allTags.map((t) => [`${t.userId}:${t.name.toLowerCase()}`, t.id]),
+  );
 
   // Pre-load toggl tag_id → tag name map (for resolving tag_ids in flattened entries)
   const tagRows = await db.select().from(stgTogglTags);
@@ -40,7 +43,9 @@ export async function transformTimeEntries() {
     }
     const userId = await findTargetId('toggl', 'users', String(togglUserId));
     if (!userId) {
-      log.warn(`  Skipping time entry ${externalId}: no user mapping for toggl user ${togglUserId}`);
+      log.warn(
+        `  Skipping time entry ${externalId}: no user mapping for toggl user ${togglUserId}`,
+      );
       counts.skipped++;
       continue;
     }
@@ -60,8 +65,7 @@ export async function transformTimeEntries() {
     const stoppedAt = raw.stop ? new Date(raw.stop as string) : null;
     // Flattened entries use 'seconds', original format used 'duration'
     const rawDuration = raw.seconds ?? raw.duration;
-    const durationSeconds =
-      typeof rawDuration === 'number' && rawDuration > 0 ? rawDuration : null;
+    const durationSeconds = typeof rawDuration === 'number' && rawDuration > 0 ? rawDuration : null;
 
     const existingId = await findTargetId('toggl', 'time_entries', externalId);
 
@@ -87,7 +91,7 @@ export async function transformTimeEntries() {
         stoppedAt,
         durationSeconds,
       });
-      await syncEntryLabels(existingId, tagNames, labelByName);
+      await syncEntryTags(existingId, userId, tagNames, tagByUserAndName);
       counts.updated++;
     } else {
       // Create entry (metadata only) + clocked segment
@@ -103,7 +107,7 @@ export async function transformTimeEntries() {
         durationSeconds,
       });
       await upsertMapping('toggl', 'time_entries', externalId, 'time_entries', created!.id);
-      await syncEntryLabels(created!.id, tagNames, labelByName);
+      await syncEntryTags(created!.id, userId, tagNames, tagByUserAndName);
       counts.created++;
     }
   }
@@ -114,26 +118,34 @@ export async function transformTimeEntries() {
   return counts;
 }
 
-async function syncEntryLabels(
+async function syncEntryTags(
   entryId: string,
-  tags: string[] | undefined,
-  labelByName: Map<string, string>,
+  userId: string,
+  tagNames: string[] | undefined,
+  tagByUserAndName: Map<string, string>,
 ) {
-  // Clear existing labels for this entry
-  await db.delete(entryLabels).where(eq(entryLabels.entryId, entryId));
+  // Clear existing tags for this entry
+  await db.delete(entryTags).where(eq(entryTags.entryId, entryId));
 
-  if (!tags || tags.length === 0) return;
+  if (!tagNames || tagNames.length === 0) return;
 
-  const values: { entryId: string; labelId: string }[] = [];
-  for (const tag of tags) {
-    const labelId = labelByName.get(tag.toLowerCase());
-    if (labelId) {
-      values.push({ entryId, labelId });
+  const values: { entryId: string; tagId: string }[] = [];
+  for (const name of tagNames) {
+    const key = `${userId}:${name.toLowerCase()}`;
+    let tagId = tagByUserAndName.get(key);
+
+    // If this user doesn't have this tag yet, create it
+    if (!tagId) {
+      const [created] = await db.insert(tags).values({ name, userId }).returning();
+      tagId = created!.id;
+      tagByUserAndName.set(key, tagId);
     }
+
+    values.push({ entryId, tagId });
   }
 
   if (values.length > 0) {
-    await db.insert(entryLabels).values(values);
+    await db.insert(entryTags).values(values);
   }
 }
 
@@ -145,21 +157,13 @@ async function getOrCreateNoProjectId(): Promise<string> {
   const { projects, clients } = await import('../../db/schema.js');
 
   // Find or create "Unassigned" client
-  let [client] = await db
-    .select()
-    .from(clients)
-    .where(eq(clients.name, 'Unassigned'))
-    .limit(1);
+  let [client] = await db.select().from(clients).where(eq(clients.name, 'Unassigned')).limit(1);
   if (!client) {
     [client] = await db.insert(clients).values({ name: 'Unassigned' }).returning();
   }
 
   // Find or create "No Project" project
-  let [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.name, 'No Project'))
-    .limit(1);
+  let [project] = await db.select().from(projects).where(eq(projects.name, 'No Project')).limit(1);
   if (!project) {
     [project] = await db
       .insert(projects)

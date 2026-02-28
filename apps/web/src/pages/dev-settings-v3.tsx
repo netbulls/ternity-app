@@ -91,14 +91,19 @@ function ProjectSelector() {
           <span className="h-2 w-2 rounded-full" style={{ background: selected.color }} />
           <span>{selected.name}</span>
         </div>
-        <ChevronDown className={cn('h-3.5 w-3.5 opacity-40 transition-transform', open && 'rotate-180')} />
+        <ChevronDown
+          className={cn('h-3.5 w-3.5 opacity-40 transition-transform', open && 'rotate-180')}
+        />
       </button>
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-border bg-card p-1 shadow-lg">
           {MOCK_SETTINGS_DATA.projects.map((p) => (
             <button
               key={p.id}
-              onClick={() => { setSelected(p); setOpen(false); }}
+              onClick={() => {
+                setSelected(p);
+                setOpen(false);
+              }}
               className={cn(
                 'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors',
                 selected.id === p.id
@@ -123,7 +128,8 @@ function ProjectSelector() {
 // ============================================================
 
 function GeneralPanel() {
-  const { theme, setTheme, scale, setScale, confirmTimerSwitch, setConfirmTimerSwitch } = usePreferences();
+  const { theme, setTheme, scale, setScale, confirmTimerSwitch, setConfirmTimerSwitch } =
+    usePreferences();
 
   return (
     <div>
@@ -156,7 +162,9 @@ function GeneralPanel() {
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>Scale</span>
+          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Scale
+          </span>
           <div className="flex gap-1.5">
             {SCALES.map((s) => (
               <button
@@ -185,9 +193,12 @@ function GeneralPanel() {
             14h 52m
           </p>
           <p className="mt-1 text-muted-foreground" style={{ fontSize: scaled(13) }}>
-            Weekly summary across all projects and labels.
+            Weekly summary across all projects and tags.
           </p>
-          <p className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground" style={{ fontSize: scaled(10) }}>
+          <p
+            className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground"
+            style={{ fontSize: scaled(10) }}
+          >
             This week
           </p>
         </div>
@@ -244,7 +255,10 @@ function ProfilePanel() {
 
       <div className="mt-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
         <div className="mb-2 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]" style={{ fontSize: scaled(12) }}>
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
+            style={{ fontSize: scaled(12) }}
+          >
             {u.initials}
           </div>
           <div className="min-w-0">
@@ -324,7 +338,10 @@ function IntegrationsPanel() {
                 </div>
               </div>
             </div>
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary" style={{ fontSize: '9px' }}>
+            <span
+              className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary"
+              style={{ fontSize: '9px' }}
+            >
               Connected
             </span>
           </div>

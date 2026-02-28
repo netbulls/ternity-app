@@ -3,17 +3,17 @@ import { eq, and, isNull, desc } from 'drizzle-orm';
 import { db, type Database } from '../db/index.js';
 import {
   timeEntries,
-  entryLabels,
+  entryTags,
   entrySegments,
   projects,
   clients,
-  labels,
+  tags,
   jiraConnections,
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { StartTimer, Entry, JiraIssueLink } from '@ternity/shared';
 
-/** Build a full entry response with segments, project + labels joined */
+/** Build a full entry response with segments, project + tags joined */
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
   const conn = tx ?? db;
 
@@ -50,16 +50,16 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     }
   }
 
-  // Get labels
-  const entryLabelRows = await conn
+  // Get tags
+  const entryTagRows = await conn
     .select({
-      id: labels.id,
-      name: labels.name,
-      color: labels.color,
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
     })
-    .from(entryLabels)
-    .innerJoin(labels, eq(entryLabels.labelId, labels.id))
-    .where(eq(entryLabels.entryId, entryId));
+    .from(entryTags)
+    .innerJoin(tags, eq(entryTags.tagId, tags.id))
+    .where(eq(entryTags.entryId, entryId));
 
   // Get Jira issue link
   let jiraIssue: JiraIssueLink | null = null;
@@ -96,7 +96,7 @@ export async function buildEntryResponse(entryId: string, tx?: Database): Promis
     projectColor,
     clientName,
     jiraIssue,
-    labels: entryLabelRows,
+    tags: entryTagRows,
     segments: segments.map((s) => ({
       id: s.id,
       type: s.type,
@@ -209,7 +209,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const body = (request.body ?? {}) as StartTimer;
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
-    const labelIds = body.labelIds ?? [];
+    const tagIds = body.tagIds ?? [];
     const jiraIssueKey = body.jiraIssueKey ?? null;
     const jiraIssueSummary = body.jiraIssueSummary ?? null;
     const jiraConnectionId = body.jiraConnectionId ?? null;
@@ -240,11 +240,11 @@ export async function timerRoutes(fastify: FastifyInstance) {
         startedAt: now,
       });
 
-      // Attach labels
-      if (labelIds.length > 0) {
+      // Attach tags
+      if (tagIds.length > 0) {
         await tx
-          .insert(entryLabels)
-          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
+          .insert(entryTags)
+          .values(tagIds.map((tagId: string) => ({ entryId: created!.id, tagId })));
       }
 
       // Audit: timer started
@@ -343,7 +343,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const body = (request.body ?? {}) as StartTimer;
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
-    const labelIds = body.labelIds ?? [];
+    const tagIds = body.tagIds ?? [];
     const jiraIssueKey = body.jiraIssueKey ?? null;
     const jiraIssueSummary = body.jiraIssueSummary ?? null;
     const jiraConnectionId = body.jiraConnectionId ?? null;
@@ -435,10 +435,10 @@ export async function timerRoutes(fastify: FastifyInstance) {
         startedAt: now,
       });
 
-      if (labelIds.length > 0) {
+      if (tagIds.length > 0) {
         await tx
-          .insert(entryLabels)
-          .values(labelIds.map((labelId: string) => ({ entryId: created!.id, labelId })));
+          .insert(entryTags)
+          .values(tagIds.map((tagId: string) => ({ entryId: created!.id, tagId })));
       }
 
       const startedProjectName = await resolveProjectName(projectId, tx);

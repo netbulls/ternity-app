@@ -1,22 +1,25 @@
 import { log } from '../sync/logger.js';
 import { transformClients } from '../sync/transform/clients.js';
 import { transformProjects } from '../sync/transform/projects.js';
-import { transformLabels } from '../sync/transform/labels.js';
+import { transformTags } from '../sync/transform/tags.js';
 import { transformTimeEntries } from '../sync/transform/time-entries.js';
 import { transformLeaveTypes } from '../sync/transform/leave-types.js';
 import { transformAbsences } from '../sync/transform/absences.js';
 
-const TRANSFORMS: Record<string, () => Promise<{ created: number; updated: number; skipped: number }>> = {
+const TRANSFORMS: Record<
+  string,
+  () => Promise<{ created: number; updated: number; skipped: number }>
+> = {
   clients: transformClients,
   projects: transformProjects,
-  labels: transformLabels,
+  tags: transformTags,
   'time-entries': transformTimeEntries,
   'leave-types': transformLeaveTypes,
   absences: transformAbsences,
 };
 
 // Dependency order
-const ORDER = ['clients', 'projects', 'labels', 'leave-types', 'time-entries', 'absences'];
+const ORDER = ['clients', 'projects', 'tags', 'leave-types', 'time-entries', 'absences'];
 
 const args = process.argv.slice(2);
 let entity: string | undefined;
@@ -43,7 +46,9 @@ async function main() {
 
   log.info('\nTransform complete:');
   for (const [e, counts] of Object.entries(results)) {
-    log.info(`  ${e}: ${counts.created} created, ${counts.updated} updated, ${counts.skipped} skipped`);
+    log.info(
+      `  ${e}: ${counts.created} created, ${counts.updated} updated, ${counts.skipped} skipped`,
+    );
   }
 
   process.exit(0);

@@ -104,14 +104,21 @@ export const projectMembers = pgTable(
   (t) => [uniqueIndex('project_members_user_project_idx').on(t.userId, t.projectId)],
 );
 
-// ── Labels ─────────────────────────────────────────────────────────────────
+// ── Tags ──────────────────────────────────────────────────────────────────
 
-export const labels = pgTable('labels', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  color: text('color'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const tags = pgTable(
+  'tags',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    color: text('color'),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('tags_user_id_idx').on(t.userId)],
+);
 
 // ── Time Entries ───────────────────────────────────────────────────────────
 
@@ -155,19 +162,19 @@ export const entrySegments = pgTable(
   (t) => [index('entry_segments_entry_id_idx').on(t.entryId)],
 );
 
-// ── Entry Labels (join table) ──────────────────────────────────────────────
+// ── Entry Tags (join table) ────────────────────────────────────────────────
 
-export const entryLabels = pgTable(
-  'entry_labels',
+export const entryTags = pgTable(
+  'entry_tags',
   {
     entryId: uuid('entry_id')
       .notNull()
       .references(() => timeEntries.id),
-    labelId: uuid('label_id')
+    tagId: uuid('tag_id')
       .notNull()
-      .references(() => labels.id),
+      .references(() => tags.id),
   },
-  (t) => [uniqueIndex('entry_labels_entry_label_idx').on(t.entryId, t.labelId)],
+  (t) => [uniqueIndex('entry_tags_entry_tag_idx').on(t.entryId, t.tagId)],
 );
 
 // ── Entry Audit Log ───────────────────────────────────────────────────────

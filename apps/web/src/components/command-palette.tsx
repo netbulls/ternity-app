@@ -241,7 +241,7 @@ export function CommandPalette() {
       startOrResume.mutate({
         description: issue.summary,
         projectId,
-        labelIds: [],
+        tagIds: [],
         jiraIssueKey: issue.key,
         jiraIssueSummary: issue.summary,
         jiraConnectionId: connectionId,

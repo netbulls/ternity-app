@@ -1,5 +1,20 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
-import { THEMES, DEFAULT_THEME, type ThemeId, type ThemeMeta, type UserPreferences, type UserPreferencesPatch } from '@ternity/shared';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react';
+import {
+  THEMES,
+  DEFAULT_THEME,
+  type ThemeId,
+  type ThemeMeta,
+  type UserPreferences,
+  type UserPreferencesPatch,
+} from '@ternity/shared';
 import { apiFetch } from '@/lib/api';
 
 export const SCALES = [
@@ -32,6 +47,8 @@ interface PreferencesContextValue {
   setConfirmTimerSwitch: (value: boolean) => void;
   defaultProjectId: string | null;
   setDefaultProject: (id: string | null) => void;
+  tagsEnabled: boolean;
+  setTagsEnabled: (value: boolean) => void;
   syncFromServer: (prefs: UserPreferences) => void;
   refreshFromServer: () => void;
 }
@@ -54,6 +71,7 @@ function readStoredPreferences(): UserPreferences {
     scale: DEFAULT_SCALE,
     confirmTimerSwitch: true,
     defaultProjectId: null,
+    tagsEnabled: false,
   };
 
   try {
@@ -115,12 +133,15 @@ function applyScaleCSS(scale: number) {
 export function setPreference<K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const prefs = raw ? (JSON.parse(raw) as UserPreferences) : {
-      theme: DEFAULT_THEME,
-      scale: DEFAULT_SCALE,
-      confirmTimerSwitch: true,
-      defaultProjectId: null,
-    };
+    const prefs: UserPreferences = raw
+      ? (JSON.parse(raw) as UserPreferences)
+      : {
+          theme: DEFAULT_THEME,
+          scale: DEFAULT_SCALE,
+          confirmTimerSwitch: true,
+          defaultProjectId: null,
+          tagsEnabled: false,
+        };
     prefs[key] = value;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     window.dispatchEvent(new CustomEvent('ternity-pref-change', { detail: { key, value } }));
@@ -146,6 +167,7 @@ export function getPreference<K extends keyof UserPreferences>(key: K): UserPref
     scale: DEFAULT_SCALE,
     confirmTimerSwitch: true,
     defaultProjectId: null,
+    tagsEnabled: false,
   };
   return defaults[key];
 }
@@ -187,14 +209,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     }, 300);
   }, []);
 
-  const updatePref = useCallback(<K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
-    setPrefs((prev) => {
-      const next = { ...prev, [key]: value };
-      writePreferences(next);
-      return next;
-    });
-    patchServer({ [key]: value } as UserPreferencesPatch);
-  }, [patchServer]);
+  const updatePref = useCallback(
+    <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
+      setPrefs((prev) => {
+        const next = { ...prev, [key]: value };
+        writePreferences(next);
+        return next;
+      });
+      patchServer({ [key]: value } as UserPreferencesPatch);
+    },
+    [patchServer],
+  );
 
   // Listen for sync setPreference() calls from non-React contexts
   useEffect(() => {
@@ -208,8 +233,18 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((theme: ThemeId) => updatePref('theme', theme), [updatePref]);
   const setScale = useCallback((value: number) => updatePref('scale', value), [updatePref]);
-  const setConfirmTimerSwitch = useCallback((value: boolean) => updatePref('confirmTimerSwitch', value), [updatePref]);
-  const setDefaultProject = useCallback((id: string | null) => updatePref('defaultProjectId', id), [updatePref]);
+  const setConfirmTimerSwitch = useCallback(
+    (value: boolean) => updatePref('confirmTimerSwitch', value),
+    [updatePref],
+  );
+  const setDefaultProject = useCallback(
+    (id: string | null) => updatePref('defaultProjectId', id),
+    [updatePref],
+  );
+  const setTagsEnabled = useCallback(
+    (value: boolean) => updatePref('tagsEnabled', value),
+    [updatePref],
+  );
 
   const syncFromServer = useCallback((serverPrefs: UserPreferences) => {
     setPrefs(serverPrefs);
@@ -220,7 +255,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const refreshFromServer = useCallback(() => {
     apiFetch<UserPreferences>('/user/preferences')
       .then(syncFromServer)
-      .catch(() => { /* silent */ });
+      .catch(() => {
+        /* silent */
+      });
   }, [syncFromServer]);
 
   return (
@@ -236,6 +273,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setConfirmTimerSwitch,
         defaultProjectId: prefs.defaultProjectId,
         setDefaultProject,
+        tagsEnabled: prefs.tagsEnabled,
+        setTagsEnabled,
         syncFromServer,
         refreshFromServer,
       }}

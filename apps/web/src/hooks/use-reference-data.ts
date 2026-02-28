@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
-import type { ProjectOption, LabelOption, UserOption } from '@ternity/shared';
+import { toast } from 'sonner';
+import type { ProjectOption, TagOption, UserOption, CreateTag, UpdateTag } from '@ternity/shared';
 
 export function useProjects() {
   return useQuery({
@@ -10,11 +11,58 @@ export function useProjects() {
   });
 }
 
-export function useLabels() {
+export function useTags() {
   return useQuery({
-    queryKey: ['labels'],
-    queryFn: () => apiFetch<LabelOption[]>('/labels'),
+    queryKey: ['tags'],
+    queryFn: () => apiFetch<TagOption[]>('/tags'),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateTag) =>
+      apiFetch<TagOption>('/tags', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (err) => {
+      toast.error(`Failed to create tag: ${err.message}`);
+    },
+  });
+}
+
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: UpdateTag & { id: string }) =>
+      apiFetch<TagOption>(`/tags/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (err) => {
+      toast.error(`Failed to update tag: ${err.message}`);
+    },
+  });
+}
+
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/tags/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (err) => {
+      toast.error(`Failed to delete tag: ${err.message}`);
+    },
   });
 }
 

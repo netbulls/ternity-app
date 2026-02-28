@@ -4,7 +4,7 @@ import {
   clients,
   projects,
   projectMembers,
-  labels,
+  tags,
   leaveTypes,
   leaveAllowances,
 } from './schema.js';
@@ -64,16 +64,16 @@ async function seed() {
 
   console.log(`  Created project memberships`);
 
-  // Labels
-  await db.insert(labels).values([
-    { name: 'jira', color: '#00D4AA' },
-    { name: 'meeting', color: '#8B93FF' },
-    { name: 'backend', color: '#FFB347' },
-    { name: 'frontend', color: '#FF6B6B' },
-    { name: 'devops', color: '#4ECDC4' },
+  // Tags (assigned to first user)
+  await db.insert(tags).values([
+    { name: 'jira', color: '#00D4AA', userId: user1!.id },
+    { name: 'meeting', color: '#8B93FF', userId: user1!.id },
+    { name: 'backend', color: '#FFB347', userId: user1!.id },
+    { name: 'frontend', color: '#FF6B6B', userId: user1!.id },
+    { name: 'devops', color: '#4ECDC4', userId: user1!.id },
   ]);
 
-  console.log(`  Created ${5} labels`);
+  console.log(`  Created ${5} tags`);
 
   // Leave types
   const [holiday, sick] = await db

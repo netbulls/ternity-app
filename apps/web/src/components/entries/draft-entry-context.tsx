@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateEntry } from '@/hooks/use-entries';
 import { getPreference } from '@/providers/preferences-provider';
@@ -9,11 +17,11 @@ import { useActiveEdit } from './active-edit-context';
 const DRAFT_SENTINEL = '__draft__';
 
 interface DraftState {
-  date: string;          // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   description: string;
   projectId: string | null;
-  startTime: string;     // HH:MM
-  endTime: string;       // HH:MM
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
 }
 
 interface DraftEntryContextValue {
@@ -64,7 +72,13 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
 
       setSavedEntryId(null);
       const time = nowHHMM();
-      setDraft({ date, description: '', projectId: getPreference('defaultProjectId'), startTime: time, endTime: time });
+      setDraft({
+        date,
+        description: '',
+        projectId: getPreference('defaultProjectId'),
+        startTime: time,
+        endTime: time,
+      });
       claim(DRAFT_SENTINEL);
     },
     [activeEntryId, claim],
@@ -96,7 +110,7 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
       const newEntry = await createEntry.mutateAsync({
         description: draft.description,
         projectId: draft.projectId,
-        labelIds: [],
+        tagIds: [],
         startedAt: startISO,
         stoppedAt: endISO,
         note: 'Manual entry',
@@ -122,15 +136,29 @@ export function DraftEntryProvider({ children }: { children: ReactNode }) {
   }, [draft, createEntry, release, queryClient]);
 
   const value = useMemo(
-    () => ({ draft, openDraft, dismissDraft, updateDraft, saveDraft, isSaving: createEntry.isPending, savedEntryId, justCreatedId }),
-    [draft, openDraft, dismissDraft, updateDraft, saveDraft, createEntry.isPending, savedEntryId, justCreatedId],
+    () => ({
+      draft,
+      openDraft,
+      dismissDraft,
+      updateDraft,
+      saveDraft,
+      isSaving: createEntry.isPending,
+      savedEntryId,
+      justCreatedId,
+    }),
+    [
+      draft,
+      openDraft,
+      dismissDraft,
+      updateDraft,
+      saveDraft,
+      createEntry.isPending,
+      savedEntryId,
+      justCreatedId,
+    ],
   );
 
-  return (
-    <DraftEntryContext.Provider value={value}>
-      {children}
-    </DraftEntryContext.Provider>
-  );
+  return <DraftEntryContext.Provider value={value}>{children}</DraftEntryContext.Provider>;
 }
 
 export const useDraftEntry = () => useContext(DraftEntryContext);

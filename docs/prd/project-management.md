@@ -38,25 +38,26 @@ projects
 
 ### Client Management (Admin)
 
-| Action | Details |
-|---|---|
-| **List** | All clients with project count, entry count, active/inactive status |
-| **Create** | Name (required) |
-| **Edit** | Rename |
+| Action                    | Details                                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **List**                  | All clients with project count, entry count, active/inactive status                                       |
+| **Create**                | Name (required)                                                                                           |
+| **Edit**                  | Rename                                                                                                    |
 | **Activate / Deactivate** | Toggle `isActive`. Deactivating hides the client and all its projects from pickers. Does not delete data. |
 
 ### Project Management (Admin)
 
-| Action | Details |
-|---|---|
-| **List** | All projects grouped by client, with entry count, active/inactive status, color |
-| **Create** | Name (required), client (required), color (optional, default brand teal), description (optional) |
-| **Edit** | Name, client (reassign), color, description |
-| **Activate / Deactivate** | Toggle `isActive`. Deactivating hides the project from pickers. Does not delete data. |
+| Action                    | Details                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| **List**                  | All projects grouped by client, with entry count, active/inactive status, color                  |
+| **Create**                | Name (required), client (required), color (optional, default brand teal), description (optional) |
+| **Edit**                  | Name, client (reassign), color, description                                                      |
+| **Activate / Deactivate** | Toggle `isActive`. Deactivating hides the project from pickers. Does not delete data.            |
 
 ### Picker Filtering
 
 The project picker (used in timer bar, entry row, manual entry dialog) shows only projects where:
+
 1. `projects.isActive = true`
 2. `clients.isActive = true` (parent client is also active)
 
@@ -66,29 +67,29 @@ The reference/picker API endpoint applies this filter server-side. Admin managem
 
 ### Clients
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/clients` | List all clients (admin: all; user: active only) |
-| POST | `/api/clients` | Create client (admin) |
-| PATCH | `/api/clients/:id` | Update client (admin) |
-| PATCH | `/api/clients/:id/activate` | Activate client (admin) |
-| PATCH | `/api/clients/:id/deactivate` | Deactivate client (admin) |
+| Method | Path                          | Description                                      |
+| ------ | ----------------------------- | ------------------------------------------------ |
+| GET    | `/api/clients`                | List all clients (admin: all; user: active only) |
+| POST   | `/api/clients`                | Create client (admin)                            |
+| PATCH  | `/api/clients/:id`            | Update client (admin)                            |
+| PATCH  | `/api/clients/:id/activate`   | Activate client (admin)                          |
+| PATCH  | `/api/clients/:id/deactivate` | Deactivate client (admin)                        |
 
 ### Projects
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/projects` | List all projects (admin: all; user: active only, with active client) |
-| POST | `/api/projects` | Create project (admin) |
-| PATCH | `/api/projects/:id` | Update project (admin) |
-| PATCH | `/api/projects/:id/activate` | Activate project (admin) |
-| PATCH | `/api/projects/:id/deactivate` | Deactivate project (admin) |
+| Method | Path                           | Description                                                           |
+| ------ | ------------------------------ | --------------------------------------------------------------------- |
+| GET    | `/api/projects`                | List all projects (admin: all; user: active only, with active client) |
+| POST   | `/api/projects`                | Create project (admin)                                                |
+| PATCH  | `/api/projects/:id`            | Update project (admin)                                                |
+| PATCH  | `/api/projects/:id/activate`   | Activate project (admin)                                              |
+| PATCH  | `/api/projects/:id/deactivate` | Deactivate project (admin)                                            |
 
 ### Reference (existing, to be updated)
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/reference/projects` | Active projects for pickers (filter by both project + client `isActive`) |
+| Method | Path                      | Description                                                              |
+| ------ | ------------------------- | ------------------------------------------------------------------------ |
+| GET    | `/api/reference/projects` | Active projects for pickers (filter by both project + client `isActive`) |
 
 ## UX
 
@@ -123,5 +124,5 @@ Admin decisions (project/client active/inactive, user status) currently need to 
 - **Project-level reporting** — reports filtered by project are a separate feature.
 - **Project budgets / hours targets** — future feature.
 - **Client portal / external access** — not planned.
-- **Labels management** — separate feature, same pattern (active/inactive + CRUD).
+- **Tags management** — tags are personal (per-user, opt-in). CRUD for own tags is a separate feature.
 - **Reassignment** — bulk move entries between projects, move projects between clients. Parked for now.
