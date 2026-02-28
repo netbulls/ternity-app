@@ -167,12 +167,12 @@ export function EntriesPage() {
             <button
               key={v}
               className={cn(
-                'relative px-3 py-1 font-brand font-semibold uppercase tracking-wider transition-colors',
+                'relative py-1 text-center font-brand font-semibold uppercase tracking-wider transition-colors',
                 viewMode === v
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:text-foreground',
               )}
-              style={{ fontSize: scaled(11) }}
+              style={{ fontSize: scaled(11), minWidth: scaled(56) }}
               onClick={() => handleViewChange(v)}
             >
               {v}

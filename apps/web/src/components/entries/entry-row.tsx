@@ -92,6 +92,10 @@ export function EntryRow({ entry }: Props) {
   const [stopAndSplitConfirmOpen, setStopAndSplitConfirmOpen] = useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [jiraDescConfirm, setJiraDescConfirm] = useState<{
+    summary: string;
+    issueKey: string;
+  } | null>(null);
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [optimisticProject, setOptimisticProject] = useState<{
     name: string;
@@ -269,10 +273,22 @@ export function EntryRow({ entry }: Props) {
       if (resolvedProjectId && resolvedProjectId !== entry.projectId) {
         updateEntry.mutate({ id: entry.id, projectId: resolvedProjectId, source: 'jira_link' });
       }
+
+      // Auto-fill description from Jira summary
+      const desc = `${issue.key} ${issue.summary}`;
+      if (!entry.description.trim()) {
+        // Empty description — just fill it
+        updateEntry.mutate({ id: entry.id, description: desc, source: 'jira_link' });
+        setEditDesc(desc);
+      } else if (entry.description !== desc) {
+        // Different description — ask for confirmation
+        setJiraDescConfirm({ summary: desc, issueKey: issue.key });
+      }
+
       setJiraDropdownOpen(false);
       setHashTrigger(null);
     },
-    [entry.id, entry.projectId, linkJira, updateEntry, jiraConnections],
+    [entry.id, entry.description, entry.projectId, linkJira, updateEntry, jiraConnections],
   );
 
   const handleJiraUnlink = useCallback(() => {
@@ -749,6 +765,40 @@ export function EntryRow({ entry }: Props) {
                 }}
               >
                 Stop &amp; Split
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={jiraDescConfirm !== null}
+          onOpenChange={(open) => {
+            if (!open) setJiraDescConfirm(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Overwrite description?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This entry already has a description. Replace it with the Jira issue summary?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep current</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (jiraDescConfirm) {
+                    updateEntry.mutate({
+                      id: entry.id,
+                      description: jiraDescConfirm.summary,
+                      source: 'jira_link',
+                    });
+                    setEditDesc(jiraDescConfirm.summary);
+                  }
+                  setJiraDescConfirm(null);
+                }}
+              >
+                Overwrite
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

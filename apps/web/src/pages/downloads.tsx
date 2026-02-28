@@ -666,7 +666,69 @@ function DownloadsCard({
 }
 
 // ============================================================
-// Downloads Page
+// Downloads content (used in Settings > Downloads tab)
+// ============================================================
+
+export function DownloadsContent() {
+  const [detectedOS, setDetectedOS] = useState<Platform | 'unknown'>('unknown');
+  const [detectedArch, setDetectedArch] = useState<string | null>(null);
+
+  const { data, isLoading, error } = useDownloads();
+
+  useEffect(() => {
+    const os = detectOS();
+    setDetectedOS(os);
+    detectArch().then((arch) => {
+      if (arch) setDetectedArch(arch);
+    });
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Monitor className="mb-3 h-10 w-10 text-muted-foreground/50" />
+        <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>
+          Downloads unavailable
+        </div>
+        <div className="mt-1 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+          Desktop builds are not available right now. Please try again later.
+        </div>
+      </div>
+    );
+  }
+
+  if (data.products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Monitor className="mb-3 h-10 w-10 text-muted-foreground/50" />
+        <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>
+          No builds available yet
+        </div>
+        <div className="mt-1 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+          Desktop builds will appear here once they are published.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <DetectionBar os={detectedOS} />
+      <DownloadsCard products={data.products} detectedOS={detectedOS} detectedArch={detectedArch} />
+    </div>
+  );
+}
+
+// ============================================================
+// Downloads Page (standalone — kept for backward compat redirect)
 // ============================================================
 
 export function DownloadsPage() {

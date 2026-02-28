@@ -316,6 +316,39 @@ export const LAB_SECTIONS: LabProductSection[] = [
         ],
       },
       {
+        name: 'sidebar-menu',
+        id: 'sidebar-menu-lab',
+        description:
+          'Sidebar user menu — 3 approaches for user/org identity block with role-gated context menu (admin items move out of sidebar nav)',
+        date: '2026-02-28T12:00:00',
+        items: [
+          {
+            kind: 'exploration',
+            title: 'V1 — The Dropdown',
+            file: 'web/sidebar-menu-v1-a4c8.html',
+            description:
+              'Classic dropdown. User block with avatar, name, org, chevron. Menu pops up above with role-grouped items. Admin section labeled.',
+            date: '2026-02-28T12:00:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V2 — The Panel',
+            file: 'web/sidebar-menu-v2-b7e3.html',
+            description:
+              'Slide-up panel. Minimal identity row (avatar + first name). Click slides up a panel from sidebar bottom with dimmed overlay. Full identity in panel header. X to close.',
+            date: '2026-02-28T12:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V3 — The Popover',
+            file: 'web/sidebar-menu-v3-c9f1.html',
+            description:
+              'Org-first identity block. Rounded-square avatar, org name primary, person name secondary. Floating popover with arrow, grouped menu items, keyboard shortcut hints.',
+            date: '2026-02-28T12:20:00',
+          },
+        ],
+      },
+      {
         name: 'jira-search',
         id: 'jira-search-lab',
         description:

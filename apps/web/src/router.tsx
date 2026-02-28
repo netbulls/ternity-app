@@ -10,7 +10,6 @@ import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
 import { JiraCallbackPage } from '@/pages/jira-callback';
 import { DashboardPage } from '@/pages/dashboard';
-import { DownloadsPage } from '@/pages/downloads';
 
 export const router = createBrowserRouter([
   {
@@ -190,7 +189,7 @@ export const router = createBrowserRouter([
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/users', element: <UserManagementPage /> },
-      { path: '/downloads', element: <DownloadsPage /> },
+      { path: '/downloads', element: <Navigate to="/settings/downloads" replace /> },
       { path: '/settings/:tab?', element: <SettingsPage /> },
     ],
   },

@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sidebar User Menu — V2 The Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* === Layout === */
+      .demo-container {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .sidebar-demo {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border: 1px solid hsl(var(--sidebar-border));
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Inter', system-ui, sans-serif;
+        color: hsl(var(--sidebar-foreground));
+        overflow: hidden;
+        position: relative;
+      }
+      .sidebar-inner {
+        display: flex;
+        flex-direction: column;
+        height: 660px;
+        padding: 20px 12px;
+      }
+
+      /* Logo */
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      /* Section labels */
+      .section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        letter-spacing: 2px;
+      }
+
+      /* Nav items */
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: calc(13px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item.active {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+        font-weight: 600;
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      /* Bottom nav */
+      .bottom-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-bottom: 8px;
+      }
+
+      /* === User block V2: Minimal identity row === */
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+      .user-block:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .user-block.open {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-name {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .user-more {
+        color: hsl(var(--muted-foreground));
+        opacity: 0;
+        transition: opacity 0.15s;
+        flex-shrink: 0;
+      }
+      .user-block:hover .user-more,
+      .user-block.open .user-more {
+        opacity: 0.6;
+      }
+
+      /* === Slide-up panel === */
+      .slide-panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: hsl(var(--popover));
+        border-top: 1px solid hsl(var(--border));
+        border-radius: 12px 12px 0 0;
+        padding: 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.4);
+        transform: translateY(100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 50;
+        overflow: hidden;
+      }
+      .slide-panel.open {
+        transform: translateY(0);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 16px 12px;
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+      }
+      .panel-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .panel-user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .panel-user-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--popover-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .panel-user-org {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+      }
+      .panel-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.12s;
+      }
+      .panel-close:hover {
+        background: hsl(var(--muted) / 0.5);
+        color: hsl(var(--popover-foreground));
+      }
+
+      .panel-body {
+        padding: 8px 8px 12px;
+      }
+
+      .panel-label {
+        padding: 6px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        letter-spacing: 1.5px;
+      }
+      .panel-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--popover-foreground));
+        font-size: calc(12px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      .panel-item:hover {
+        background: hsl(var(--accent));
+        color: hsl(var(--accent-foreground));
+      }
+      .panel-item i {
+        width: 15px;
+        height: 15px;
+        color: hsl(var(--muted-foreground));
+      }
+      .panel-item:hover i {
+        color: hsl(var(--accent-foreground));
+      }
+      .panel-divider {
+        height: 1px;
+        background: hsl(var(--border));
+        margin: 4px 8px;
+      }
+      .panel-item.destructive {
+        color: hsl(var(--destructive));
+      }
+      .panel-item.destructive i {
+        color: hsl(var(--destructive));
+      }
+      .panel-item.destructive:hover {
+        background: hsl(var(--destructive) / 0.1);
+      }
+
+      /* Build info */
+      .build-info {
+        margin-top: 8px;
+        padding: 0 10px;
+        font-family: monospace;
+        font-size: 10px;
+        line-height: 1.6;
+        color: hsl(var(--muted-foreground) / 0.7);
+      }
+
+      /* Overlay to dim sidebar content behind panel */
+      .panel-overlay {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--background) / 0.4);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
+        z-index: 40;
+        border-radius: 12px;
+      }
+      .panel-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Description panel */
+      .desc-panel {
+        flex: 1;
+        max-width: 400px;
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        color: hsl(var(--foreground));
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .desc-panel h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        color: hsl(var(--primary));
+      }
+      .desc-panel h3 {
+        font-size: 12px;
+        font-weight: 600;
+        margin: 16px 0 6px;
+        color: hsl(var(--foreground));
+      }
+      .desc-panel ul {
+        padding-left: 16px;
+      }
+      .desc-panel li {
+        margin-bottom: 4px;
+      }
+      .desc-panel code {
+        background: hsl(var(--muted));
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 11px;
+      }
+      .desc-panel .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 4px;
+      }
+      .tag.user {
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+      }
+      .tag.admin {
+        background: hsl(var(--destructive) / 0.1);
+        color: hsl(var(--destructive));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>V2 — The Panel</h1>
+      <p>Slide-up panel from sidebar bottom. Minimal identity row, full context on expand.</p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfortable</button>
+      </div>
+    </div>
+
+    <div class="demo-container" id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Sidebar: Regular User -->
+      <div class="sidebar-demo">
+        <div class="panel-overlay" id="overlay-user" onclick="closePanel('user')"></div>
+        <div class="sidebar-inner">
+          <div class="logo">
+            <svg
+              class="logo-icon"
+              viewBox="0 0 18 22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M9 1v5M5 3.5h8M3 6h12a1 1 0 011 1v9a5 5 0 01-5 5H7a5 5 0 01-5-5V7a1 1 0 011-1z"
+              />
+              <path d="M6 10v4M9 9v5M12 10v4" stroke-linecap="round" />
+            </svg>
+            <span class="logo-text">Ternity</span>
+          </div>
+
+          <div class="section-label">Tracking</div>
+          <a class="nav-item active"><i data-lucide="timer"></i> My Day</a>
+          <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+          <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+          <a class="nav-item"><i data-lucide="palmtree"></i> Leave</a>
+          <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+          <div class="spacer"></div>
+
+          <div class="bottom-nav">
+            <a class="nav-item"><i data-lucide="download"></i> Downloads</a>
+          </div>
+
+          <div class="user-block" onclick="openPanel('user')">
+            <div class="avatar">PR</div>
+            <span class="user-name">Przemyslaw</span>
+            <i
+              data-lucide="more-horizontal"
+              class="user-more"
+              style="width: 14px; height: 14px"
+            ></i>
+          </div>
+
+          <div class="build-info">
+            v0.5.2 <span style="color: hsl(38 92% 50%)">dev</span>
+            <span style="opacity: 0.5">02-28 12:00</span>
+          </div>
+        </div>
+
+        <!-- Slide-up panel: User -->
+        <div class="slide-panel" id="panel-user">
+          <div class="panel-header">
+            <div class="panel-avatar">PR</div>
+            <div class="panel-user-info">
+              <div class="panel-user-name">Przemyslaw Rudzki</div>
+              <div class="panel-user-org">Netbulls</div>
+            </div>
+            <button class="panel-close" onclick="closePanel('user')">
+              <i data-lucide="x" style="width: 14px; height: 14px"></i>
+            </button>
+          </div>
+          <div class="panel-body">
+            <div class="panel-item"><i data-lucide="settings"></i> Settings</div>
+            <div class="panel-divider"></div>
+            <div class="panel-item destructive"><i data-lucide="log-out"></i> Sign out</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar: Admin User -->
+      <div class="sidebar-demo">
+        <div class="panel-overlay" id="overlay-admin" onclick="closePanel('admin')"></div>
+        <div class="sidebar-inner">
+          <div class="logo">
+            <svg
+              class="logo-icon"
+              viewBox="0 0 18 22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M9 1v5M5 3.5h8M3 6h12a1 1 0 011 1v9a5 5 0 01-5 5H7a5 5 0 01-5-5V7a1 1 0 011-1z"
+              />
+              <path d="M6 10v4M9 9v5M12 10v4" stroke-linecap="round" />
+            </svg>
+            <span class="logo-text">Ternity</span>
+          </div>
+
+          <div class="section-label">Tracking</div>
+          <a class="nav-item active"><i data-lucide="timer"></i> My Day</a>
+          <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+          <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+          <a class="nav-item"><i data-lucide="palmtree"></i> Leave</a>
+          <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+          <div class="spacer"></div>
+
+          <div class="bottom-nav">
+            <a class="nav-item"><i data-lucide="download"></i> Downloads</a>
+          </div>
+
+          <div class="user-block" onclick="openPanel('admin')">
+            <div class="avatar">PR</div>
+            <span class="user-name">Przemyslaw</span>
+            <i
+              data-lucide="more-horizontal"
+              class="user-more"
+              style="width: 14px; height: 14px"
+            ></i>
+          </div>
+
+          <div class="build-info">
+            v0.5.2 <span style="color: hsl(38 92% 50%)">dev</span>
+            <span style="opacity: 0.5">02-28 12:00</span>
+          </div>
+        </div>
+
+        <!-- Slide-up panel: Admin -->
+        <div class="slide-panel" id="panel-admin">
+          <div class="panel-header">
+            <div class="panel-avatar">PR</div>
+            <div class="panel-user-info">
+              <div class="panel-user-name">Przemyslaw Rudzki</div>
+              <div class="panel-user-org">
+                Netbulls
+                <span style="font-size: 9px; color: hsl(var(--primary)); margin-left: 2px"
+                  >Admin</span
+                >
+              </div>
+            </div>
+            <button class="panel-close" onclick="closePanel('admin')">
+              <i data-lucide="x" style="width: 14px; height: 14px"></i>
+            </button>
+          </div>
+          <div class="panel-body">
+            <div class="panel-label">Admin</div>
+            <div class="panel-item"><i data-lucide="users"></i> People</div>
+            <div class="panel-item"><i data-lucide="folder-kanban"></i> Projects</div>
+            <div class="panel-divider"></div>
+            <div class="panel-item"><i data-lucide="settings"></i> Settings</div>
+            <div class="panel-divider"></div>
+            <div class="panel-item destructive"><i data-lucide="log-out"></i> Sign out</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="desc-panel">
+        <h2>V2 — The Panel</h2>
+        <p>
+          Minimal identity in the sidebar — just avatar + first name. Clicking slides up a panel
+          from the bottom of the sidebar, overlaying the nav items with a dimmed backdrop.
+        </p>
+
+        <h3>User sees <span class="tag user">User</span></h3>
+        <ul>
+          <li>Settings</li>
+          <li>Sign out</li>
+        </ul>
+
+        <h3>Admin sees <span class="tag admin">Admin</span></h3>
+        <ul>
+          <li><strong>Admin section:</strong> People, Projects</li>
+          <li>Settings</li>
+          <li>Sign out</li>
+        </ul>
+
+        <h3>Design notes</h3>
+        <ul>
+          <li>User block is ultra-minimal — avatar + first name only</li>
+          <li>Three-dot icon appears on hover (not a chevron)</li>
+          <li>Panel slides up with smooth animation, dims content behind</li>
+          <li>Full identity (name + org) shown in the panel header</li>
+          <li>X button to close, or click the dimmed overlay</li>
+          <li>Panel covers sidebar bottom — feels like a mini-sheet</li>
+          <li>More spacious than a dropdown, less intrusive than a dialog</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        const group = event.target.parentElement;
+        group.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function openPanel(role) {
+        document.getElementById('panel-' + role).classList.add('open');
+        document.getElementById('overlay-' + role).classList.add('open');
+        const block = document
+          .getElementById('panel-' + role)
+          .closest('.sidebar-demo')
+          .querySelector('.user-block');
+        if (block) block.classList.add('open');
+      }
+      function closePanel(role) {
+        document.getElementById('panel-' + role).classList.remove('open');
+        document.getElementById('overlay-' + role).classList.remove('open');
+        const block = document
+          .getElementById('panel-' + role)
+          .closest('.sidebar-demo')
+          .querySelector('.user-block');
+        if (block) block.classList.remove('open');
+      }
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

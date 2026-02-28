@@ -1,50 +1,17 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Settings2, User, Briefcase, Link2, Bell, Globe, Mail, Phone } from 'lucide-react';
+import { Settings2, Palette, Link2, Download } from 'lucide-react';
 import { THEMES, ORG_TIMEZONE, type ThemeId } from '@ternity/shared';
 import { useAuth } from '@/providers/auth-provider';
+import { BuildInfo } from '@/components/build-info';
 import { SCALES, usePreferences } from '@/providers/preferences-provider';
 import { Switch } from '@/components/ui/switch';
 import { scaled } from '@/lib/scaled';
 import { getTimezoneAbbr } from '@/lib/format';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { JiraIntegrations } from '@/components/jira/jira-integrations';
+import { DownloadsContent } from '@/pages/downloads';
 import { cn } from '@/lib/utils';
-
-// ── Shared helpers ──────────────────────────────────────────────────────
-
-const ENV_COLORS: Record<string, string> = {
-  local: 'text-blue-400',
-  dev: 'text-amber-400',
-  prod: 'text-red-400',
-};
-
-function InfoRow({
-  icon: Icon,
-  value,
-  title,
-}: {
-  icon: React.ElementType;
-  value: React.ReactNode;
-  title?: string;
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-2.5 py-1" title={title}>
-      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-      <span className="min-w-0 truncate text-foreground/80" style={{ fontSize: scaled(12) }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function SoonBadge() {
-  return (
-    <span className="ml-1 inline-block rounded bg-muted/50 px-1.5 py-0.5 text-[8px] font-semibold normal-case tracking-normal text-muted-foreground/50">
-      Soon
-    </span>
-  );
-}
 
 // ── Tab definitions ──────────────────────────────────────────────────────
 
@@ -52,101 +19,47 @@ interface Tab {
   id: string;
   label: string;
   icon: React.ElementType;
-  soon?: boolean;
 }
 
 const TABS: Tab[] = [
   { id: 'general', label: 'General', icon: Settings2 },
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'work', label: 'Work', icon: Briefcase, soon: true },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'integrations', label: 'Integrations', icon: Link2 },
-  { id: 'notifications', label: 'Notifications', icon: Bell, soon: true },
+  { id: 'downloads', label: 'Downloads', icon: Download },
 ];
 
 // ── Tab panels ───────────────────────────────────────────────────────────
 
 function GeneralPanel() {
-  const {
-    theme,
-    setTheme,
-    scale,
-    setScale,
-    defaultProjectId,
-    setDefaultProject,
-    confirmTimerSwitch,
-    setConfirmTimerSwitch,
-  } = usePreferences();
+  const { user } = useAuth();
+  const { defaultProjectId, setDefaultProject, confirmTimerSwitch, setConfirmTimerSwitch } =
+    usePreferences();
 
   return (
     <div>
-      {/* Appearance */}
+      {/* Account */}
       <div>
         <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-          Appearance
+          Account
         </h2>
-        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-          Customize the look and feel
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id as ThemeId)}
-              className={cn(
-                'rounded-lg border px-3.5 py-1.5 transition-all',
-                theme === t.id
-                  ? 'border-primary bg-primary font-semibold text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:border-primary/50',
-              )}
-              style={{ fontSize: scaled(12) }}
-            >
-              {t.name}
-              {t.badge ? ` (${t.badge})` : ''}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
-            Scale
+        <div className="mt-1.5" style={{ fontSize: scaled(12) }}>
+          <span className="text-foreground">{user?.displayName ?? '—'}</span>
+          <span className="text-muted-foreground/40"> · </span>
+          <span className={user?.globalRole === 'admin' ? 'text-primary' : 'text-muted-foreground'}>
+            {user?.globalRole === 'admin' ? 'Admin' : 'Employee'}
           </span>
-          <div className="flex gap-1.5">
-            {SCALES.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setScale(s.value)}
-                className={cn(
-                  'rounded-md border px-2.5 py-1 transition-all',
-                  scale === s.value
-                    ? 'border-primary bg-primary font-semibold text-primary-foreground'
-                    : 'border-border text-muted-foreground hover:border-primary/50',
-                )}
-                style={{ fontSize: scaled(11) }}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
         </div>
-
-        {/* Preview */}
-        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
-          <p className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18) }}>
-            Timer &amp; Entries
-          </p>
-          <p className="font-brand mt-1 font-bold text-foreground" style={{ fontSize: scaled(22) }}>
-            14h 52m
-          </p>
-          <p className="mt-1 text-muted-foreground" style={{ fontSize: scaled(13) }}>
-            Weekly summary across all projects and labels.
-          </p>
-          <p
-            className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground"
-            style={{ fontSize: scaled(10) }}
-          >
-            This week
-          </p>
+        <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
+          {user?.email ?? '—'}
+          {user?.phone && (
+            <>
+              <span className="text-muted-foreground/30"> · </span>
+              {user.phone}
+            </>
+          )}
+          <span className="text-muted-foreground/30"> · </span>
+          {ORG_TIMEZONE}
+          <span className="text-muted-foreground/50"> ({getTimezoneAbbr()})</span>
         </div>
       </div>
 
@@ -187,124 +100,87 @@ function GeneralPanel() {
   );
 }
 
-function ProfilePanel() {
-  const { user } = useAuth();
-  const envName = import.meta.env.VITE_ENV_NAME || 'unknown';
-  const envColor = ENV_COLORS[envName] ?? 'text-muted-foreground';
-
-  const initials = user?.displayName
-    ? user.displayName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '??';
+function AppearancePanel() {
+  const { theme, setTheme, scale, setScale } = usePreferences();
 
   return (
     <div>
-      <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-        Account
-      </h2>
-      <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-        Your profile information
-      </p>
+      {/* Theme */}
+      <div>
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Theme
+        </h2>
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
+          Choose a color theme for the interface
+        </p>
 
-      <div className="mt-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-        <div className="mb-2 flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-            style={{ fontSize: scaled(12) }}
-          >
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-medium text-foreground" style={{ fontSize: scaled(13) }}>
-              {user?.displayName ?? '—'}
-            </div>
-            <span
+        <div className="mt-3 flex flex-wrap gap-2">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id as ThemeId)}
               className={cn(
-                'font-medium',
-                user?.globalRole === 'admin' ? 'text-primary' : 'text-muted-foreground',
+                'rounded-lg border px-3.5 py-1.5 transition-all',
+                theme === t.id
+                  ? 'border-primary bg-primary font-semibold text-primary-foreground'
+                  : 'border-border text-muted-foreground hover:border-primary/50',
+              )}
+              style={{ fontSize: scaled(12) }}
+            >
+              {t.name}
+              {t.badge ? ` (${t.badge})` : ''}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scale */}
+      <div className="mt-6">
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Scale
+        </h2>
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
+          Adjust the UI density
+        </p>
+        <div className="mt-2 flex gap-1.5">
+          {SCALES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setScale(s.value)}
+              className={cn(
+                'rounded-md border px-2.5 py-1 transition-all',
+                scale === s.value
+                  ? 'border-primary bg-primary font-semibold text-primary-foreground'
+                  : 'border-border text-muted-foreground hover:border-primary/50',
               )}
               style={{ fontSize: scaled(11) }}
             >
-              {user?.globalRole === 'admin' ? 'Admin' : 'Employee'}
-            </span>
-          </div>
-        </div>
-        <div className="border-t border-border/50 pt-2">
-          <InfoRow icon={Mail} value={user?.email ?? '—'} title={user?.email ?? undefined} />
-          <InfoRow icon={Phone} value={user?.phone ?? '—'} />
-          <InfoRow
-            icon={Globe}
-            value={
-              <span>
-                {ORG_TIMEZONE}{' '}
-                <span className="text-muted-foreground/60" style={{ fontSize: scaled(10) }}>
-                  ({getTimezoneAbbr()})
-                </span>
-              </span>
-            }
-          />
+              {s.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Build info */}
+      {/* Preview */}
       <div className="mt-6">
         <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-          Build
+          Preview
         </h2>
-        <div
-          className="mt-2 flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-4 py-3 font-mono"
-          style={{ fontSize: scaled(11) }}
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="w-12 text-muted-foreground/70">Ver</span>
-            <span className="text-foreground">{__APP_VERSION__}</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="w-12 text-muted-foreground/70">Env</span>
-            <span className={cn('font-semibold', envColor)}>{envName}</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="w-12 text-muted-foreground/70">Built</span>
-            <span className="text-muted-foreground">
-              {new Date(__BUILD_TIME__).toLocaleDateString()}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WorkPanel() {
-  return (
-    <div>
-      <div>
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-          Working Hours
-        </h2>
-        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-          Your standard work schedule. Used for overtime calculations and capacity planning.
-        </p>
-        <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
-            Coming soon
+        <div className="mt-2 rounded-lg border border-border bg-muted/30 p-4">
+          <p className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18) }}>
+            Timer &amp; Entries
           </p>
-        </div>
-      </div>
-      <div className="mt-6">
-        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-          Attendance
-        </h2>
-        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-          Your employment type determines leave accrual and reporting rules.
-        </p>
-        <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-          <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
-            Coming soon
+          <p className="font-brand mt-1 font-bold text-foreground" style={{ fontSize: scaled(22) }}>
+            14h 52m
+          </p>
+          <p className="mt-1 text-muted-foreground" style={{ fontSize: scaled(13) }}>
+            Weekly summary across all projects and labels.
+          </p>
+          <p
+            className="font-brand mt-1 font-normal uppercase tracking-wider text-muted-foreground"
+            style={{ fontSize: scaled(10) }}
+          >
+            This week
           </p>
         </div>
       </div>
@@ -328,19 +204,17 @@ function IntegrationsPanel() {
   );
 }
 
-function NotificationsPanel() {
+function DownloadsPanel() {
   return (
     <div>
       <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
-        Notifications
+        Desktop App
       </h2>
       <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-        Control what you get notified about.
+        Download the Ternity desktop app for your platform.
       </p>
-      <div className="mt-3 rounded-lg border border-dashed border-border/60 bg-muted/10 p-6 text-center">
-        <p className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
-          Coming soon
-        </p>
+      <div className="mt-3">
+        <DownloadsContent />
       </div>
     </div>
   );
@@ -366,10 +240,9 @@ export function SettingsPage() {
 
   const panels: Record<string, () => React.ReactNode> = {
     general: GeneralPanel,
-    profile: ProfilePanel,
-    work: WorkPanel,
+    appearance: AppearancePanel,
     integrations: IntegrationsPanel,
-    notifications: NotificationsPanel,
+    downloads: DownloadsPanel,
   };
 
   const Panel = panels[activeTab]!;
@@ -377,19 +250,22 @@ export function SettingsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-5">
-        <h1
-          className="font-brand font-semibold tracking-wide text-foreground"
-          style={{ fontSize: scaled(18) }}
-        >
-          Settings
-        </h1>
-        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
-          Manage your preferences and integrations
-        </p>
+      <div className="mb-5 flex items-start justify-between">
+        <div>
+          <h1
+            className="font-brand font-semibold tracking-wide text-foreground"
+            style={{ fontSize: scaled(18) }}
+          >
+            Settings
+          </h1>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Manage your preferences and integrations
+          </p>
+        </div>
+        <BuildInfo />
       </div>
 
-      {/* Tabs — matches Projects scope tabs */}
+      {/* Tabs */}
       <div className="mb-5 flex gap-1 border-b border-border pb-px">
         {TABS.map((tab) => (
           <button
@@ -405,13 +281,12 @@ export function SettingsPage() {
           >
             <tab.icon className="h-3.5 w-3.5" />
             {tab.label}
-            {tab.soon && <SoonBadge />}
           </button>
         ))}
       </div>
 
       {/* Tab content */}
-      <div className="max-w-2xl">
+      <div className={activeTab === 'downloads' ? 'max-w-4xl' : 'max-w-2xl'}>
         <Panel />
       </div>
     </div>

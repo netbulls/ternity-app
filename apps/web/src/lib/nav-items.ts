@@ -9,10 +9,8 @@ import {
   FolderKanban,
   Download,
   Settings2,
-  User,
-  Briefcase,
+  Palette,
   Link2,
-  Bell,
 } from 'lucide-react';
 
 // ── Nav item definition ─────────────────────────────────────────────
@@ -31,7 +29,7 @@ export interface NavItem {
   hidden?: boolean;
 }
 
-// ── Main navigation ─────────────────────────────────────────────────
+// ── Main sidebar navigation (product pages only) ────────────────────
 
 export const trackingNav: NavItem[] = [
   { to: '/', label: 'My Day', icon: Timer, keywords: ['home', 'timer', 'today'] },
@@ -46,20 +44,17 @@ export const trackingNav: NavItem[] = [
   },
 ];
 
+// ── Admin pages (shown in user menu, not sidebar) ───────────────────
+
 export const adminNav: NavItem[] = [
   {
     to: '/users',
-    label: 'Users',
+    label: 'People',
     icon: Users,
     admin: true,
-    keywords: ['team', 'members', 'people'],
+    keywords: ['team', 'members', 'users'],
   },
   { to: '/projects', label: 'Projects', icon: FolderKanban, admin: true, keywords: ['clients'] },
-];
-
-export const bottomNav: NavItem[] = [
-  { to: '/downloads', label: 'Downloads', icon: Download, keywords: ['desktop', 'app'] },
-  { to: '/settings', label: 'Settings', icon: Settings, keywords: ['preferences', 'config'] },
 ];
 
 // ── Settings sub-navigation ─────────────────────────────────────────
@@ -70,22 +65,14 @@ export const settingsNav: NavItem[] = [
     label: 'General',
     icon: Settings2,
     parent: 'Settings',
-    keywords: ['theme', 'scale', 'appearance'],
+    keywords: ['account', 'profile', 'project', 'timer'],
   },
   {
-    to: '/settings/profile',
-    label: 'Profile',
-    icon: User,
+    to: '/settings/appearance',
+    label: 'Appearance',
+    icon: Palette,
     parent: 'Settings',
-    keywords: ['name', 'account'],
-  },
-  {
-    to: '/settings/work',
-    label: 'Work',
-    icon: Briefcase,
-    parent: 'Settings',
-    keywords: ['hours', 'schedule'],
-    hidden: true,
+    keywords: ['theme', 'scale', 'dark', 'light'],
   },
   {
     to: '/settings/integrations',
@@ -95,19 +82,24 @@ export const settingsNav: NavItem[] = [
     keywords: ['jira', 'connect'],
   },
   {
-    to: '/settings/notifications',
-    label: 'Notifications',
-    icon: Bell,
+    to: '/settings/downloads',
+    label: 'Downloads',
+    icon: Download,
     parent: 'Settings',
-    keywords: ['alerts'],
-    hidden: true,
+    keywords: ['desktop', 'app', 'install'],
   },
+];
+
+// ── Top-level pages for palette (not in sidebar) ────────────────────
+
+export const settingsTopNav: NavItem[] = [
+  { to: '/settings', label: 'Settings', icon: Settings, keywords: ['preferences', 'config'] },
 ];
 
 // ── All items (for palette) ─────────────────────────────────────────
 
 export function getAllNavItems(isAdmin: boolean): NavItem[] {
-  return [...trackingNav, ...(isAdmin ? adminNav : []), ...bottomNav, ...settingsNav].filter(
+  return [...trackingNav, ...(isAdmin ? adminNav : []), ...settingsTopNav, ...settingsNav].filter(
     (item) => !item.hidden,
   );
 }
