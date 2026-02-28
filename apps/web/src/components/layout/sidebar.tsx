@@ -193,18 +193,35 @@ export function Sidebar() {
             menuOpen ? 'bg-muted/80' : 'bg-muted/50 hover:bg-muted/80',
           )}
         >
-          <div
-            className="flex shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-            style={{ width: scaled(30), height: scaled(30), fontSize: scaled(11) }}
-          >
-            {initials}
-          </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.displayName ?? ''}
+              className="shrink-0 rounded-full object-cover"
+              style={{ width: scaled(30), height: scaled(30) }}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div
+              className="flex shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
+              style={{ width: scaled(30), height: scaled(30), fontSize: scaled(11) }}
+            >
+              {initials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div
               className="truncate font-medium text-sidebar-foreground"
               style={{ fontSize: scaled(12) }}
             >
-              {user?.displayName ?? 'Loading...'}
+              {user?.displayName
+                ? (() => {
+                    const parts = user.displayName.split(' ');
+                    if (parts.length < 2) return user.displayName;
+                    const last = parts[parts.length - 1];
+                    return `${parts.slice(0, -1).join(' ')} ${last?.[0]?.toUpperCase() ?? ''}.`;
+                  })()
+                : 'Loading...'}
             </div>
             <div className="truncate text-muted-foreground" style={{ fontSize: scaled(10) }}>
               Netbulls

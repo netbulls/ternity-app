@@ -30,7 +30,7 @@ async function buildOrgRoles(userId: string): Promise<Record<string, OrgRole>> {
 /** Obtain a Management API access token from the Logto M2M app. */
 let mgmtTokenCache: { token: string; expiresAt: number } | null = null;
 
-async function getManagementToken(logtoEndpoint: string): Promise<string | null> {
+export async function getManagementToken(logtoEndpoint: string): Promise<string | null> {
   // Return cached token if still valid (with 60s margin)
   if (mgmtTokenCache && Date.now() < mgmtTokenCache.expiresAt - 60_000) {
     return mgmtTokenCache.token;
@@ -78,11 +78,7 @@ async function getManagementToken(logtoEndpoint: string): Promise<string | null>
  * profile with a matching email. This prevents duplicate rows when
  * synced users (Toggl/Timetastic) sign in via Logto for the first time.
  */
-async function jitProvision(claims: {
-  sub: string;
-  roles?: string[];
-  logtoEndpoint: string;
-}) {
+async function jitProvision(claims: { sub: string; roles?: string[]; logtoEndpoint: string }) {
   const [existing] = await db
     .select()
     .from(users)
@@ -92,7 +88,7 @@ async function jitProvision(claims: {
   const globalRole = claims.roles?.includes('admin') ? GlobalRole.Admin : GlobalRole.User;
 
   if (existing) {
-    // Update global role from token claims (profile fields untouched)
+    // Update global role from token claims (avatar refreshed via /api/me)
     const [updated] = await db
       .update(users)
       .set({
@@ -118,6 +114,7 @@ async function jitProvision(claims: {
           primaryEmail?: string;
           primaryPhone?: string;
           name?: string;
+          avatar?: string;
         };
 
         if (logtoUser.primaryEmail) {
@@ -125,15 +122,9 @@ async function jitProvision(claims: {
           const candidates = await db
             .select()
             .from(users)
-            .where(
-              and(
-                eq(users.email, logtoUser.primaryEmail),
-                isNull(users.externalAuthId),
-              ),
-            );
+            .where(and(eq(users.email, logtoUser.primaryEmail), isNull(users.externalAuthId)));
 
-          const match =
-            candidates.find((c) => c.togglId != null) ?? candidates[0];
+          const match = candidates.find((c) => c.togglId != null) ?? candidates[0];
 
           if (match) {
             const [linked] = await db
@@ -141,6 +132,7 @@ async function jitProvision(claims: {
               .set({
                 externalAuthId: claims.sub,
                 globalRole,
+                avatarUrl: logtoUser.avatar || match.avatarUrl,
                 updatedAt: new Date(),
               })
               .where(eq(users.id, match.id))
@@ -160,6 +152,7 @@ async function jitProvision(claims: {
               displayName: logtoUser.name || 'New User',
               email: logtoUser.primaryEmail,
               phone: logtoUser.primaryPhone ?? null,
+              avatarUrl: logtoUser.avatar ?? null,
               globalRole,
             })
             .returning();
@@ -319,26 +312,18 @@ async function authPlugin(fastify: FastifyInstance) {
     if (request.url === '/health') return;
     if (!request.auth || request.auth.userId === 'unknown') return;
 
-    const targetUserId = request.headers['x-impersonate-user-id'] as
-      | string
-      | undefined;
+    const targetUserId = request.headers['x-impersonate-user-id'] as string | undefined;
     if (!targetUserId) return;
 
     // Only admins may impersonate
     if (request.auth.globalRole !== GlobalRole.Admin) {
-      return reply
-        .code(403)
-        .send({ error: 'Only admins can impersonate users' });
+      return reply.code(403).send({ error: 'Only admins can impersonate users' });
     }
 
     // Cannot impersonate yourself
     if (targetUserId === request.auth.userId) return;
 
-    const [target] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, targetUserId))
-      .limit(1);
+    const [target] = await db.select().from(users).where(eq(users.id, targetUserId)).limit(1);
 
     if (!target) {
       return reply.code(404).send({ error: 'Impersonation target not found' });

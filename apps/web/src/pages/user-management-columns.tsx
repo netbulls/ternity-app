@@ -62,12 +62,21 @@ export function getUserColumns(opts: {
         const user = row.original;
         return (
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-              style={{ fontSize: '11px' }}
-            >
-              {getInitials(user.displayName)}
-            </div>
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.displayName}
+                className="h-8 w-8 shrink-0 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
+                style={{ fontSize: '11px' }}
+              >
+                {getInitials(user.displayName)}
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
                 {user.displayName}
