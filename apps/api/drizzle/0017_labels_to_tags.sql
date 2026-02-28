@@ -8,7 +8,7 @@
 -- 6. Updates sync_mappings target_table from 'labels' to 'tags'
 -- 7. Drops orphan tags (no entries, no user)
 
-BEGIN;
+-- NOTE: drizzle-kit wraps migrations in its own transaction — do not add BEGIN/COMMIT.
 
 -- ── Step 1: Rename tables and columns ────────────────────────────────────
 
@@ -129,5 +129,3 @@ WHERE id IN (
 
 UPDATE "sync_mappings" SET "target_table" = 'tags'
 WHERE "target_table" = 'labels';
-
-COMMIT;
