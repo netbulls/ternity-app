@@ -1,5 +1,17 @@
 import { useState, useEffect, type JSX } from 'react';
-import { Monitor, Download, Cpu, ChevronRight, ChevronDown, ShieldCheck, Info, Loader2, Tag, GitCommitHorizontal, Sparkles } from 'lucide-react';
+import {
+  Monitor,
+  Download,
+  Cpu,
+  ChevronRight,
+  ChevronDown,
+  ShieldCheck,
+  Info,
+  Loader2,
+  Tag,
+  GitCommitHorizontal,
+  Sparkles,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { useDownloads } from '@/hooks/use-downloads';
@@ -55,9 +67,33 @@ const OS_LABELS: Record<string, string> = {
 };
 
 const PLATFORMS: { id: Platform; label: string; icon: JSX.Element }[] = [
-  { id: 'darwin', label: 'macOS', icon: <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg> },
-  { id: 'windows', label: 'Windows', icon: <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z" /></svg> },
-  { id: 'linux', label: 'Linux', icon: <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0" /></svg> },
+  {
+    id: 'darwin',
+    label: 'macOS',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'windows',
+    label: 'Windows',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'linux',
+    label: 'Linux',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0" />
+      </svg>
+    ),
+  },
 ];
 
 const DEFAULT_RECOMMENDED: Record<Platform, string> = {
@@ -72,9 +108,17 @@ function formatSize(bytes: number): string {
 
 function formatVersionDate(iso: string, isSnapshot: boolean): string {
   const d = new Date(iso);
-  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const datePart = d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
   if (!isSnapshot) return datePart;
-  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const timePart = d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
   return `${datePart}, ${timePart}`;
 }
 
@@ -95,7 +139,8 @@ function DetectionBar({ os }: { os: Platform | 'unknown' }) {
     >
       <Info className="h-3.5 w-3.5 shrink-0 text-primary" />
       <span className="text-muted-foreground">
-        Detected <strong className="font-medium text-foreground">{OS_LABELS[os]}</strong> — showing recommended downloads first.
+        Detected <strong className="font-medium text-foreground">{OS_LABELS[os]}</strong> — showing
+        recommended downloads first.
       </span>
     </div>
   );
@@ -137,7 +182,12 @@ function ChannelBadge({
       {isRelease ? <Tag className="h-3 w-3" /> : <GitCommitHorizontal className="h-3 w-3" />}
       {isRelease ? 'Release' : 'Snapshot'}
       {version && (
-        <span className={cn('font-brand font-normal', disabled ? '' : active ? 'opacity-60' : 'opacity-40')}>
+        <span
+          className={cn(
+            'font-brand font-normal',
+            disabled ? '' : active ? 'opacity-60' : 'opacity-40',
+          )}
+        >
           {version}
         </span>
       )}
@@ -289,11 +339,11 @@ function DownloadRow({
 }
 
 const NOTE_PREFIXES: Record<string, { prefix: string; color: string }> = {
-  Added:      { prefix: '+', color: 'hsl(142 71% 45%)' },
-  Changed:    { prefix: '~', color: 'hsl(217 91% 60%)' },
-  Fixed:      { prefix: '*', color: 'hsl(38 92% 50%)' },
-  Removed:    { prefix: '-', color: 'hsl(0 84% 60%)' },
-  Security:   { prefix: '!', color: 'hsl(280 70% 55%)' },
+  Added: { prefix: '+', color: 'hsl(142 71% 45%)' },
+  Changed: { prefix: '~', color: 'hsl(217 91% 60%)' },
+  Fixed: { prefix: '*', color: 'hsl(38 92% 50%)' },
+  Removed: { prefix: '-', color: 'hsl(0 84% 60%)' },
+  Security: { prefix: '!', color: 'hsl(280 70% 55%)' },
   Deprecated: { prefix: '?', color: 'hsl(30 60% 50%)' },
 };
 
@@ -348,7 +398,10 @@ function ReleaseNotes({ channel }: { channel: DownloadChannel }) {
           {items.length}
         </span>
         <ChevronDown
-          className={cn('ml-auto h-3 w-3 shrink-0 text-muted-foreground/30 transition-transform', open && 'rotate-180')}
+          className={cn(
+            'ml-auto h-3 w-3 shrink-0 text-muted-foreground/30 transition-transform',
+            open && 'rotate-180',
+          )}
         />
       </button>
       {open && (
@@ -376,7 +429,9 @@ function ReleaseNotes({ channel }: { channel: DownloadChannel }) {
           >
             {NOTE_LEGEND.map((l) => (
               <span key={l.prefix} className="flex items-center gap-1 text-muted-foreground/40">
-                <span className="font-bold" style={{ color: l.color }}>{l.prefix}</span>
+                <span className="font-bold" style={{ color: l.color }}>
+                  {l.prefix}
+                </span>
                 {l.label}
               </span>
             ))}
@@ -406,15 +461,28 @@ function ChecksumTable({ artifacts }: { artifacts: DownloadArtifact[] }) {
           <table className="w-full" style={{ fontSize: scaled(11) }}>
             <thead>
               <tr className="border-b border-border">
-                <th className="py-1.5 pr-4 text-left font-brand font-semibold tracking-wide text-muted-foreground" style={{ letterSpacing: '0.5px' }}>File</th>
-                <th className="py-1.5 text-left font-brand font-semibold tracking-wide text-muted-foreground" style={{ letterSpacing: '0.5px' }}>SHA-256</th>
+                <th
+                  className="py-1.5 pr-4 text-left font-brand font-semibold tracking-wide text-muted-foreground"
+                  style={{ letterSpacing: '0.5px' }}
+                >
+                  File
+                </th>
+                <th
+                  className="py-1.5 text-left font-brand font-semibold tracking-wide text-muted-foreground"
+                  style={{ letterSpacing: '0.5px' }}
+                >
+                  SHA-256
+                </th>
               </tr>
             </thead>
             <tbody>
               {artifacts.map((a) => (
                 <tr key={a.id} className="border-b border-border/30">
                   <td className="py-1.5 pr-4 text-foreground">{a.filename}</td>
-                  <td className="py-1.5 font-mono text-muted-foreground" style={{ fontSize: scaled(10), wordBreak: 'break-all' }}>
+                  <td
+                    className="py-1.5 font-mono text-muted-foreground"
+                    style={{ fontSize: scaled(10), wordBreak: 'break-all' }}
+                  >
                     {a.checksum.replace('sha256:', '')}
                   </td>
                 </tr>
@@ -457,9 +525,9 @@ function DownloadsCard({
   // Auto-correct platform if the current selection has no artifacts
   const effectivePlatform: Platform = availablePlatforms.has(activePlatform)
     ? activePlatform
-    : (detectedOS !== 'unknown' && availablePlatforms.has(detectedOS)
-        ? detectedOS
-        : availablePlatforms.values().next().value ?? 'darwin');
+    : detectedOS !== 'unknown' && availablePlatforms.has(detectedOS)
+      ? detectedOS
+      : (availablePlatforms.values().next().value ?? 'darwin');
 
   // Compute which channels have artifacts for the effective platform
   const availableChannels = new Set<'release' | 'snapshot'>();
@@ -472,7 +540,9 @@ function DownloadsCard({
   // Derive active channel — must have artifacts for the current platform
   const effectiveChannelId: 'release' | 'snapshot' = availableChannels.has(activeChannelId)
     ? activeChannelId
-    : (availableChannels.has('release') ? 'release' : availableChannels.values().next().value ?? 'release');
+    : availableChannels.has('release')
+      ? 'release'
+      : (availableChannels.values().next().value ?? 'release');
 
   const activeChannel = channels.find((c) => c.channel === effectiveChannelId) ?? channels[0]!;
 
@@ -511,7 +581,10 @@ function DownloadsCard({
           <Monitor className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(15) }}>
+          <div
+            className="font-brand font-semibold text-foreground"
+            style={{ fontSize: scaled(15) }}
+          >
             Ternity Desktop
           </div>
           <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
@@ -528,7 +601,12 @@ function DownloadsCard({
       </div>
 
       {/* Row 2: Platform tabs */}
-      <PlatformTabs active={effectivePlatform} detected={detectedOS} availablePlatforms={availablePlatforms} onChange={setActivePlatform} />
+      <PlatformTabs
+        active={effectivePlatform}
+        detected={detectedOS}
+        availablePlatforms={availablePlatforms}
+        onChange={setActivePlatform}
+      />
 
       {/* Row 3: Channel badges + version with date */}
       <div className="flex items-center gap-2 px-5 py-3">
@@ -542,7 +620,9 @@ function DownloadsCard({
               version={channelData?.version}
               active={effectiveChannelId === ch}
               disabled={!available}
-              onClick={available && availableChannels.size > 1 ? () => setActiveChannelId(ch) : undefined}
+              onClick={
+                available && availableChannels.size > 1 ? () => setActiveChannelId(ch) : undefined
+              }
             />
           );
         })}
@@ -550,7 +630,8 @@ function DownloadsCard({
           <span className="font-semibold text-foreground">{activeChannel.version}</span>
           {activeChannel.releaseDate && (
             <span className="text-muted-foreground/40" style={{ fontSize: scaled(12) }}>
-              {' '}· {formatVersionDate(activeChannel.releaseDate, activeChannel.channel === 'snapshot')}
+              {' '}
+              · {formatVersionDate(activeChannel.releaseDate, activeChannel.channel === 'snapshot')}
             </span>
           )}
         </div>
@@ -604,10 +685,17 @@ export function DownloadsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
-          <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18), letterSpacing: '1px' }}>Downloads</div>
-          <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>Desktop apps and tools</div>
+      <div>
+        <div className="mb-5">
+          <h1
+            className="font-brand font-semibold tracking-wide text-foreground"
+            style={{ fontSize: scaled(18) }}
+          >
+            Downloads
+          </h1>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Desktop apps and tools
+          </p>
         </div>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -618,14 +706,23 @@ export function DownloadsPage() {
 
   if (error || !data) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
-          <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18), letterSpacing: '1px' }}>Downloads</div>
-          <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>Desktop apps and tools</div>
+      <div>
+        <div className="mb-5">
+          <h1
+            className="font-brand font-semibold tracking-wide text-foreground"
+            style={{ fontSize: scaled(18) }}
+          >
+            Downloads
+          </h1>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Desktop apps and tools
+          </p>
         </div>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Monitor className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>Downloads unavailable</div>
+          <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>
+            Downloads unavailable
+          </div>
           <div className="mt-1 text-muted-foreground" style={{ fontSize: scaled(12) }}>
             Desktop builds are not available right now. Please try again later.
           </div>
@@ -636,14 +733,23 @@ export function DownloadsPage() {
 
   if (data.products.length === 0) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
-          <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18), letterSpacing: '1px' }}>Downloads</div>
-          <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>Desktop apps and tools</div>
+      <div>
+        <div className="mb-5">
+          <h1
+            className="font-brand font-semibold tracking-wide text-foreground"
+            style={{ fontSize: scaled(18) }}
+          >
+            Downloads
+          </h1>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Desktop apps and tools
+          </p>
         </div>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Monitor className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>No builds available yet</div>
+          <div className="font-medium text-foreground" style={{ fontSize: scaled(14) }}>
+            No builds available yet
+          </div>
           <div className="mt-1 text-muted-foreground" style={{ fontSize: scaled(12) }}>
             Desktop builds will appear here once they are published.
           </div>
@@ -653,19 +759,22 @@ export function DownloadsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <div className="font-brand font-semibold text-foreground" style={{ fontSize: scaled(18), letterSpacing: '1px' }}>Downloads</div>
-        <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>Desktop apps and tools</div>
+    <div>
+      <div className="mb-5">
+        <h1
+          className="font-brand font-semibold tracking-wide text-foreground"
+          style={{ fontSize: scaled(18) }}
+        >
+          Downloads
+        </h1>
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+          Desktop apps and tools
+        </p>
       </div>
 
       <DetectionBar os={detectedOS} />
 
-      <DownloadsCard
-        products={data.products}
-        detectedOS={detectedOS}
-        detectedArch={detectedArch}
-      />
+      <DownloadsCard products={data.products} detectedOS={detectedOS} detectedArch={detectedArch} />
     </div>
   );
 }

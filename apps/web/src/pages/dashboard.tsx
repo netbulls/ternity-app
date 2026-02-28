@@ -11,23 +11,20 @@ export function DashboardPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col gap-3 p-6">
+      <div>
         {/* Skeleton header */}
-        <div className="mb-2">
+        <div className="mb-5">
           <div className="h-5 w-32 animate-pulse rounded bg-muted" />
           <div className="mt-1.5 h-3 w-48 animate-pulse rounded bg-muted" />
         </div>
         {/* Skeleton attention cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="mb-3 grid grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded-lg bg-muted"
-            />
+            <div key={i} className="h-28 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
         {/* Skeleton charts */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="mb-3 grid grid-cols-2 gap-3">
           <div className="h-48 animate-pulse rounded-lg bg-muted" />
           <div className="h-48 animate-pulse rounded-lg bg-muted" />
         </div>
@@ -39,28 +36,27 @@ export function DashboardPage() {
   const subtitle = `Week ${data.weekNumber} · ${formatDateRange(data.weekStart, data.weekEnd)}`;
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div>
       {/* Header */}
-      <div className="mb-1">
+      <div className="mb-5">
         <h1
-          className="font-brand font-semibold uppercase tracking-[1px] text-foreground"
-          style={{ fontSize: scaled(14) }}
+          className="font-brand font-semibold tracking-wide text-foreground"
+          style={{ fontSize: scaled(18) }}
         >
-          Dashboard
+          Reports
         </h1>
-        <p
-          className="mt-0.5 text-muted-foreground"
-          style={{ fontSize: scaled(12) }}
-        >
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
           {subtitle}
         </p>
       </div>
 
       {/* Attention cards */}
-      <AttentionCards attention={data.attention} />
+      <div className="mb-3">
+        <AttentionCards attention={data.attention} />
+      </div>
 
       {/* Charts: histogram + heatmap side by side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="mb-3 grid grid-cols-2 gap-3">
         <WeekHistogram
           weekDays={data.weekDays}
           weekTotalSeconds={data.attention.weekTotalSeconds}
