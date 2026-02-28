@@ -1,8 +1,19 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Command, ArrowUp, ArrowDown, CornerDownLeft, Hash, Loader2, Play } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Command,
+  ArrowUp,
+  ArrowDown,
+  CornerDownLeft,
+  Hash,
+  Loader2,
+  Play,
+  ArrowRight,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { scaled } from '@/lib/scaled';
 import { usePalette } from '@/providers/palette-provider';
+import { useAuth } from '@/providers/auth-provider';
 import {
   useJiraAssigned,
   useJiraRecent,
@@ -21,6 +32,7 @@ import {
 import { getPreference, setPreference } from '@/providers/preferences-provider';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { getAllNavItems, type NavItem } from '@/lib/nav-items';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +51,8 @@ import type { JiraIssue, Entry, EntrySearchHit } from '@ternity/shared';
 
 type PaletteItem =
   | { type: 'entry'; entry: EntrySearchHit }
-  | { type: 'jira'; issue: JiraIssue; connectionId: string; siteUrl: string };
+  | { type: 'jira'; issue: JiraIssue; connectionId: string; siteUrl: string }
+  | { type: 'nav'; nav: NavItem };
 
 // ── Section definition ──────────────────────────────────────────────
 
@@ -56,6 +69,11 @@ export function CommandPalette() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { user } = useAuth();
+  const isAdmin = user?.globalRole === 'admin';
 
   const { data: timerState } = useTimer();
   const startOrResume = useStartOrResumeTimer();
@@ -63,6 +81,9 @@ export function CommandPalette() {
   const stopTimer = useStopTimer();
   const { data: jiraConnections } = useJiraConnections();
   const hasJira = (jiraConnections?.length ?? 0) > 0;
+
+  // Navigation items — derived from shared nav definition
+  const allNavItems = useMemo(() => getAllNavItems(isAdmin), [isAdmin]);
 
   // Pending action for confirmation dialogs
   const [pendingAction, setPendingAction] = useState<{
@@ -93,6 +114,31 @@ export function CommandPalette() {
     isJiraMode || query.length >= 2 ? 'text' : 'assigned',
   );
 
+  // Filter nav items by query (matches label, parent, and keywords)
+  const matchNavItems = useCallback(
+    (q: string): PaletteItem[] => {
+      if (!q) return [];
+      const lower = q.toLowerCase();
+      return allNavItems
+        .filter((item) => {
+          const haystack = [item.label, item.parent, ...(item.keywords ?? [])]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(lower);
+        })
+        .filter((item) => {
+          // Don't show the page we're already on
+          const current = location.pathname;
+          if (item.to === '/' && current === '/') return false;
+          if (item.to !== '/' && current.startsWith(item.to)) return false;
+          return true;
+        })
+        .map((nav) => ({ type: 'nav' as const, nav }));
+    },
+    [allNavItems, location.pathname],
+  );
+
   // Helpers to map data into PaletteItems
   const toEntryItems = (entries: EntrySearchHit[]): PaletteItem[] =>
     entries.map((e) => ({ type: 'entry', entry: e }));
@@ -116,9 +162,11 @@ export function CommandPalette() {
       const jiraItems = toJiraItems(jiraSearchQuery.data);
       if (jiraItems.length > 0) secs.push({ label: 'Jira results', items: jiraItems });
     } else if (showSearch) {
-      // Text search: entries first (capped), then Jira (capped)
+      // Text search: nav first, then entries (capped), then Jira (capped)
+      const navItems = matchNavItems(query);
       const entryItems = toEntryItems(entrySearchQuery.data ?? []).slice(0, 5);
       const jiraItems = toJiraItems(jiraSearchQuery.data).slice(0, 5);
+      if (navItems.length > 0) secs.push({ label: 'Go to', items: navItems });
       if (entryItems.length > 0) secs.push({ label: 'Entries', items: entryItems });
       if (jiraItems.length > 0) secs.push({ label: 'Jira', items: jiraItems });
     } else {
@@ -141,6 +189,8 @@ export function CommandPalette() {
     showSearch,
     isJiraMode,
     hasJira,
+    query,
+    matchNavItems,
     entrySearchQuery.data,
     jiraSearchQuery.data,
     recentEntriesQuery.data,
@@ -253,6 +303,10 @@ export function CommandPalette() {
   const handleEnter = useCallback(
     (item: PaletteItem) => {
       setOpen(false);
+      if (item.type === 'nav') {
+        navigate(item.nav.to);
+        return;
+      }
       if (item.type === 'entry') {
         if (timerState?.running && getPreference('confirmTimerSwitch')) {
           setPendingEntryAction({ type: 'resume', entry: item.entry });
@@ -274,12 +328,18 @@ export function CommandPalette() {
         doJiraStart(item.issue, item.connectionId);
       }
     },
-    [timerState?.running, doEntryResume, doJiraStart, setOpen],
+    [timerState?.running, doEntryResume, doJiraStart, setOpen, navigate],
   );
 
   // Cmd+Enter handler
   const handleCmdEnter = useCallback(
     (item: PaletteItem) => {
+      // Nav items use Enter only — Cmd+Enter is meaningless for navigation
+      if (item.type === 'nav') {
+        setOpen(false);
+        navigate(item.nav.to);
+        return;
+      }
       setOpen(false);
       if (item.type === 'entry') {
         if (timerState?.running) {
@@ -302,7 +362,7 @@ export function CommandPalette() {
         doJiraPrepare(item.issue, item.connectionId, item.siteUrl);
       }
     },
-    [timerState?.running, doEntryPrepare, doJiraPrepare, setOpen],
+    [timerState?.running, doEntryPrepare, doJiraPrepare, setOpen, navigate],
   );
 
   // Switch dialog confirm
@@ -577,7 +637,13 @@ function PaletteSections({
             const isSelected = idx === selectedIdx;
             return (
               <div key={itemKey(item)} data-selected={isSelected}>
-                {item.type === 'entry' ? (
+                {item.type === 'nav' ? (
+                  <NavResultRow
+                    nav={item.nav}
+                    selected={isSelected}
+                    onSelect={() => onSelect(item)}
+                  />
+                ) : item.type === 'entry' ? (
                   <EntryResultRow
                     entry={item.entry}
                     selected={isSelected}
@@ -600,7 +666,52 @@ function PaletteSections({
 }
 
 function itemKey(item: PaletteItem): string {
-  return item.type === 'entry' ? `entry-${item.entry.id}` : `jira-${item.issue.key}`;
+  if (item.type === 'entry') return `entry-${item.entry.id}`;
+  if (item.type === 'jira') return `jira-${item.issue.key}`;
+  return `nav-${item.nav.to}`;
+}
+
+// ── Nav result row ──────────────────────────────────────────────────
+
+function NavResultRow({
+  nav,
+  selected,
+  onSelect,
+}: {
+  nav: NavItem;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const Icon = nav.icon;
+  return (
+    <button
+      className={cn(
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
+        selected ? 'bg-primary/10 text-foreground' : 'text-foreground/80 hover:bg-muted/50',
+      )}
+      onClick={onSelect}
+    >
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span style={{ fontSize: scaled(13) }}>
+          {nav.parent && (
+            <span className="text-muted-foreground">
+              {nav.parent} <ArrowRight className="mb-0.5 inline h-3 w-3" />{' '}
+            </span>
+          )}
+          {nav.label}
+        </span>
+      </div>
+      <span
+        className="shrink-0 font-brand text-muted-foreground/50"
+        style={{ fontSize: scaled(10) }}
+      >
+        {nav.to}
+      </span>
+    </button>
+  );
 }
 
 // ── Entry result row ────────────────────────────────────────────────

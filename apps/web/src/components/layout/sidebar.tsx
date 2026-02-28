@@ -1,32 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import {
-  Timer,
-  List,
-  BarChart3,
-  Calendar,
-  Palmtree,
-  Settings,
-  LogOut,
-  Users,
-  FolderKanban,
-  Download,
-} from 'lucide-react';
+import { Settings, LogOut, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { HourglassLogo } from './hourglass-logo';
-
-const navItems = [
-  { to: '/', label: 'My Day', icon: Timer },
-  { to: '/entries', label: 'Entries', icon: List },
-  { to: '/calendar', label: 'Calendar', icon: Calendar },
-  { to: '/leave', label: 'Leave', icon: Palmtree },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-];
-
-const adminNavItems = [
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/projects', label: 'Projects', icon: FolderKanban },
-];
+import { trackingNav, adminNav } from '@/lib/nav-items';
 
 const ENV_COLORS: Record<string, string> = {
   local: 'text-blue-400',
@@ -86,7 +63,7 @@ export function Sidebar() {
         >
           Tracking
         </div>
-        {navItems.map((item) => (
+        {trackingNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -116,7 +93,7 @@ export function Sidebar() {
           >
             Admin
           </div>
-          {adminNavItems.map((item) => (
+          {adminNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
