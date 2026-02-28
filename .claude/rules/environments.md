@@ -1,17 +1,21 @@
-<!-- rule-version: 1.0 -->
+<!-- rule-version: 1.1 -->
+
 # Environments
 
 ## Environment Types
 
-Closed list — every project starts with dev + prod, others added as needed:
+Closed list — every project starts with local + dev + prod, others added as needed:
 
-| Type | What it is | Data | Build mode default |
-|---|---|---|---|
-| **dev** | Local machine | Local/mock | debug |
-| **preview** | Per-feature/PR, temporary | Seed/test data | debug |
-| **test** | Shared test environment | Test data | release |
-| **pre-prod** | Mirror of production | Anonymized prod data | release |
-| **prod** | Production (sacred) | Real data | release (always) |
+| Type         | What it is                             | Data                 | Build mode default |
+| ------------ | -------------------------------------- | -------------------- | ------------------ |
+| **local**    | Developer's machine (Docker/localhost) | Local/mock           | debug              |
+| **dev**      | Remote dev environment (VPS)           | Dev data             | debug              |
+| **preview**  | Per-feature/PR, temporary              | Seed/test data       | debug              |
+| **test**     | Shared test environment                | Test data            | release            |
+| **pre-prod** | Mirror of production                   | Anonymized prod data | release            |
+| **prod**     | Production (sacred)                    | Real data            | release (always)   |
+
+**"local" vs "dev":** Local is your machine. Dev is a remote server. Never confuse them.
 
 **Prod is sacred:** always release build, always production config, no exceptions.
 
@@ -20,7 +24,8 @@ Closed list — every project starts with dev + prod, others added as needed:
 One `.env` file per environment, completely self-contained (no inheritance):
 
 ```
-.env.local          → dev (always gitignored)
+.env.local          → local (always gitignored)
+.env.dev            → dev (remote VPS)
 .env.preview        → preview
 .env.test           → test
 .env.preprod        → pre-prod
@@ -30,8 +35,9 @@ One `.env` file per environment, completely self-contained (no inheritance):
 Full isolation per environment: separate SaaS accounts, databases, credentials.
 
 **Secrets:**
-- dev / preview / test — secrets in `.env` files are fine (gitignored).
-- pre-prod / prod — secrets never in files. Injected via CI, deployment platform, or vault.
+
+- local / preview / test — secrets in `.env` files are fine (gitignored).
+- dev / pre-prod / prod — secrets never in files. Injected via CI, deployment platform, or vault.
 
 ## Environment and Build Mode
 

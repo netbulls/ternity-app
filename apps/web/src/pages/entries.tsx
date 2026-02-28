@@ -159,7 +159,7 @@ export function EntriesPage() {
         )}
       </div>
 
-      {/* Controls row — matching DateNavBar style */}
+      {/* Controls row */}
       <div className="mb-4 flex items-center gap-3">
         {/* Day / Week / Month toggle */}
         <div className="flex overflow-hidden rounded-md border border-border">

@@ -30,6 +30,8 @@
       "Bash(pkill:*)",
       "Bash(kill:*)",
 
+      "Bash(./scripts/secrets.sh:*)",
+
       "Bash(pnpm install:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm dev:*)",
@@ -70,9 +72,7 @@
       "mcp__playwright__browser_select_option",
       "mcp__playwright__browser_drag"
     ],
-    "additionalDirectories": [
-      "/tmp"
-    ],
+    "additionalDirectories": ["/tmp"],
     "deny": [
       "Bash(rm:*)",
       "Bash(rmdir:*)",
