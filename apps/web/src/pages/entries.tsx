@@ -212,8 +212,16 @@ export function EntriesPage() {
         </div>
 
         {/* Filters */}
-        <ProjectSelector value={filterProjectId} onChange={(id) => setFilterProjectId(id)} />
-        <LabelSelector value={filterLabelIds} onChange={setFilterLabelIds} />
+        <ProjectSelector
+          value={filterProjectId}
+          onChange={(id) => setFilterProjectId(id)}
+          triggerClassName="font-brand font-semibold tracking-wide"
+        />
+        <LabelSelector
+          value={filterLabelIds}
+          onChange={setFilterLabelIds}
+          triggerClassName="font-brand font-semibold tracking-wide"
+        />
 
         <button
           onClick={() => {

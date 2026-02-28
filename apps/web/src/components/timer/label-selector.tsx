@@ -14,9 +14,11 @@ import {
 interface Props {
   value: string[];
   onChange: (labelIds: string[]) => void;
+  /** Extra classes applied to the trigger button */
+  triggerClassName?: string;
 }
 
-export function LabelSelector({ value, onChange }: Props) {
+export function LabelSelector({ value, onChange, triggerClassName }: Props) {
   const [open, setOpen] = useState(false);
   const { data: labels } = useLabels();
 
@@ -37,11 +39,14 @@ export function LabelSelector({ value, onChange }: Props) {
           className={cn(
             'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs transition-colors hover:bg-accent',
             selectedLabels.length > 0 ? 'text-foreground' : 'text-muted-foreground',
+            triggerClassName,
           )}
         >
           <Tags className="h-3.5 w-3.5" />
           {selectedLabels.length > 0 ? (
-            <span>{selectedLabels.length} label{selectedLabels.length > 1 ? 's' : ''}</span>
+            <span>
+              {selectedLabels.length} label{selectedLabels.length > 1 ? 's' : ''}
+            </span>
           ) : (
             <span>Labels</span>
           )}
@@ -55,10 +60,7 @@ export function LabelSelector({ value, onChange }: Props) {
             <CommandEmpty>No labels found.</CommandEmpty>
             <CommandGroup>
               {labels?.map((label) => (
-                <CommandItem
-                  key={label.id}
-                  onSelect={() => toggle(label.id)}
-                >
+                <CommandItem key={label.id} onSelect={() => toggle(label.id)}>
                   <div
                     className={cn(
                       'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-border',

@@ -14,9 +14,17 @@ interface Props {
   defaultOpen?: boolean;
   /** Called when dropdown closes without selection (e.g. click outside) */
   onClose?: () => void;
+  /** Extra classes applied to the trigger button */
+  triggerClassName?: string;
 }
 
-export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props) {
+export function ProjectSelector({
+  value,
+  onChange,
+  defaultOpen,
+  onClose,
+  triggerClassName,
+}: Props) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -45,9 +53,7 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
         }))
         .filter((g) => g.projects.length > 0)
     : [
-        ...(recentProjects.length > 0
-          ? [{ client: 'Recent', projects: recentProjects }]
-          : []),
+        ...(recentProjects.length > 0 ? [{ client: 'Recent', projects: recentProjects }] : []),
         ...grouped,
       ];
 
@@ -79,6 +85,7 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
           className={cn(
             'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs transition-colors hover:bg-accent',
             selected ? 'text-foreground' : 'text-muted-foreground',
+            triggerClassName,
           )}
         >
           {selected ? (
@@ -98,11 +105,7 @@ export function ProjectSelector({ value, onChange, defaultOpen, onClose }: Props
           <ChevronDown className="h-3 w-3 opacity-50" />
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-[260px] overflow-hidden p-0"
-        align="start"
-        sideOffset={6}
-      >
+      <PopoverContent className="w-[260px] overflow-hidden p-0" align="start" sideOffset={6}>
         {/* Search */}
         <div className="border-b border-border p-2">
           <div className="relative">
