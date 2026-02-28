@@ -16,9 +16,9 @@ function formatBuildTime(iso: string): string {
 }
 
 const ENV_BADGE_COLORS: Record<string, string> = {
-  local: 'bg-blue-500/15 text-blue-400',
-  dev: 'bg-amber-500/15 text-amber-400',
-  prod: 'bg-red-500/15 text-red-400',
+  local: 'bg-amber-500/15 text-amber-400',
+  dev: 'bg-blue-400/15 text-blue-400',
+  prod: 'bg-primary/15 text-primary',
 };
 
 export function BuildInfo({ className }: { className?: string }) {
@@ -27,16 +27,16 @@ export function BuildInfo({ className }: { className?: string }) {
 
   return (
     <div
-      className={cn('flex items-center justify-center gap-1.5 font-brand', className)}
+      className={cn('flex items-baseline justify-center gap-1.5 font-brand', className)}
       style={{ fontSize: 'calc(9px * var(--t-scale, 1.1))' }}
     >
-      <span className={cn('rounded px-1.5 py-px font-semibold uppercase', badgeColor)}>
+      <span className={cn('shrink-0 rounded px-1.5 py-px font-semibold uppercase', badgeColor)}>
         {envName}
       </span>
-      <span className="rounded bg-muted/60 px-1.5 py-px font-semibold text-muted-foreground/50">
-        {__APP_VERSION__}
+      <span className="shrink-0 font-semibold text-muted-foreground/50">{__APP_VERSION__}</span>
+      <span className="shrink-0 whitespace-nowrap text-muted-foreground/30">
+        {formatBuildTime(__BUILD_TIME__)}
       </span>
-      <span className="text-muted-foreground/30">{formatBuildTime(__BUILD_TIME__)}</span>
     </div>
   );
 }
