@@ -115,7 +115,15 @@ async function jitProvision(claims: { sub: string; roles?: string[]; logtoEndpoi
           primaryPhone?: string;
           name?: string;
           avatar?: string;
+          identities?: Record<string, { details?: { avatar?: string; name?: string } }>;
         };
+
+        // Top-level avatar/name only set at sign-up. Fall back to social identity.
+        const socialIdentity = Object.values(logtoUser.identities ?? {}).find(
+          (id) => id.details?.avatar,
+        );
+        const resolvedAvatar = logtoUser.avatar ?? socialIdentity?.details?.avatar ?? null;
+        const resolvedName = logtoUser.name ?? socialIdentity?.details?.name ?? null;
 
         if (logtoUser.primaryEmail) {
           // Find unlinked user rows with this email
@@ -132,7 +140,7 @@ async function jitProvision(claims: { sub: string; roles?: string[]; logtoEndpoi
               .set({
                 externalAuthId: claims.sub,
                 globalRole,
-                avatarUrl: logtoUser.avatar || match.avatarUrl,
+                avatarUrl: resolvedAvatar || match.avatarUrl,
                 updatedAt: new Date(),
               })
               .where(eq(users.id, match.id))
@@ -149,10 +157,10 @@ async function jitProvision(claims: { sub: string; roles?: string[]; logtoEndpoi
             .insert(users)
             .values({
               externalAuthId: claims.sub,
-              displayName: logtoUser.name || 'New User',
+              displayName: resolvedName || 'New User',
               email: logtoUser.primaryEmail,
               phone: logtoUser.primaryPhone ?? null,
-              avatarUrl: logtoUser.avatar ?? null,
+              avatarUrl: resolvedAvatar,
               globalRole,
             })
             .returning();

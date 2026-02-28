@@ -28,8 +28,16 @@ export async function meRoutes(fastify: FastifyInstance) {
               headers: { Authorization: `Bearer ${mgmtToken}` },
             });
             if (res.ok) {
-              const logtoUser = (await res.json()) as { avatar?: string };
-              const newAvatar = logtoUser.avatar ?? null;
+              const logtoUser = (await res.json()) as {
+                avatar?: string;
+                identities?: Record<string, { details?: { avatar?: string } }>;
+              };
+              // Top-level avatar is only set at sign-up. Fall back to social identity avatar.
+              const newAvatar =
+                logtoUser.avatar ??
+                Object.values(logtoUser.identities ?? {}).find((id) => id.details?.avatar)?.details
+                  ?.avatar ??
+                null;
               if (newAvatar !== user.avatarUrl) {
                 await db.update(users).set({ avatarUrl: newAvatar }).where(eq(users.id, user.id));
                 request.auth.avatarUrl = newAvatar;
