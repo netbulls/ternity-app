@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, ChevronDown, Tags } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { scaled } from '@/lib/scaled';
 import { useLabels } from '@/hooks/use-reference-data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -35,13 +36,16 @@ export function LabelSelector({ value, onChange }: Props) {
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs transition-colors hover:bg-accent',
+            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-brand font-semibold tracking-wide transition-colors hover:bg-accent',
             selectedLabels.length > 0 ? 'text-foreground' : 'text-muted-foreground',
           )}
+          style={{ fontSize: scaled(11) }}
         >
           <Tags className="h-3.5 w-3.5" />
           {selectedLabels.length > 0 ? (
-            <span>{selectedLabels.length} label{selectedLabels.length > 1 ? 's' : ''}</span>
+            <span>
+              {selectedLabels.length} label{selectedLabels.length > 1 ? 's' : ''}
+            </span>
           ) : (
             <span>Labels</span>
           )}
@@ -55,10 +59,7 @@ export function LabelSelector({ value, onChange }: Props) {
             <CommandEmpty>No labels found.</CommandEmpty>
             <CommandGroup>
               {labels?.map((label) => (
-                <CommandItem
-                  key={label.id}
-                  onSelect={() => toggle(label.id)}
-                >
+                <CommandItem key={label.id} onSelect={() => toggle(label.id)}>
                   <div
                     className={cn(
                       'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-border',
