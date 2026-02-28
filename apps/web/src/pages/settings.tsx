@@ -25,10 +25,10 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: 'general', label: 'General', icon: Settings2 },
-  { id: 'tags', label: 'Tags', icon: Tags },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'integrations', label: 'Integrations', icon: Link2 },
   { id: 'downloads', label: 'Downloads', icon: Download },
+  { id: 'tags', label: 'Tags', icon: Tags },
 ];
 
 // ── Tab panels ───────────────────────────────────────────────────────────
@@ -507,10 +507,11 @@ function DownloadsPanel() {
 const VALID_TABS = new Set(TABS.map((t) => t.id));
 
 export function SettingsPage() {
-  const { refreshFromServer } = usePreferences();
+  const { refreshFromServer, tagsEnabled } = usePreferences();
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
-  const activeTab = tab && VALID_TABS.has(tab) ? tab : 'general';
+  const isTabDisabled = (id: string) => id === 'tags' && !tagsEnabled;
+  const activeTab = tab && VALID_TABS.has(tab) && !isTabDisabled(tab) ? tab : 'general';
 
   const setActiveTab = (id: string) => {
     navigate(`/settings/${id}`, { replace: true });
@@ -550,22 +551,29 @@ export function SettingsPage() {
 
       {/* Tabs */}
       <div className="mb-5 flex gap-1 border-b border-border pb-px">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'mb-[-1px] flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 font-brand font-medium uppercase tracking-wider transition-colors',
-              activeTab === tab.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
-            style={{ fontSize: scaled(11), letterSpacing: '1px' }}
-          >
-            <tab.icon className="h-3.5 w-3.5" />
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const disabled = isTabDisabled(tab.id);
+          return (
+            <button
+              key={tab.id}
+              onClick={() => !disabled && setActiveTab(tab.id)}
+              disabled={disabled}
+              className={cn(
+                'mb-[-1px] flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 font-brand font-medium uppercase tracking-wider transition-colors',
+                disabled
+                  ? 'cursor-not-allowed border-transparent text-muted-foreground/30'
+                  : activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+              style={{ fontSize: scaled(11), letterSpacing: '1px' }}
+              title={disabled ? 'Enable tags in General settings first' : undefined}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab content */}
