@@ -103,16 +103,16 @@ export function WeekStrip({
   return (
     <div
       className="rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))]"
-      style={{ padding: scaled(14) }}
+      style={{ padding: `${scaled(10)} ${scaled(14)} ${scaled(14)}` }}
     >
       {/* Header row */}
       <div
-        className="mb-2.5 flex items-center justify-between"
-        style={{ marginBottom: scaled(10) }}
+        className="flex items-center justify-between"
+        style={{ marginBottom: scaled(10), minHeight: scaled(24) }}
       >
         <span
           className="font-brand font-semibold uppercase text-muted-foreground"
-          style={{ fontSize: scaled(9), letterSpacing: '2px' }}
+          style={{ fontSize: scaled(10), letterSpacing: '2px' }}
         >
           Week Overview
         </span>
@@ -144,18 +144,18 @@ export function WeekStrip({
             <ChevronRight style={{ width: scaled(14), height: scaled(14) }} />
           </button>
 
-          {/* Today pill */}
+          {/* Today badge */}
           <button
             onClick={onToday}
             disabled={isOnToday}
             className={cn(
-              'rounded-full border px-2.5 py-0.5 font-brand font-semibold uppercase tracking-wider transition-colors',
+              'rounded-md px-2.5 py-1 font-brand font-semibold uppercase tracking-wider transition-colors',
               isOnToday
-                ? 'border-primary/40 bg-primary/10 text-primary'
-                : 'border-border text-muted-foreground hover:border-primary hover:text-primary',
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground',
               isOnToday && 'opacity-50 cursor-default',
             )}
-            style={{ fontSize: scaled(9), letterSpacing: '1px' }}
+            style={{ fontSize: scaled(11) }}
           >
             Today
           </button>

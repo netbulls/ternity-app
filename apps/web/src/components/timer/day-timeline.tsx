@@ -166,10 +166,13 @@ export function DayTimeline({ date, entries }: Props) {
   return (
     <div
       className="rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))]"
-      style={{ padding: `${scaled(16)} ${scaled(20)}` }}
+      style={{ padding: `${scaled(10)} ${scaled(14)} ${scaled(14)}` }}
     >
       {/* Header */}
-      <div className="mb-3 flex items-center justify-between">
+      <div
+        className="flex items-center justify-between"
+        style={{ marginBottom: scaled(10), minHeight: scaled(24) }}
+      >
         <span
           className="font-brand font-semibold uppercase text-muted-foreground"
           style={{ fontSize: scaled(10), letterSpacing: '2px' }}
@@ -187,7 +190,7 @@ export function DayTimeline({ date, entries }: Props) {
       {/* Timeline strip */}
       <div
         className="relative overflow-hidden rounded-md bg-[hsl(var(--muted))]"
-        style={{ height: scaled(40) }}
+        style={{ height: scaled(32) }}
       >
         {/* Hour grid lines */}
         <div className="absolute inset-0 flex">
@@ -200,11 +203,11 @@ export function DayTimeline({ date, entries }: Props) {
         {blocks.map((block, i) => (
           <div
             key={i}
-            className="absolute top-[3px] rounded transition-opacity hover:opacity-100"
+            className="absolute top-[3px] flex items-center rounded transition-opacity hover:opacity-100"
             style={{
               left: `${block.left * 100}%`,
               width: `${Math.max(block.width * 100, 0.5)}%`,
-              height: 'calc(100% - 16px)',
+              height: 'calc(100% - 6px)',
               background: block.color,
               opacity: block.running ? 0.6 : 0.85,
               borderStyle: block.running ? 'dashed' : 'solid',
@@ -216,7 +219,7 @@ export function DayTimeline({ date, entries }: Props) {
             {block.width > 0.06 && (
               <span
                 className="block truncate px-1.5 font-semibold text-[hsl(var(--background))]"
-                style={{ fontSize: scaled(8), lineHeight: `${scaled(24)}` }}
+                style={{ fontSize: scaled(10) }}
               >
                 {block.label}
               </span>
