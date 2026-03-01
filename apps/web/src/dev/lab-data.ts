@@ -104,6 +104,30 @@ export const LAB_SECTIONS: LabProductSection[] = [
               'Context-aware two-column. Left: focus card (hero timer) + compact entries. Right: day progress ring, attention alerts, quick resume list, week mini-bars. Shows what matters NOW.',
             date: '2026-02-27T20:40:00',
           },
+          {
+            kind: 'exploration',
+            title: 'V6 — Day Switch Header Stepper',
+            file: 'web/myday-day-switch-v6-f6a1.html',
+            description:
+              'Full My Day cockpit with prev/next stepper + date popover + Today pill in the header. Timer hero, entry list, stat cards, nudge alerts — day navigation integrated into the page, not isolated.',
+            date: '2026-03-01T00:40:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V7 — Day Switch Week Strip',
+            file: 'web/myday-day-switch-v7-g7b2.html',
+            description:
+              'Full My Day cockpit with 7-day chip strip showing tracked hours and progress bars per day. Week paging, timer hero, entry list, stat cards, nudge alerts — week context always visible.',
+            date: '2026-03-01T00:50:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V8 — Day Switch Hybrid Navigator',
+            file: 'web/myday-day-switch-v8-h8c3.html',
+            description:
+              'Full My Day cockpit combining V6 speed + V7 context. Compact stepper by default, toggleable week strip (W key). Timer hero, entry list, stat cards, nudge alerts — hybrid of both approaches.',
+            date: '2026-03-01T01:00:00',
+          },
         ],
       },
       {

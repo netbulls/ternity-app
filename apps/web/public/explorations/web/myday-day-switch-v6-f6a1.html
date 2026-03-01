@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Day — V6 Header Stepper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ========================================
+         V6 — HEADER STEPPER
+         Prev/Next arrows + date button with calendar
+         popover + Today pill. Day navigation lives in
+         the page header alongside "My Day" title.
+         Full cockpit page below: timer, entries, stats.
+         ======================================== */
+
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 700px;
+      }
+
+      .app-content {
+        padding: calc(24px * var(--t-scale, 1));
+        display: flex;
+        flex-direction: column;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+
+      /* --- Header with Day Stepper --- */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(15px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Stepper controls */
+      .day-stepper {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .step-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(28px * var(--t-scale, 1));
+        height: calc(28px * var(--t-scale, 1));
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .step-btn:hover:not(:disabled) {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+      }
+      .step-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .step-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .date-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--primary) / 0.08);
+        color: hsl(var(--foreground));
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .date-btn:hover {
+        border-color: hsl(var(--primary) / 0.6);
+        background: hsl(var(--primary) / 0.14);
+      }
+      .date-btn svg {
+        width: 12px;
+        height: 12px;
+        opacity: 0.6;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .today-pill {
+        padding: 4px 12px;
+        border-radius: 999px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .today-pill:hover:not(:disabled) {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+      }
+      .today-pill:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .today-pill.is-today {
+        border-color: hsl(var(--primary) / 0.4);
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+      }
+      .kbd-hint {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .kbd {
+        display: inline-flex;
+        align-items: center;
+        padding: 1px 5px;
+        border-radius: 3px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* Calendar popover */
+      .calendar-popover {
+        position: absolute;
+        top: 42px;
+        left: 80px;
+        width: 260px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        background: hsl(var(--card));
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+        padding: 8px;
+        z-index: 10;
+        display: none;
+      }
+      .calendar-popover.show {
+        display: block;
+      }
+      .cal-day {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: hsl(var(--foreground));
+        font-size: calc(12px * var(--t-scale, 1));
+        cursor: pointer;
+        transition: all 0.1s;
+      }
+      .cal-day:hover {
+        background: hsl(var(--muted));
+        border-color: hsl(var(--border));
+      }
+      .cal-day.active {
+        background: hsl(var(--primary) / 0.12);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .cal-day.is-today .cal-day-name::after {
+        content: 'today';
+        margin-left: 6px;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--primary));
+        font-weight: 700;
+      }
+      .cal-day-name {
+        font-weight: 600;
+      }
+      .cal-day-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* --- Day context label --- */
+      .day-context {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+      .day-context-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+      }
+      .viewing-past .day-context-dot {
+        background: hsl(35 100% 60%);
+      }
+      .viewing-future .day-context-dot {
+        background: hsl(var(--muted-foreground));
+      }
+
+      /* --- Timer Bar --- */
+      .timer-bar {
+        display: flex;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--t-timer-bg));
+      }
+      .timer-bar.inactive {
+        border-color: hsl(var(--border));
+        background: hsl(var(--muted));
+        opacity: 0.6;
+      }
+      .timer-jira {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .timer-jira svg {
+        width: 12px;
+        height: 12px;
+      }
+      .timer-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: hsl(var(--foreground));
+        font-size: calc(13px * var(--t-scale, 1));
+        font-family: 'Inter', sans-serif;
+      }
+      .timer-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .timer-project {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+      }
+      .project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .timer-digits {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1));
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+        min-width: 80px;
+        text-align: right;
+      }
+      .timer-btn {
+        width: calc(36px * var(--t-scale, 1));
+        height: calc(36px * var(--t-scale, 1));
+        border-radius: 50%;
+        border: none;
+        background: hsl(var(--destructive));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .timer-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .timer-btn.start {
+        background: hsl(var(--primary));
+      }
+
+      /* --- Quick Stats Row --- */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: calc(12px * var(--t-scale, 1));
+      }
+      .stat-card {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 10px;
+        padding: calc(14px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+      }
+      .stat-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 6px;
+      }
+      .stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1));
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat-value.accent {
+        color: hsl(var(--primary));
+      }
+      .stat-sub {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--t-text-muted));
+        margin-top: 2px;
+      }
+
+      /* --- Progress arc --- */
+      .progress-ring {
+        width: 40px;
+        height: 40px;
+        float: right;
+        margin-top: -4px;
+      }
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 3;
+      }
+      .progress-ring .track {
+        stroke: hsl(var(--border));
+      }
+      .progress-ring .fill {
+        stroke: hsl(var(--primary));
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.3s;
+      }
+
+      /* --- Nudge card --- */
+      .nudge-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(35 100% 60% / 0.2);
+        background: hsl(35 100% 60% / 0.05);
+      }
+      .nudge-card.info-nudge {
+        border-color: hsl(var(--primary) / 0.2);
+        background: hsl(var(--primary) / 0.05);
+      }
+      .nudge-icon {
+        color: hsl(35 100% 60%);
+        flex-shrink: 0;
+      }
+      .nudge-card.info-nudge .nudge-icon {
+        color: hsl(var(--primary));
+      }
+      .nudge-text {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .nudge-text strong {
+        color: hsl(35 100% 60%);
+      }
+      .nudge-card.info-nudge .nudge-text strong {
+        color: hsl(var(--primary));
+      }
+      .nudge-action {
+        margin-left: auto;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      /* --- Today's Entries --- */
+      .entries-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .entries-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(8px * var(--t-scale, 1));
+      }
+      .entries-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .entries-count {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+      }
+
+      .entry-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto auto;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(10px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        border-radius: 8px;
+        transition: background 0.1s;
+      }
+      .entry-row:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .entry-row.running {
+        background: hsl(var(--t-timer-bg));
+        border: 1px solid hsl(var(--primary) / 0.15);
+      }
+      .entry-color {
+        width: 3px;
+        height: 24px;
+        border-radius: 2px;
+      }
+      .entry-desc {
+        font-size: calc(13px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entry-desc .jira-key {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        font-weight: 600;
+        margin-right: 6px;
+      }
+      .entry-project {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .entry-time {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .entry-duration {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        min-width: 50px;
+        text-align: right;
+      }
+      .entry-duration.running-dur {
+        color: hsl(var(--primary));
+      }
+
+      /* --- Empty state --- */
+      .empty-state {
+        text-align: center;
+        padding: calc(40px * var(--t-scale, 1)) 20px;
+        color: hsl(var(--muted-foreground));
+      }
+      .empty-state svg {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 12px;
+        opacity: 0.3;
+      }
+      .empty-state p {
+        font-size: calc(12px * var(--t-scale, 1));
+        margin-top: 4px;
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>My Day Explorations</h1>
+      <p>
+        V6 — Header Stepper: prev/next arrows + date button with calendar popover + Today pill. Full
+        My Day cockpit with day navigation in the header.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" data-theme="ternity-dark" data-scale="default" id="app">
+      <div class="app-content">
+        <!-- Header with Day Stepper -->
+        <div class="header" id="header">
+          <div class="header-left">
+            <span class="header-title">My Day</span>
+            <div class="day-stepper">
+              <button class="step-btn" id="prevBtn" aria-label="Previous day">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <button class="date-btn" id="dateBtn" aria-expanded="false">
+                <i data-lucide="calendar"></i>
+                <span id="dateBtnLabel"></span>
+              </button>
+              <button class="step-btn" id="nextBtn" aria-label="Next day">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="today-pill" id="todayBtn">Today</button>
+            <span class="kbd-hint">
+              <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> navigate &middot;
+              <span class="kbd">T</span> today
+            </span>
+          </div>
+
+          <!-- Calendar popover -->
+          <div class="calendar-popover" id="calPopover"></div>
+        </div>
+
+        <!-- Day context -->
+        <div class="day-context" id="dayContext">
+          <span class="day-context-dot"></span>
+          <span id="dayContextText"></span>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="timer-bar" id="timerBar">
+          <div class="timer-jira" id="timerJira">
+            <i data-lucide="external-link" style="width: 10px; height: 10px"></i>
+            <span id="timerJiraKey"></span>
+          </div>
+          <input class="timer-input" id="timerDesc" readonly />
+          <div class="timer-project" id="timerProject">
+            <span class="project-dot" id="timerDot"></span>
+            <span id="timerProjectName"></span>
+          </div>
+          <div class="timer-digits" id="timerDigits"></div>
+          <button class="timer-btn" id="timerBtn">
+            <i data-lucide="square"></i>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row" id="statsRow"></div>
+
+        <!-- Nudge -->
+        <div id="nudgeContainer"></div>
+
+        <!-- Entries -->
+        <div class="entries-section" id="entriesSection"></div>
+      </div>
+    </div>
+
+    <script>
+      // ── Sample data: Marta, schedule 08:30-16:30 ──
+      const DAYS = [
+        {
+          date: '2026-02-26',
+          label: 'Thu, 26 Feb 2026',
+          dayName: 'Thursday',
+          schedule: '08:30 — 16:30',
+          target: '8h 00m',
+          isToday: false,
+          isPast: true,
+          timer: null,
+          tracked: '8h 05m',
+          trackedMins: 485,
+          targetMins: 480,
+          entries: 4,
+          topProject: 'Ternity',
+          topProjectTime: '5h 10m',
+          topProjectPct: 64,
+          weekSoFar: '24h 20m',
+          weekTarget: '32h',
+          weekPct: 76,
+          nudge: null,
+          items: [
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-412',
+              desc: 'API — auth token refresh',
+              project: 'Ternity',
+              time: '08:35 — 10:20',
+              duration: '1:45',
+              running: false,
+            },
+            {
+              color: 'hsl(236 100% 77%)',
+              jira: null,
+              desc: 'Code review — PR #312 settings panel',
+              project: 'Ternity Auth',
+              time: '10:30 — 11:15',
+              duration: '0:45',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-415',
+              desc: 'DB migration — working hours schema',
+              project: 'Ternity',
+              time: '11:30 — 14:50',
+              duration: '3:20',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-418',
+              desc: 'Settings UI — notifications panel',
+              project: 'Ternity',
+              time: '15:00 — 17:15',
+              duration: '2:15',
+              running: false,
+            },
+          ],
+        },
+        {
+          date: '2026-02-27',
+          label: 'Fri, 27 Feb 2026',
+          dayName: 'Friday',
+          schedule: '08:30 — 16:30',
+          target: '8h 00m',
+          isToday: false,
+          isPast: true,
+          timer: null,
+          tracked: '7h 20m',
+          trackedMins: 440,
+          targetMins: 480,
+          entries: 3,
+          topProject: 'Ternity',
+          topProjectTime: '5h 40m',
+          topProjectPct: 77,
+          weekSoFar: '31h 40m',
+          weekTarget: '40h',
+          weekPct: 79,
+          nudge: {
+            type: 'warning',
+            text: '<strong>40m gap</strong> before weekly close — log or mark as break',
+            action: 'Fix now',
+          },
+          items: [
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-420',
+              desc: 'Sprint review — demo prep',
+              project: 'Ternity',
+              time: '08:30 — 10:15',
+              duration: '1:45',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-421',
+              desc: 'Email notification explorations',
+              project: 'Ternity',
+              time: '10:30 — 14:10',
+              duration: '3:40',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-419',
+              desc: 'Release notes — v0.9.2',
+              project: 'Ternity',
+              time: '14:30 — 16:25',
+              duration: '1:55',
+              running: false,
+            },
+          ],
+        },
+        {
+          date: '2026-02-28',
+          label: 'Sat, 28 Feb 2026',
+          dayName: 'Saturday',
+          schedule: 'Day off',
+          target: '0h',
+          isToday: false,
+          isPast: true,
+          timer: null,
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 0,
+          entries: 0,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekSoFar: '31h 40m',
+          weekTarget: '40h',
+          weekPct: 79,
+          nudge: {
+            type: 'info',
+            text: 'Weekend — no work expected. You can still add manual entries.',
+            action: null,
+          },
+          items: [],
+        },
+        {
+          date: '2026-03-01',
+          label: 'Sun, 1 Mar 2026',
+          dayName: 'Sunday',
+          schedule: 'Day off',
+          target: '0h',
+          isToday: true,
+          isPast: false,
+          timer: null,
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 0,
+          entries: 0,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekSoFar: '0h',
+          weekTarget: '40h',
+          weekPct: 0,
+          nudge: { type: 'info', text: 'Rest day — enjoy your Sunday.', action: null },
+          items: [],
+        },
+        {
+          date: '2026-03-02',
+          label: 'Mon, 2 Mar 2026',
+          dayName: 'Monday',
+          schedule: '08:30 — 16:30',
+          target: '8h 00m',
+          isToday: false,
+          isPast: false,
+          timer: {
+            jira: 'TRN-425',
+            desc: 'Customer timeline — workshop prep',
+            project: 'Ternity',
+            color: 'hsl(168 100% 42%)',
+            digits: '1:47:23',
+          },
+          tracked: '6h 10m',
+          trackedMins: 370,
+          targetMins: 480,
+          entries: 3,
+          topProject: 'Ternity',
+          topProjectTime: '5h 15m',
+          topProjectPct: 85,
+          weekSoFar: '6h 10m',
+          weekTarget: '40h',
+          weekPct: 15,
+          nudge: {
+            type: 'warning',
+            text: "<strong>1h 50m</strong> remaining to hit today's target",
+            action: null,
+          },
+          items: [
+            {
+              color: 'hsl(236 100% 77%)',
+              jira: null,
+              desc: 'Team standup — weekly kickoff',
+              project: 'Ternity',
+              time: '08:30 — 09:25',
+              duration: '0:55',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-424',
+              desc: 'Roadmap review — Q2 planning',
+              project: 'Ternity',
+              time: '09:40 — 13:08',
+              duration: '3:28',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-425',
+              desc: 'Customer timeline — workshop prep',
+              project: 'Ternity',
+              time: '14:15 — now',
+              duration: '1:47',
+              running: true,
+            },
+          ],
+        },
+        {
+          date: '2026-03-03',
+          label: 'Tue, 3 Mar 2026',
+          dayName: 'Tuesday',
+          schedule: '08:30 — 16:30',
+          target: '8h 00m',
+          isToday: false,
+          isPast: false,
+          timer: null,
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 480,
+          entries: 0,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekSoFar: '6h 10m',
+          weekTarget: '40h',
+          weekPct: 15,
+          nudge: {
+            type: 'info',
+            text: 'Future day — planned schedule 08:30 — 16:30.',
+            action: null,
+          },
+          items: [],
+        },
+      ];
+
+      const TODAY_INDEX = DAYS.findIndex((d) => d.isToday);
+      let currentIndex = TODAY_INDEX >= 0 ? TODAY_INDEX : 0;
+      let popoverOpen = false;
+
+      function render() {
+        const day = DAYS[currentIndex];
+
+        // Date button
+        document.getElementById('dateBtnLabel').textContent = day.label;
+
+        // Nav button states
+        document.getElementById('prevBtn').disabled = currentIndex === 0;
+        document.getElementById('nextBtn').disabled = currentIndex === DAYS.length - 1;
+
+        // Today pill
+        const todayBtn = document.getElementById('todayBtn');
+        todayBtn.disabled = currentIndex === TODAY_INDEX;
+        todayBtn.classList.toggle('is-today', currentIndex === TODAY_INDEX);
+
+        // Day context
+        const ctx = document.getElementById('dayContext');
+        const ctxText = document.getElementById('dayContextText');
+        ctx.className = 'day-context';
+        if (day.isToday) {
+          ctxText.textContent = day.dayName + ' — Today · Schedule: ' + day.schedule;
+        } else if (day.isPast) {
+          ctx.classList.add('viewing-past');
+          ctxText.textContent = day.dayName + ' — Past · Schedule: ' + day.schedule;
+        } else {
+          ctx.classList.add('viewing-future');
+          ctxText.textContent = day.dayName + ' — Upcoming · Schedule: ' + day.schedule;
+        }
+
+        // Timer bar
+        const timerBar = document.getElementById('timerBar');
+        if (day.timer) {
+          timerBar.className = 'timer-bar';
+          timerBar.style.display = 'flex';
+          document.getElementById('timerJira').style.display = day.timer.jira ? 'flex' : 'none';
+          document.getElementById('timerJiraKey').textContent = day.timer.jira || '';
+          document.getElementById('timerDesc').value = day.timer.desc;
+          document.getElementById('timerProjectName').textContent = day.timer.project;
+          document.getElementById('timerDot').style.background = day.timer.color;
+          document.getElementById('timerDigits').textContent = day.timer.digits;
+          document.getElementById('timerBtn').className = 'timer-btn';
+          document.getElementById('timerBtn').innerHTML = '<i data-lucide="square"></i>';
+        } else if (day.isToday || (!day.isPast && day.targetMins > 0)) {
+          timerBar.className = 'timer-bar inactive';
+          timerBar.style.display = 'flex';
+          document.getElementById('timerJira').style.display = 'none';
+          document.getElementById('timerDesc').value = '';
+          document.getElementById('timerDesc').placeholder = 'What are you working on?';
+          document.getElementById('timerProjectName').textContent = 'Project';
+          document.getElementById('timerDot').style.background = 'hsl(var(--muted-foreground))';
+          document.getElementById('timerDigits').textContent = '0:00:00';
+          document.getElementById('timerBtn').className = 'timer-btn start';
+          document.getElementById('timerBtn').innerHTML = '<i data-lucide="play"></i>';
+        } else {
+          timerBar.style.display = 'none';
+        }
+
+        // Stats
+        const pct =
+          day.targetMins > 0
+            ? Math.round((day.trackedMins / day.targetMins) * 100)
+            : day.trackedMins > 0
+              ? 100
+              : 0;
+        const circumference = 2 * Math.PI * 16;
+        const offset = circumference - (pct / 100) * circumference;
+
+        document.getElementById('statsRow').innerHTML =
+          '<div class="stat-card">' +
+          '<svg class="progress-ring" viewBox="0 0 40 40"><circle class="track" cx="20" cy="20" r="16"/><circle class="fill" cx="20" cy="20" r="16" stroke-dasharray="' +
+          circumference +
+          '" stroke-dashoffset="' +
+          offset +
+          '" transform="rotate(-90 20 20)"/></svg>' +
+          '<div class="stat-label">Today</div>' +
+          '<div class="stat-value accent">' +
+          day.tracked +
+          '</div>' +
+          '<div class="stat-sub">of ' +
+          day.target +
+          ' · ' +
+          pct +
+          '%</div>' +
+          '</div>' +
+          '<div class="stat-card">' +
+          '<div class="stat-label">Entries</div>' +
+          '<div class="stat-value">' +
+          day.entries +
+          '</div>' +
+          '<div class="stat-sub">' +
+          (day.timer ? '1 running' : 'none running') +
+          '</div>' +
+          '</div>' +
+          '<div class="stat-card">' +
+          '<div class="stat-label">Top Project</div>' +
+          '<div class="stat-value" style="font-size: calc(15px * var(--t-scale, 1))">' +
+          day.topProject +
+          '</div>' +
+          '<div class="stat-sub">' +
+          day.topProjectTime +
+          (day.topProjectPct ? ' (' + day.topProjectPct + '%)' : '') +
+          '</div>' +
+          '</div>' +
+          '<div class="stat-card">' +
+          '<div class="stat-label">Week So Far</div>' +
+          '<div class="stat-value">' +
+          day.weekSoFar +
+          '</div>' +
+          '<div class="stat-sub">of ' +
+          day.weekTarget +
+          ' · ' +
+          day.weekPct +
+          '%</div>' +
+          '</div>';
+
+        // Nudge
+        const nudgeC = document.getElementById('nudgeContainer');
+        if (day.nudge) {
+          const cls = day.nudge.type === 'info' ? 'nudge-card info-nudge' : 'nudge-card';
+          const icon = day.nudge.type === 'info' ? 'info' : 'alert-circle';
+          nudgeC.innerHTML =
+            '<div class="' +
+            cls +
+            '">' +
+            '<i data-lucide="' +
+            icon +
+            '" class="nudge-icon" style="width:16px;height:16px"></i>' +
+            '<span class="nudge-text">' +
+            day.nudge.text +
+            '</span>' +
+            (day.nudge.action ? '<span class="nudge-action">' + day.nudge.action + '</span>' : '') +
+            '</div>';
+        } else {
+          nudgeC.innerHTML = '';
+        }
+
+        // Entries
+        const sec = document.getElementById('entriesSection');
+        if (day.items.length === 0) {
+          sec.innerHTML =
+            '<div class="entries-header"><span class="entries-title">Entries</span><span class="entries-count">0 entries</span></div>' +
+            '<div class="empty-state"><i data-lucide="clock"></i><div style="font-size:calc(13px * var(--t-scale,1));font-weight:600">No entries</div><p>' +
+            (day.isPast
+              ? 'No time was logged on this day.'
+              : 'Start a timer or add a manual entry.') +
+            '</p></div>';
+        } else {
+          let html =
+            '<div class="entries-header"><span class="entries-title">Entries</span><span class="entries-count">' +
+            day.items.length +
+            ' entries</span></div>';
+          day.items.forEach(function (e) {
+            const rowClass = e.running ? 'entry-row running' : 'entry-row';
+            const durClass = e.running ? 'entry-duration running-dur' : 'entry-duration';
+            html +=
+              '<div class="' +
+              rowClass +
+              '">' +
+              '<div class="entry-color" style="background:' +
+              e.color +
+              '"></div>' +
+              '<div class="entry-desc">' +
+              (e.jira ? '<span class="jira-key">' + e.jira + '</span>' : '') +
+              e.desc +
+              '</div>' +
+              '<div class="entry-project">' +
+              e.project +
+              '</div>' +
+              '<div class="entry-time">' +
+              e.time +
+              '</div>' +
+              '<div class="' +
+              durClass +
+              '">' +
+              e.duration +
+              '</div>' +
+              '</div>';
+          });
+          sec.innerHTML = html;
+        }
+
+        // Calendar popover
+        renderPopover();
+        document.getElementById('calPopover').classList.toggle('show', popoverOpen);
+
+        lucide.createIcons();
+      }
+
+      function renderPopover() {
+        const pop = document.getElementById('calPopover');
+        pop.innerHTML = DAYS.map(function (day, i) {
+          const cls =
+            'cal-day' + (i === currentIndex ? ' active' : '') + (day.isToday ? ' is-today' : '');
+          return (
+            '<button class="' +
+            cls +
+            '" data-idx="' +
+            i +
+            '"><span class="cal-day-name">' +
+            day.label +
+            '</span><span class="cal-day-hours">' +
+            day.tracked +
+            '</span></button>'
+          );
+        }).join('');
+
+        pop.querySelectorAll('.cal-day').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            currentIndex = Number(btn.getAttribute('data-idx'));
+            popoverOpen = false;
+            render();
+          });
+        });
+      }
+
+      // Navigation
+      document.getElementById('prevBtn').addEventListener('click', function () {
+        if (currentIndex > 0) {
+          currentIndex--;
+          popoverOpen = false;
+          render();
+        }
+      });
+      document.getElementById('nextBtn').addEventListener('click', function () {
+        if (currentIndex < DAYS.length - 1) {
+          currentIndex++;
+          popoverOpen = false;
+          render();
+        }
+      });
+      document.getElementById('todayBtn').addEventListener('click', function () {
+        currentIndex = TODAY_INDEX;
+        popoverOpen = false;
+        render();
+      });
+      document.getElementById('dateBtn').addEventListener('click', function () {
+        popoverOpen = !popoverOpen;
+        render();
+      });
+
+      // Close popover on outside click
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#header')) {
+          popoverOpen = false;
+          render();
+        }
+      });
+
+      // Keyboard
+      document.addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.key === 'ArrowLeft' && currentIndex > 0) {
+          currentIndex--;
+          popoverOpen = false;
+          render();
+        }
+        if (e.key === 'ArrowRight' && currentIndex < DAYS.length - 1) {
+          currentIndex++;
+          popoverOpen = false;
+          render();
+        }
+        if (e.key.toLowerCase() === 't') {
+          currentIndex = TODAY_INDEX;
+          popoverOpen = false;
+          render();
+        }
+      });
+
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        var group = event.target.parentElement;
+        group.querySelectorAll('button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+
+      render();
+    </script>
+  </body>
+</html>

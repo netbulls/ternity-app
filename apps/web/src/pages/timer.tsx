@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { TimerBar } from '@/components/timer/timer-bar';
 import { DayTimeline, calcTodaySeconds } from '@/components/timer/day-timeline';
+import { WeekStrip } from '@/components/timer/week-strip';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
 import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
@@ -9,46 +10,101 @@ import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { Button } from '@/components/ui/button';
 import { scaled } from '@/lib/scaled';
+import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
-function todayStr() {
+function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
 function formatLongDate(dateStr: string): string {
+  const today = getToday();
+  const yesterday = shiftDays(today, -1);
+  const tomorrow = shiftDays(today, 1);
+
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', {
+  const formatted = d.toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
+
+  if (dateStr === today) return `${formatted} — Today`;
+  if (dateStr === yesterday) return `${formatted} — Yesterday`;
+  if (dateStr === tomorrow) return `${formatted} — Tomorrow`;
+  return formatted;
 }
 
 export function TimerPage() {
   const [manualOpen, setManualOpen] = useState(false);
-  const today = todayStr();
+  const [selectedDate, setSelectedDate] = useState(getToday);
 
-  // Fetch only today's entries
-  const { data: dayGroups, isLoading } = useEntries(today, today);
+  const today = getToday();
+  const isToday = selectedDate === today;
 
-  // Get today's group (should be at most 1 since from === to === today)
-  const todayGroup: DayGroupType | null = useMemo(() => {
-    if (!dayGroups || dayGroups.length === 0) return null;
-    return dayGroups[0] ?? null;
-  }, [dayGroups]);
+  // ── Week data (for the strip) ──
+  const weekFrom = useMemo(() => getWeekStart(selectedDate), [selectedDate]);
+  const weekTo = useMemo(() => getWeekEnd(selectedDate), [selectedDate]);
+  const { data: weekGroups, isLoading: weekLoading } = useEntries(weekFrom, weekTo);
 
-  // All entries for today (for the timeline)
-  const todayEntries = todayGroup?.entries ?? [];
+  // ── Selected day data (from the week fetch) ──
+  const selectedGroup: DayGroupType | null = useMemo(() => {
+    if (!weekGroups || weekGroups.length === 0) return null;
+    return weekGroups.find((g) => g.date === selectedDate) ?? null;
+  }, [weekGroups, selectedDate]);
 
-  // Calculate today-only seconds (segments clamped to today's boundaries)
-  const todaySeconds = useMemo(() => calcTodaySeconds(todayEntries, today), [todayEntries, today]);
+  const dayEntries = selectedGroup?.entries ?? [];
 
-  // Build a corrected day group with today-only total for the DayGroup header
+  // Calculate day-only seconds (segments clamped to day boundaries)
+  const daySeconds = useMemo(
+    () => calcTodaySeconds(dayEntries, selectedDate),
+    [dayEntries, selectedDate],
+  );
+
+  // Build corrected group with day-only total
   const correctedGroup = useMemo<DayGroupType | null>(() => {
-    if (!todayGroup) return null;
-    return { ...todayGroup, totalSeconds: todaySeconds };
-  }, [todayGroup, todaySeconds]);
+    if (!selectedGroup) return null;
+    return { ...selectedGroup, totalSeconds: daySeconds };
+  }, [selectedGroup, daySeconds]);
+
+  // ── Week navigation ──
+  const goToPrevWeek = useCallback(() => {
+    setSelectedDate((d) => shiftDays(getWeekStart(d), -7));
+  }, []);
+
+  const goToNextWeek = useCallback(() => {
+    setSelectedDate((d) => shiftDays(getWeekStart(d), 7));
+  }, []);
+
+  const goToToday = useCallback(() => {
+    setSelectedDate(getToday());
+  }, []);
+
+  // ── Keyboard navigation ──
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't capture when typing in inputs
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setSelectedDate((d) => shiftDays(d, -1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setSelectedDate((d) => shiftDays(d, 1));
+      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setSelectedDate(getToday());
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div>
@@ -62,7 +118,7 @@ export function TimerPage() {
             My Day
           </h1>
           <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
-            {formatLongDate(today)}
+            {formatLongDate(selectedDate)}
           </p>
         </div>
         <Button variant="outline" size="sm" className="text-xs" onClick={() => setManualOpen(true)}>
@@ -71,16 +127,29 @@ export function TimerPage() {
         </Button>
       </div>
 
-      {/* Day Timeline */}
+      {/* Week Strip */}
       <div className="mb-5">
-        <DayTimeline date={today} entries={todayEntries} />
+        <WeekStrip
+          selectedDate={selectedDate}
+          weekGroups={weekGroups ?? []}
+          isLoading={weekLoading}
+          onSelectDate={setSelectedDate}
+          onPrevWeek={goToPrevWeek}
+          onNextWeek={goToNextWeek}
+          onToday={goToToday}
+        />
       </div>
 
-      {/* Timer Bar */}
-      <TimerBar />
+      {/* Day Timeline */}
+      <div className="mb-5">
+        <DayTimeline date={selectedDate} entries={dayEntries} />
+      </div>
 
-      {/* Today's entries */}
-      {isLoading ? (
+      {/* Timer Bar — only show on today */}
+      {isToday && <TimerBar />}
+
+      {/* Day entries */}
+      {weekLoading ? (
         <div className="py-10 text-center text-sm text-muted-foreground">Loading entries...</div>
       ) : correctedGroup ? (
         <ActiveEditProvider>
@@ -91,7 +160,9 @@ export function TimerPage() {
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">
-            No entries yet today. Start the timer to begin tracking.
+            {isToday
+              ? 'No entries yet today. Start the timer to begin tracking.'
+              : 'No entries for this day.'}
           </div>
         </div>
       )}

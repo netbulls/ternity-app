@@ -1,0 +1,1286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Day — V8 Hybrid Navigator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ========================================
+         V8 — HYBRID NAVIGATOR
+         Compact stepper by default (prev/next + date).
+         Toggle expands a week strip for context.
+         Full My Day cockpit: timer, entries, stats.
+         Best of V6 speed + V7 context.
+         ======================================== */
+
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 700px;
+      }
+
+      .app-content {
+        padding: calc(24px * var(--t-scale, 1));
+        display: flex;
+        flex-direction: column;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+
+      /* --- Header with Hybrid Nav --- */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(15px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Stepper */
+      .day-stepper {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .step-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(28px * var(--t-scale, 1));
+        height: calc(28px * var(--t-scale, 1));
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .step-btn:hover:not(:disabled) {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+      }
+      .step-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .step-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .date-label {
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--primary) / 0.08);
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        color: hsl(var(--foreground));
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .today-pill {
+        padding: 4px 12px;
+        border-radius: 999px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .today-pill:hover:not(:disabled) {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+      }
+      .today-pill:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .today-pill.is-today {
+        border-color: hsl(var(--primary) / 0.4);
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+      }
+      .toggle-week-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .toggle-week-btn:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--foreground));
+      }
+      .toggle-week-btn.expanded {
+        border-color: hsl(var(--primary) / 0.4);
+        background: hsl(var(--primary) / 0.08);
+        color: hsl(var(--primary));
+      }
+      .toggle-week-btn svg {
+        width: 12px;
+        height: 12px;
+      }
+      .kbd-hint {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .kbd {
+        display: inline-flex;
+        align-items: center;
+        padding: 1px 5px;
+        border-radius: 3px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* --- Week Strip (collapsible) --- */
+      .week-strip {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 12px;
+        padding: calc(12px * var(--t-scale, 1));
+        display: none;
+        animation: slideDown 0.2s ease-out;
+      }
+      .week-strip.show {
+        display: block;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .week-strip-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(10px * var(--t-scale, 1));
+      }
+      .week-strip-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .week-strip-total {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+      }
+      .week-chips {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: calc(6px * var(--t-scale, 1));
+      }
+      .day-chip {
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        background: hsl(var(--muted));
+        padding: calc(8px * var(--t-scale, 1)) calc(6px * var(--t-scale, 1));
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        position: relative;
+      }
+      .day-chip:hover {
+        border-color: hsl(var(--primary) / 0.5);
+      }
+      .day-chip.active {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.1);
+      }
+      .day-chip.is-today::after {
+        content: '';
+        position: absolute;
+        bottom: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+      }
+      .day-chip.is-off {
+        opacity: 0.45;
+      }
+      .chip-day {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        display: block;
+      }
+      .chip-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 700;
+        display: block;
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .chip-hours.has-data {
+        color: hsl(var(--primary));
+      }
+      .chip-bar {
+        height: 3px;
+        border-radius: 2px;
+        background: hsl(var(--border));
+        margin-top: 5px;
+        overflow: hidden;
+      }
+      .chip-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: hsl(var(--primary));
+        transition: width 0.3s;
+      }
+
+      /* --- Timer Bar --- */
+      .timer-bar {
+        display: flex;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: hsl(var(--t-timer-bg));
+      }
+      .timer-bar.inactive {
+        border-color: hsl(var(--border));
+        background: hsl(var(--muted));
+        opacity: 0.6;
+      }
+      .timer-jira {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .timer-jira svg {
+        width: 12px;
+        height: 12px;
+      }
+      .timer-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: hsl(var(--foreground));
+        font-size: calc(13px * var(--t-scale, 1));
+        font-family: 'Inter', sans-serif;
+      }
+      .timer-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .timer-project {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+      }
+      .project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .timer-digits {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1));
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: hsl(var(--primary));
+        font-variant-numeric: tabular-nums;
+        min-width: 80px;
+        text-align: right;
+      }
+      .timer-btn {
+        width: calc(36px * var(--t-scale, 1));
+        height: calc(36px * var(--t-scale, 1));
+        border-radius: 50%;
+        border: none;
+        background: hsl(var(--destructive));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .timer-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .timer-btn.start {
+        background: hsl(var(--primary));
+      }
+
+      /* --- Quick Stats Row --- */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: calc(12px * var(--t-scale, 1));
+      }
+      .stat-card {
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--t-border-subtle));
+        border-radius: 10px;
+        padding: calc(14px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+      }
+      .stat-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 6px;
+      }
+      .stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1));
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat-value.accent {
+        color: hsl(var(--primary));
+      }
+      .stat-sub {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--t-text-muted));
+        margin-top: 2px;
+      }
+      .progress-ring {
+        width: 40px;
+        height: 40px;
+        float: right;
+        margin-top: -4px;
+      }
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 3;
+      }
+      .progress-ring .track {
+        stroke: hsl(var(--border));
+      }
+      .progress-ring .fill {
+        stroke: hsl(var(--primary));
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.3s;
+      }
+
+      /* --- Nudge card --- */
+      .nudge-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-radius: 10px;
+        border: 1px solid hsl(35 100% 60% / 0.2);
+        background: hsl(35 100% 60% / 0.05);
+      }
+      .nudge-card.info-nudge {
+        border-color: hsl(var(--primary) / 0.2);
+        background: hsl(var(--primary) / 0.05);
+      }
+      .nudge-icon {
+        color: hsl(35 100% 60%);
+        flex-shrink: 0;
+      }
+      .nudge-card.info-nudge .nudge-icon {
+        color: hsl(var(--primary));
+      }
+      .nudge-text {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .nudge-text strong {
+        color: hsl(35 100% 60%);
+      }
+      .nudge-card.info-nudge .nudge-text strong {
+        color: hsl(var(--primary));
+      }
+      .nudge-action {
+        margin-left: auto;
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      /* --- Entries --- */
+      .entries-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .entries-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: calc(8px * var(--t-scale, 1));
+      }
+      .entries-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+      }
+      .entries-count {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+      }
+      .entry-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto auto;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1));
+        padding: calc(10px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        border-radius: 8px;
+        transition: background 0.1s;
+      }
+      .entry-row:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .entry-row.running {
+        background: hsl(var(--t-timer-bg));
+        border: 1px solid hsl(var(--primary) / 0.15);
+      }
+      .entry-color {
+        width: 3px;
+        height: 24px;
+        border-radius: 2px;
+      }
+      .entry-desc {
+        font-size: calc(13px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entry-desc .jira-key {
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        font-weight: 600;
+        margin-right: 6px;
+      }
+      .entry-project {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .entry-time {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .entry-duration {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        min-width: 50px;
+        text-align: right;
+      }
+      .entry-duration.running-dur {
+        color: hsl(var(--primary));
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: calc(40px * var(--t-scale, 1)) 20px;
+        color: hsl(var(--muted-foreground));
+      }
+      .empty-state svg {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 12px;
+        opacity: 0.3;
+      }
+      .empty-state p {
+        font-size: calc(12px * var(--t-scale, 1));
+        margin-top: 4px;
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>My Day Explorations</h1>
+      <p>
+        V8 — Hybrid Navigator: compact stepper by default, expandable week strip for context. Speed
+        of V6 + context of V7. Full My Day cockpit.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" data-theme="ternity-dark" data-scale="default" id="app">
+      <div class="app-content">
+        <!-- Header with Hybrid Nav -->
+        <div class="header">
+          <div class="header-left">
+            <span class="header-title">My Day</span>
+            <div class="day-stepper">
+              <button class="step-btn" id="prevBtn" aria-label="Previous day">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <span class="date-label" id="dateLabel"></span>
+              <button class="step-btn" id="nextBtn" aria-label="Next day">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="toggle-week-btn" id="toggleWeek">
+              <i data-lucide="calendar-days"></i>
+              <span id="toggleLabel">Show week</span>
+            </button>
+            <button class="today-pill" id="todayBtn">Today</button>
+            <span class="kbd-hint">
+              <span class="kbd">&larr;</span><span class="kbd">&rarr;</span>
+              <span class="kbd">T</span> <span class="kbd">W</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Collapsible Week Strip -->
+        <div class="week-strip" id="weekStrip">
+          <div class="week-strip-header">
+            <span class="week-strip-label">Week Overview</span>
+            <span class="week-strip-total" id="weekTotal"></span>
+          </div>
+          <div class="week-chips" id="weekChips"></div>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="timer-bar" id="timerBar">
+          <div class="timer-jira" id="timerJira">
+            <i data-lucide="external-link" style="width: 10px; height: 10px"></i>
+            <span id="timerJiraKey"></span>
+          </div>
+          <input class="timer-input" id="timerDesc" readonly />
+          <div class="timer-project">
+            <span class="project-dot" id="timerDot"></span>
+            <span id="timerProjectName"></span>
+          </div>
+          <div class="timer-digits" id="timerDigits"></div>
+          <button class="timer-btn" id="timerBtn">
+            <i data-lucide="square"></i>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row" id="statsRow"></div>
+
+        <!-- Nudge -->
+        <div id="nudgeContainer"></div>
+
+        <!-- Entries -->
+        <div class="entries-section" id="entriesSection"></div>
+      </div>
+    </div>
+
+    <script>
+      // ── Sample data: Marta, schedule 08:30-16:30 ──
+      var DAYS = [
+        {
+          date: '2026-02-26',
+          label: 'Thu, 26 Feb 2026',
+          chipLabel: 'Thu',
+          chipDate: '26',
+          target: '8h 00m',
+          tracked: '8h 05m',
+          trackedMins: 485,
+          targetMins: 480,
+          isToday: false,
+          isPast: true,
+          timer: null,
+          topProject: 'Ternity',
+          topProjectTime: '5h 10m',
+          topProjectPct: 64,
+          weekTotal: '39h 10m',
+          weekTarget: '40h',
+          weekPct: 98,
+          nudge: null,
+          items: [
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-412',
+              desc: 'API — auth token refresh',
+              project: 'Ternity',
+              time: '08:35 — 10:20',
+              duration: '1:45',
+              running: false,
+            },
+            {
+              color: 'hsl(236 100% 77%)',
+              jira: null,
+              desc: 'Code review — PR #312 settings panel',
+              project: 'Ternity Auth',
+              time: '10:30 — 11:15',
+              duration: '0:45',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-415',
+              desc: 'DB migration — working hours schema',
+              project: 'Ternity',
+              time: '11:30 — 14:50',
+              duration: '3:20',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-418',
+              desc: 'Settings UI — notifications panel',
+              project: 'Ternity',
+              time: '15:00 — 17:15',
+              duration: '2:15',
+              running: false,
+            },
+          ],
+        },
+        {
+          date: '2026-02-27',
+          label: 'Fri, 27 Feb 2026',
+          chipLabel: 'Fri',
+          chipDate: '27',
+          target: '8h 00m',
+          tracked: '7h 20m',
+          trackedMins: 440,
+          targetMins: 480,
+          isToday: false,
+          isPast: true,
+          timer: null,
+          topProject: 'Ternity',
+          topProjectTime: '5h 40m',
+          topProjectPct: 77,
+          weekTotal: '39h 10m',
+          weekTarget: '40h',
+          weekPct: 98,
+          nudge: {
+            type: 'warning',
+            text: '<strong>40m gap</strong> before weekly close — log or mark as break',
+            action: 'Fix now',
+          },
+          items: [
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-420',
+              desc: 'Sprint review — demo prep',
+              project: 'Ternity',
+              time: '08:30 — 10:15',
+              duration: '1:45',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-421',
+              desc: 'Email notification explorations',
+              project: 'Ternity',
+              time: '10:30 — 14:10',
+              duration: '3:40',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-419',
+              desc: 'Release notes — v0.9.2',
+              project: 'Ternity',
+              time: '14:30 — 16:25',
+              duration: '1:55',
+              running: false,
+            },
+          ],
+        },
+        {
+          date: '2026-02-28',
+          label: 'Sat, 28 Feb 2026',
+          chipLabel: 'Sat',
+          chipDate: '28',
+          target: '0h',
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 0,
+          isToday: false,
+          isPast: true,
+          timer: null,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekTotal: '39h 10m',
+          weekTarget: '40h',
+          weekPct: 98,
+          nudge: { type: 'info', text: 'Weekend — no work expected.', action: null },
+          items: [],
+        },
+        {
+          date: '2026-03-01',
+          label: 'Sun, 1 Mar 2026',
+          chipLabel: 'Sun',
+          chipDate: '1',
+          target: '0h',
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 0,
+          isToday: true,
+          isPast: false,
+          timer: null,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekTotal: '0h',
+          weekTarget: '40h',
+          weekPct: 0,
+          nudge: { type: 'info', text: 'Rest day — enjoy your Sunday.', action: null },
+          items: [],
+        },
+        {
+          date: '2026-03-02',
+          label: 'Mon, 2 Mar 2026',
+          chipLabel: 'Mon',
+          chipDate: '2',
+          target: '8h 00m',
+          tracked: '6h 10m',
+          trackedMins: 370,
+          targetMins: 480,
+          isToday: false,
+          isPast: false,
+          timer: {
+            jira: 'TRN-425',
+            desc: 'Customer timeline — workshop prep',
+            project: 'Ternity',
+            color: 'hsl(168 100% 42%)',
+            digits: '1:47:23',
+          },
+          topProject: 'Ternity',
+          topProjectTime: '5h 15m',
+          topProjectPct: 85,
+          weekTotal: '6h 10m',
+          weekTarget: '40h',
+          weekPct: 15,
+          nudge: {
+            type: 'warning',
+            text: "<strong>1h 50m</strong> remaining to hit today's target",
+            action: null,
+          },
+          items: [
+            {
+              color: 'hsl(236 100% 77%)',
+              jira: null,
+              desc: 'Team standup — weekly kickoff',
+              project: 'Ternity',
+              time: '08:30 — 09:25',
+              duration: '0:55',
+              running: false,
+            },
+            {
+              color: 'hsl(35 100% 64%)',
+              jira: 'TRN-424',
+              desc: 'Roadmap review — Q2 planning',
+              project: 'Ternity',
+              time: '09:40 — 13:08',
+              duration: '3:28',
+              running: false,
+            },
+            {
+              color: 'hsl(168 100% 42%)',
+              jira: 'TRN-425',
+              desc: 'Customer timeline — workshop prep',
+              project: 'Ternity',
+              time: '14:15 — now',
+              duration: '1:47',
+              running: true,
+            },
+          ],
+        },
+        {
+          date: '2026-03-03',
+          label: 'Tue, 3 Mar 2026',
+          chipLabel: 'Tue',
+          chipDate: '3',
+          target: '8h 00m',
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 480,
+          isToday: false,
+          isPast: false,
+          timer: null,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekTotal: '6h 10m',
+          weekTarget: '40h',
+          weekPct: 15,
+          nudge: {
+            type: 'info',
+            text: 'Future day — planned schedule 08:30 — 16:30.',
+            action: null,
+          },
+          items: [],
+        },
+        {
+          date: '2026-03-04',
+          label: 'Wed, 4 Mar 2026',
+          chipLabel: 'Wed',
+          chipDate: '4',
+          target: '8h 00m',
+          tracked: '0h',
+          trackedMins: 0,
+          targetMins: 480,
+          isToday: false,
+          isPast: false,
+          timer: null,
+          topProject: '—',
+          topProjectTime: '—',
+          topProjectPct: 0,
+          weekTotal: '6h 10m',
+          weekTarget: '40h',
+          weekPct: 15,
+          nudge: {
+            type: 'info',
+            text: 'Future day — planned schedule 08:30 — 16:30.',
+            action: null,
+          },
+          items: [],
+        },
+      ];
+
+      var TODAY_INDEX = DAYS.findIndex(function (d) {
+        return d.isToday;
+      });
+      var currentIndex = TODAY_INDEX >= 0 ? TODAY_INDEX : 0;
+      var weekOpen = false;
+
+      function render() {
+        var day = DAYS[currentIndex];
+
+        // Date label
+        document.getElementById('dateLabel').textContent = day.label;
+
+        // Nav
+        document.getElementById('prevBtn').disabled = currentIndex === 0;
+        document.getElementById('nextBtn').disabled = currentIndex === DAYS.length - 1;
+
+        // Today pill
+        var todayBtn = document.getElementById('todayBtn');
+        todayBtn.disabled = currentIndex === TODAY_INDEX;
+        todayBtn.classList.toggle('is-today', currentIndex === TODAY_INDEX);
+
+        // Toggle button
+        var toggleBtn = document.getElementById('toggleWeek');
+        toggleBtn.classList.toggle('expanded', weekOpen);
+        document.getElementById('toggleLabel').textContent = weekOpen ? 'Hide week' : 'Show week';
+
+        // Week strip
+        var strip = document.getElementById('weekStrip');
+        strip.classList.toggle('show', weekOpen);
+        if (weekOpen) {
+          document.getElementById('weekTotal').textContent =
+            day.weekTotal + ' of ' + day.weekTarget;
+          var chipsHTML = '';
+          DAYS.forEach(function (d, i) {
+            var cls = 'day-chip';
+            if (i === currentIndex) cls += ' active';
+            if (d.isToday) cls += ' is-today';
+            if (d.targetMins === 0) cls += ' is-off';
+            var pct =
+              d.targetMins > 0
+                ? Math.min(100, Math.round((d.trackedMins / d.targetMins) * 100))
+                : 0;
+            var hc = d.trackedMins > 0 ? 'chip-hours has-data' : 'chip-hours';
+            chipsHTML +=
+              '<button class="' +
+              cls +
+              '" data-idx="' +
+              i +
+              '">' +
+              '<span class="chip-day">' +
+              d.chipLabel +
+              ' ' +
+              d.chipDate +
+              '</span>' +
+              '<span class="' +
+              hc +
+              '">' +
+              d.tracked +
+              '</span>' +
+              '<div class="chip-bar"><div class="chip-bar-fill" style="width:' +
+              pct +
+              '%"></div></div>' +
+              '</button>';
+          });
+          document.getElementById('weekChips').innerHTML = chipsHTML;
+          document.querySelectorAll('.day-chip').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+              currentIndex = Number(chip.getAttribute('data-idx'));
+              render();
+            });
+          });
+        }
+
+        // Timer bar
+        var timerBar = document.getElementById('timerBar');
+        if (day.timer) {
+          timerBar.className = 'timer-bar';
+          timerBar.style.display = 'flex';
+          document.getElementById('timerJira').style.display = day.timer.jira ? 'flex' : 'none';
+          document.getElementById('timerJiraKey').textContent = day.timer.jira || '';
+          document.getElementById('timerDesc').value = day.timer.desc;
+          document.getElementById('timerProjectName').textContent = day.timer.project;
+          document.getElementById('timerDot').style.background = day.timer.color;
+          document.getElementById('timerDigits').textContent = day.timer.digits;
+          document.getElementById('timerBtn').className = 'timer-btn';
+          document.getElementById('timerBtn').innerHTML = '<i data-lucide="square"></i>';
+        } else if (day.isToday || (!day.isPast && day.targetMins > 0)) {
+          timerBar.className = 'timer-bar inactive';
+          timerBar.style.display = 'flex';
+          document.getElementById('timerJira').style.display = 'none';
+          document.getElementById('timerDesc').value = '';
+          document.getElementById('timerDesc').placeholder = 'What are you working on?';
+          document.getElementById('timerProjectName').textContent = 'Project';
+          document.getElementById('timerDot').style.background = 'hsl(var(--muted-foreground))';
+          document.getElementById('timerDigits').textContent = '0:00:00';
+          document.getElementById('timerBtn').className = 'timer-btn start';
+          document.getElementById('timerBtn').innerHTML = '<i data-lucide="play"></i>';
+        } else {
+          timerBar.style.display = 'none';
+        }
+
+        // Stats
+        var pctDay =
+          day.targetMins > 0
+            ? Math.round((day.trackedMins / day.targetMins) * 100)
+            : day.trackedMins > 0
+              ? 100
+              : 0;
+        var circ = 2 * Math.PI * 16;
+        var off = circ - (pctDay / 100) * circ;
+        document.getElementById('statsRow').innerHTML =
+          '<div class="stat-card">' +
+          '<svg class="progress-ring" viewBox="0 0 40 40"><circle class="track" cx="20" cy="20" r="16"/><circle class="fill" cx="20" cy="20" r="16" stroke-dasharray="' +
+          circ +
+          '" stroke-dashoffset="' +
+          off +
+          '" transform="rotate(-90 20 20)"/></svg>' +
+          '<div class="stat-label">Today</div><div class="stat-value accent">' +
+          day.tracked +
+          '</div><div class="stat-sub">of ' +
+          day.target +
+          ' · ' +
+          pctDay +
+          '%</div>' +
+          '</div>' +
+          '<div class="stat-card"><div class="stat-label">Entries</div><div class="stat-value">' +
+          day.items.length +
+          '</div><div class="stat-sub">' +
+          (day.timer ? '1 running' : 'none running') +
+          '</div></div>' +
+          '<div class="stat-card"><div class="stat-label">Top Project</div><div class="stat-value" style="font-size:calc(15px * var(--t-scale,1))">' +
+          day.topProject +
+          '</div><div class="stat-sub">' +
+          day.topProjectTime +
+          (day.topProjectPct ? ' (' + day.topProjectPct + '%)' : '') +
+          '</div></div>' +
+          '<div class="stat-card"><div class="stat-label">Week Total</div><div class="stat-value">' +
+          day.weekTotal +
+          '</div><div class="stat-sub">of ' +
+          day.weekTarget +
+          ' · ' +
+          day.weekPct +
+          '%</div></div>';
+
+        // Nudge
+        var nudgeC = document.getElementById('nudgeContainer');
+        if (day.nudge) {
+          var cls2 = day.nudge.type === 'info' ? 'nudge-card info-nudge' : 'nudge-card';
+          var icon = day.nudge.type === 'info' ? 'info' : 'alert-circle';
+          nudgeC.innerHTML =
+            '<div class="' +
+            cls2 +
+            '"><i data-lucide="' +
+            icon +
+            '" class="nudge-icon" style="width:16px;height:16px"></i><span class="nudge-text">' +
+            day.nudge.text +
+            '</span>' +
+            (day.nudge.action ? '<span class="nudge-action">' + day.nudge.action + '</span>' : '') +
+            '</div>';
+        } else {
+          nudgeC.innerHTML = '';
+        }
+
+        // Entries
+        var sec = document.getElementById('entriesSection');
+        if (day.items.length === 0) {
+          sec.innerHTML =
+            '<div class="entries-header"><span class="entries-title">Entries</span><span class="entries-count">0 entries</span></div><div class="empty-state"><i data-lucide="clock"></i><div style="font-size:calc(13px * var(--t-scale,1));font-weight:600">No entries</div><p>' +
+            (day.isPast
+              ? 'No time was logged on this day.'
+              : 'Start a timer or add a manual entry.') +
+            '</p></div>';
+        } else {
+          var html =
+            '<div class="entries-header"><span class="entries-title">Entries</span><span class="entries-count">' +
+            day.items.length +
+            ' entries</span></div>';
+          day.items.forEach(function (e) {
+            var rc = e.running ? 'entry-row running' : 'entry-row';
+            var dc = e.running ? 'entry-duration running-dur' : 'entry-duration';
+            html +=
+              '<div class="' +
+              rc +
+              '"><div class="entry-color" style="background:' +
+              e.color +
+              '"></div><div class="entry-desc">' +
+              (e.jira ? '<span class="jira-key">' + e.jira + '</span>' : '') +
+              e.desc +
+              '</div><div class="entry-project">' +
+              e.project +
+              '</div><div class="entry-time">' +
+              e.time +
+              '</div><div class="' +
+              dc +
+              '">' +
+              e.duration +
+              '</div></div>';
+          });
+          sec.innerHTML = html;
+        }
+
+        lucide.createIcons();
+      }
+
+      // Navigation
+      document.getElementById('prevBtn').addEventListener('click', function () {
+        if (currentIndex > 0) {
+          currentIndex--;
+          render();
+        }
+      });
+      document.getElementById('nextBtn').addEventListener('click', function () {
+        if (currentIndex < DAYS.length - 1) {
+          currentIndex++;
+          render();
+        }
+      });
+      document.getElementById('todayBtn').addEventListener('click', function () {
+        currentIndex = TODAY_INDEX;
+        render();
+      });
+      document.getElementById('toggleWeek').addEventListener('click', function () {
+        weekOpen = !weekOpen;
+        render();
+      });
+
+      // Keyboard
+      document.addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.key === 'ArrowLeft' && currentIndex > 0) {
+          currentIndex--;
+          render();
+        }
+        if (e.key === 'ArrowRight' && currentIndex < DAYS.length - 1) {
+          currentIndex++;
+          render();
+        }
+        if (e.key.toLowerCase() === 't') {
+          currentIndex = TODAY_INDEX;
+          render();
+        }
+        if (e.key.toLowerCase() === 'w') {
+          weekOpen = !weekOpen;
+          render();
+        }
+      });
+
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        var group = event.target.parentElement;
+        group.querySelectorAll('button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+
+      render();
+    </script>
+  </body>
+</html>

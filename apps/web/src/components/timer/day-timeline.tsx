@@ -145,9 +145,21 @@ function getNowPosition(): number | null {
   return (min - dayStart) / (dayEnd - dayStart);
 }
 
+function getTimelineLabel(date: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  if (date === today) return 'Today\u2019s Timeline';
+  const d = new Date(date + 'T12:00:00');
+  const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' });
+  return `${dayName}\u2019s Timeline`;
+}
+
 export function DayTimeline({ date, entries }: Props) {
   const { blocks, todaySeconds } = useMemo(() => buildTimeline(entries, date), [entries, date]);
-  const nowPos = getNowPosition();
+
+  const isToday = date === new Date().toISOString().slice(0, 10);
+  const nowPos = isToday ? getNowPosition() : null;
+
+  const timelineLabel = getTimelineLabel(date);
 
   const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => HOUR_START + i);
 
@@ -162,7 +174,7 @@ export function DayTimeline({ date, entries }: Props) {
           className="font-brand font-semibold uppercase text-muted-foreground"
           style={{ fontSize: scaled(10), letterSpacing: '2px' }}
         >
-          Today&apos;s Timeline
+          {timelineLabel}
         </span>
         <span
           className="font-brand font-bold tabular-nums text-primary"
