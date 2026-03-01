@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications Email - V3 Decision Sheet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Public Sans', sans-serif;
+        background:
+          radial-gradient(circle at 85% 10%, rgba(0, 212, 170, 0.16), transparent 35%),
+          radial-gradient(circle at 12% 82%, rgba(78, 121, 255, 0.14), transparent 36%), #08090c;
+        color: #e8eaed;
+      }
+
+      .shell {
+        max-width: 1260px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        margin-bottom: 10px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 11px;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      h1 {
+        margin: 8px 0 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 30px;
+      }
+
+      .header p {
+        margin: 8px 0 0;
+        max-width: 810px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .theme-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+
+      .theme-btn {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        background: rgba(11, 12, 14, 0.86);
+        color: rgba(255, 255, 255, 0.7);
+        padding: 5px 11px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .theme-btn.active {
+        border-color: rgba(0, 212, 170, 0.5);
+        color: #ffffff;
+      }
+
+      #app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: 18px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+        padding: 16px;
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .panel {
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        background: hsl(var(--card));
+        padding: 12px;
+      }
+
+      .panel h2,
+      .panel h3 {
+        margin: 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 17px;
+      }
+
+      .panel p {
+        margin: 8px 0 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .group-list {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .group-item {
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        background: hsl(var(--muted));
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 9px;
+      }
+
+      .group-item b {
+        width: 7px;
+        height: 7px;
+        display: inline-block;
+        border-radius: 999px;
+        margin-right: 6px;
+        background: var(--item-color);
+      }
+
+      table {
+        width: 100%;
+        margin-top: 10px;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        border-top: 1px solid hsl(var(--border));
+        padding: 7px 6px;
+        vertical-align: top;
+      }
+
+      th {
+        color: hsl(var(--muted-foreground));
+        font-weight: 600;
+      }
+
+      .sheets {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .sheet {
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        background: hsl(var(--card));
+        overflow: hidden;
+      }
+
+      .sheet-head {
+        border-bottom: 1px solid hsl(var(--border));
+        padding: 10px 12px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        background: hsl(var(--muted) / 0.5);
+      }
+
+      .ref {
+        margin: 0;
+        font-size: 10px;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .sheet-title {
+        margin: 4px 0 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .sheet-group {
+        margin: 4px 0 0;
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .stamp {
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 4px 9px;
+        white-space: nowrap;
+      }
+
+      .stamp.action {
+        color: hsl(355 100% 64%);
+      }
+
+      .stamp.review {
+        color: hsl(168 100% 42%);
+      }
+
+      .stamp.decision {
+        color: hsl(236 100% 76%);
+      }
+
+      .stamp.info {
+        color: hsl(192 94% 60%);
+      }
+
+      .meta-grid {
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .meta-cell {
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: 8px;
+        background: hsl(var(--muted));
+      }
+
+      .meta-cell span {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .meta-cell p {
+        margin: 5px 0 0;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .body {
+        border-top: 1px solid hsl(var(--border));
+        padding: 10px 12px;
+      }
+
+      .body span {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .body p {
+        margin: 5px 0 0;
+        font-size: 12px;
+        line-height: 1.45;
+        color: hsl(var(--foreground));
+      }
+
+      .sheet-foot {
+        border-top: 1px solid hsl(var(--border));
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .fields {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .field {
+        border: 1px solid hsl(var(--border));
+        border-radius: 999px;
+        padding: 3px 8px;
+        background: hsl(var(--muted));
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .cta {
+        border: 0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--accent);
+        color: #02110f;
+      }
+
+      .cta-variant {
+        display: block;
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.4;
+      }
+
+      .s-start-gap {
+        --accent: hsl(35 100% 62%);
+      }
+
+      .s-stop-gap {
+        --accent: hsl(355 100% 64%);
+      }
+
+      .s-long-run {
+        --accent: hsl(168 100% 42%);
+      }
+
+      .s-leave-flow {
+        --accent: hsl(236 100% 76%);
+      }
+
+      .s-weekly-reconciliation {
+        --accent: hsl(192 94% 60%);
+      }
+
+      @media (max-width: 980px) {
+        .top-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .sheet-foot {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          padding: 14px;
+        }
+
+        h1 {
+          font-size: 24px;
+        }
+
+        .group-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="header">
+        <p class="eyebrow">Ternity email explorations</p>
+        <h1>V3 - Decision Sheet</h1>
+        <p>
+          Memo-style transactional emails with status stamps and compact data blocks. Best when
+          recipients need explicit decision context (especially leave updates) while still working
+          for timer and weekly nudges.
+        </p>
+      </header>
+
+      <div class="theme-bar">
+        <button class="theme-btn active" data-theme="ternity-dark">Ternity Dark</button>
+        <button class="theme-btn" data-theme="ternity-light">Ternity Light</button>
+        <button class="theme-btn" data-theme="midnight">Midnight</button>
+        <button class="theme-btn" data-theme="warm-sand">Warm Sand</button>
+        <button class="theme-btn" data-theme="carbon">Carbon</button>
+        <button class="theme-btn" data-theme="high-contrast">High Contrast</button>
+      </div>
+
+      <main id="app" data-theme="ternity-dark">
+        <section class="top-grid">
+          <article class="panel">
+            <h2>Five groups in this direction</h2>
+            <p>
+              Group identity remains explicit in every sheet: Start Gap, Stop Gap, Long Run, Leave
+              Flow, and Weekly Reconciliation.
+            </p>
+            <div class="group-list" id="groupList"></div>
+          </article>
+
+          <article class="panel">
+            <h3>Template system mapping</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Notification</th>
+                  <th>Partials</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Forgot start / stop / long</td>
+                  <td>EmailHeader, StatusBlock, InfoRows, ActionBlock, Footer</td>
+                </tr>
+                <tr>
+                  <td>Leave request update</td>
+                  <td>EmailHeader, StatusBlock, InfoRows, DecisionNote, ActionBlock, Footer</td>
+                </tr>
+                <tr>
+                  <td>Team leave alert</td>
+                  <td>EmailHeader, StatusBlock, InfoRows, ActionBlock, Footer</td>
+                </tr>
+                <tr>
+                  <td>Weekly hours report</td>
+                  <td>EmailHeader, StatusBlock, MetricsTriplet, ActionBlock, Footer</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </section>
+
+        <section class="sheets" id="sheets"></section>
+      </main>
+    </div>
+
+    <script>
+      const groups = [
+        { id: 'start-gap', label: 'Start Gap', color: 'hsl(35 100% 62%)' },
+        { id: 'stop-gap', label: 'Stop Gap', color: 'hsl(355 100% 64%)' },
+        { id: 'long-run', label: 'Long Run', color: 'hsl(168 100% 42%)' },
+        { id: 'leave-flow', label: 'Leave Flow', color: 'hsl(236 100% 76%)' },
+        { id: 'weekly-reconciliation', label: 'Weekly Reconciliation', color: 'hsl(192 94% 60%)' },
+      ];
+
+      const groupById = Object.fromEntries(groups.map((group) => [group.id, group]));
+
+      const sheets = [
+        {
+          ref: 'NTF-001',
+          title: 'Forgot to start timer',
+          group: 'start-gap',
+          stamp: 'Action required',
+          tone: 'action',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - No timer started 15m after 08:30 - Start now or log time manually from your scheduled start.',
+          subject: 'No timer started 15m after 08:30',
+          preheader: 'Start now or log time manually from your scheduled start.',
+          body: 'Hi Marta, your workday was scheduled to start at 08:30 and we still do not see a running timer. If you already started work, add a manual entry from 08:30.',
+          cta: 'Start timer',
+          fields: ['user: Marta', 'scheduled start: 08:30', 'threshold: 15m'],
+        },
+        {
+          ref: 'NTF-002',
+          title: 'Forgot to stop timer',
+          group: 'stop-gap',
+          stamp: 'Action required',
+          tone: 'action',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Timer still running 30m after your scheduled end - Started at 08:42. Stop it now to avoid over-logging.',
+          subject: 'Timer still running 30m after your scheduled end',
+          preheader: 'Started at 08:42. Stop it now to avoid over-logging.',
+          body: 'Hi Marta, your timer started at 08:42 and remains active past 16:30. Stop now, then adjust if break time is included.',
+          cta: 'Stop timer',
+          fields: ['user: Marta', 'started: 08:42', 'scheduled end: 16:30', 'threshold: 30m'],
+        },
+        {
+          ref: 'NTF-003',
+          title: 'Long running timer',
+          group: 'long-run',
+          stamp: 'Review',
+          tone: 'review',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Long running timer detected (6h 18m) - Your threshold is 4h. Review this entry now.',
+          subject: 'Long running timer detected (6h 18m)',
+          preheader: 'Your threshold is 4h. Review this entry now.',
+          body: 'Hi Marta, this timer has been running for 6h 18m, above the 4h limit. Review and split or stop the entry to keep reports precise.',
+          cta: 'Review timer',
+          fields: ['user: Marta', 'elapsed: 6h 18m', 'threshold: 4h', 'started: 08:42'],
+        },
+        {
+          ref: 'NTF-004',
+          title: 'Leave request update (approved)',
+          group: 'leave-flow',
+          stamp: 'Decision',
+          tone: 'decision',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Leave approved: 17-19 Mar 2026 - Your calendar is updated.',
+          subject: 'Leave approved: 17-19 Mar 2026',
+          preheader: 'Your calendar is updated.',
+          body: 'Hi Marta, your leave request for 17-19 Mar 2026 was approved. No further action is needed unless your plans changed.',
+          cta: 'View leave',
+          fields: ['user: Marta', 'status: approved', 'range: 17-19 Mar 2026'],
+        },
+        {
+          ref: 'NTF-005',
+          title: 'Leave request update (declined)',
+          group: 'leave-flow',
+          stamp: 'Decision',
+          tone: 'decision',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Leave declined: 28 Mar 2026 - Review the note and update your request.',
+          subject: 'Leave declined: 28 Mar 2026',
+          preheader: 'Review the note and update your request.',
+          body: 'Hi Marta, your leave request for 28 Mar 2026 was declined. Manager note: project handover is scheduled that day. Edit the date and submit again.',
+          cta: 'Edit request',
+          fields: ['user: Marta', 'status: declined', 'range: 28 Mar 2026'],
+        },
+        {
+          ref: 'NTF-006',
+          title: 'Team leave alert',
+          group: 'leave-flow',
+          stamp: 'FYI',
+          tone: 'info',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Team leave alert: Elena is out 24-25 Mar 2026 - Check coverage and replan work if needed.',
+          subject: 'Team leave alert: Elena is out 24-25 Mar 2026',
+          preheader: 'Check coverage and replan work if needed.',
+          body: 'Heads up, Marta - Elena is on leave during 24-25 Mar 2026. Review coverage and dependencies so timelines stay stable.',
+          cta: 'Open team calendar',
+          fields: ['recipient: Marta', 'teammate: Elena', 'range: 24-25 Mar 2026'],
+        },
+        {
+          ref: 'NTF-007',
+          title: 'Weekly hours report',
+          group: 'weekly-reconciliation',
+          stamp: 'Review',
+          tone: 'review',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Weekly hours: 36.5h / 40h - Current gap: 3.5h.',
+          subject: 'Weekly hours: 36.5h / 40h',
+          preheader: 'Current gap: 3.5h.',
+          body: 'Hi Marta, you logged 36.5h this week against 40h expected from your schedule. Your current gap is 3.5h. Review missing entries before week close on Friday at 17:00.',
+          cta: 'Review week',
+          fields: ['user: Marta', 'tracked: 36.5h', 'expected: 40h', 'gap: 3.5h'],
+        },
+      ];
+
+      function renderGroupList() {
+        const host = document.getElementById('groupList');
+        host.innerHTML = groups
+          .map(
+            (group) =>
+              '<span class="group-item"><b style="--item-color:' +
+              group.color +
+              '"></b>' +
+              group.label +
+              '</span>',
+          )
+          .join('');
+      }
+
+      function renderSheets() {
+        const host = document.getElementById('sheets');
+        host.innerHTML = sheets
+          .map((sheet) => {
+            const group = groupById[sheet.group];
+            const fields = sheet.fields
+              .map((field) => '<span class="field">' + field + '</span>')
+              .join('');
+            const cta = sheet.cta
+              ? '<button class="cta" type="button">' + sheet.cta + '</button>'
+              : '<span class="cta-variant">' + sheet.ctaVariant + '</span>';
+
+            return (
+              '<article class="sheet s-' +
+              group.id +
+              '">' +
+              '<header class="sheet-head">' +
+              '<div><p class="ref">' +
+              sheet.ref +
+              '</p><h4 class="sheet-title">' +
+              sheet.title +
+              '</h4><p class="sheet-group">Group: ' +
+              group.label +
+              '</p></div>' +
+              '<span class="stamp ' +
+              sheet.tone +
+              '">' +
+              sheet.stamp +
+              '</span>' +
+              '</header>' +
+              '<div class="meta-grid">' +
+              '<div class="meta-cell"><span>Subject</span><p>' +
+              sheet.subject +
+              '</p></div>' +
+              '<div class="meta-cell"><span>Preheader</span><p>' +
+              sheet.preheader +
+              '</p></div>' +
+              '<div class="meta-cell"><span>Inbox preview</span><p>' +
+              sheet.inboxLine +
+              '</p></div>' +
+              '</div>' +
+              '<section class="body"><span>Email body copy</span><p>' +
+              sheet.body +
+              '</p></section>' +
+              '<footer class="sheet-foot"><div class="fields">' +
+              fields +
+              '</div>' +
+              cta +
+              '</footer>' +
+              '</article>'
+            );
+          })
+          .join('');
+      }
+
+      function initThemeSwitcher() {
+        const buttons = document.querySelectorAll('.theme-btn');
+        const app = document.getElementById('app');
+
+        buttons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const theme = button.getAttribute('data-theme');
+            app.setAttribute('data-theme', theme);
+            buttons.forEach((candidate) => candidate.classList.remove('active'));
+            button.classList.add('active');
+          });
+        });
+      }
+
+      renderGroupList();
+      renderSheets();
+      initThemeSwitcher();
+    </script>
+  </body>
+</html>

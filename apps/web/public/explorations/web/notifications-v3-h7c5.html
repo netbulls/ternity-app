@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications — V3 Cards Matrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      .app-shell {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        min-height: 720px;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        height: 720px;
+        padding: 20px 12px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      .sidebar-section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: 10px;
+        letter-spacing: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .user-block:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .user-org .badge {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .user-chevrons {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+      .user-chevrons i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .main-header {
+        margin-bottom: 20px;
+      }
+      .main-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .main-subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Tabs ── */
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .tab {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+      }
+      .tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+        font-weight: 600;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 700px;
+      }
+
+      /* ── Contact bar ── */
+      .contact-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+        background: hsl(var(--muted) / 0.2);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: hsl(var(--foreground));
+      }
+      .contact-item i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+      }
+      .contact-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        flex-shrink: 0;
+      }
+      .contact-masked {
+        color: hsl(var(--muted-foreground));
+      }
+      .contact-action {
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--primary));
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+        transition: opacity 0.15s;
+      }
+      .contact-action:hover {
+        opacity: 0.8;
+      }
+
+      /* ── Cards grid ── */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 900px) {
+        .cards-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── Notification card ── */
+      .notif-card {
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition:
+          border-color 0.2s,
+          opacity 0.25s;
+        position: relative;
+      }
+      .notif-card:hover {
+        border-color: hsl(var(--primary) / 0.3);
+      }
+      .notif-card.disabled {
+        opacity: 0.4;
+      }
+      .notif-card.disabled:hover {
+        border-color: hsl(var(--border));
+      }
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .card-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .card-icon i {
+        width: 16px;
+        height: 16px;
+      }
+      .card-icon.amber {
+        background: hsl(35 100% 64% / 0.15);
+      }
+      .card-icon.amber i {
+        color: hsl(35 100% 64%);
+      }
+      .card-icon.red {
+        background: hsl(355 100% 64% / 0.15);
+      }
+      .card-icon.red i {
+        color: hsl(355 100% 64%);
+      }
+      .card-icon.blue {
+        background: hsl(236 100% 77% / 0.15);
+      }
+      .card-icon.blue i {
+        color: hsl(236 100% 77%);
+      }
+      .card-icon.teal {
+        background: hsl(var(--primary) / 0.15);
+      }
+      .card-icon.teal i {
+        color: hsl(var(--primary));
+      }
+      .notif-card.disabled .card-icon {
+        background: hsl(var(--muted));
+      }
+      .notif-card.disabled .card-icon i {
+        color: hsl(var(--muted-foreground));
+      }
+
+      .card-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        flex: 1;
+        line-height: 1.3;
+      }
+
+      /* ── Master toggle ── */
+      .master-toggle {
+        width: 36px;
+        height: 20px;
+        border-radius: 10px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+      .master-toggle.on {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .master-toggle::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: hsl(var(--foreground));
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .master-toggle.on::after {
+        transform: translateX(16px);
+        background: hsl(var(--primary-foreground));
+      }
+
+      .card-desc {
+        font-size: 11px;
+        line-height: 1.5;
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Card bottom controls ── */
+      .card-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: auto;
+      }
+
+      /* Channel pills */
+      .channel-pill {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 100px;
+        border: 1px solid hsl(var(--border));
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.15s;
+        letter-spacing: 0.3px;
+      }
+      .channel-pill i {
+        width: 11px;
+        height: 11px;
+      }
+      .channel-pill:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--foreground));
+      }
+      .channel-pill.active {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .notif-card.disabled .channel-pill {
+        pointer-events: none;
+      }
+
+      .controls-sep {
+        width: 1px;
+        height: 16px;
+        background: hsl(var(--border));
+        flex-shrink: 0;
+      }
+
+      /* ── Segmented control ── */
+      .segmented {
+        display: flex;
+        border-radius: 100px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+      }
+      .seg-btn {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border: none;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+        border-right: 1px solid hsl(var(--border));
+      }
+      .seg-btn:last-child {
+        border-right: none;
+      }
+      .seg-btn:hover {
+        color: hsl(var(--foreground));
+        background: hsl(var(--muted) / 0.5);
+      }
+      .seg-btn.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .notif-card.disabled .seg-btn {
+        pointer-events: none;
+      }
+
+      /* ── Phone add modal ── */
+      .phone-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+      .phone-modal-overlay.visible {
+        display: flex;
+      }
+      .phone-modal {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        width: 340px;
+        max-width: 90vw;
+      }
+      .phone-modal h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+      .phone-modal p {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+      }
+      .phone-input-row {
+        display: flex;
+        gap: 8px;
+      }
+      .phone-input {
+        flex: 1;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .phone-input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .phone-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .phone-save-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        cursor: pointer;
+        transition: opacity 0.15s;
+        white-space: nowrap;
+      }
+      .phone-save-btn:hover {
+        opacity: 0.9;
+      }
+      .phone-cancel-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-top: 12px;
+        transition: color 0.15s;
+      }
+      .phone-cancel-btn:hover {
+        color: hsl(var(--foreground));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>V3 — Cards Matrix: Notification settings as self-contained cards with inline controls</p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell" id="app" data-theme="ternity-dark">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <i data-lucide="hourglass" class="logo-icon"></i>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="sidebar-section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="sun"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palm-tree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="badge">Admin</span>
+            </div>
+          </div>
+          <div class="user-chevrons">
+            <i data-lucide="chevrons-up-down"></i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <main class="main">
+        <div class="main-header">
+          <h1 class="main-title">Settings</h1>
+          <p class="main-subtitle">Manage your account and application preferences</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab">General</button>
+          <button class="tab">Appearance</button>
+          <button class="tab">Integrations</button>
+          <button class="tab">Downloads</button>
+          <button class="tab">Tags</button>
+          <button class="tab">Working Hours</button>
+          <button class="tab active">Notifications</button>
+        </div>
+
+        <div class="content-area">
+          <!-- Contact bar -->
+          <div class="contact-bar" id="contactBar">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Cards grid -->
+          <div class="cards-grid" id="cardsGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Phone add modal -->
+    <div class="phone-modal-overlay" id="phoneModal">
+      <div class="phone-modal">
+        <h3>Add Phone Number</h3>
+        <p>We'll send a verification code to confirm your number.</p>
+        <div class="phone-input-row">
+          <input type="tel" class="phone-input" placeholder="+48 xxx xxx xxx" id="phoneInput" />
+          <button class="phone-save-btn" onclick="savePhone()">Verify</button>
+        </div>
+        <button class="phone-cancel-btn" onclick="closePhoneModal()">Cancel</button>
+      </div>
+    </div>
+
+    <script>
+      /* ── Data ── */
+      const state = {
+        smsConfigured: true,
+        phone: '+48 ••• ••• 357',
+        email: 'przemyslaw.rudzki@netbulls.io',
+        cards: [
+          {
+            id: 'forgot-start',
+            icon: 'clock',
+            colorClass: 'amber',
+            title: 'Forgot to Start',
+            desc: 'Nudge when no timer is running after your scheduled start',
+            enabled: true,
+            emailOn: true,
+            smsOn: true,
+            smsAvailable: true,
+            thresholds: ['15m', '30m', '45m', '1h'],
+            activeThreshold: 1,
+            dayPicker: null,
+          },
+          {
+            id: 'forgot-stop',
+            icon: 'clock-arrow-down',
+            colorClass: 'amber',
+            title: 'Forgot to Stop',
+            desc: 'Remind when timer is still running past your scheduled end',
+            enabled: true,
+            emailOn: true,
+            smsOn: false,
+            smsAvailable: true,
+            thresholds: ['15m', '30m', '45m', '1h'],
+            activeThreshold: 2,
+            dayPicker: null,
+          },
+          {
+            id: 'long-timer',
+            icon: 'triangle-alert',
+            colorClass: 'red',
+            title: 'Long Timer',
+            desc: 'Alert when a single timer runs too long',
+            enabled: true,
+            emailOn: true,
+            smsOn: true,
+            smsAvailable: true,
+            thresholds: ['2h', '4h', '6h', '8h'],
+            activeThreshold: 1,
+            dayPicker: null,
+          },
+          {
+            id: 'leave-updates',
+            icon: 'calendar-check',
+            colorClass: 'blue',
+            title: 'Leave Updates',
+            desc: 'Know when your leave requests are approved or denied',
+            enabled: true,
+            emailOn: true,
+            smsOn: true,
+            smsAvailable: true,
+            thresholds: null,
+            dayPicker: null,
+          },
+          {
+            id: 'team-leave',
+            icon: 'users',
+            colorClass: 'blue',
+            title: 'Team Leave',
+            desc: 'Get notified when team members go on leave',
+            enabled: true,
+            emailOn: true,
+            smsOn: false,
+            smsAvailable: false,
+            thresholds: null,
+            dayPicker: null,
+          },
+          {
+            id: 'weekly-report',
+            icon: 'bar-chart-3',
+            colorClass: 'teal',
+            title: 'Weekly Report',
+            desc: 'Receive a weekly summary of your tracked hours',
+            enabled: true,
+            emailOn: true,
+            smsOn: false,
+            smsAvailable: false,
+            thresholds: null,
+            dayPicker: ['Mon', 'Fri'],
+            activeDayPicker: 1,
+          },
+        ],
+      };
+
+      /* ── Render contact bar ── */
+      function renderContactBar() {
+        const bar = document.getElementById('contactBar');
+        bar.innerHTML = `
+          <div class="contact-item">
+            <i data-lucide="mail"></i>
+            <span>${state.email}</span>
+            <span class="contact-dot"></span>
+          </div>
+          <div class="contact-item">
+            <i data-lucide="smartphone"></i>
+            ${
+              state.smsConfigured
+                ? `<span class="contact-masked">${state.phone}</span>
+                   <span class="contact-dot"></span>
+                   <button class="contact-action" onclick="sendTestSms(event)">Test</button>`
+                : `<span class="contact-masked">Not configured</span>
+                   <button class="contact-action" onclick="openPhoneModal()">Add</button>`
+            }
+          </div>
+        `;
+        lucide.createIcons({ nodes: bar.querySelectorAll('[data-lucide]') });
+      }
+
+      /* ── Render cards ── */
+      function renderCards() {
+        const grid = document.getElementById('cardsGrid');
+        grid.innerHTML = '';
+
+        state.cards.forEach((card, idx) => {
+          const el = document.createElement('div');
+          el.className = 'notif-card' + (card.enabled ? '' : ' disabled');
+          el.dataset.index = idx;
+
+          let controlsHTML = '';
+
+          // Email pill
+          controlsHTML += `<button class="channel-pill ${card.emailOn && card.enabled ? 'active' : ''}" onclick="toggleChannel(${idx}, 'email')">
+            <i data-lucide="mail"></i> Email
+          </button>`;
+
+          // SMS pill (only if available for this type)
+          if (card.smsAvailable) {
+            controlsHTML += `<button class="channel-pill ${card.smsOn && card.enabled ? 'active' : ''}" onclick="toggleChannel(${idx}, 'sms')">
+              <i data-lucide="smartphone"></i> SMS
+            </button>`;
+          }
+
+          // Separator + threshold or day picker
+          if (card.thresholds || card.dayPicker) {
+            controlsHTML += `<div class="controls-sep"></div>`;
+
+            if (card.thresholds) {
+              controlsHTML += `<div class="segmented">`;
+              card.thresholds.forEach((t, ti) => {
+                controlsHTML += `<button class="seg-btn ${ti === card.activeThreshold ? 'active' : ''}" onclick="setThreshold(${idx}, ${ti})">${t}</button>`;
+              });
+              controlsHTML += `</div>`;
+            }
+
+            if (card.dayPicker) {
+              controlsHTML += `<div class="segmented">`;
+              card.dayPicker.forEach((d, di) => {
+                controlsHTML += `<button class="seg-btn ${di === card.activeDayPicker ? 'active' : ''}" onclick="setDayPicker(${idx}, ${di})">${d}</button>`;
+              });
+              controlsHTML += `</div>`;
+            }
+          }
+
+          el.innerHTML = `
+            <div class="card-top">
+              <div class="card-icon ${card.enabled ? card.colorClass : ''}">
+                <i data-lucide="${card.icon}"></i>
+              </div>
+              <div class="card-title">${card.title}</div>
+              <div class="master-toggle ${card.enabled ? 'on' : ''}" onclick="toggleCard(${idx})"></div>
+            </div>
+            <div class="card-desc">${card.desc}</div>
+            <div class="card-controls">${controlsHTML}</div>
+          `;
+
+          grid.appendChild(el);
+        });
+
+        lucide.createIcons({ nodes: grid.querySelectorAll('[data-lucide]') });
+      }
+
+      /* ── Interactions ── */
+      function toggleCard(idx) {
+        state.cards[idx].enabled = !state.cards[idx].enabled;
+        renderCards();
+      }
+
+      function toggleChannel(idx, channel) {
+        const card = state.cards[idx];
+        if (!card.enabled) return;
+        if (channel === 'sms' && !state.smsConfigured) return;
+
+        if (channel === 'email') {
+          card.emailOn = !card.emailOn;
+        } else {
+          card.smsOn = !card.smsOn;
+        }
+        renderCards();
+      }
+
+      function setThreshold(idx, ti) {
+        if (!state.cards[idx].enabled) return;
+        state.cards[idx].activeThreshold = ti;
+        renderCards();
+      }
+
+      function setDayPicker(idx, di) {
+        if (!state.cards[idx].enabled) return;
+        state.cards[idx].activeDayPicker = di;
+        renderCards();
+      }
+
+      function sendTestSms(e) {
+        const btn = e.target;
+        const orig = btn.textContent;
+        btn.textContent = 'Sent!';
+        btn.style.opacity = '0.6';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.opacity = '1';
+        }, 1500);
+      }
+
+      function openPhoneModal() {
+        document.getElementById('phoneModal').classList.add('visible');
+        setTimeout(() => document.getElementById('phoneInput').focus(), 100);
+      }
+
+      function closePhoneModal() {
+        document.getElementById('phoneModal').classList.remove('visible');
+        document.getElementById('phoneInput').value = '';
+      }
+
+      function savePhone() {
+        const input = document.getElementById('phoneInput');
+        const val = input.value.trim();
+        if (!val) return;
+
+        state.smsConfigured = true;
+        const masked = val.slice(0, 4) + ' ••• ••• ' + val.slice(-3);
+        state.phone = masked;
+        closePhoneModal();
+        renderContactBar();
+        renderCards();
+      }
+
+      /* ── Theme switcher ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.getElementById('phoneModal').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      /* ── Init ── */
+      document.getElementById('phoneModal').setAttribute('data-theme', 'ternity-dark');
+      renderContactBar();
+      renderCards();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

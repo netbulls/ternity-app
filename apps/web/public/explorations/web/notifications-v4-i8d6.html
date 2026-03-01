@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications — V4 Timeline Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      .app-shell {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        min-height: 720px;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        height: 720px;
+        padding: 20px 12px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      .sidebar-section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: 10px;
+        letter-spacing: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .user-block:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .user-org .badge {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .user-chevrons {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+      .user-chevrons i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .main-header {
+        margin-bottom: 20px;
+      }
+      .main-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .main-subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Tabs ── */
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .tab {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+      }
+      .tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+        font-weight: 600;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 700px;
+      }
+
+      /* ── Timeline section ── */
+      .timeline-section {
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+      }
+
+      .section-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .section-label i {
+        width: 13px;
+        height: 13px;
+      }
+
+      .timeline-container {
+        position: relative;
+        padding-top: 20px;
+        padding-bottom: 60px;
+        user-select: none;
+      }
+
+      /* Hour axis */
+      .timeline-axis {
+        position: relative;
+        height: 8px;
+      }
+      .timeline-track {
+        position: absolute;
+        top: 3px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: hsl(var(--border));
+        border-radius: 1px;
+      }
+
+      .hour-markers {
+        position: absolute;
+        top: -18px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+      }
+      .hour-tick {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        width: 0;
+        text-align: center;
+        position: relative;
+      }
+      .hour-tick::after {
+        content: '';
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        width: 1px;
+        height: 4px;
+        background: hsl(var(--border));
+      }
+
+      /* Schedule block */
+      .schedule-block {
+        position: absolute;
+        top: 0;
+        height: 8px;
+        background: hsl(var(--primary) / 0.12);
+        border: 1px solid hsl(var(--primary) / 0.2);
+        border-radius: 4px;
+        transition:
+          left 0.3s ease,
+          width 0.3s ease;
+      }
+      .schedule-label {
+        position: absolute;
+        top: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Oxanium', sans-serif;
+        font-size: 8px;
+        font-weight: 500;
+        color: hsl(var(--primary));
+        opacity: 0.6;
+        white-space: nowrap;
+        letter-spacing: 0.5px;
+      }
+
+      /* Notification markers */
+      .notif-marker {
+        position: absolute;
+        top: -2px;
+        width: 12px;
+        height: 12px;
+        transform: translateX(-50%) rotate(45deg);
+        border-radius: 2px;
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        z-index: 2;
+        cursor: default;
+      }
+      .notif-marker.disabled {
+        opacity: 0.15;
+      }
+      .notif-marker.start-marker {
+        background: hsl(var(--chart-4));
+        border: 1px solid hsl(var(--chart-4));
+      }
+      .notif-marker.stop-marker {
+        background: hsl(var(--chart-3));
+        border: 1px solid hsl(var(--chart-3));
+      }
+      .notif-marker.long-marker {
+        background: hsl(var(--chart-5));
+        border: 1px solid hsl(var(--chart-5));
+      }
+
+      /* Connector lines from markers */
+      .connector-line {
+        position: absolute;
+        top: 12px;
+        width: 1px;
+        height: 44px;
+        border-left: 1px dashed hsl(var(--border));
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        z-index: 1;
+      }
+      .connector-line.disabled {
+        opacity: 0.1;
+      }
+      .connector-line.start-line {
+        border-left-color: hsl(var(--chart-4) / 0.4);
+      }
+      .connector-line.stop-line {
+        border-left-color: hsl(var(--chart-3) / 0.4);
+      }
+      .connector-line.long-line {
+        border-left-color: hsl(var(--chart-5) / 0.4);
+      }
+
+      /* Marker tooltip */
+      .marker-label {
+        position: absolute;
+        top: 16px;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        text-align: center;
+        pointer-events: none;
+      }
+      .marker-label.disabled {
+        opacity: 0.15;
+      }
+      .marker-label .label-time {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 10px;
+        display: block;
+      }
+      .marker-label.start-label .label-time {
+        color: hsl(var(--chart-4));
+      }
+      .marker-label.stop-label .label-time {
+        color: hsl(var(--chart-3));
+      }
+      .marker-label.long-label .label-time {
+        color: hsl(var(--chart-5));
+      }
+      .marker-label .label-desc {
+        font-size: 8px;
+        opacity: 0.7;
+        margin-top: 1px;
+      }
+
+      /* ── Contact info ── */
+      .contact-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding: 12px 16px;
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+      }
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+      }
+      .contact-item i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+      }
+      .contact-value {
+        color: hsl(var(--foreground));
+        font-size: 12px;
+      }
+      .contact-action {
+        font-size: 11px;
+        color: hsl(var(--primary));
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-family: 'Inter', sans-serif;
+        text-decoration: none;
+      }
+      .contact-action:hover {
+        text-decoration: underline;
+      }
+      .contact-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.08);
+        padding: 2px 8px;
+        border-radius: 10px;
+      }
+      .contact-status i {
+        width: 10px;
+        height: 10px;
+        color: hsl(var(--primary));
+        opacity: 1;
+      }
+
+      /* ── Notification config sections ── */
+      .notif-configs {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .notif-config {
+        padding: 16px 20px;
+        background: hsl(var(--muted) / 0.3);
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        border-left: 3px solid transparent;
+        transition: opacity 0.2s;
+      }
+      .notif-config.start-config {
+        border-left-color: hsl(var(--chart-4));
+      }
+      .notif-config.stop-config {
+        border-left-color: hsl(var(--chart-3));
+      }
+      .notif-config.long-config {
+        border-left-color: hsl(var(--chart-5));
+      }
+
+      .notif-config-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .notif-color-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        transform: rotate(45deg);
+        flex-shrink: 0;
+      }
+      .notif-color-dot.start {
+        background: hsl(var(--chart-4));
+      }
+      .notif-color-dot.stop {
+        background: hsl(var(--chart-3));
+      }
+      .notif-color-dot.long {
+        background: hsl(var(--chart-5));
+      }
+
+      .notif-config-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        flex: 1;
+      }
+
+      /* Toggle switch */
+      .toggle-switch {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .toggle-slider::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        background: hsl(var(--muted-foreground));
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+      .toggle-switch input:checked + .toggle-slider {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(16px);
+        background: hsl(var(--primary));
+      }
+
+      .notif-config-desc {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.5;
+        margin-bottom: 14px;
+      }
+      .notif-config-desc .threshold-inline {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+
+      .notif-config-body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .notif-config.disabled .notif-config-body {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .notif-config.disabled .notif-config-desc {
+        opacity: 0.4;
+      }
+
+      /* Threshold selector */
+      .config-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .config-row-label {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        min-width: 60px;
+      }
+
+      .threshold-group {
+        display: flex;
+        gap: 4px;
+      }
+      .threshold-btn {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .threshold-btn:hover {
+        border-color: hsl(var(--foreground) / 0.3);
+        color: hsl(var(--foreground));
+      }
+      .threshold-btn.active {
+        background: hsl(var(--primary) / 0.12);
+        border-color: hsl(var(--primary) / 0.3);
+        color: hsl(var(--primary));
+      }
+
+      /* Channel switches */
+      .channel-group {
+        display: flex;
+        gap: 16px;
+      }
+      .channel-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+      }
+      .channel-item i {
+        width: 13px;
+        height: 13px;
+        opacity: 0.6;
+      }
+
+      .channel-switch {
+        position: relative;
+        width: 30px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+      .channel-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .channel-switch .ch-slider {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .channel-switch .ch-slider::before {
+        content: '';
+        position: absolute;
+        top: 1.5px;
+        left: 1.5px;
+        width: 11px;
+        height: 11px;
+        background: hsl(var(--muted-foreground));
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+      .channel-switch input:checked + .ch-slider {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .channel-switch input:checked + .ch-slider::before {
+        transform: translateX(14px);
+        background: hsl(var(--primary));
+      }
+
+      /* ── Other notifications (collapsible) ── */
+      .other-section {
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .other-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        transition: color 0.15s;
+        user-select: none;
+      }
+      .other-toggle:hover {
+        color: hsl(var(--foreground));
+      }
+      .other-toggle i {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.2s;
+      }
+      .other-toggle.expanded i {
+        transform: rotate(90deg);
+      }
+      .other-toggle-title {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .other-toggle-count {
+        font-size: 10px;
+        background: hsl(var(--muted));
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: auto;
+      }
+
+      .other-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .other-content.expanded {
+        max-height: 400px;
+      }
+
+      .other-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        border-top: 1px solid hsl(var(--border) / 0.5);
+      }
+      .other-item-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--muted));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .other-item-icon i {
+        width: 16px;
+        height: 16px;
+        color: hsl(var(--muted-foreground));
+      }
+      .other-item-text {
+        flex: 1;
+      }
+      .other-item-title {
+        font-size: 13px;
+        color: hsl(var(--foreground));
+        font-weight: 500;
+      }
+      .other-item-desc {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+      .other-item-channels {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      /* ── Phone add modal ── */
+      .phone-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 100;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .phone-modal-backdrop.visible {
+        display: flex;
+      }
+      .phone-modal {
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        width: 340px;
+        max-width: 90vw;
+      }
+      .phone-modal h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+      .phone-modal .modal-desc {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+      }
+      .phone-input {
+        width: 100%;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        padding: 10px 12px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        color: hsl(var(--foreground));
+        outline: none;
+        transition: border-color 0.15s;
+        margin-bottom: 16px;
+      }
+      .phone-input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .modal-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .modal-btn:hover {
+        border-color: hsl(var(--foreground) / 0.3);
+      }
+      .modal-btn.primary {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .modal-btn.primary:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>V4 — Timeline Preview: See when your notifications fire during a typical day</p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell" id="app" data-theme="ternity-dark">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <i data-lucide="hourglass" class="logo-icon"></i>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="sidebar-section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="sun"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palm-tree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="badge">Admin</span>
+            </div>
+          </div>
+          <div class="user-chevrons">
+            <i data-lucide="chevrons-up-down"></i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <main class="main">
+        <div class="main-header">
+          <h1 class="main-title">Settings</h1>
+          <p class="main-subtitle">Manage your account and application preferences</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab">General</button>
+          <button class="tab">Appearance</button>
+          <button class="tab">Integrations</button>
+          <button class="tab">Downloads</button>
+          <button class="tab">Tags</button>
+          <button class="tab">Working Hours</button>
+          <button class="tab active">Notifications</button>
+        </div>
+
+        <div class="content-area">
+          <!-- Timeline visualization -->
+          <div class="timeline-section">
+            <div class="section-label"><i data-lucide="calendar-clock"></i> Your Typical Day</div>
+            <div class="timeline-container" id="timelineContainer">
+              <!-- Hour markers -->
+              <div class="hour-markers" id="hourMarkers"></div>
+              <!-- Track + schedule block -->
+              <div class="timeline-axis">
+                <div class="timeline-track"></div>
+                <div class="schedule-block" id="scheduleBlock">
+                  <span class="schedule-label">9:00 – 17:00</span>
+                </div>
+              </div>
+              <!-- Notification markers, connectors, labels — injected by JS -->
+            </div>
+          </div>
+
+          <!-- Contact info -->
+          <div class="contact-section" id="contactSection">
+            <div class="contact-item">
+              <i data-lucide="mail"></i>
+              <span class="contact-value">john@company.com</span>
+              <span class="contact-status"><i data-lucide="check-circle-2"></i> Verified</span>
+            </div>
+            <div class="contact-item" id="phoneContact">
+              <i data-lucide="smartphone"></i>
+              <span class="contact-value" id="phoneValue">No phone added</span>
+              <button class="contact-action" id="phoneAction" onclick="showPhoneModal()">
+                Add phone
+              </button>
+            </div>
+          </div>
+
+          <!-- Notification configurations -->
+          <div class="notif-configs">
+            <!-- 1. Start Reminder -->
+            <div class="notif-config start-config" id="startConfig">
+              <div class="notif-config-header">
+                <div class="notif-color-dot start"></div>
+                <div class="notif-config-title">Forgot to Start</div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked onchange="toggleNotif('start', this.checked)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-config-desc">
+                Notify if no timer running
+                <span class="threshold-inline" id="startThresholdText">15 min</span> after scheduled
+                start
+              </div>
+              <div class="notif-config-body">
+                <div class="config-row">
+                  <span class="config-row-label">Threshold</span>
+                  <div class="threshold-group" id="startThresholds">
+                    <button
+                      class="threshold-btn active"
+                      data-value="15"
+                      onclick="setThreshold('start', 15, this)"
+                    >
+                      15m
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="30"
+                      onclick="setThreshold('start', 30, this)"
+                    >
+                      30m
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="45"
+                      onclick="setThreshold('start', 45, this)"
+                    >
+                      45m
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="60"
+                      onclick="setThreshold('start', 60, this)"
+                    >
+                      1h
+                    </button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <span class="config-row-label">Channels</span>
+                  <div class="channel-group">
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" checked />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="mail"></i>
+                      Email
+                    </div>
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="smartphone"></i>
+                      SMS
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Stop Reminder -->
+            <div class="notif-config stop-config" id="stopConfig">
+              <div class="notif-config-header">
+                <div class="notif-color-dot stop"></div>
+                <div class="notif-config-title">Forgot to Stop</div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked onchange="toggleNotif('stop', this.checked)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-config-desc">
+                Notify if timer still running
+                <span class="threshold-inline" id="stopThresholdText">30 min</span> after scheduled
+                end
+              </div>
+              <div class="notif-config-body">
+                <div class="config-row">
+                  <span class="config-row-label">Threshold</span>
+                  <div class="threshold-group" id="stopThresholds">
+                    <button
+                      class="threshold-btn"
+                      data-value="15"
+                      onclick="setThreshold('stop', 15, this)"
+                    >
+                      15m
+                    </button>
+                    <button
+                      class="threshold-btn active"
+                      data-value="30"
+                      onclick="setThreshold('stop', 30, this)"
+                    >
+                      30m
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="45"
+                      onclick="setThreshold('stop', 45, this)"
+                    >
+                      45m
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="60"
+                      onclick="setThreshold('stop', 60, this)"
+                    >
+                      1h
+                    </button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <span class="config-row-label">Channels</span>
+                  <div class="channel-group">
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" checked />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="mail"></i>
+                      Email
+                    </div>
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="smartphone"></i>
+                      SMS
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Long Timer Alert -->
+            <div class="notif-config long-config" id="longConfig">
+              <div class="notif-config-header">
+                <div class="notif-color-dot long"></div>
+                <div class="notif-config-title">Long Timer Alert</div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked onchange="toggleNotif('long', this.checked)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-config-desc">
+                Notify if a single timer runs for more than
+                <span class="threshold-inline" id="longThresholdText">4 hours</span>
+              </div>
+              <div class="notif-config-body">
+                <div class="config-row">
+                  <span class="config-row-label">Threshold</span>
+                  <div class="threshold-group" id="longThresholds">
+                    <button
+                      class="threshold-btn"
+                      data-value="2"
+                      onclick="setThreshold('long', 2, this)"
+                    >
+                      2h
+                    </button>
+                    <button
+                      class="threshold-btn active"
+                      data-value="4"
+                      onclick="setThreshold('long', 4, this)"
+                    >
+                      4h
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="6"
+                      onclick="setThreshold('long', 6, this)"
+                    >
+                      6h
+                    </button>
+                    <button
+                      class="threshold-btn"
+                      data-value="8"
+                      onclick="setThreshold('long', 8, this)"
+                    >
+                      8h
+                    </button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <span class="config-row-label">Channels</span>
+                  <div class="channel-group">
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" checked />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="mail"></i>
+                      Email
+                    </div>
+                    <div class="channel-item">
+                      <label class="channel-switch">
+                        <input type="checkbox" />
+                        <span class="ch-slider"></span>
+                      </label>
+                      <i data-lucide="smartphone"></i>
+                      SMS
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Other notifications (collapsible) -->
+          <div class="other-section">
+            <div class="other-toggle" id="otherToggle" onclick="toggleOtherSection()">
+              <i data-lucide="chevron-right"></i>
+              <span class="other-toggle-title">Other Notifications</span>
+              <span class="other-toggle-count">3 items</span>
+            </div>
+            <div class="other-content" id="otherContent">
+              <div class="other-item">
+                <div class="other-item-icon"><i data-lucide="calendar-check"></i></div>
+                <div class="other-item-text">
+                  <div class="other-item-title">Leave Updates</div>
+                  <div class="other-item-desc">
+                    When your leave requests are approved or declined
+                  </div>
+                </div>
+                <div class="other-item-channels">
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="other-item">
+                <div class="other-item-icon"><i data-lucide="users"></i></div>
+                <div class="other-item-text">
+                  <div class="other-item-title">Team Leave</div>
+                  <div class="other-item-desc">When someone on your team books time off</div>
+                </div>
+                <div class="other-item-channels">
+                  <label class="toggle-switch">
+                    <input type="checkbox" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="other-item">
+                <div class="other-item-icon"><i data-lucide="bar-chart-3"></i></div>
+                <div class="other-item-text">
+                  <div class="other-item-title">Weekly Summary</div>
+                  <div class="other-item-desc">
+                    A recap of your logged hours every Monday morning
+                  </div>
+                </div>
+                <div class="other-item-channels">
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Phone modal -->
+    <div class="phone-modal-backdrop" id="phoneModal">
+      <div class="phone-modal">
+        <h3>Add Phone Number</h3>
+        <p class="modal-desc">We'll send a verification code to confirm your number.</p>
+        <input type="tel" class="phone-input" id="phoneInput" placeholder="+1 (555) 000-0000" />
+        <div class="modal-actions">
+          <button class="modal-btn" onclick="hidePhoneModal()">Cancel</button>
+          <button class="modal-btn primary" onclick="savePhone()">Send Code</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ── Constants ── */
+      const AXIS_START = 7;
+      const AXIS_END = 19;
+      const AXIS_SPAN = AXIS_END - AXIS_START;
+      const SCHEDULE_START = 9;
+      const SCHEDULE_END = 17;
+
+      /* ── State ── */
+      const state = {
+        start: { enabled: true, thresholdMin: 15 },
+        stop: { enabled: true, thresholdMin: 30 },
+        long: { enabled: true, thresholdHours: 4 },
+      };
+
+      /* ── Helpers ── */
+      function toPercent(hour) {
+        return ((hour - AXIS_START) / AXIS_SPAN) * 100;
+      }
+
+      function pad(n) {
+        return String(n).padStart(2, '0');
+      }
+
+      function formatTime(hour) {
+        const h = Math.floor(hour);
+        const m = Math.round((hour - h) * 60);
+        return `${pad(h)}:${pad(m)}`;
+      }
+
+      /* ── Build hour markers ── */
+      function buildHourMarkers() {
+        const container = document.getElementById('hourMarkers');
+        for (let h = AXIS_START; h <= AXIS_END; h++) {
+          const tick = document.createElement('div');
+          tick.className = 'hour-tick';
+          tick.textContent = `${pad(h)}`;
+          container.appendChild(tick);
+        }
+      }
+
+      /* ── Position schedule block ── */
+      function positionScheduleBlock() {
+        const block = document.getElementById('scheduleBlock');
+        block.style.left = toPercent(SCHEDULE_START) + '%';
+        block.style.width = toPercent(SCHEDULE_END) - toPercent(SCHEDULE_START) + '%';
+      }
+
+      /* ── Create timeline markers ── */
+      function createMarkerElements() {
+        const container = document.getElementById('timelineContainer');
+        const axis = container.querySelector('.timeline-axis');
+
+        createMarker(axis, 'start', 'start-marker', 'start-line', 'start-label');
+        createMarker(axis, 'stop', 'stop-marker', 'stop-line', 'stop-label');
+        createMarker(axis, 'long', 'long-marker', 'long-line', 'long-label');
+
+        updateAllMarkers();
+      }
+
+      function createMarker(axis, type, markerClass, lineClass, labelClass) {
+        const marker = document.createElement('div');
+        marker.className = `notif-marker ${markerClass}`;
+        marker.id = `${type}Marker`;
+        axis.appendChild(marker);
+
+        const line = document.createElement('div');
+        line.className = `connector-line ${lineClass}`;
+        line.id = `${type}Line`;
+        axis.appendChild(line);
+
+        const label = document.createElement('div');
+        label.className = `marker-label ${labelClass}`;
+        label.id = `${type}Label`;
+        label.innerHTML = `<span class="label-time"></span><span class="label-desc"></span>`;
+        axis.appendChild(label);
+      }
+
+      /* ── Update marker positions ── */
+      function updateAllMarkers() {
+        updateStartMarker();
+        updateStopMarker();
+        updateLongMarker();
+      }
+
+      function updateStartMarker() {
+        const s = state.start;
+        const triggerHour = SCHEDULE_START + s.thresholdMin / 60;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        const marker = document.getElementById('startMarker');
+        const line = document.getElementById('startLine');
+        const label = document.getElementById('startLabel');
+
+        marker.style.left = pct + '%';
+        marker.classList.toggle('disabled', disabled);
+
+        line.style.left = pct + '%';
+        line.classList.toggle('disabled', disabled);
+
+        label.style.left = pct + '%';
+        label.classList.toggle('disabled', disabled);
+        label.querySelector('.label-time').textContent = formatTime(triggerHour);
+        label.querySelector('.label-desc').textContent = 'No timer';
+      }
+
+      function updateStopMarker() {
+        const s = state.stop;
+        const triggerHour = SCHEDULE_END + s.thresholdMin / 60;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        const marker = document.getElementById('stopMarker');
+        const line = document.getElementById('stopLine');
+        const label = document.getElementById('stopLabel');
+
+        marker.style.left = pct + '%';
+        marker.classList.toggle('disabled', disabled);
+
+        line.style.left = pct + '%';
+        line.classList.toggle('disabled', disabled);
+
+        label.style.left = pct + '%';
+        label.classList.toggle('disabled', disabled);
+        label.querySelector('.label-time').textContent = formatTime(triggerHour);
+        label.querySelector('.label-desc').textContent = 'Still running';
+      }
+
+      function updateLongMarker() {
+        const s = state.long;
+        const triggerHour = SCHEDULE_START + s.thresholdHours;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        const marker = document.getElementById('longMarker');
+        const line = document.getElementById('longLine');
+        const label = document.getElementById('longLabel');
+
+        marker.style.left = pct + '%';
+        marker.classList.toggle('disabled', disabled);
+
+        line.style.left = pct + '%';
+        line.classList.toggle('disabled', disabled);
+
+        label.style.left = pct + '%';
+        label.classList.toggle('disabled', disabled);
+        label.querySelector('.label-time').textContent = `${s.thresholdHours}h continuous`;
+        label.querySelector('.label-desc').textContent = formatTime(triggerHour);
+      }
+
+      /* ── Set threshold ── */
+      function setThreshold(type, value, btn) {
+        btn.parentElement
+          .querySelectorAll('.threshold-btn')
+          .forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (type === 'start') {
+          state.start.thresholdMin = value;
+          document.getElementById('startThresholdText').textContent =
+            value >= 60 ? `${value / 60} hour${value > 60 ? 's' : ''}` : `${value} min`;
+          updateStartMarker();
+        } else if (type === 'stop') {
+          state.stop.thresholdMin = value;
+          document.getElementById('stopThresholdText').textContent =
+            value >= 60 ? `${value / 60} hour${value > 60 ? 's' : ''}` : `${value} min`;
+          updateStopMarker();
+        } else if (type === 'long') {
+          state.long.thresholdHours = value;
+          document.getElementById('longThresholdText').textContent =
+            `${value} hour${value !== 1 ? 's' : ''}`;
+          updateLongMarker();
+        }
+      }
+
+      /* ── Toggle notification ── */
+      function toggleNotif(type, enabled) {
+        const config = document.getElementById(`${type}Config`);
+
+        if (type === 'start') {
+          state.start.enabled = enabled;
+        } else if (type === 'stop') {
+          state.stop.enabled = enabled;
+        } else if (type === 'long') {
+          state.long.enabled = enabled;
+        }
+
+        config.classList.toggle('disabled', !enabled);
+        updateAllMarkers();
+      }
+
+      /* ── Other section toggle ── */
+      function toggleOtherSection() {
+        const toggle = document.getElementById('otherToggle');
+        const content = document.getElementById('otherContent');
+        toggle.classList.toggle('expanded');
+        content.classList.toggle('expanded');
+      }
+
+      /* ── Phone modal ── */
+      function showPhoneModal() {
+        document.getElementById('phoneModal').classList.add('visible');
+        setTimeout(() => document.getElementById('phoneInput').focus(), 100);
+      }
+
+      function hidePhoneModal() {
+        document.getElementById('phoneModal').classList.remove('visible');
+        document.getElementById('phoneInput').value = '';
+      }
+
+      function savePhone() {
+        const phone = document.getElementById('phoneInput').value.trim();
+        if (!phone) return;
+
+        document.getElementById('phoneValue').textContent = phone;
+        const action = document.getElementById('phoneAction');
+        action.textContent = 'Change';
+        action.onclick = () => showPhoneModal();
+
+        const contactItem = document.getElementById('phoneContact');
+        let badge = contactItem.querySelector('.contact-status');
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'contact-status';
+          badge.innerHTML = '<i data-lucide="check-circle-2"></i> Verified';
+          contactItem.insertBefore(badge, action);
+          lucide.createIcons({ nodes: badge.querySelectorAll('[data-lucide]') });
+        }
+
+        hidePhoneModal();
+      }
+
+      /* ── Theme switcher ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      /* ── Init ── */
+      buildHourMarkers();
+      positionScheduleBlock();
+      createMarkerElements();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

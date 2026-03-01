@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Working Hours — V3 Template First (Full App Chrome)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+      }
+
+      /* ================================================================
+         Theme switcher — floats top-right over everything
+         ================================================================ */
+      .theme-switcher {
+        position: fixed;
+        top: 10px;
+        right: 16px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .theme-switcher .label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .theme-switcher button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .theme-switcher button:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--foreground));
+      }
+      .theme-switcher button.active {
+        background: hsl(var(--primary) / 0.15);
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--primary));
+      }
+
+      /* ================================================================
+         App shell — sidebar + main
+         ================================================================ */
+      #app {
+        display: flex;
+        height: 100vh;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        height: 100vh;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 16px 24px;
+      }
+      .sidebar-logo i {
+        width: 22px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .sidebar-logo span {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: hsl(var(--sidebar-foreground));
+      }
+
+      .sidebar-section-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        padding: 0 16px;
+        margin-bottom: 6px;
+        opacity: 0.6;
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 0 8px;
+      }
+      .sidebar-nav a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: hsl(var(--sidebar-foreground));
+        text-decoration: none;
+        transition: all 0.12s;
+        cursor: pointer;
+        opacity: 0.7;
+      }
+      .sidebar-nav a:hover {
+        background: hsl(var(--sidebar-accent));
+        opacity: 1;
+      }
+      .sidebar-nav a i {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      /* User section at bottom */
+      .sidebar-user {
+        margin: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: hsl(var(--muted) / 0.5);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .sidebar-user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .sidebar-user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .sidebar-user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sidebar-user-meta {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 1px;
+      }
+      .sidebar-user-role {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .sidebar-user-chevrons {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+        opacity: 0.5;
+      }
+
+      /* ── Main content area ── */
+      .main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        min-width: 0;
+      }
+
+      /* Page header */
+      .page-header {
+        margin-bottom: 24px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .page-header p {
+        font-size: 13px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* Settings tabs */
+      .settings-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .settings-tab {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        padding: 8px 14px;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        border: none;
+        background: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.12s;
+        white-space: nowrap;
+      }
+      .settings-tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .settings-tab.active {
+        color: hsl(var(--foreground));
+        border-bottom-color: hsl(var(--primary));
+      }
+
+      /* ================================================================
+         V3 Content — Template First
+         ================================================================ */
+      .content-area {
+        max-width: 600px;
+      }
+
+      /* Section header */
+      .section-header {
+        margin-bottom: 20px;
+      }
+      .section-header h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .section-header p {
+        font-size: 13px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Template picker ── */
+      .template-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 28px;
+      }
+      .template-card {
+        background: hsl(var(--background));
+        border: 1.5px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: 14px 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        position: relative;
+      }
+      .template-card:hover {
+        border-color: hsl(var(--muted-foreground));
+        background: hsl(var(--muted));
+      }
+      .template-card.selected {
+        border-color: hsl(var(--primary));
+        box-shadow:
+          0 0 0 1px hsl(var(--primary) / 0.3),
+          0 0 16px hsl(var(--primary) / 0.08);
+      }
+
+      /* Check indicator */
+      .template-card .check-mark {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .template-card .check-mark i {
+        width: 10px;
+        height: 10px;
+        color: hsl(var(--primary-foreground));
+      }
+      .template-card.selected .check-mark {
+        display: flex;
+      }
+
+      /* Card icon */
+      .template-card .tpl-icon {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: hsl(var(--t-stat-bg));
+      }
+      .template-card .tpl-icon i {
+        width: 15px;
+        height: 15px;
+        color: hsl(var(--muted-foreground));
+      }
+      .template-card.selected .tpl-icon {
+        background: hsl(var(--primary) / 0.12);
+      }
+      .template-card.selected .tpl-icon i {
+        color: hsl(var(--primary));
+      }
+
+      .template-card .tpl-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+        letter-spacing: 0.3px;
+      }
+      .template-card.selected .tpl-name {
+        color: hsl(var(--primary));
+      }
+      .template-card .tpl-desc {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.4;
+        margin-bottom: 6px;
+      }
+      .template-card .tpl-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--primary));
+      }
+
+      /* ── Schedule grid ── */
+      .schedule-section {
+        margin-bottom: 20px;
+      }
+      .schedule-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .schedule-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+      }
+      .modified-badge {
+        font-size: 10px;
+        color: hsl(var(--chart-3));
+        background: hsl(var(--chart-3) / 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        display: none;
+        align-items: center;
+        gap: 4px;
+      }
+      .modified-badge i {
+        width: 11px;
+        height: 11px;
+      }
+      .modified-badge.visible {
+        display: inline-flex;
+      }
+
+      /* Day rows */
+      .day-row {
+        display: grid;
+        grid-template-columns: 42px 1fr 1fr 40px 38px;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid hsl(var(--border) / 0.4);
+      }
+      .day-row:last-child {
+        border-bottom: none;
+      }
+      .day-row.day-off {
+        opacity: 0.35;
+      }
+      .day-row .day-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        letter-spacing: 0.5px;
+      }
+      .day-row.day-off .day-label {
+        text-decoration: line-through;
+        text-decoration-color: hsl(var(--muted-foreground));
+      }
+
+      .time-input {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        padding: 6px 10px;
+        text-align: center;
+        outline: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+        width: 100%;
+      }
+      .time-input:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+      }
+      .time-input:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .day-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        text-align: right;
+      }
+
+      /* Toggle switch */
+      .toggle-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .toggle {
+        width: 32px;
+        height: 18px;
+        border-radius: 9px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+      .toggle::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition: all 0.2s;
+      }
+      .toggle.on {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle.on::after {
+        left: 16px;
+        background: hsl(var(--primary));
+      }
+
+      /* ── Weekly total ── */
+      .weekly-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        background: hsl(var(--t-stat-bg));
+        border-radius: 10px;
+        margin-bottom: 16px;
+      }
+      .weekly-total .total-label {
+        font-size: 13px;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .weekly-total .total-label i {
+        width: 16px;
+        height: 16px;
+        color: hsl(var(--primary));
+      }
+      .total-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+      }
+      .hours-bar {
+        height: 4px;
+        border-radius: 2px;
+        background: hsl(var(--border));
+        margin-top: 0;
+        overflow: hidden;
+        flex: 1;
+      }
+      .hours-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: hsl(var(--primary));
+        transition: width 0.3s ease;
+      }
+      .total-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: hsl(var(--foreground));
+      }
+      .total-value span {
+        font-size: 13px;
+        font-weight: 400;
+        color: hsl(var(--muted-foreground));
+        margin-left: 2px;
+      }
+
+      /* ── Effective date note ── */
+      .effective-note {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .effective-note i {
+        width: 14px;
+        height: 14px;
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" data-theme="ternity-dark">
+      <!-- ── Theme switcher (floating) ── -->
+      <div class="theme-switcher">
+        <span class="label">Theme</span>
+        <button class="active" onclick="setTheme('ternity-dark', this)">Ternity Dark</button>
+        <button onclick="setTheme('ternity-light', this)">Ternity Light</button>
+        <button onclick="setTheme('midnight', this)">Midnight</button>
+        <button onclick="setTheme('warm-sand', this)">Warm Sand</button>
+        <button onclick="setTheme('carbon', this)">Carbon</button>
+        <button onclick="setTheme('high-contrast', this)">High Contrast</button>
+      </div>
+
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <i data-lucide="hourglass"></i>
+          <span>Ternity</span>
+        </div>
+
+        <div class="sidebar-section-label">Tracking</div>
+        <nav class="sidebar-nav">
+          <a><i data-lucide="sun"></i> My Day</a>
+          <a><i data-lucide="list"></i> Entries</a>
+          <a><i data-lucide="calendar"></i> Calendar</a>
+          <a><i data-lucide="palm-tree"></i> Leave</a>
+          <a><i data-lucide="bar-chart-3"></i> Reports</a>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar">PR</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name">Przemyslaw R.</div>
+            <div class="sidebar-user-meta">
+              Netbulls
+              <span class="sidebar-user-role">Admin</span>
+            </div>
+          </div>
+          <i data-lucide="chevrons-up-down" class="sidebar-user-chevrons"></i>
+        </div>
+      </aside>
+
+      <!-- ── Main content ── -->
+      <main class="main">
+        <div class="page-header">
+          <h1>Settings</h1>
+          <p>Manage your workspace preferences</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="settings-tabs">
+          <button class="settings-tab">General</button>
+          <button class="settings-tab">Appearance</button>
+          <button class="settings-tab">Integrations</button>
+          <button class="settings-tab">Downloads</button>
+          <button class="settings-tab">Tags</button>
+          <button class="settings-tab active">Working Hours</button>
+          <button class="settings-tab">Notifications</button>
+        </div>
+
+        <!-- V3 Content -->
+        <div class="content-area">
+          <!-- Section header -->
+          <div class="section-header">
+            <h2>Weekly Schedule</h2>
+            <p>Choose a template or build your own</p>
+          </div>
+
+          <!-- Template picker -->
+          <div class="template-grid">
+            <div
+              class="template-card selected"
+              data-template="standard"
+              onclick="selectTemplate('standard')"
+            >
+              <div class="check-mark"><i data-lucide="check"></i></div>
+              <div class="tpl-icon"><i data-lucide="briefcase"></i></div>
+              <div class="tpl-name">Standard</div>
+              <div class="tpl-desc">Mon–Fri<br />9:00 – 17:00</div>
+              <div class="tpl-hours">40h</div>
+            </div>
+            <div
+              class="template-card"
+              data-template="early-bird"
+              onclick="selectTemplate('early-bird')"
+            >
+              <div class="check-mark"><i data-lucide="check"></i></div>
+              <div class="tpl-icon"><i data-lucide="sunrise"></i></div>
+              <div class="tpl-name">Early Bird</div>
+              <div class="tpl-desc">Mon–Fri<br />7:00 – 15:00</div>
+              <div class="tpl-hours">40h</div>
+            </div>
+            <div
+              class="template-card"
+              data-template="compressed"
+              onclick="selectTemplate('compressed')"
+            >
+              <div class="check-mark"><i data-lucide="check"></i></div>
+              <div class="tpl-icon"><i data-lucide="zap"></i></div>
+              <div class="tpl-name">Compressed</div>
+              <div class="tpl-desc">Mon–Thu<br />8:00 – 18:00</div>
+              <div class="tpl-hours">40h</div>
+            </div>
+            <div class="template-card" data-template="custom" onclick="selectTemplate('custom')">
+              <div class="check-mark"><i data-lucide="check"></i></div>
+              <div class="tpl-icon"><i data-lucide="sliders-horizontal"></i></div>
+              <div class="tpl-name">Custom</div>
+              <div class="tpl-desc">Start blank<br />&nbsp;</div>
+              <div class="tpl-hours">0h</div>
+            </div>
+          </div>
+
+          <!-- Schedule grid -->
+          <div class="schedule-section">
+            <div class="schedule-header">
+              <span class="schedule-label">Schedule</span>
+              <span class="modified-badge" id="modifiedBadge">
+                <i data-lucide="pencil"></i>
+                Modified from <span id="modifiedFrom">Standard</span>
+              </span>
+            </div>
+            <div id="scheduleGrid"></div>
+          </div>
+
+          <!-- Weekly total -->
+          <div class="weekly-total">
+            <div class="total-label">
+              <i data-lucide="sigma"></i>
+              Weekly total
+            </div>
+            <div class="total-row">
+              <div class="hours-bar">
+                <div class="hours-bar-fill" id="hoursBarFill" style="width: 100%"></div>
+              </div>
+              <div class="total-value"><span id="totalHours">40</span><span>h</span></div>
+            </div>
+          </div>
+
+          <!-- Effective date -->
+          <div class="effective-note">
+            <i data-lucide="calendar-check"></i>
+            Effective since 3 Feb 2026
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // ——— Template definitions ———
+      const TEMPLATES = {
+        standard: {
+          name: 'Standard',
+          days: [
+            { day: 'Mon', start: '09:00', end: '17:00', on: true },
+            { day: 'Tue', start: '09:00', end: '17:00', on: true },
+            { day: 'Wed', start: '09:00', end: '17:00', on: true },
+            { day: 'Thu', start: '09:00', end: '17:00', on: true },
+            { day: 'Fri', start: '09:00', end: '17:00', on: true },
+            { day: 'Sat', start: '09:00', end: '17:00', on: false },
+            { day: 'Sun', start: '09:00', end: '17:00', on: false },
+          ],
+        },
+        'early-bird': {
+          name: 'Early Bird',
+          days: [
+            { day: 'Mon', start: '07:00', end: '15:00', on: true },
+            { day: 'Tue', start: '07:00', end: '15:00', on: true },
+            { day: 'Wed', start: '07:00', end: '15:00', on: true },
+            { day: 'Thu', start: '07:00', end: '15:00', on: true },
+            { day: 'Fri', start: '07:00', end: '15:00', on: true },
+            { day: 'Sat', start: '07:00', end: '15:00', on: false },
+            { day: 'Sun', start: '07:00', end: '15:00', on: false },
+          ],
+        },
+        compressed: {
+          name: 'Compressed',
+          days: [
+            { day: 'Mon', start: '08:00', end: '18:00', on: true },
+            { day: 'Tue', start: '08:00', end: '18:00', on: true },
+            { day: 'Wed', start: '08:00', end: '18:00', on: true },
+            { day: 'Thu', start: '08:00', end: '18:00', on: true },
+            { day: 'Fri', start: '08:00', end: '18:00', on: false },
+            { day: 'Sat', start: '08:00', end: '18:00', on: false },
+            { day: 'Sun', start: '08:00', end: '18:00', on: false },
+          ],
+        },
+        custom: {
+          name: 'Custom',
+          days: [
+            { day: 'Mon', start: '09:00', end: '17:00', on: false },
+            { day: 'Tue', start: '09:00', end: '17:00', on: false },
+            { day: 'Wed', start: '09:00', end: '17:00', on: false },
+            { day: 'Thu', start: '09:00', end: '17:00', on: false },
+            { day: 'Fri', start: '09:00', end: '17:00', on: false },
+            { day: 'Sat', start: '09:00', end: '17:00', on: false },
+            { day: 'Sun', start: '09:00', end: '17:00', on: false },
+          ],
+        },
+      };
+
+      let currentTemplate = 'standard';
+      let schedule = JSON.parse(JSON.stringify(TEMPLATES.standard.days));
+
+      // ——— Render schedule grid ———
+      function renderSchedule() {
+        const grid = document.getElementById('scheduleGrid');
+        grid.innerHTML = '';
+        schedule.forEach((item, i) => {
+          const dayOff = !item.on;
+          const hours = item.on ? calcDayHours(item.start, item.end) : 0;
+          const row = document.createElement('div');
+          row.className = 'day-row' + (dayOff ? ' day-off' : '');
+          row.innerHTML = `
+            <div class="day-label">${item.day}</div>
+            <input type="time" class="time-input" value="${item.start}" ${dayOff ? 'disabled' : ''}
+              onchange="updateTime(${i}, 'start', this.value)" />
+            <input type="time" class="time-input" value="${item.end}" ${dayOff ? 'disabled' : ''}
+              onchange="updateTime(${i}, 'end', this.value)" />
+            <div class="day-hours">${hours > 0 ? hours + 'h' : '—'}</div>
+            <div class="toggle-wrap">
+              <div class="toggle ${item.on ? 'on' : ''}" onclick="toggleDay(${i})"></div>
+            </div>
+          `;
+          grid.appendChild(row);
+        });
+        updateTotal();
+        checkModified();
+      }
+
+      // ——— Calculate hours for a day ———
+      function calcDayHours(start, end) {
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        const diff = (eh * 60 + em - (sh * 60 + sm)) / 60;
+        return Math.max(0, Math.round(diff * 10) / 10);
+      }
+
+      // ——— Update total ———
+      function updateTotal() {
+        let total = 0;
+        schedule.forEach((item) => {
+          if (item.on) total += calcDayHours(item.start, item.end);
+        });
+        total = Math.round(total * 10) / 10;
+        document.getElementById('totalHours').textContent = total;
+        const pct = Math.min(100, (total / 50) * 100);
+        document.getElementById('hoursBarFill').style.width = pct + '%';
+      }
+
+      // ——— Check if modified from template ———
+      function checkModified() {
+        if (currentTemplate === 'custom') {
+          document.getElementById('modifiedBadge').classList.remove('visible');
+          return;
+        }
+        const orig = TEMPLATES[currentTemplate].days;
+        let modified = false;
+        for (let i = 0; i < 7; i++) {
+          if (
+            schedule[i].start !== orig[i].start ||
+            schedule[i].end !== orig[i].end ||
+            schedule[i].on !== orig[i].on
+          ) {
+            modified = true;
+            break;
+          }
+        }
+        const badge = document.getElementById('modifiedBadge');
+        if (modified) {
+          badge.classList.add('visible');
+          document.getElementById('modifiedFrom').textContent = TEMPLATES[currentTemplate].name;
+        } else {
+          badge.classList.remove('visible');
+        }
+      }
+
+      // ——— Select template ———
+      function selectTemplate(key) {
+        currentTemplate = key;
+        schedule = JSON.parse(JSON.stringify(TEMPLATES[key].days));
+        document.querySelectorAll('.template-card').forEach((card) => {
+          card.classList.toggle('selected', card.dataset.template === key);
+        });
+        renderSchedule();
+      }
+
+      // ——— Update time ———
+      function updateTime(index, field, value) {
+        schedule[index][field] = value;
+        renderSchedule();
+      }
+
+      // ——— Toggle day on/off ———
+      function toggleDay(index) {
+        schedule[index].on = !schedule[index].on;
+        renderSchedule();
+      }
+
+      // ——— Theme switcher ———
+      function setTheme(t, btn) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document
+          .querySelectorAll('.theme-switcher button')
+          .forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+
+      // ——— Init ———
+      renderSchedule();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
+import type { WeeklyWorkingHours, NotificationSettings } from '@ternity/shared';
 
 // ── Enums ──────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,55 @@ export const tags = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('tags_user_id_idx').on(t.userId)],
+);
+
+// ── Working Schedules ──────────────────────────────────────────────────────
+
+export const workingSchedules = pgTable(
+  'working_schedules',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    schedule: jsonb('schedule').notNull().$type<WeeklyWorkingHours>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('working_schedules_user_id_idx').on(t.userId)],
+);
+
+// ── Notification Settings ──────────────────────────────────────────────────
+
+export const notificationSettings = pgTable(
+  'notification_settings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    settings: jsonb('settings').notNull().$type<NotificationSettings>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('notification_settings_user_id_idx').on(t.userId)],
+);
+
+// ── Notification test SMS logs (rate limiting) ────────────────────────────
+
+export const notificationTestSmsLogs = pgTable(
+  'notification_test_sms_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    toPhone: text('to_phone').notNull(),
+    notificationType: text('notification_type').notNull(),
+    sid: text('sid').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('notification_test_sms_logs_user_created_idx').on(t.userId, t.createdAt)],
 );
 
 // ── Time Entries ───────────────────────────────────────────────────────────

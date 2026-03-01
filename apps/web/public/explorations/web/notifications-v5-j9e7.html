@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications — V5 Minimal Switches</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      .app-shell {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        min-height: 720px;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        height: 720px;
+        padding: 20px 12px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      .section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: 10px;
+        letter-spacing: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .user-block:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .user-org .badge {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .user-chevrons {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+      .user-chevrons i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .main-header {
+        margin-bottom: 20px;
+      }
+      .main-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .main-subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Tabs ── */
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .tab {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+      }
+      .tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+        font-weight: 600;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 550px;
+      }
+
+      /* ── Channels bar ── */
+      .channels-bar {
+        background: hsl(var(--muted) / 0.2);
+        border-radius: 8px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .channel-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+      }
+      .channel-item i {
+        width: 14px;
+        height: 14px;
+        opacity: 0.6;
+      }
+
+      .channel-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .channel-dot.verified {
+        background: hsl(152 69% 50%);
+      }
+      .channel-dot.missing {
+        background: hsl(38 92% 55%);
+      }
+
+      .channel-value {
+        font-size: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .channel-action {
+        font-size: 11px;
+        color: hsl(var(--primary));
+        cursor: pointer;
+        text-decoration: none;
+        border: none;
+        background: none;
+        font-family: inherit;
+      }
+      .channel-action:hover {
+        text-decoration: underline;
+      }
+
+      .channel-separator {
+        width: 1px;
+        height: 16px;
+        background: hsl(var(--border));
+      }
+
+      /* ── Notification list ── */
+      .notif-col-headers {
+        display: flex;
+        align-items: center;
+        padding: 0 0 6px;
+      }
+      .notif-col-headers .spacer {
+        flex: 1;
+      }
+      .notif-col-headers .col-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        text-align: center;
+      }
+      .col-email {
+        width: 46px;
+      }
+      .col-sms {
+        width: 46px;
+      }
+      .col-after {
+        width: 68px;
+        text-align: center;
+      }
+
+      /* Notification row */
+      .notif-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 8px;
+        border-radius: 6px;
+        transition: background 0.12s;
+        gap: 10px;
+      }
+      .notif-row:hover {
+        background: hsl(var(--muted) / 0.35);
+      }
+
+      .notif-icon {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .notif-icon i {
+        width: 14px;
+        height: 14px;
+      }
+
+      .notif-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .notif-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        line-height: 1.3;
+      }
+      .notif-desc {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        line-height: 1.3;
+      }
+
+      .notif-controls {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-shrink: 0;
+      }
+
+      .toggle-col {
+        width: 46px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .threshold-col {
+        width: 68px;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* ── Mini toggle switch (30x16) ── */
+      .mini-toggle {
+        position: relative;
+        width: 30px;
+        height: 16px;
+        cursor: pointer;
+        display: inline-block;
+      }
+      .mini-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .mini-toggle .track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      .mini-toggle .thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition: all 0.2s;
+      }
+      .mini-toggle input:checked ~ .track {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .mini-toggle input:checked ~ .thumb {
+        left: 16px;
+        background: hsl(var(--primary));
+      }
+
+      /* Disabled toggle */
+      .mini-toggle.disabled {
+        cursor: not-allowed;
+        opacity: 0.35;
+      }
+      .mini-toggle.disabled input {
+        pointer-events: none;
+      }
+
+      /* Tooltip */
+      .toggle-wrapper {
+        position: relative;
+      }
+      .toggle-wrapper .tooltip {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        border: 1px solid hsl(var(--border));
+        pointer-events: none;
+        z-index: 10;
+      }
+      .toggle-wrapper .tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: hsl(var(--border));
+      }
+      .toggle-wrapper:hover .tooltip {
+        display: block;
+      }
+
+      /* ── Threshold dropdown ── */
+      .threshold-select {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 5px;
+        padding: 3px 6px;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+        padding-right: 18px;
+        transition: border-color 0.15s;
+      }
+      .threshold-select:hover {
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .threshold-select:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
+      }
+
+      /* ── Section divider ── */
+      .notif-divider {
+        height: 1px;
+        background: hsl(var(--border));
+        margin: 4px 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>V5 — Minimal Switches: Auto-save, inline toggles, no save button</p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell" id="app" data-theme="ternity-dark">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <i data-lucide="hourglass" class="logo-icon"></i>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="sun"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palm-tree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="badge">Admin</span>
+            </div>
+          </div>
+          <div class="user-chevrons">
+            <i data-lucide="chevrons-up-down"></i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <main class="main">
+        <div class="main-header">
+          <h1 class="main-title">Settings</h1>
+          <p class="main-subtitle">Manage your account and application preferences</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab">General</button>
+          <button class="tab">Appearance</button>
+          <button class="tab">Integrations</button>
+          <button class="tab">Downloads</button>
+          <button class="tab">Tags</button>
+          <button class="tab">Working Hours</button>
+          <button class="tab active">Notifications</button>
+        </div>
+
+        <div class="content-area">
+          <!-- Contact Channels bar -->
+          <div class="channels-bar" id="channelsBar">
+            <!-- Injected by JS -->
+          </div>
+
+          <!-- Column headers -->
+          <div class="notif-col-headers">
+            <div class="spacer"></div>
+            <div class="notif-controls">
+              <div class="col-label col-email">Email</div>
+              <div class="col-label col-sms">SMS</div>
+              <div class="col-label col-after">After</div>
+            </div>
+          </div>
+
+          <!-- Notification list -->
+          <div id="notifList">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      /* ── Channel data ── */
+      const channels = {
+        email: { address: 'przemyslaw.rudzki@netbulls.io', verified: true },
+        sms: { number: '+48 884 980 357', verified: true },
+      };
+
+      /* ── Notification definitions ── */
+      const notifications = [
+        {
+          id: 'forgot-start',
+          icon: 'clock',
+          title: 'Forgot to start',
+          desc: 'No timer running after scheduled start',
+          group: 'timer',
+          email: true,
+          sms: false,
+          smsAllowed: true,
+          threshold: '15m',
+          thresholdOptions: ['5m', '10m', '15m', '30m', '1h'],
+        },
+        {
+          id: 'forgot-stop',
+          icon: 'clock',
+          title: 'Forgot to stop',
+          desc: 'Timer still running after scheduled end',
+          group: 'timer',
+          email: true,
+          sms: false,
+          smsAllowed: true,
+          threshold: '30m',
+          thresholdOptions: ['15m', '30m', '1h', '2h'],
+        },
+        {
+          id: 'long-timer',
+          icon: 'alert-triangle',
+          title: 'Long timer',
+          desc: 'Single timer running too long',
+          group: 'timer',
+          email: true,
+          sms: false,
+          smsAllowed: true,
+          threshold: '4h',
+          thresholdOptions: ['2h', '3h', '4h', '6h', '8h'],
+        },
+        { group: 'divider' },
+        {
+          id: 'leave-approved',
+          icon: 'calendar-check',
+          title: 'Leave approved',
+          desc: 'Your leave request was approved',
+          group: 'leave',
+          email: true,
+          sms: true,
+          smsAllowed: true,
+          threshold: null,
+          thresholdOptions: null,
+        },
+        {
+          id: 'leave-denied',
+          icon: 'calendar-x',
+          title: 'Leave denied',
+          desc: 'Your leave request was denied',
+          group: 'leave',
+          email: true,
+          sms: true,
+          smsAllowed: true,
+          threshold: null,
+          thresholdOptions: null,
+        },
+        {
+          id: 'team-leave',
+          icon: 'users',
+          title: 'Team leave',
+          desc: 'Team member going on leave',
+          group: 'leave',
+          email: true,
+          sms: false,
+          smsAllowed: false,
+          threshold: null,
+          thresholdOptions: null,
+        },
+        { group: 'divider' },
+        {
+          id: 'weekly-report',
+          icon: 'bar-chart-3',
+          title: 'Weekly report',
+          desc: 'Summary of your tracked hours',
+          group: 'reports',
+          email: true,
+          sms: false,
+          smsAllowed: false,
+          threshold: 'Mon',
+          thresholdOptions: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        },
+      ];
+
+      /* ── Build channels bar ── */
+      function buildChannels() {
+        const bar = document.getElementById('channelsBar');
+        bar.innerHTML = '';
+
+        // Email channel
+        const emailEl = document.createElement('div');
+        emailEl.className = 'channel-item';
+        emailEl.innerHTML = `
+          <i data-lucide="mail"></i>
+          <span class="channel-value">${channels.email.address}</span>
+          <span class="channel-dot ${channels.email.verified ? 'verified' : 'missing'}"></span>
+        `;
+        bar.appendChild(emailEl);
+
+        // Separator
+        const sep = document.createElement('div');
+        sep.className = 'channel-separator';
+        bar.appendChild(sep);
+
+        // SMS channel
+        const smsEl = document.createElement('div');
+        smsEl.className = 'channel-item';
+        if (channels.sms.number) {
+          smsEl.innerHTML = `
+            <i data-lucide="smartphone"></i>
+            <span class="channel-value">${channels.sms.number}</span>
+            <span class="channel-dot ${channels.sms.verified ? 'verified' : 'missing'}"></span>
+            <button class="channel-action" onclick="handleTest(event)">Test</button>
+          `;
+        } else {
+          smsEl.innerHTML = `
+            <i data-lucide="smartphone"></i>
+            <span class="channel-dot missing"></span>
+            <button class="channel-action" onclick="handleAddPhone()">Add number</button>
+          `;
+        }
+        bar.appendChild(smsEl);
+      }
+
+      /* ── Build notification list ── */
+      function buildNotifList() {
+        const list = document.getElementById('notifList');
+        list.innerHTML = '';
+
+        const hasPhone = !!channels.sms.number;
+
+        notifications.forEach((notif) => {
+          if (notif.group === 'divider') {
+            const divider = document.createElement('div');
+            divider.className = 'notif-divider';
+            list.appendChild(divider);
+            return;
+          }
+
+          const row = document.createElement('div');
+          row.className = 'notif-row';
+
+          // Icon
+          const iconHtml = `<div class="notif-icon"><i data-lucide="${notif.icon}"></i></div>`;
+
+          // Text
+          const textHtml = `
+            <div class="notif-text">
+              <div class="notif-title">${notif.title}</div>
+              <div class="notif-desc">${notif.desc}</div>
+            </div>
+          `;
+
+          // Email toggle
+          const emailToggle = createToggle(notif.id, 'email', notif.email, true, null);
+
+          // SMS toggle
+          const smsDisabled = !notif.smsAllowed;
+          const noPhone = !hasPhone;
+          const smsTooltip = noPhone && notif.smsAllowed ? 'Add phone number first' : null;
+          const smsToggle = createToggle(
+            notif.id,
+            'sms',
+            notif.sms,
+            notif.smsAllowed && hasPhone,
+            smsTooltip,
+          );
+
+          // Threshold
+          let thresholdHtml = '<div class="threshold-col"></div>';
+          if (notif.thresholdOptions) {
+            const options = notif.thresholdOptions
+              .map(
+                (opt) =>
+                  `<option value="${opt}" ${opt === notif.threshold ? 'selected' : ''}>${opt}</option>`,
+              )
+              .join('');
+            thresholdHtml = `
+              <div class="threshold-col">
+                <select class="threshold-select" data-id="${notif.id}" onchange="handleThreshold(this)">
+                  ${options}
+                </select>
+              </div>
+            `;
+          }
+
+          row.innerHTML = iconHtml + textHtml;
+
+          // Controls wrapper
+          const controls = document.createElement('div');
+          controls.className = 'notif-controls';
+          controls.appendChild(emailToggle);
+          controls.appendChild(smsToggle);
+          controls.innerHTML += thresholdHtml;
+
+          row.appendChild(controls);
+          list.appendChild(row);
+        });
+
+        lucide.createIcons({ nodes: list.querySelectorAll('[data-lucide]') });
+      }
+
+      function createToggle(notifId, channel, checked, enabled, tooltipText) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'toggle-col';
+
+        const inner = document.createElement('div');
+        inner.className = 'toggle-wrapper';
+
+        const label = document.createElement('label');
+        label.className = 'mini-toggle' + (enabled ? '' : ' disabled');
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = checked;
+        input.disabled = !enabled;
+        input.dataset.notifId = notifId;
+        input.dataset.channel = channel;
+        input.addEventListener('change', () => handleToggle(input));
+
+        const track = document.createElement('span');
+        track.className = 'track';
+
+        const thumb = document.createElement('span');
+        thumb.className = 'thumb';
+
+        label.appendChild(input);
+        label.appendChild(track);
+        label.appendChild(thumb);
+        inner.appendChild(label);
+
+        if (tooltipText) {
+          const tip = document.createElement('div');
+          tip.className = 'tooltip';
+          tip.textContent = tooltipText;
+          inner.appendChild(tip);
+        }
+
+        wrapper.appendChild(inner);
+        return wrapper;
+      }
+
+      /* ── Handlers (auto-save) ── */
+      function handleToggle(input) {
+        const notif = notifications.find((n) => n.id === input.dataset.notifId);
+        if (notif) {
+          notif[input.dataset.channel] = input.checked;
+        }
+      }
+
+      function handleThreshold(select) {
+        const notif = notifications.find((n) => n.id === select.dataset.id);
+        if (notif) {
+          notif.threshold = select.value;
+        }
+      }
+
+      function handleTest(e) {
+        const btn = e.target;
+        const orig = btn.textContent;
+        btn.textContent = 'Sent!';
+        setTimeout(() => {
+          btn.textContent = orig;
+        }, 1500);
+      }
+
+      function handleAddPhone() {
+        alert('This would open a phone number setup flow.');
+      }
+
+      /* ── Theme switcher ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      /* ── Init ── */
+      buildChannels();
+      buildNotifList();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

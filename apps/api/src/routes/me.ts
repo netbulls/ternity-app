@@ -15,6 +15,7 @@ export async function meRoutes(fastify: FastifyInstance) {
             id: users.id,
             externalAuthId: users.externalAuthId,
             avatarUrl: users.avatarUrl,
+            phone: users.phone,
           })
           .from(users)
           .where(eq(users.id, request.auth.userId))
@@ -30,6 +31,7 @@ export async function meRoutes(fastify: FastifyInstance) {
             if (res.ok) {
               const logtoUser = (await res.json()) as {
                 avatar?: string;
+                primaryPhone?: string;
                 identities?: Record<string, { details?: { avatar?: string } }>;
               };
               // Top-level avatar is only set at sign-up. Fall back to social identity avatar.
@@ -38,10 +40,26 @@ export async function meRoutes(fastify: FastifyInstance) {
                 Object.values(logtoUser.identities ?? {}).find((id) => id.details?.avatar)?.details
                   ?.avatar ??
                 null;
-              if (newAvatar !== user.avatarUrl) {
-                await db.update(users).set({ avatarUrl: newAvatar }).where(eq(users.id, user.id));
+
+              const rawPhone = logtoUser.primaryPhone?.trim() ?? null;
+              const newPhone = rawPhone
+                ? rawPhone.startsWith('+')
+                  ? rawPhone
+                  : `+${rawPhone}`
+                : null;
+
+              const updates: Partial<typeof users.$inferInsert> = {};
+              if (newAvatar !== user.avatarUrl) updates.avatarUrl = newAvatar;
+              if (newPhone !== user.phone) updates.phone = newPhone;
+
+              if (Object.keys(updates).length > 0) {
+                await db
+                  .update(users)
+                  .set({ ...updates, updatedAt: new Date() })
+                  .where(eq(users.id, user.id));
                 request.auth.avatarUrl = newAvatar;
-                request.log.info(`Avatar updated for user ${user.id}`);
+                request.auth.phone = newPhone;
+                request.log.info(`Profile refreshed for user ${user.id}`);
               }
             } else {
               request.log.warn(`Logto user fetch failed: ${res.status} ${await res.text()}`);

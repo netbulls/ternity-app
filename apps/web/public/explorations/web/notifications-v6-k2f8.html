@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications — V6 Timeline + Accordion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+      }
+
+      /* ── Theme switcher (outside app chrome) ── */
+      .theme-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        padding: 6px 16px;
+        background: rgba(10, 10, 10, 0.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .theme-bar button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .theme-bar button:hover {
+        border-color: #444;
+      }
+      .theme-bar button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      #app {
+        display: flex;
+        height: 100vh;
+        padding-top: 32px;
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        padding: 20px 12px;
+        color: hsl(var(--sidebar-foreground));
+        overflow-y: auto;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      .section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: 9px;
+        letter-spacing: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: default;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .user-org .admin-badge {
+        font-size: 9px;
+        color: hsl(var(--primary));
+        font-weight: 600;
+      }
+      .user-chevrons {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+        opacity: 0.5;
+      }
+
+      /* ── Main area ── */
+      .main {
+        flex: 1;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        overflow-y: auto;
+        padding: 24px;
+      }
+
+      .main-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .main-header .subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Settings tabs ── */
+      .settings-tabs {
+        display: flex;
+        gap: 0;
+        margin-top: 20px;
+        border-bottom: 1px solid hsl(var(--border));
+        overflow-x: auto;
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 14px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        border: none;
+        border-bottom: 2px solid transparent;
+        background: none;
+        transition: all 0.15s;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+      }
+      .tab i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 680px;
+        margin-top: 24px;
+      }
+
+      /* ── Timeline section (from V4) ── */
+      .timeline-section {
+        background: hsl(var(--muted) / 0.2);
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: 18px 22px;
+        margin-bottom: 20px;
+      }
+
+      .timeline-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .timeline-title i {
+        width: 13px;
+        height: 13px;
+      }
+
+      .timeline-container {
+        position: relative;
+        padding-top: 20px;
+        padding-bottom: 56px;
+        user-select: none;
+      }
+
+      .timeline-axis {
+        position: relative;
+        height: 8px;
+      }
+      .timeline-track {
+        position: absolute;
+        top: 3px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: hsl(var(--border));
+        border-radius: 1px;
+      }
+
+      .hour-markers {
+        position: absolute;
+        top: -18px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+      }
+      .hour-tick {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        width: 0;
+        text-align: center;
+        position: relative;
+      }
+      .hour-tick::after {
+        content: '';
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        width: 1px;
+        height: 4px;
+        background: hsl(var(--border));
+      }
+
+      .schedule-block {
+        position: absolute;
+        top: 0;
+        height: 8px;
+        background: hsl(var(--primary) / 0.12);
+        border: 1px solid hsl(var(--primary) / 0.2);
+        border-radius: 4px;
+        transition:
+          left 0.3s ease,
+          width 0.3s ease;
+      }
+      .schedule-label {
+        position: absolute;
+        top: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Oxanium', sans-serif;
+        font-size: 8px;
+        font-weight: 500;
+        color: hsl(var(--primary));
+        opacity: 0.6;
+        white-space: nowrap;
+        letter-spacing: 0.5px;
+      }
+
+      /* Notification markers on timeline */
+      .notif-marker {
+        position: absolute;
+        top: -2px;
+        width: 12px;
+        height: 12px;
+        transform: translateX(-50%) rotate(45deg);
+        border-radius: 2px;
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        z-index: 2;
+        cursor: default;
+      }
+      .notif-marker.disabled {
+        opacity: 0.15;
+      }
+      .notif-marker.start-marker {
+        background: hsl(var(--chart-4));
+        border: 1px solid hsl(var(--chart-4));
+      }
+      .notif-marker.stop-marker {
+        background: hsl(var(--chart-3));
+        border: 1px solid hsl(var(--chart-3));
+      }
+      .notif-marker.long-marker {
+        background: hsl(var(--chart-5));
+        border: 1px solid hsl(var(--chart-5));
+      }
+
+      .connector-line {
+        position: absolute;
+        top: 12px;
+        width: 1px;
+        height: 40px;
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        z-index: 1;
+      }
+      .connector-line.disabled {
+        opacity: 0.1;
+      }
+      .connector-line.start-line {
+        border-left: 1px dashed hsl(var(--chart-4) / 0.4);
+      }
+      .connector-line.stop-line {
+        border-left: 1px dashed hsl(var(--chart-3) / 0.4);
+      }
+      .connector-line.long-line {
+        border-left: 1px dashed hsl(var(--chart-5) / 0.4);
+      }
+
+      .marker-label {
+        position: absolute;
+        top: 16px;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        transition:
+          left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s ease;
+        text-align: center;
+        pointer-events: none;
+      }
+      .marker-label.disabled {
+        opacity: 0.15;
+      }
+      .marker-label .label-time {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 10px;
+        display: block;
+      }
+      .marker-label.start-label .label-time {
+        color: hsl(var(--chart-4));
+      }
+      .marker-label.stop-label .label-time {
+        color: hsl(var(--chart-3));
+      }
+      .marker-label.long-label .label-time {
+        color: hsl(var(--chart-5));
+      }
+      .marker-label .label-desc {
+        font-size: 8px;
+        opacity: 0.7;
+        margin-top: 1px;
+      }
+
+      /* ── Contact info ── */
+      .contact-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding: 10px 14px;
+        background: hsl(var(--muted) / 0.2);
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+      }
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+      }
+      .contact-item i {
+        width: 13px;
+        height: 13px;
+        opacity: 0.6;
+      }
+      .contact-value {
+        color: hsl(var(--foreground));
+        font-size: 12px;
+      }
+      .contact-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.08);
+        padding: 2px 8px;
+        border-radius: 10px;
+      }
+      .contact-status i {
+        width: 10px;
+        height: 10px;
+        color: hsl(var(--primary));
+        opacity: 1;
+      }
+      .contact-action {
+        font-size: 11px;
+        color: hsl(var(--primary));
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-family: 'Inter', sans-serif;
+        text-decoration: none;
+      }
+      .contact-action:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Notification groups (from V1 accordion) ── */
+      .groups-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .notif-group {
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+      }
+      .notif-group::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 10px 0 0 10px;
+      }
+      .notif-group.accent-amber::before {
+        background: hsl(35 100% 64%);
+      }
+      .notif-group.accent-blue::before {
+        background: hsl(236 100% 77%);
+      }
+      .notif-group.accent-teal::before {
+        background: hsl(var(--primary));
+      }
+
+      .group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: background 0.12s;
+        user-select: none;
+      }
+      .group-header:hover {
+        background: hsl(var(--muted) / 0.3);
+      }
+
+      .group-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .group-icon i {
+        width: 15px;
+        height: 15px;
+      }
+      .accent-amber .group-icon {
+        background: hsl(35 100% 64% / 0.1);
+      }
+      .accent-amber .group-icon i {
+        color: hsl(35 100% 64%);
+      }
+      .accent-blue .group-icon {
+        background: hsl(236 100% 77% / 0.1);
+      }
+      .accent-blue .group-icon i {
+        color: hsl(236 100% 77%);
+      }
+      .accent-teal .group-icon {
+        background: hsl(var(--primary) / 0.1);
+      }
+      .accent-teal .group-icon i {
+        color: hsl(var(--primary));
+      }
+
+      .group-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .group-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .item-count-badge {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        padding: 1px 7px;
+        border-radius: 10px;
+      }
+      .group-desc {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+      }
+
+      /* Toggle switch */
+      .toggle-switch {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+      .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .toggle-switch input:checked + .toggle-track {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle-switch input:checked + .toggle-track::after {
+        transform: translateX(16px);
+        background: hsl(var(--primary));
+      }
+
+      /* Smaller toggle for items */
+      .toggle-switch-sm {
+        position: relative;
+        width: 32px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      .toggle-switch-sm input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .toggle-switch-sm .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 9px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+      .toggle-switch-sm .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .toggle-switch-sm input:checked + .toggle-track {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle-switch-sm input:checked + .toggle-track::after {
+        transform: translateX(14px);
+        background: hsl(var(--primary));
+      }
+
+      .group-chevron {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        transition: transform 0.2s;
+        flex-shrink: 0;
+        opacity: 0.5;
+      }
+      .group-chevron.expanded {
+        transform: rotate(180deg);
+        opacity: 0.8;
+      }
+
+      /* Group body (accordion content) */
+      .group-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease;
+      }
+      .group-body.expanded {
+        max-height: 300px;
+      }
+      .group-body.disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .group-body-inner {
+        padding: 0 14px 14px 54px;
+      }
+
+      /* Notification items — compact one-line rows */
+      .notif-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-top: 1px solid hsl(var(--border) / 0.4);
+      }
+      .notif-item.disabled-item {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      .notif-item-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .notif-item-spacer {
+        flex: 1;
+      }
+
+      /* Threshold pills */
+      .threshold-pills {
+        display: flex;
+        gap: 3px;
+        flex-shrink: 0;
+      }
+      .threshold-pill {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid hsl(var(--border));
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .threshold-pill:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--foreground));
+      }
+      .threshold-pill.selected {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+      }
+
+      .notif-sep {
+        width: 1px;
+        height: 16px;
+        background: hsl(var(--border));
+        flex-shrink: 0;
+      }
+
+      /* Channel checkboxes */
+      .channel-checks {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .channel-check {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+      }
+      .channel-check input[type='checkbox'] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 13px;
+        height: 13px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 3px;
+        background: hsl(var(--muted));
+        cursor: pointer;
+        position: relative;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .channel-check input[type='checkbox']:checked {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .channel-check input[type='checkbox']:checked::after {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 4px;
+        width: 3px;
+        height: 7px;
+        border: solid hsl(var(--primary-foreground));
+        border-width: 0 1.5px 1.5px 0;
+        transform: rotate(45deg);
+      }
+      .channel-check.disabled {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+
+      /* ── Phone modal ── */
+      .phone-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 300;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .phone-modal-backdrop.visible {
+        display: flex;
+      }
+      .phone-modal {
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        width: 340px;
+        max-width: 90vw;
+      }
+      .phone-modal h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+      .phone-modal .modal-desc {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+      }
+      .phone-input {
+        width: 100%;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        padding: 10px 12px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        color: hsl(var(--foreground));
+        outline: none;
+        transition: border-color 0.15s;
+        margin-bottom: 16px;
+      }
+      .phone-input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .modal-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .modal-btn:hover {
+        border-color: hsl(var(--foreground) / 0.3);
+      }
+      .modal-btn.primary {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .modal-btn.primary:hover {
+        opacity: 0.9;
+      }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 20px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 400;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toast i {
+        width: 14px;
+        height: 14px;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Theme switcher bar -->
+    <div class="theme-bar">
+      <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+      <button onclick="setTheme('ternity-light')">Ternity Light</button>
+      <button onclick="setTheme('midnight')">Midnight</button>
+      <button onclick="setTheme('warm-sand')">Warm Sand</button>
+      <button onclick="setTheme('carbon')">Carbon</button>
+      <button onclick="setTheme('high-contrast')">High Contrast</button>
+    </div>
+
+    <div id="app" data-theme="ternity-dark">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <svg
+            class="logo-icon"
+            viewBox="0 0 18 22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M9 1v5M5 3.5h8M3 6h12a1 1 0 011 1v9a5 5 0 01-5 5H7a5 5 0 01-5-5V7a1 1 0 011-1z"
+            />
+            <path d="M6 10v4M9 9v5M12 10v4" stroke-linecap="round" />
+          </svg>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="timer"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palmtree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="admin-badge">Admin</span>
+            </div>
+          </div>
+          <i data-lucide="chevrons-up-down" class="user-chevrons"></i>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main">
+        <div class="main-header">
+          <h1>Settings</h1>
+          <p class="subtitle">Manage your account preferences and workspace configuration</p>
+        </div>
+
+        <!-- Settings tabs -->
+        <div class="settings-tabs">
+          <button class="tab"><i data-lucide="sliders-horizontal"></i> General</button>
+          <button class="tab"><i data-lucide="palette"></i> Appearance</button>
+          <button class="tab"><i data-lucide="plug"></i> Integrations</button>
+          <button class="tab"><i data-lucide="download"></i> Downloads</button>
+          <button class="tab"><i data-lucide="tag"></i> Tags</button>
+          <button class="tab"><i data-lucide="clock"></i> Working Hours</button>
+          <button class="tab active"><i data-lucide="bell"></i> Notifications</button>
+        </div>
+
+        <!-- Notifications content -->
+        <div class="content-area">
+          <!-- Timeline visualization (from V4) -->
+          <div class="timeline-section">
+            <div class="timeline-title"><i data-lucide="calendar-clock"></i> Your Typical Day</div>
+            <div class="timeline-container" id="timelineContainer">
+              <div class="hour-markers" id="hourMarkers"></div>
+              <div class="timeline-axis">
+                <div class="timeline-track"></div>
+                <div class="schedule-block" id="scheduleBlock">
+                  <span class="schedule-label">9:00 – 17:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact info -->
+          <div class="contact-section">
+            <div class="contact-item">
+              <i data-lucide="mail"></i>
+              <span class="contact-value">przemyslaw.rudzki@netbulls.io</span>
+              <span class="contact-status"><i data-lucide="check-circle-2"></i> Verified</span>
+            </div>
+            <div class="contact-item" id="phoneContact">
+              <i data-lucide="smartphone"></i>
+              <span class="contact-value" id="phoneValue">+48 ••• ••• 357</span>
+              <span class="contact-status"><i data-lucide="check-circle-2"></i> Verified</span>
+              <button class="contact-action" id="phoneAction" onclick="showPhoneModal()">
+                Change
+              </button>
+            </div>
+          </div>
+
+          <!-- Notification groups (V1 accordion structure) -->
+          <div class="groups-section">
+            <!-- Group 1: Timer Reminders (amber) -->
+            <div class="notif-group accent-amber" data-group="timer">
+              <div class="group-header" onclick="toggleGroup('timer', event)">
+                <div class="group-icon"><i data-lucide="clock"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Timer Reminders
+                    <span class="item-count-badge">3</span>
+                  </div>
+                  <div class="group-desc" id="timerSummary">
+                    Forgot to start 15m, forgot to stop 30m, long timer 4h
+                  </div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('timer', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron expanded" id="chevron-timer"></i>
+              </div>
+              <div class="group-body expanded" id="body-timer">
+                <div class="group-body-inner">
+                  <div class="notif-item" id="item-start">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemRow(this, 'start')" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Forgot to start</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="threshold-pills" data-notif="start">
+                      <button
+                        class="threshold-pill selected"
+                        onclick="setThreshold('start', 15, this)"
+                      >
+                        15m
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('start', 30, this)">
+                        30m
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('start', 45, this)">
+                        45m
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('start', 60, this)">
+                        1h
+                      </button>
+                    </div>
+                    <div class="notif-sep"></div>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+
+                  <div class="notif-item" id="item-stop">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemRow(this, 'stop')" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Forgot to stop</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="threshold-pills" data-notif="stop">
+                      <button class="threshold-pill" onclick="setThreshold('stop', 15, this)">
+                        15m
+                      </button>
+                      <button
+                        class="threshold-pill selected"
+                        onclick="setThreshold('stop', 30, this)"
+                      >
+                        30m
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('stop', 45, this)">
+                        45m
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('stop', 60, this)">
+                        1h
+                      </button>
+                    </div>
+                    <div class="notif-sep"></div>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+
+                  <div class="notif-item" id="item-long">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemRow(this, 'long')" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Long timer</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="threshold-pills" data-notif="long">
+                      <button class="threshold-pill" onclick="setThreshold('long', 2, this)">
+                        2h
+                      </button>
+                      <button
+                        class="threshold-pill selected"
+                        onclick="setThreshold('long', 4, this)"
+                      >
+                        4h
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('long', 6, this)">
+                        6h
+                      </button>
+                      <button class="threshold-pill" onclick="setThreshold('long', 8, this)">
+                        8h
+                      </button>
+                    </div>
+                    <div class="notif-sep"></div>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 2: Leave & Absence (blue) -->
+            <div class="notif-group accent-blue" data-group="leave">
+              <div class="group-header" onclick="toggleGroup('leave', event)">
+                <div class="group-icon"><i data-lucide="calendar"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Leave & Absence
+                    <span class="item-count-badge">2</span>
+                  </div>
+                  <div class="group-desc">Request updates, team leave alerts</div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('leave', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron" id="chevron-leave"></i>
+              </div>
+              <div class="group-body" id="body-leave">
+                <div class="group-body-inner">
+                  <div class="notif-item">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemSimple(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Leave request updates</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+
+                  <div class="notif-item">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemSimple(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Team leave</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check disabled"
+                        ><input type="checkbox" disabled /> SMS</label
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 3: Weekly Summary (teal) -->
+            <div class="notif-group accent-teal" data-group="weekly">
+              <div class="group-header" onclick="toggleGroup('weekly', event)">
+                <div class="group-icon"><i data-lucide="bar-chart-3"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Weekly Summary
+                    <span class="item-count-badge">1</span>
+                  </div>
+                  <div class="group-desc">Hours recap delivered every Monday</div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('weekly', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron" id="chevron-weekly"></i>
+              </div>
+              <div class="group-body" id="body-weekly">
+                <div class="group-body-inner">
+                  <div class="notif-item">
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItemSimple(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                    <span class="notif-item-title">Weekly hours report</span>
+                    <span class="notif-item-spacer"></span>
+                    <div class="threshold-pills">
+                      <button class="threshold-pill selected" onclick="selectPill(this)">
+                        Monday
+                      </button>
+                      <button class="threshold-pill" onclick="selectPill(this)">Friday</button>
+                    </div>
+                    <div class="notif-sep"></div>
+                    <div class="channel-checks">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check disabled"
+                        ><input type="checkbox" disabled /> SMS</label
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Phone modal -->
+    <div class="phone-modal-backdrop" id="phoneModal">
+      <div class="phone-modal" data-theme="ternity-dark" id="phoneModalInner">
+        <h3>Change Phone Number</h3>
+        <p class="modal-desc">We'll send a verification code to confirm your new number.</p>
+        <input type="tel" class="phone-input" id="phoneInput" placeholder="+48 123 456 789" />
+        <div class="modal-actions">
+          <button class="modal-btn" onclick="hidePhoneModal()">Cancel</button>
+          <button class="modal-btn primary" onclick="savePhone()">Send Code</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"><i data-lucide="check"></i> <span id="toastMsg">Saved</span></div>
+
+    <script>
+      /* ── Timeline constants ── */
+      const AXIS_START = 7;
+      const AXIS_END = 19;
+      const AXIS_SPAN = AXIS_END - AXIS_START;
+      const SCHEDULE_START = 9;
+      const SCHEDULE_END = 17;
+
+      /* ── State ── */
+      const state = {
+        start: { enabled: true, thresholdMin: 15 },
+        stop: { enabled: true, thresholdMin: 30 },
+        long: { enabled: true, thresholdHours: 4 },
+      };
+
+      /* ── Helpers ── */
+      function toPercent(hour) {
+        return ((hour - AXIS_START) / AXIS_SPAN) * 100;
+      }
+      function pad(n) {
+        return String(n).padStart(2, '0');
+      }
+      function formatTime(hour) {
+        const h = Math.floor(hour);
+        const m = Math.round((hour - h) * 60);
+        return pad(h) + ':' + pad(m);
+      }
+
+      /* ── Build hour markers ── */
+      function buildHourMarkers() {
+        const container = document.getElementById('hourMarkers');
+        for (let h = AXIS_START; h <= AXIS_END; h++) {
+          const tick = document.createElement('div');
+          tick.className = 'hour-tick';
+          tick.textContent = pad(h);
+          container.appendChild(tick);
+        }
+      }
+
+      /* ── Position schedule block ── */
+      function positionScheduleBlock() {
+        const block = document.getElementById('scheduleBlock');
+        block.style.left = toPercent(SCHEDULE_START) + '%';
+        block.style.width = toPercent(SCHEDULE_END) - toPercent(SCHEDULE_START) + '%';
+      }
+
+      /* ── Create timeline markers ── */
+      function createMarkerElements() {
+        const axis = document.querySelector('.timeline-axis');
+
+        createMarker(axis, 'start', 'start-marker', 'start-line', 'start-label');
+        createMarker(axis, 'stop', 'stop-marker', 'stop-line', 'stop-label');
+        createMarker(axis, 'long', 'long-marker', 'long-line', 'long-label');
+
+        updateAllMarkers();
+      }
+
+      function createMarker(axis, type, markerClass, lineClass, labelClass) {
+        const marker = document.createElement('div');
+        marker.className = 'notif-marker ' + markerClass;
+        marker.id = type + 'Marker';
+        axis.appendChild(marker);
+
+        const line = document.createElement('div');
+        line.className = 'connector-line ' + lineClass;
+        line.id = type + 'Line';
+        axis.appendChild(line);
+
+        const label = document.createElement('div');
+        label.className = 'marker-label ' + labelClass;
+        label.id = type + 'Label';
+        label.innerHTML = '<span class="label-time"></span><span class="label-desc"></span>';
+        axis.appendChild(label);
+      }
+
+      /* ── Update markers ── */
+      function updateAllMarkers() {
+        updateStartMarker();
+        updateStopMarker();
+        updateLongMarker();
+      }
+
+      function updateStartMarker() {
+        const s = state.start;
+        const triggerHour = SCHEDULE_START + s.thresholdMin / 60;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        setMarkerPosition('start', pct, disabled);
+        document.getElementById('startLabel').querySelector('.label-time').textContent =
+          formatTime(triggerHour);
+        document.getElementById('startLabel').querySelector('.label-desc').textContent = 'No timer';
+      }
+
+      function updateStopMarker() {
+        const s = state.stop;
+        const triggerHour = SCHEDULE_END + s.thresholdMin / 60;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        setMarkerPosition('stop', pct, disabled);
+        document.getElementById('stopLabel').querySelector('.label-time').textContent =
+          formatTime(triggerHour);
+        document.getElementById('stopLabel').querySelector('.label-desc').textContent =
+          'Still running';
+      }
+
+      function updateLongMarker() {
+        const s = state.long;
+        const triggerHour = SCHEDULE_START + s.thresholdHours;
+        const pct = toPercent(triggerHour);
+        const disabled = !s.enabled;
+
+        setMarkerPosition('long', pct, disabled);
+        document.getElementById('longLabel').querySelector('.label-time').textContent =
+          s.thresholdHours + 'h continuous';
+        document.getElementById('longLabel').querySelector('.label-desc').textContent =
+          formatTime(triggerHour);
+      }
+
+      function setMarkerPosition(id, pct, disabled) {
+        const marker = document.getElementById(id + 'Marker');
+        const line = document.getElementById(id + 'Line');
+        const label = document.getElementById(id + 'Label');
+
+        marker.style.left = pct + '%';
+        marker.classList.toggle('disabled', disabled);
+        line.style.left = pct + '%';
+        line.classList.toggle('disabled', disabled);
+        label.style.left = pct + '%';
+        label.classList.toggle('disabled', disabled);
+      }
+
+      /* ── Set threshold (updates markers + summary) ── */
+      function setThreshold(type, value, btn) {
+        // Update pill selection
+        btn.parentElement.querySelectorAll('.threshold-pill').forEach(function (p) {
+          p.classList.remove('selected');
+        });
+        btn.classList.add('selected');
+
+        if (type === 'start') {
+          state.start.thresholdMin = value;
+          updateStartMarker();
+        } else if (type === 'stop') {
+          state.stop.thresholdMin = value;
+          updateStopMarker();
+        } else if (type === 'long') {
+          state.long.thresholdHours = value;
+          updateLongMarker();
+        }
+
+        updateTimerSummary();
+      }
+
+      function selectPill(btn) {
+        btn.parentElement.querySelectorAll('.threshold-pill').forEach(function (p) {
+          p.classList.remove('selected');
+        });
+        btn.classList.add('selected');
+      }
+
+      /* ── Toggle notification enabled (updates timeline) ── */
+      function toggleNotifEnabled(type, enabled) {
+        if (type === 'start') state.start.enabled = enabled;
+        else if (type === 'stop') state.stop.enabled = enabled;
+        else if (type === 'long') state.long.enabled = enabled;
+        updateAllMarkers();
+        updateTimerSummary();
+      }
+
+      function updateTimerSummary() {
+        var parts = [];
+        if (state.start.enabled) {
+          var v = state.start.thresholdMin;
+          parts.push('start ' + (v >= 60 ? v / 60 + 'h' : v + 'm'));
+        }
+        if (state.stop.enabled) {
+          var v = state.stop.thresholdMin;
+          parts.push('stop ' + (v >= 60 ? v / 60 + 'h' : v + 'm'));
+        }
+        if (state.long.enabled) {
+          parts.push('long ' + state.long.thresholdHours + 'h');
+        }
+        var el = document.getElementById('timerSummary');
+        if (el) el.textContent = parts.length ? parts.join(', ') : 'All disabled';
+      }
+
+      /* ── Group expand/collapse ── */
+      function toggleGroup(groupId, e) {
+        if (e.target.closest('.toggle-switch')) return;
+        var body = document.getElementById('body-' + groupId);
+        var chevron = document.getElementById('chevron-' + groupId);
+        var isExpanded = body.classList.contains('expanded');
+
+        if (isExpanded) {
+          body.classList.remove('expanded');
+          chevron.classList.remove('expanded');
+        } else {
+          body.classList.add('expanded');
+          chevron.classList.add('expanded');
+        }
+      }
+
+      /* ── Master toggle ── */
+      function toggleMaster(groupId, checked) {
+        var body = document.getElementById('body-' + groupId);
+        if (checked) {
+          body.classList.remove('disabled');
+        } else {
+          body.classList.add('disabled');
+        }
+
+        // If toggling timer group, update all timer markers
+        if (groupId === 'timer') {
+          state.start.enabled = checked;
+          state.stop.enabled = checked;
+          state.long.enabled = checked;
+          updateAllMarkers();
+          updateTimerSummary();
+        }
+      }
+
+      /* ── Item toggle (timer items — updates timeline markers) ── */
+      function toggleItemRow(checkbox, type) {
+        var item = checkbox.closest('.notif-item');
+        item.classList.toggle('disabled-item', !checkbox.checked);
+        toggleNotifEnabled(type, checkbox.checked);
+      }
+
+      /* ── Item toggle (simple — no timeline markers) ── */
+      function toggleItemSimple(checkbox) {
+        var item = checkbox.closest('.notif-item');
+        item.classList.toggle('disabled-item', !checkbox.checked);
+      }
+
+      /* ── Phone modal ── */
+      function showPhoneModal() {
+        document.getElementById('phoneModal').classList.add('visible');
+        setTimeout(function () {
+          document.getElementById('phoneInput').focus();
+        }, 100);
+      }
+      function hidePhoneModal() {
+        document.getElementById('phoneModal').classList.remove('visible');
+        document.getElementById('phoneInput').value = '';
+      }
+      function savePhone() {
+        var phone = document.getElementById('phoneInput').value.trim();
+        if (!phone) return;
+        document.getElementById('phoneValue').textContent = phone;
+        hidePhoneModal();
+        showToast('Verification code sent');
+      }
+
+      /* ── Toast ── */
+      function showToast(msg) {
+        var toast = document.getElementById('toast');
+        document.getElementById('toastMsg').textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2000);
+      }
+
+      /* ── Theme ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.getElementById('phoneModalInner').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-bar button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+
+      /* ── Init ── */
+      buildHourMarkers();
+      positionScheduleBlock();
+      createMarkerElements();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

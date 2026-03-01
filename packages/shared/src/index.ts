@@ -9,3 +9,5 @@ export * from './admin-projects.js';
 export * from './downloads.js';
 export * from './preferences.js';
 export * from './jira.js';
+export * from './working-hours.js';
+export * from './notification-settings.js';

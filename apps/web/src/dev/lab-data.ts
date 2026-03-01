@@ -132,6 +132,144 @@ export const LAB_SECTIONS: LabProductSection[] = [
         ],
       },
       {
+        name: 'working-hours',
+        id: 'working-hours-lab',
+        description:
+          'Working Hours — settings explorations for planned weekly schedule. Foundation for presence, reconciliation, and notification triggers.',
+        date: '2026-02-28T21:00:00',
+        items: [
+          {
+            kind: 'exploration',
+            title: 'V1 — Grid Classic',
+            file: 'web/working-hours-v1-a3f2.html',
+            description:
+              'Mon-Sun grid with time inputs, day off toggles, live weekly total. Clean traditional form layout.',
+            date: '2026-02-28T21:00:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V2 — Visual Blocks',
+            file: 'web/working-hours-v2-b7e4.html',
+            description:
+              'Gantt-style visual timeline bars for each day on a 6-22h axis. Click blocks to edit via popover. Spatial understanding of schedule.',
+            date: '2026-02-28T21:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V3 — Template First',
+            file: 'web/working-hours-v3-c9f5.html',
+            description:
+              'Pick a template (Standard, Early Bird, Compressed, Custom) then customize. "Modified from X" badge when tweaked. Fast onboarding.',
+            date: '2026-02-28T21:20:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V4 — Compact Cards',
+            file: 'web/working-hours-v4-d2a6.html',
+            description:
+              'Accordion day cards — collapsed shows summary, expand to edit. "Apply to all weekdays" copy action. Minimal footprint.',
+            date: '2026-02-28T21:30:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V5 — Split View',
+            file: 'web/working-hours-v5-e4b8.html',
+            description:
+              'Left: schedule editor. Right: team overlap preview showing who else is online at each hour. Peak overlap stat updates live.',
+            date: '2026-02-28T21:40:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V6 — Timeline + Accordion',
+            file: 'web/working-hours-v6-f5c9.html',
+            description:
+              'Hybrid of V2 + V4. Visual timeline bars (Gantt-style) in collapsed row, click to expand accordion with inline time inputs, day-off toggle, and copy actions. No floating popover.',
+            date: '2026-02-28T21:50:00',
+          },
+        ],
+      },
+      {
+        name: 'notifications',
+        id: 'notifications-lab',
+        description:
+          'Notifications — settings explorations for timer reminders, leave updates, and weekly reports. Email + SMS channels with phone verification.',
+        date: '2026-02-28T22:00:00',
+        items: [
+          {
+            kind: 'exploration',
+            title: 'V1 — Grouped Toggles',
+            file: 'web/notifications-v1-f5a3.html',
+            description:
+              'Collapsible behavior groups (Timer Reminders, Leave & Absence, Weekly Summary) with master toggles, per-item channel checkboxes, and threshold dropdowns.',
+            date: '2026-02-28T22:00:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V2 — Channel First',
+            file: 'web/notifications-v2-g6b4.html',
+            description:
+              'Organized by delivery channel. Email/SMS master cards at top, then a matrix of notification types with per-channel toggles.',
+            date: '2026-02-28T22:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V3 — Cards Matrix',
+            file: 'web/notifications-v3-h7c5.html',
+            description:
+              'Each notification type as a standalone card with icon, master toggle, channel pills, and inline threshold controls. 2-column grid.',
+            date: '2026-02-28T22:20:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V4 — Timeline Preview',
+            file: 'web/notifications-v4-i8d6.html',
+            description:
+              'Visual day timeline with notification trigger markers. Changing thresholds moves markers. Educational — see when notifications fire.',
+            date: '2026-02-28T22:30:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V5 — Minimal Switches',
+            file: 'web/notifications-v5-j9e7.html',
+            description:
+              'Clean flat list — one row per notification: description + email toggle + SMS toggle + threshold dropdown. Linear/Notion-style minimal.',
+            date: '2026-02-28T22:40:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V6 — Timeline + Accordion',
+            file: 'web/notifications-v6-k2f8.html',
+            description:
+              'Hybrid of V4 + V1. Day timeline with animated notification markers at top, V1-style accordion groups below (Timer amber, Leave blue, Weekly teal) with master toggles, per-item toggles, threshold pills, and channel checkboxes. Markers move when thresholds change.',
+            date: '2026-02-28T22:50:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V7 — Email Ops Rail',
+            file: 'web/notifications-email-v1-m4d2.html',
+            description:
+              'Transactional email direction A. Action-first cards with left accent rails, desktop + mobile previews, five notification groups, and full copy matrix (subject, preheader, body, variables, CTA).',
+            date: '2026-03-01T00:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V8 — Email Schedule Lens',
+            file: 'web/notifications-email-v2-n6f8.html',
+            description:
+              'Transactional email direction B. Timeline-led layout mapping reminders to working-hours triggers, split detected/action blocks, and reusable template partial mapping for all notification types.',
+            date: '2026-03-01T00:20:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V9 — Email Decision Sheet',
+            file: 'web/notifications-email-v3-p8h1.html',
+            description:
+              'Transactional email direction C. Memo-style decision sheets with status stamps, structured metadata blocks, and component mapping across timer, leave, team alert, and weekly report notifications.',
+            date: '2026-03-01T00:30:00',
+          },
+        ],
+      },
+      {
         name: 'huge-theme',
         id: 'huge-theme-lab',
         description:

@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications — V1 Grouped Toggles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      .app-shell {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        min-height: 720px;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        height: 720px;
+        padding: 20px 12px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: hsl(var(--sidebar-foreground));
+      }
+
+      .section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        font-size: 9px;
+        letter-spacing: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 10px;
+        border-radius: 8px;
+        background: hsl(var(--muted) / 0.5);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .user-block:hover {
+        background: hsl(var(--muted) / 0.7);
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .user-org .role-badge {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .user-chevrons {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+      .user-chevrons i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .main-header {
+        margin-bottom: 20px;
+      }
+      .main-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: hsl(var(--foreground));
+      }
+      .main-subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Tabs ── */
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .tab {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        padding: 10px 14px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tab i {
+        width: 13px;
+        height: 13px;
+      }
+      .tab:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+        font-weight: 600;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 600px;
+      }
+
+      /* ── Contact info section ── */
+      .contact-section {
+        margin-bottom: 24px;
+      }
+      .contact-section-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .contact-section-title i {
+        width: 14px;
+        height: 14px;
+      }
+
+      .contact-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        margin-bottom: 6px;
+      }
+      .contact-row i.contact-icon {
+        width: 15px;
+        height: 15px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .contact-value {
+        font-size: 13px;
+        color: hsl(var(--foreground));
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .verified-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        flex-shrink: 0;
+      }
+      .verified-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: hsl(var(--primary));
+        letter-spacing: 0.3px;
+      }
+      .send-test-link {
+        font-size: 11px;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 2px;
+        transition: color 0.15s;
+        flex-shrink: 0;
+      }
+      .send-test-link:hover {
+        color: hsl(var(--primary));
+      }
+      .change-number-link {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 2px;
+        transition: color 0.15s;
+        margin-left: 29px;
+        margin-bottom: 8px;
+        display: inline-block;
+      }
+      .change-number-link:hover {
+        color: hsl(var(--primary));
+      }
+
+      /* Change number form */
+      .change-phone-form {
+        display: none;
+        padding: 12px 14px;
+        background: hsl(var(--t-stat-bg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        margin-left: 29px;
+        margin-bottom: 8px;
+        max-width: 360px;
+      }
+      .change-phone-form.visible {
+        display: block;
+      }
+      .change-phone-form label {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        display: block;
+        margin-bottom: 6px;
+      }
+      .phone-input-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .phone-number-input {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        color: hsl(var(--foreground));
+        padding: 7px 10px;
+        outline: none;
+        flex: 1;
+      }
+      .phone-number-input::placeholder {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .phone-number-input:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+      }
+      .verify-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 7px 14px;
+        border-radius: 6px;
+        border: none;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        cursor: pointer;
+        transition: opacity 0.15s;
+        white-space: nowrap;
+      }
+      .verify-btn:hover {
+        opacity: 0.9;
+      }
+      .verify-feedback {
+        font-size: 11px;
+        color: hsl(var(--primary));
+        margin-top: 6px;
+        display: none;
+      }
+      .verify-feedback.visible {
+        display: block;
+      }
+
+      /* ── Notification groups ── */
+      .groups-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .notif-group {
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+      }
+      .notif-group::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 10px 0 0 10px;
+      }
+      .notif-group.accent-amber::before {
+        background: hsl(35 100% 64%);
+      }
+      .notif-group.accent-blue::before {
+        background: hsl(236 100% 77%);
+      }
+      .notif-group.accent-teal::before {
+        background: hsl(var(--primary));
+      }
+
+      .group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: background 0.12s;
+        user-select: none;
+      }
+      .group-header:hover {
+        background: hsl(var(--muted) / 0.3);
+      }
+      .group-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .group-icon i {
+        width: 16px;
+        height: 16px;
+      }
+      .accent-amber .group-icon {
+        background: hsl(35 100% 64% / 0.1);
+        color: hsl(35 100% 64%);
+      }
+      .accent-amber .group-icon i {
+        color: hsl(35 100% 64%);
+      }
+      .accent-blue .group-icon {
+        background: hsl(236 100% 77% / 0.1);
+        color: hsl(236 100% 77%);
+      }
+      .accent-blue .group-icon i {
+        color: hsl(236 100% 77%);
+      }
+      .accent-teal .group-icon {
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+      }
+      .accent-teal .group-icon i {
+        color: hsl(var(--primary));
+      }
+
+      .group-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .group-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .item-count-badge {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        padding: 1px 7px;
+        border-radius: 10px;
+      }
+      .group-chevron {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      .group-chevron.expanded {
+        transform: rotate(180deg);
+      }
+
+      /* ── Toggle switch ── */
+      .toggle-switch {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+      .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .toggle-switch input:checked + .toggle-track {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle-switch input:checked + .toggle-track::after {
+        transform: translateX(16px);
+        background: hsl(var(--primary));
+      }
+
+      /* Item-level toggle (smaller) */
+      .toggle-switch-sm {
+        position: relative;
+        width: 32px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      .toggle-switch-sm input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .toggle-switch-sm .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 9px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+      .toggle-switch-sm .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .toggle-switch-sm input:checked + .toggle-track {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+      }
+      .toggle-switch-sm input:checked + .toggle-track::after {
+        transform: translateX(14px);
+        background: hsl(var(--primary));
+      }
+
+      /* ── Group body ── */
+      .group-body {
+        display: none;
+        padding: 0 16px 14px 58px;
+      }
+      .group-body.expanded {
+        display: block;
+      }
+      .group-body.disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      .notif-item {
+        padding: 12px 0;
+        border-top: 1px solid hsl(var(--border) / 0.4);
+      }
+
+      .notif-item-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .notif-item-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .notif-item-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .notif-item-desc {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      .notif-item-controls {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .notif-item-controls.disabled-item {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      /* Threshold pills */
+      .threshold-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .threshold-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .threshold-pills {
+        display: flex;
+        gap: 4px;
+      }
+      .threshold-pill {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid hsl(var(--border));
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .threshold-pill:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--foreground));
+      }
+      .threshold-pill.selected {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+      }
+
+      /* Channel checkboxes */
+      .channel-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .channel-check {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        color: hsl(var(--foreground));
+      }
+      .channel-check input[type='checkbox'] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 3px;
+        background: hsl(var(--muted));
+        cursor: pointer;
+        position: relative;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .channel-check input[type='checkbox']:checked {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .channel-check input[type='checkbox']:checked::after {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 4px;
+        width: 4px;
+        height: 8px;
+        border: solid hsl(var(--primary-foreground));
+        border-width: 0 1.5px 1.5px 0;
+        transform: rotate(45deg);
+      }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 4px 20px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>V1 — Grouped Toggles: Notification settings with collapsible groups</p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell" id="app" data-theme="ternity-dark">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <i data-lucide="hourglass" class="logo-icon"></i>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="sun"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palm-tree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="role-badge">Admin</span>
+            </div>
+          </div>
+          <div class="user-chevrons">
+            <i data-lucide="chevrons-up-down"></i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <main class="main">
+        <div class="main-header">
+          <h1 class="main-title">Settings</h1>
+          <p class="main-subtitle">Manage your preferences and integrations</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab"><i data-lucide="settings"></i> General</button>
+          <button class="tab"><i data-lucide="palette"></i> Appearance</button>
+          <button class="tab"><i data-lucide="plug"></i> Integrations</button>
+          <button class="tab"><i data-lucide="download"></i> Downloads</button>
+          <button class="tab"><i data-lucide="tags"></i> Tags</button>
+          <button class="tab"><i data-lucide="clock"></i> Working Hours</button>
+          <button class="tab active"><i data-lucide="bell"></i> Notifications</button>
+        </div>
+
+        <div class="content-area">
+          <!-- ── Section 1: Contact Info ── -->
+          <div class="contact-section">
+            <div class="contact-section-title">
+              <i data-lucide="contact"></i> Contact Information
+            </div>
+
+            <!-- Phone -->
+            <div class="contact-row" id="phoneRow">
+              <i data-lucide="smartphone" class="contact-icon"></i>
+              <div class="contact-value">
+                +48 ••• ••• 357
+                <span class="verified-dot"></span>
+                <span class="verified-label">Verified</span>
+              </div>
+              <span class="send-test-link" onclick="sendTestSms()">Send test</span>
+            </div>
+            <span class="change-number-link" id="changeNumberLink" onclick="toggleChangePhone()"
+              >Change number</span
+            >
+
+            <!-- Change number form (hidden) -->
+            <div class="change-phone-form" id="changePhoneForm">
+              <label>Enter new phone number</label>
+              <div class="phone-input-row">
+                <input
+                  type="tel"
+                  class="phone-number-input"
+                  id="phoneInput"
+                  placeholder="+48 123 456 789"
+                />
+                <button class="verify-btn" onclick="verifyPhone()">Verify</button>
+              </div>
+              <div class="verify-feedback" id="verifyFeedback">
+                Verification code sent! Check your phone.
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="contact-row">
+              <i data-lucide="mail" class="contact-icon"></i>
+              <div class="contact-value">
+                przemyslaw.rudzki@netbulls.io
+                <span class="verified-dot"></span>
+                <span class="verified-label">Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 2: Notification Groups ── -->
+          <div class="groups-section">
+            <!-- Group 1: Timer Reminders (amber) -->
+            <div class="notif-group accent-amber" data-group="timer">
+              <div class="group-header" onclick="toggleGroup('timer', event)">
+                <div class="group-icon"><i data-lucide="clock"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Timer Reminders
+                    <span class="item-count-badge">3 notifications</span>
+                  </div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('timer', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron expanded" id="chevron-timer"></i>
+              </div>
+              <div class="group-body expanded" id="body-timer">
+                <!-- Forgot to start -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Forgot to start</div>
+                      <div class="notif-item-desc">No timer running after scheduled start</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="threshold-row">
+                      <span class="threshold-label">After</span>
+                      <div class="threshold-pills" data-group-name="forgot-start">
+                        <button class="threshold-pill selected" data-val="15m">15m</button>
+                        <button class="threshold-pill" data-val="30m">30m</button>
+                        <button class="threshold-pill" data-val="45m">45m</button>
+                        <button class="threshold-pill" data-val="1h">1h</button>
+                      </div>
+                    </div>
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Forgot to stop -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Forgot to stop</div>
+                      <div class="notif-item-desc">Timer still running after scheduled end</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="threshold-row">
+                      <span class="threshold-label">After</span>
+                      <div class="threshold-pills" data-group-name="forgot-stop">
+                        <button class="threshold-pill" data-val="15m">15m</button>
+                        <button class="threshold-pill selected" data-val="30m">30m</button>
+                        <button class="threshold-pill" data-val="45m">45m</button>
+                        <button class="threshold-pill" data-val="1h">1h</button>
+                      </div>
+                    </div>
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Long timer -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Long timer</div>
+                      <div class="notif-item-desc">Single timer running too long</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="threshold-row">
+                      <span class="threshold-label">After</span>
+                      <div class="threshold-pills" data-group-name="long-timer">
+                        <button class="threshold-pill" data-val="2h">2h</button>
+                        <button class="threshold-pill selected" data-val="4h">4h</button>
+                        <button class="threshold-pill" data-val="6h">6h</button>
+                        <button class="threshold-pill" data-val="8h">8h</button>
+                      </div>
+                    </div>
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 2: Leave & Absence (blue) -->
+            <div class="notif-group accent-blue" data-group="leave">
+              <div class="group-header" onclick="toggleGroup('leave', event)">
+                <div class="group-icon"><i data-lucide="calendar"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Leave & Absence
+                    <span class="item-count-badge">2 notifications</span>
+                  </div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('leave', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron" id="chevron-leave"></i>
+              </div>
+              <div class="group-body" id="body-leave">
+                <!-- Leave request updates -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Leave request updates</div>
+                      <div class="notif-item-desc">When your request is approved or denied</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                      <label class="channel-check"><input type="checkbox" checked /> SMS</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Team leave -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Team leave</div>
+                      <div class="notif-item-desc">When a team member goes on leave</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 3: Weekly Summary (teal) -->
+            <div class="notif-group accent-teal" data-group="weekly">
+              <div class="group-header" onclick="toggleGroup('weekly', event)">
+                <div class="group-icon"><i data-lucide="bar-chart-3"></i></div>
+                <div class="group-info">
+                  <div class="group-title">
+                    Weekly Summary
+                    <span class="item-count-badge">1 notification</span>
+                  </div>
+                </div>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" checked onchange="toggleMaster('weekly', this.checked)" />
+                  <span class="toggle-track"></span>
+                </label>
+                <i data-lucide="chevron-down" class="group-chevron" id="chevron-weekly"></i>
+              </div>
+              <div class="group-body" id="body-weekly">
+                <!-- Weekly hours report -->
+                <div class="notif-item">
+                  <div class="notif-item-header">
+                    <div class="notif-item-info">
+                      <div class="notif-item-title">Weekly hours report</div>
+                      <div class="notif-item-desc">Summary of your tracked hours</div>
+                    </div>
+                    <label class="toggle-switch-sm" onclick="event.stopPropagation()">
+                      <input type="checkbox" checked onchange="toggleItem(this)" />
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="notif-item-controls">
+                    <div class="channel-row">
+                      <label class="channel-check"><input type="checkbox" checked /> Email</label>
+                    </div>
+                    <div class="threshold-row">
+                      <span class="threshold-label">Delivery day</span>
+                      <div class="threshold-pills" data-group-name="weekly-day">
+                        <button class="threshold-pill selected" data-val="monday">Monday</button>
+                        <button class="threshold-pill" data-val="friday">Friday</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      /* ── Theme switcher ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      /* ── Group expand/collapse ── */
+      function toggleGroup(groupId, e) {
+        // Don't toggle if clicking the switch
+        if (e.target.closest('.toggle-switch')) return;
+        const body = document.getElementById('body-' + groupId);
+        const chevron = document.getElementById('chevron-' + groupId);
+        const isExpanded = body.classList.contains('expanded');
+
+        if (isExpanded) {
+          body.classList.remove('expanded');
+          chevron.classList.remove('expanded');
+        } else {
+          body.classList.add('expanded');
+          chevron.classList.add('expanded');
+        }
+      }
+
+      /* ── Master toggle ── */
+      function toggleMaster(groupId, checked) {
+        const body = document.getElementById('body-' + groupId);
+        if (checked) {
+          body.classList.remove('disabled');
+        } else {
+          body.classList.add('disabled');
+        }
+      }
+
+      /* ── Item toggle ── */
+      function toggleItem(checkbox) {
+        const item = checkbox.closest('.notif-item');
+        const controls = item.querySelector('.notif-item-controls');
+        if (checkbox.checked) {
+          controls.classList.remove('disabled-item');
+        } else {
+          controls.classList.add('disabled-item');
+        }
+      }
+
+      /* ── Threshold pills ── */
+      document.querySelectorAll('.threshold-pills').forEach((group) => {
+        group.querySelectorAll('.threshold-pill').forEach((pill) => {
+          pill.addEventListener('click', () => {
+            group
+              .querySelectorAll('.threshold-pill')
+              .forEach((p) => p.classList.remove('selected'));
+            pill.classList.add('selected');
+          });
+        });
+      });
+
+      /* ── Change phone flow ── */
+      function toggleChangePhone() {
+        const form = document.getElementById('changePhoneForm');
+        const isVisible = form.classList.contains('visible');
+        if (isVisible) {
+          form.classList.remove('visible');
+        } else {
+          form.classList.add('visible');
+          document.getElementById('phoneInput').focus();
+        }
+      }
+
+      function verifyPhone() {
+        const input = document.getElementById('phoneInput');
+        if (!input.value.trim()) {
+          input.focus();
+          return;
+        }
+        const feedback = document.getElementById('verifyFeedback');
+        feedback.classList.add('visible');
+        setTimeout(() => {
+          document.getElementById('changePhoneForm').classList.remove('visible');
+          feedback.classList.remove('visible');
+          input.value = '';
+          showToast('Phone number verified!');
+        }, 2000);
+      }
+
+      /* ── Send test SMS ── */
+      function sendTestSms() {
+        showToast('Sent!');
+      }
+
+      /* ── Toast ── */
+      function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('visible');
+        setTimeout(() => {
+          toast.classList.remove('visible');
+        }, 2500);
+      }
+
+      /* ── Init ── */
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

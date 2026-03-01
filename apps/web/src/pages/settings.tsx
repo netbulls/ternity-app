@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Settings2, Palette, Link2, Download, Tags, Plus, Trash2, X } from 'lucide-react';
+import {
+  Settings2,
+  Palette,
+  Link2,
+  Download,
+  Tags,
+  Plus,
+  Trash2,
+  X,
+  Clock3,
+  Bell,
+} from 'lucide-react';
 import { THEMES, ORG_TIMEZONE, PROJECT_COLORS, type ThemeId } from '@ternity/shared';
 import { useAuth } from '@/providers/auth-provider';
 import { BuildInfo } from '@/components/build-info';
@@ -14,6 +25,8 @@ import { DownloadsContent } from '@/pages/downloads';
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/use-reference-data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { WorkingHoursPanel } from '@/components/settings/working-hours-panel';
+import { NotificationsPanel } from '@/components/settings/notifications-panel';
 
 // ── Tab definitions ──────────────────────────────────────────────────────
 
@@ -26,9 +39,11 @@ interface Tab {
 const TABS: Tab[] = [
   { id: 'general', label: 'General', icon: Settings2 },
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'working-hours', label: 'Working Hours', icon: Clock3 },
   { id: 'integrations', label: 'Integrations', icon: Link2 },
-  { id: 'downloads', label: 'Downloads', icon: Download },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'tags', label: 'Tags', icon: Tags },
+  { id: 'downloads', label: 'Downloads', icon: Download },
 ];
 
 // ── Tab panels ───────────────────────────────────────────────────────────
@@ -527,6 +542,8 @@ export function SettingsPage() {
     appearance: AppearancePanel,
     integrations: IntegrationsPanel,
     downloads: DownloadsPanel,
+    'working-hours': WorkingHoursPanel,
+    notifications: NotificationsPanel,
   };
 
   const Panel = panels[activeTab]!;

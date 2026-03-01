@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications Email - V1 Ops Rail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Manrope', sans-serif;
+        background:
+          radial-gradient(circle at 15% 15%, rgba(0, 212, 170, 0.16), transparent 38%),
+          radial-gradient(circle at 82% 8%, rgba(112, 145, 255, 0.12), transparent 34%), #070809;
+        color: #e9ecef;
+      }
+
+      .page-head {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 20px 10px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 11px;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.52);
+      }
+
+      .page-head h1 {
+        margin: 8px 0 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+      }
+
+      .page-head p {
+        margin: 8px 0 0;
+        color: rgba(255, 255, 255, 0.74);
+        max-width: 780px;
+        line-height: 1.5;
+      }
+
+      .theme-bar {
+        max-width: 1280px;
+        margin: 6px auto 0;
+        padding: 0 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .theme-btn {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(9, 10, 12, 0.82);
+        color: rgba(255, 255, 255, 0.66);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'Manrope', sans-serif;
+        cursor: pointer;
+      }
+
+      .theme-btn.active {
+        border-color: rgba(0, 212, 170, 0.5);
+        color: rgba(255, 255, 255, 0.95);
+      }
+
+      #app {
+        max-width: 1280px;
+        margin: 12px auto 24px;
+        padding: 0 20px 30px;
+      }
+
+      .surface {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: 16px;
+        box-shadow: 0 18px 52px rgba(0, 0, 0, 0.25);
+      }
+
+      .intro {
+        padding: 18px;
+      }
+
+      .intro-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 18px;
+      }
+
+      .intro h2,
+      .intro h3 {
+        margin: 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .intro p,
+      .intro li {
+        font-size: 13px;
+        line-height: 1.5;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .intro ul {
+        margin: 9px 0 0;
+        padding-left: 18px;
+      }
+
+      .group-legend {
+        margin-top: 13px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .group-pill {
+        border-radius: 999px;
+        border: 1px solid hsl(var(--border));
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        background: hsl(var(--muted));
+      }
+
+      .group-pill i {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-right: 6px;
+        background: var(--pill-color);
+      }
+
+      .partials-grid {
+        margin-top: 12px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .partial-item {
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: hsl(var(--card));
+      }
+
+      .partial-item strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .partial-item span {
+        display: block;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 3px;
+      }
+
+      .lanes {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 372px;
+        gap: 16px;
+      }
+
+      .lane {
+        padding: 14px;
+      }
+
+      .lane-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .lane-head h4 {
+        margin: 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+      }
+
+      .lane-head span {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .email-card {
+        position: relative;
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        background: hsl(var(--card));
+        padding: 12px 12px 12px 16px;
+        overflow: hidden;
+      }
+
+      .email-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--accent);
+      }
+
+      .email-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .email-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .email-group {
+        margin: 0;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.3px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .section {
+        margin-top: 9px;
+      }
+
+      .label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.1px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 3px;
+      }
+
+      .value,
+      .variant-line,
+      .body-copy {
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.5;
+        color: hsl(var(--foreground));
+      }
+
+      .variant-line {
+        color: hsl(var(--foreground));
+        margin-bottom: 2px;
+      }
+
+      .variant-key {
+        color: hsl(var(--muted-foreground));
+        font-weight: 700;
+      }
+
+      .fields {
+        margin-top: 7px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .field-chip {
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 999px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        padding: 3px 8px;
+      }
+
+      .cta-wrap {
+        margin-top: 10px;
+      }
+
+      .cta {
+        border: 0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--accent);
+        color: #041110;
+      }
+
+      .cta-note {
+        margin-left: 8px;
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .g-start-gap {
+        --accent: hsl(35 100% 62%);
+      }
+
+      .g-stop-gap {
+        --accent: hsl(355 100% 64%);
+      }
+
+      .g-long-run {
+        --accent: hsl(168 100% 42%);
+      }
+
+      .g-leave-flow {
+        --accent: hsl(236 100% 76%);
+      }
+
+      .g-weekly-reconciliation {
+        --accent: hsl(192 94% 60%);
+      }
+
+      .mobile .stack {
+        justify-items: center;
+      }
+
+      .mobile .email-card {
+        width: 100%;
+        max-width: 332px;
+        padding: 11px 11px 11px 14px;
+      }
+
+      .mobile .email-title {
+        font-size: 13px;
+      }
+
+      .mobile .value,
+      .mobile .variant-line,
+      .mobile .body-copy {
+        font-size: 11px;
+      }
+
+      @media (max-width: 1080px) {
+        .intro-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .lanes {
+          grid-template-columns: 1fr;
+        }
+
+        .mobile .stack {
+          justify-items: stretch;
+        }
+
+        .mobile .email-card {
+          max-width: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page-head {
+          padding: 18px 14px 8px;
+        }
+
+        .theme-bar,
+        #app {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+
+        .page-head h1 {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-head">
+      <p class="eyebrow">Ternity email explorations</p>
+      <h1>V1 - Ops Rail</h1>
+      <p>
+        Action-first transactional layout. Every message starts with a clear event and immediate
+        next step. Left accent rails map directly to the five notification groups and keep scan
+        speed high.
+      </p>
+    </header>
+
+    <div class="theme-bar">
+      <button class="theme-btn active" data-theme="ternity-dark">Ternity Dark</button>
+      <button class="theme-btn" data-theme="ternity-light">Ternity Light</button>
+      <button class="theme-btn" data-theme="midnight">Midnight</button>
+      <button class="theme-btn" data-theme="warm-sand">Warm Sand</button>
+      <button class="theme-btn" data-theme="carbon">Carbon</button>
+      <button class="theme-btn" data-theme="high-contrast">High Contrast</button>
+    </div>
+
+    <main id="app" data-theme="ternity-dark">
+      <section class="surface intro">
+        <div class="intro-grid">
+          <div>
+            <h2>Rationale</h2>
+            <p>
+              Best fit for high-frequency operational nudges (start/stop/long timer). Keeps
+              cognitive load low and adapts cleanly to leave and weekly summary without changing
+              structure.
+            </p>
+            <div class="group-legend" id="groupLegend"></div>
+          </div>
+          <div>
+            <h3>Shared template system</h3>
+            <p>
+              Base order: preheader -> header -> status block -> info rows -> action block ->
+              footer. Same structure across all six notification types.
+            </p>
+            <div class="partials-grid">
+              <div class="partial-item">
+                <strong>EmailHeader</strong>
+                <span>Ternity mark, group label, send time, timezone.</span>
+              </div>
+              <div class="partial-item">
+                <strong>StatusBlock + InfoRows</strong>
+                <span>What happened, key dynamic values, plain language impact.</span>
+              </div>
+              <div class="partial-item">
+                <strong>ActionBlock + Footer</strong>
+                <span>Single clear CTA, fallback deep-link, notification preferences link.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lanes">
+        <article class="surface lane desktop">
+          <div class="lane-head">
+            <h4>Desktop preview</h4>
+            <span>600px email canvas</span>
+          </div>
+          <div class="stack" id="desktopCards"></div>
+        </article>
+
+        <article class="surface lane mobile">
+          <div class="lane-head">
+            <h4>Mobile preview</h4>
+            <span>332px responsive stack</span>
+          </div>
+          <div class="stack" id="mobileCards"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const groups = [
+        { id: 'start-gap', label: 'Start Gap', color: 'hsl(35 100% 62%)' },
+        { id: 'stop-gap', label: 'Stop Gap', color: 'hsl(355 100% 64%)' },
+        { id: 'long-run', label: 'Long Run', color: 'hsl(168 100% 42%)' },
+        { id: 'leave-flow', label: 'Leave Flow', color: 'hsl(236 100% 76%)' },
+        { id: 'weekly-reconciliation', label: 'Weekly Reconciliation', color: 'hsl(192 94% 60%)' },
+      ];
+
+      const notifications = [
+        {
+          id: 'forgot-start',
+          title: 'Forgot to start timer',
+          group: 'start-gap',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - No timer started 15m after 08:30 - Start now or log time manually from your scheduled start.',
+          subject: 'No timer started 15m after 08:30',
+          preheader: 'Start now or log time manually from your scheduled start.',
+          body: 'Hi Marta, your workday was scheduled to start at 08:30 and we still do not see a running timer. If you already started work, add a manual entry from 08:30. Otherwise, start a timer now to keep today accurate.',
+          cta: 'Start timer',
+          variables: ['user: Marta', 'scheduled start: 08:30', 'threshold: 15m'],
+        },
+        {
+          id: 'forgot-stop',
+          title: 'Forgot to stop timer',
+          group: 'stop-gap',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Timer still running 30m after your scheduled end - Started at 08:42. Stop it now to avoid over-logging.',
+          subject: 'Timer still running 30m after your scheduled end',
+          preheader: 'Started at 08:42. Stop it now to avoid over-logging.',
+          body: 'Hi Marta, your timer started at 08:42 and is still running past your scheduled end time (16:30). Please stop the timer now and adjust the entry if needed.',
+          cta: 'Stop timer',
+          variables: [
+            'user: Marta',
+            'timer started: 08:42',
+            'scheduled end: 16:30',
+            'threshold: 30m',
+          ],
+        },
+        {
+          id: 'long-running',
+          title: 'Long running timer',
+          group: 'long-run',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Long running timer detected (6h 18m) - Your threshold is 4h. Review this entry now.',
+          subject: 'Long running timer detected (6h 18m)',
+          preheader: 'Your threshold is 4h. Review this entry now.',
+          body: 'Hi Marta, this timer has been running for 6h 18m, which is over your long-timer threshold of 4h. Review the entry and split or stop it if this includes breaks or context switches.',
+          cta: 'Review timer',
+          variables: ['user: Marta', 'elapsed: 6h 18m', 'threshold: 4h', 'timer started: 08:42'],
+        },
+        {
+          id: 'leave-approved',
+          title: 'Leave request update (approved)',
+          group: 'leave-flow',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Leave approved: 17-19 Mar 2026 - Your calendar is updated.',
+          subject: 'Leave approved: 17-19 Mar 2026',
+          preheader: 'Your calendar is updated.',
+          body: 'Hi Marta, your leave request for 17-19 Mar 2026 was approved. No action is required unless your plans changed.',
+          cta: 'View leave',
+          variables: ['user: Marta', 'status: approved', 'range: 17-19 Mar 2026'],
+        },
+        {
+          id: 'leave-declined',
+          title: 'Leave request update (declined)',
+          group: 'leave-flow',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Leave declined: 28 Mar 2026 - Review the note and update your request.',
+          subject: 'Leave declined: 28 Mar 2026',
+          preheader: 'Review the note and update your request.',
+          body: 'Hi Marta, your leave request for 28 Mar 2026 was declined. Manager note: project handover is scheduled that day. Please choose another date and submit again.',
+          cta: 'Edit request',
+          variables: ['user: Marta', 'status: declined', 'range: 28 Mar 2026'],
+        },
+        {
+          id: 'team-leave',
+          title: 'Team leave alert',
+          group: 'leave-flow',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Team leave alert: Elena is out 24-25 Mar 2026 - Check coverage and replan work if needed.',
+          subject: 'Team leave alert: Elena is out 24-25 Mar 2026',
+          preheader: 'Check coverage and replan work if needed.',
+          body: 'Heads up, Marta - Elena is on leave during 24-25 Mar 2026. Review assignments and timelines to keep delivery on track.',
+          cta: 'Open team calendar',
+          variables: ['recipient: Marta', 'teammate: Elena', 'range: 24-25 Mar 2026'],
+        },
+        {
+          id: 'weekly-hours',
+          title: 'Weekly hours report',
+          group: 'weekly-reconciliation',
+          inboxLine:
+            'Ternity <noreply@ternity.xyz> - Weekly hours: 36.5h / 40h - Current gap: 3.5h.',
+          subject: 'Weekly hours: 36.5h / 40h',
+          preheader: 'Current gap: 3.5h.',
+          body: 'Hi Marta, you logged 36.5h this week against 40h expected from your schedule. Your current gap is 3.5h. Review missing entries before week close on Friday at 17:00.',
+          cta: 'Review week',
+          variables: ['user: Marta', 'tracked: 36.5h', 'expected: 40h', 'gap: 3.5h'],
+        },
+      ];
+
+      const groupById = Object.fromEntries(groups.map((group) => [group.id, group]));
+
+      function renderLegend() {
+        const host = document.getElementById('groupLegend');
+        host.innerHTML = groups
+          .map(
+            (group) =>
+              '<span class="group-pill"><i style="--pill-color:' +
+              group.color +
+              '"></i>' +
+              group.label +
+              '</span>',
+          )
+          .join('');
+      }
+
+      function renderVariantRows(variants) {
+        return variants
+          .map(
+            (variant) =>
+              '<p class="variant-line"><span class="variant-key">' +
+              variant.key +
+              ':</span> ' +
+              variant.value +
+              '</p>',
+          )
+          .join('');
+      }
+
+      function renderCard(notification) {
+        const group = groupById[notification.group];
+        const subject = notification.subject
+          ? '<p class="value">' + notification.subject + '</p>'
+          : renderVariantRows(notification.subjectVariants);
+        const preheader = notification.preheader
+          ? '<p class="value">' + notification.preheader + '</p>'
+          : renderVariantRows(notification.preheaderVariants);
+
+        const cta = notification.cta
+          ? '<button class="cta" type="button">' +
+            notification.cta +
+            '</button><span class="cta-note">Primary action</span>'
+          : renderVariantRows(notification.ctaVariants);
+
+        const fields = notification.variables
+          .map((variable) => '<span class="field-chip">' + variable + '</span>')
+          .join('');
+
+        return (
+          '<article class="email-card g-' +
+          group.id +
+          '">' +
+          '<div class="email-top">' +
+          '<div><h5 class="email-title">' +
+          notification.title +
+          '</h5><p class="email-group">' +
+          group.label +
+          '</p></div>' +
+          '</div>' +
+          '<div class="section"><span class="label">Inbox preview</span><p class="value">' +
+          notification.inboxLine +
+          '</p></div>' +
+          '<div class="section"><span class="label">Subject</span>' +
+          subject +
+          '</div>' +
+          '<div class="section"><span class="label">Preheader</span>' +
+          preheader +
+          '</div>' +
+          '<div class="section"><span class="label">Body copy</span><p class="body-copy">' +
+          notification.body +
+          '</p></div>' +
+          '<div class="section"><span class="label">Sample data</span><div class="fields">' +
+          fields +
+          '</div></div>' +
+          '<div class="cta-wrap"><span class="label">CTA</span>' +
+          cta +
+          '</div>' +
+          '</article>'
+        );
+      }
+
+      function renderCards() {
+        const html = notifications.map(renderCard).join('');
+        document.getElementById('desktopCards').innerHTML = html;
+        document.getElementById('mobileCards').innerHTML = html;
+      }
+
+      function initThemeSwitcher() {
+        const buttons = document.querySelectorAll('.theme-btn');
+        const app = document.getElementById('app');
+
+        buttons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const theme = button.getAttribute('data-theme');
+            app.setAttribute('data-theme', theme);
+            buttons.forEach((candidate) => candidate.classList.remove('active'));
+            button.classList.add('active');
+          });
+        });
+      }
+
+      renderLegend();
+      renderCards();
+      initThemeSwitcher();
+    </script>
+  </body>
+</html>

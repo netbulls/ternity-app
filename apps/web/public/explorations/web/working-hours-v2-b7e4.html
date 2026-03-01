@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Working Hours — V2 Visual Blocks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+      }
+
+      /* ── Theme switcher (top bar, outside app) ── */
+      .switcher-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 0;
+        background: rgba(0, 0, 0, 0.85);
+        border-bottom: 1px solid #1a1a1a;
+      }
+      .switcher-bar .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+        margin-right: 4px;
+      }
+      .switcher-bar button {
+        font-family: 'Inter', sans-serif;
+        font-size: 9px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-bar button:hover {
+        border-color: #444;
+      }
+      .switcher-bar button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App shell ── */
+      #app {
+        display: flex;
+        height: 100vh;
+        padding-top: 28px; /* space for switcher bar */
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        height: 100%;
+        background: hsl(var(--sidebar-background));
+        border-right: 1px solid hsl(var(--sidebar-border));
+        display: flex;
+        flex-direction: column;
+        padding: 20px 12px;
+        overflow-y: auto;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .logo-icon {
+        width: 18px;
+        height: 22px;
+        color: hsl(var(--primary));
+      }
+      .logo-text {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: hsl(var(--sidebar-foreground));
+      }
+
+      .section-label {
+        padding: 8px 10px 4px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .nav-item i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      /* User block */
+      .user-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 8px;
+        background: hsl(var(--muted) / 0.5);
+        cursor: default;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-org {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .admin-badge {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.12);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .user-chevrons {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+
+      /* ── Main area ── */
+      .main {
+        flex: 1;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        background: hsl(var(--background));
+      }
+
+      /* Page header */
+      .page-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: hsl(var(--foreground));
+      }
+      .page-subtitle {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* ── Tab bar ── */
+      .tab-bar {
+        display: flex;
+        gap: 0;
+        margin-top: 20px;
+        border-bottom: 1px solid hsl(var(--border));
+        overflow-x: auto;
+      }
+      .tab-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 14px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .tab-item:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab-item.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+      }
+      .tab-item i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Content area ── */
+      .content-area {
+        max-width: 700px;
+        margin-top: 24px;
+      }
+
+      /* Section header */
+      .wh-header {
+        margin-bottom: 20px;
+      }
+      .wh-header h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        letter-spacing: 0.3px;
+      }
+      .wh-header p {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 3px;
+      }
+      .effective-date {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+        margin-top: 6px;
+      }
+
+      /* ── Timeline grid ── */
+      .timeline-container {
+        position: relative;
+      }
+
+      /* Hour header */
+      .hour-header {
+        display: flex;
+        align-items: flex-end;
+        margin-left: 46px;
+        margin-right: 42px;
+        margin-bottom: 6px;
+        position: relative;
+        height: 18px;
+      }
+      .hour-mark {
+        position: absolute;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        transform: translateX(-50%);
+      }
+
+      /* Day rows */
+      .day-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        height: 38px;
+        position: relative;
+      }
+      .day-label {
+        width: 38px;
+        flex-shrink: 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: right;
+        padding-right: 8px;
+      }
+      .day-label.day-off {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+
+      .day-track {
+        flex: 1;
+        height: 100%;
+        background: hsl(var(--t-stat-bg));
+        border-radius: 6px;
+        position: relative;
+        overflow: visible;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .day-track:hover {
+        background: hsl(var(--muted));
+      }
+
+      /* Grid lines */
+      .day-track::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          to right,
+          hsl(var(--border) / 0.25) 0px,
+          hsl(var(--border) / 0.25) 1px,
+          transparent 1px,
+          transparent calc(100% / 16)
+        );
+        border-radius: 6px;
+        pointer-events: none;
+      }
+
+      .work-block {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        background: hsl(var(--primary) / 0.12);
+        border: 1.5px solid hsl(var(--primary) / 0.45);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 2;
+      }
+      .work-block:hover {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.65);
+      }
+      .work-block.selected {
+        background: hsl(var(--primary) / 0.22);
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+      }
+      .block-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--primary));
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      /* Day off zone */
+      .day-off-zone {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 8px;
+        right: 8px;
+        border: 1.5px dashed hsl(var(--border));
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .day-off-zone:hover {
+        border-color: hsl(var(--muted-foreground));
+        background: hsl(var(--muted) / 0.3);
+      }
+      .day-off-label {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .hours-count {
+        width: 36px;
+        flex-shrink: 0;
+        text-align: right;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: hsl(var(--muted-foreground));
+        padding-left: 6px;
+      }
+      .hours-count.has-hours {
+        color: hsl(var(--foreground));
+        opacity: 0.7;
+      }
+
+      /* ── Popover ── */
+      .edit-popover {
+        position: fixed;
+        z-index: 100;
+        background: hsl(var(--popover));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 0 0 1px hsl(var(--border) / 0.3);
+        width: 220px;
+        display: none;
+      }
+      .edit-popover.open {
+        display: block;
+      }
+      .edit-popover::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 24px;
+        width: 10px;
+        height: 10px;
+        background: hsl(var(--popover));
+        border-left: 1px solid hsl(var(--border));
+        border-top: 1px solid hsl(var(--border));
+        transform: rotate(45deg);
+      }
+      .popover-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .popover-title .close-btn {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        transition: all 0.15s;
+        background: none;
+        border: none;
+      }
+      .popover-title .close-btn:hover {
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+      }
+      .time-inputs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .time-field {
+        flex: 1;
+      }
+      .time-field label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 4px;
+      }
+      .time-field input {
+        width: 100%;
+        padding: 6px 8px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        color: hsl(var(--foreground));
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .time-field input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .time-separator {
+        font-size: 16px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 16px;
+      }
+
+      /* Day off switch row */
+      .dayoff-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0;
+      }
+      .dayoff-row span {
+        font-size: 12px;
+        color: hsl(var(--foreground));
+      }
+      .dayoff-switch {
+        position: relative;
+        width: 34px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .dayoff-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .dayoff-switch .track {
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 9px;
+        transition: all 0.2s;
+      }
+      .dayoff-switch .thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition: all 0.2s;
+      }
+      .dayoff-switch input:checked ~ .track {
+        background: hsl(var(--destructive) / 0.2);
+        border-color: hsl(var(--destructive) / 0.4);
+      }
+      .dayoff-switch input:checked ~ .thumb {
+        left: 18px;
+        background: hsl(var(--destructive));
+      }
+
+      /* ── Weekly summary ── */
+      .weekly-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+        padding: 14px 18px;
+        background: hsl(var(--t-stat-bg));
+        border-radius: 8px;
+        border: 1px solid hsl(var(--border));
+      }
+      .summary-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .summary-left i {
+        width: 16px;
+        height: 16px;
+        color: hsl(var(--primary));
+      }
+      .summary-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+      }
+      .summary-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: hsl(var(--primary));
+        letter-spacing: 0.5px;
+      }
+      .summary-value span {
+        font-size: 13px;
+        font-weight: 400;
+        color: hsl(var(--muted-foreground));
+        margin-left: 2px;
+      }
+      .summary-right {
+        text-align: right;
+      }
+      .summary-detail {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Theme switcher bar -->
+    <div class="switcher-bar">
+      <span class="switcher-label">Theme</span>
+      <button class="active" onclick="setTheme('ternity-dark', this)">Ternity Dark</button>
+      <button onclick="setTheme('ternity-light', this)">Ternity Light</button>
+      <button onclick="setTheme('midnight', this)">Midnight</button>
+      <button onclick="setTheme('warm-sand', this)">Warm Sand</button>
+      <button onclick="setTheme('carbon', this)">Carbon</button>
+      <button onclick="setTheme('high-contrast', this)">High Contrast</button>
+    </div>
+
+    <div id="app" data-theme="ternity-dark">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <svg
+            class="logo-icon"
+            viewBox="0 0 18 22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M9 1v5M5 3.5h8M3 6h12a1 1 0 011 1v9a5 5 0 01-5 5H7a5 5 0 01-5-5V7a1 1 0 011-1z"
+            />
+            <path d="M6 10v4M9 9v5M12 10v4" stroke-linecap="round" />
+          </svg>
+          <span class="logo-text">Ternity</span>
+        </div>
+
+        <div class="section-label">Tracking</div>
+        <a class="nav-item"><i data-lucide="timer"></i> My Day</a>
+        <a class="nav-item"><i data-lucide="list"></i> Entries</a>
+        <a class="nav-item"><i data-lucide="calendar"></i> Calendar</a>
+        <a class="nav-item"><i data-lucide="palmtree"></i> Leave</a>
+        <a class="nav-item"><i data-lucide="bar-chart-3"></i> Reports</a>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-block">
+          <div class="avatar">PR</div>
+          <div class="user-info">
+            <div class="user-name">Przemyslaw R.</div>
+            <div class="user-org">
+              Netbulls
+              <span class="admin-badge">Admin</span>
+            </div>
+          </div>
+          <i data-lucide="chevrons-up-down" class="user-chevrons"></i>
+        </div>
+      </aside>
+
+      <!-- ── Main area ── -->
+      <main class="main">
+        <div class="page-title">Settings</div>
+        <div class="page-subtitle">Manage your account preferences and workspace configuration</div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><i data-lucide="sliders-horizontal"></i> General</div>
+          <div class="tab-item"><i data-lucide="palette"></i> Appearance</div>
+          <div class="tab-item"><i data-lucide="plug"></i> Integrations</div>
+          <div class="tab-item"><i data-lucide="download"></i> Downloads</div>
+          <div class="tab-item"><i data-lucide="tag"></i> Tags</div>
+          <div class="tab-item active"><i data-lucide="clock"></i> Working Hours</div>
+          <div class="tab-item"><i data-lucide="bell"></i> Notifications</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content-area">
+          <div class="wh-header">
+            <h2>Weekly Schedule</h2>
+            <p>Drag to adjust your weekly schedule</p>
+            <div class="effective-date">Effective since 3 Feb 2026</div>
+          </div>
+
+          <div class="timeline-container" id="timeline">
+            <div class="hour-header" id="hourHeader"></div>
+            <!-- Day rows rendered by JS -->
+          </div>
+
+          <div class="weekly-summary">
+            <div class="summary-left">
+              <i data-lucide="sigma"></i>
+              <div>
+                <div class="summary-label">Weekly Total</div>
+                <div class="summary-detail" id="summaryDetail">5 working days</div>
+              </div>
+            </div>
+            <div class="summary-right">
+              <div class="summary-value" id="weeklyTotal">40<span>h</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Edit popover (single, repositioned) -->
+    <div class="edit-popover" id="editPopover" data-theme="ternity-dark">
+      <div class="popover-title">
+        <span id="popoverDayName">Monday</span>
+        <button class="close-btn" onclick="closePopover()">
+          <i data-lucide="x" style="width: 14px; height: 14px"></i>
+        </button>
+      </div>
+      <div class="time-inputs">
+        <div class="time-field">
+          <label>Start</label>
+          <input type="time" id="inputStart" value="09:00" />
+        </div>
+        <span class="time-separator">&mdash;</span>
+        <div class="time-field">
+          <label>End</label>
+          <input type="time" id="inputEnd" value="17:00" />
+        </div>
+      </div>
+      <div class="dayoff-row">
+        <span>Day off</span>
+        <label class="dayoff-switch">
+          <input type="checkbox" id="dayoffToggle" />
+          <span class="track"></span>
+          <span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+
+    <script>
+      // --- Data ---
+      const HOUR_MIN = 6;
+      const HOUR_MAX = 22;
+      const HOUR_RANGE = HOUR_MAX - HOUR_MIN;
+
+      const DAYS = [
+        { key: 'mon', label: 'Mon', full: 'Monday' },
+        { key: 'tue', label: 'Tue', full: 'Tuesday' },
+        { key: 'wed', label: 'Wed', full: 'Wednesday' },
+        { key: 'thu', label: 'Thu', full: 'Thursday' },
+        { key: 'fri', label: 'Fri', full: 'Friday' },
+        { key: 'sat', label: 'Sat', full: 'Saturday' },
+        { key: 'sun', label: 'Sun', full: 'Sunday' },
+      ];
+
+      let schedule = {
+        mon: { start: 9, end: 17 },
+        tue: { start: 9, end: 17 },
+        wed: { start: 9, end: 17 },
+        thu: { start: 9, end: 17 },
+        fri: { start: 9, end: 17 },
+        sat: null,
+        sun: null,
+      };
+
+      let selectedDay = null;
+
+      // --- Helpers ---
+      function hourToPercent(h) {
+        return ((h - HOUR_MIN) / HOUR_RANGE) * 100;
+      }
+
+      function formatHour(h) {
+        const hours = Math.floor(h);
+        const mins = Math.round((h - hours) * 60);
+        return hours + ':' + String(mins).padStart(2, '0');
+      }
+
+      // --- Rendering ---
+      function renderHourHeader() {
+        const header = document.getElementById('hourHeader');
+        header.innerHTML = '';
+        for (let h = HOUR_MIN; h <= HOUR_MAX; h += 2) {
+          const mark = document.createElement('span');
+          mark.className = 'hour-mark';
+          mark.textContent = h;
+          mark.style.left = hourToPercent(h) + '%';
+          header.appendChild(mark);
+        }
+      }
+
+      function renderTimeline() {
+        const container = document.getElementById('timeline');
+        container.querySelectorAll('.day-row').forEach((r) => r.remove());
+
+        DAYS.forEach((day) => {
+          const data = schedule[day.key];
+          const row = document.createElement('div');
+          row.className = 'day-row';
+
+          const label = document.createElement('div');
+          label.className = 'day-label' + (data ? '' : ' day-off');
+          label.textContent = day.label;
+
+          const track = document.createElement('div');
+          track.className = 'day-track';
+          track.dataset.day = day.key;
+
+          if (data) {
+            const block = document.createElement('div');
+            block.className = 'work-block' + (selectedDay === day.key ? ' selected' : '');
+            const leftPct = hourToPercent(data.start);
+            const rightPct = hourToPercent(data.end);
+            block.style.left = leftPct + '%';
+            block.style.width = rightPct - leftPct + '%';
+
+            const blockLabel = document.createElement('span');
+            blockLabel.className = 'block-label';
+            blockLabel.textContent = formatHour(data.start) + ' \u2014 ' + formatHour(data.end);
+            block.appendChild(blockLabel);
+
+            block.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openPopover(day.key, block);
+            });
+
+            track.appendChild(block);
+          } else {
+            const zone = document.createElement('div');
+            zone.className = 'day-off-zone';
+            const zoneLabel = document.createElement('span');
+            zoneLabel.className = 'day-off-label';
+            zoneLabel.textContent = 'Day off';
+            zone.appendChild(zoneLabel);
+
+            zone.addEventListener('click', (e) => {
+              e.stopPropagation();
+              enableDay(day.key);
+            });
+
+            track.appendChild(zone);
+          }
+
+          const hours = document.createElement('div');
+          hours.className = 'hours-count' + (data ? ' has-hours' : '');
+          hours.textContent = data ? data.end - data.start + 'h' : '\u2014';
+
+          row.appendChild(label);
+          row.appendChild(track);
+          row.appendChild(hours);
+          container.appendChild(row);
+        });
+
+        updateSummary();
+        lucide.createIcons();
+      }
+
+      function updateSummary() {
+        let total = 0;
+        let workDays = 0;
+        DAYS.forEach((day) => {
+          const data = schedule[day.key];
+          if (data) {
+            total += data.end - data.start;
+            workDays++;
+          }
+        });
+        document.getElementById('weeklyTotal').innerHTML = total + '<span>h</span>';
+        document.getElementById('summaryDetail').textContent =
+          workDays + ' working day' + (workDays !== 1 ? 's' : '');
+      }
+
+      // --- Popover ---
+      function openPopover(dayKey, anchorEl) {
+        selectedDay = dayKey;
+        renderTimeline();
+
+        const data = schedule[dayKey];
+        const dayInfo = DAYS.find((d) => d.key === dayKey);
+        document.getElementById('popoverDayName').textContent = dayInfo.full;
+
+        const startInput = document.getElementById('inputStart');
+        const endInput = document.getElementById('inputEnd');
+        const dayoffToggle = document.getElementById('dayoffToggle');
+
+        if (data) {
+          startInput.value = formatHour(data.start);
+          endInput.value = formatHour(data.end);
+          startInput.disabled = false;
+          endInput.disabled = false;
+          dayoffToggle.checked = false;
+        } else {
+          startInput.value = '09:00';
+          endInput.value = '17:00';
+          startInput.disabled = true;
+          endInput.disabled = true;
+          dayoffToggle.checked = true;
+        }
+
+        const popover = document.getElementById('editPopover');
+        popover.classList.add('open');
+
+        // Position below the block
+        const rect = anchorEl.getBoundingClientRect();
+        popover.style.top = rect.bottom + 10 + 'px';
+        popover.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 236)) + 'px';
+
+        lucide.createIcons();
+      }
+
+      function closePopover() {
+        selectedDay = null;
+        document.getElementById('editPopover').classList.remove('open');
+        renderTimeline();
+      }
+
+      // Auto-save on time input change
+      document.getElementById('inputStart').addEventListener('change', function () {
+        if (!selectedDay) return;
+        applyCurrentTimes();
+      });
+      document.getElementById('inputEnd').addEventListener('change', function () {
+        if (!selectedDay) return;
+        applyCurrentTimes();
+      });
+
+      // Auto-save on day off toggle
+      document.getElementById('dayoffToggle').addEventListener('change', function () {
+        if (!selectedDay) return;
+        if (this.checked) {
+          schedule[selectedDay] = null;
+          document.getElementById('inputStart').disabled = true;
+          document.getElementById('inputEnd').disabled = true;
+        } else {
+          schedule[selectedDay] = { start: 9, end: 17 };
+          document.getElementById('inputStart').disabled = false;
+          document.getElementById('inputEnd').disabled = false;
+          document.getElementById('inputStart').value = '09:00';
+          document.getElementById('inputEnd').value = '17:00';
+        }
+        renderTimeline();
+      });
+
+      function applyCurrentTimes() {
+        if (!selectedDay) return;
+        const startVal = document.getElementById('inputStart').value;
+        const endVal = document.getElementById('inputEnd').value;
+
+        const startParts = startVal.split(':');
+        const endParts = endVal.split(':');
+        const startH = parseInt(startParts[0]) + parseInt(startParts[1]) / 60;
+        const endH = parseInt(endParts[0]) + parseInt(endParts[1]) / 60;
+
+        if (endH <= startH || startH < HOUR_MIN || endH > HOUR_MAX) return;
+
+        schedule[selectedDay] = { start: startH, end: endH };
+        renderTimeline();
+      }
+
+      function enableDay(dayKey) {
+        schedule[dayKey] = { start: 9, end: 17 };
+        renderTimeline();
+      }
+
+      // --- Theme ---
+      function setTheme(t, btn) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.getElementById('editPopover').setAttribute('data-theme', t);
+        document
+          .querySelectorAll('.switcher-bar button')
+          .forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+
+      // --- Close popover on outside click ---
+      document.addEventListener('click', (e) => {
+        if (
+          !e.target.closest('.work-block') &&
+          !e.target.closest('#editPopover') &&
+          !e.target.closest('.day-off-zone')
+        ) {
+          closePopover();
+        }
+      });
+
+      // --- Init ---
+      renderHourHeader();
+      renderTimeline();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
