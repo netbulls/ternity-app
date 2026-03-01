@@ -171,7 +171,7 @@ export function DayTimeline({ date, entries }: Props) {
       {/* Header */}
       <div
         className="flex items-center justify-between"
-        style={{ marginBottom: scaled(10), minHeight: scaled(24) }}
+        style={{ marginBottom: scaled(4), minHeight: scaled(24) }}
       >
         <span
           className="font-brand font-semibold uppercase text-muted-foreground"

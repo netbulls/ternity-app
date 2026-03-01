@@ -108,7 +108,7 @@ export function WeekStrip({
       {/* Header row */}
       <div
         className="flex items-center justify-between"
-        style={{ marginBottom: scaled(10), minHeight: scaled(24) }}
+        style={{ marginBottom: scaled(6), minHeight: scaled(24) }}
       >
         <span
           className="font-brand font-semibold uppercase text-muted-foreground"
