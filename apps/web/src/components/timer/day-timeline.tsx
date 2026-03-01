@@ -9,10 +9,47 @@ interface Props {
   entries: Entry[];
 }
 
-/** Working-hours window: 7 AM – 19 PM (12 hours) */
-const HOUR_START = 7;
-const HOUR_END = 19;
-const TOTAL_HOURS = HOUR_END - HOUR_START;
+/** Default working-hours window: 7 AM – 19 PM */
+const DEFAULT_HOUR_START = 7;
+const DEFAULT_HOUR_END = 19;
+
+/**
+ * Compute the visible hour window by expanding the default 7–19 range
+ * to include any entry segments that fall outside it.
+ */
+function getVisibleWindow(entries: Entry[], date: string): { hourStart: number; hourEnd: number } {
+  let earliest = DEFAULT_HOUR_START;
+  let latest = DEFAULT_HOUR_END;
+
+  const { dayStartMs, dayEndMs } = getDayBounds(date);
+
+  for (const entry of entries) {
+    for (const seg of entry.segments) {
+      if (!seg.startedAt) continue;
+
+      const segStartMs = new Date(seg.startedAt).getTime();
+      const segEndMs = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
+
+      // Clamp to day boundaries
+      const clampedStartMs = Math.max(segStartMs, dayStartMs);
+      const clampedEndMs = Math.min(segEndMs, dayEndMs);
+      if (clampedEndMs <= clampedStartMs) continue;
+
+      const startOfDay = new Date(date + 'T00:00:00').getTime();
+      const startHour = (clampedStartMs - startOfDay) / 3600000;
+      const endHour = (clampedEndMs - startOfDay) / 3600000;
+
+      earliest = Math.min(earliest, Math.floor(startHour));
+      latest = Math.max(latest, Math.ceil(endHour));
+    }
+  }
+
+  // Clamp to valid range
+  earliest = Math.max(0, earliest);
+  latest = Math.min(24, latest);
+
+  return { hourStart: earliest, hourEnd: latest };
+}
 
 /** Default project colors (matching --t-project-* tokens) */
 const PROJECT_COLORS = [
@@ -57,6 +94,8 @@ function getDayBounds(date: string): { dayStartMs: number; dayEndMs: number } {
 function buildTimeline(
   entries: Entry[],
   date: string,
+  hourStart: number,
+  hourEnd: number,
 ): { blocks: TimeBlock[]; todaySeconds: number } {
   const projectColorMap = new Map<string, string>();
   let colorIdx = 0;
@@ -72,8 +111,8 @@ function buildTimeline(
   }
 
   const { dayStartMs, dayEndMs } = getDayBounds(date);
-  const windowStartMin = HOUR_START * 60; // minutes from midnight for display window
-  const windowEndMin = HOUR_END * 60;
+  const windowStartMin = hourStart * 60; // minutes from midnight for display window
+  const windowEndMin = hourEnd * 60;
   const windowSpan = windowEndMin - windowStartMin;
 
   const blocks: TimeBlock[] = [];
@@ -136,11 +175,11 @@ function buildTimeline(
 }
 
 /** Get the "now" position as a 0–1 fraction within the timeline, or null if outside window */
-function getNowPosition(): number | null {
+function getNowPosition(hourStart: number, hourEnd: number): number | null {
   const now = new Date();
   const min = now.getHours() * 60 + now.getMinutes();
-  const dayStart = HOUR_START * 60;
-  const dayEnd = HOUR_END * 60;
+  const dayStart = hourStart * 60;
+  const dayEnd = hourEnd * 60;
   if (min < dayStart || min > dayEnd) return null;
   return (min - dayStart) / (dayEnd - dayStart);
 }
@@ -154,14 +193,20 @@ function getTimelineLabel(date: string): string {
 }
 
 export function DayTimeline({ date, entries }: Props) {
-  const { blocks, todaySeconds } = useMemo(() => buildTimeline(entries, date), [entries, date]);
+  const { hourStart, hourEnd } = useMemo(() => getVisibleWindow(entries, date), [entries, date]);
+  const totalHours = hourEnd - hourStart;
+
+  const { blocks, todaySeconds } = useMemo(
+    () => buildTimeline(entries, date, hourStart, hourEnd),
+    [entries, date, hourStart, hourEnd],
+  );
 
   const isToday = date === new Date().toISOString().slice(0, 10);
-  const nowPos = isToday ? getNowPosition() : null;
+  const nowPos = isToday ? getNowPosition(hourStart, hourEnd) : null;
 
   const timelineLabel = getTimelineLabel(date);
 
-  const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => HOUR_START + i);
+  const hours = Array.from({ length: totalHours + 1 }, (_, i) => hourStart + i);
 
   return (
     <div
