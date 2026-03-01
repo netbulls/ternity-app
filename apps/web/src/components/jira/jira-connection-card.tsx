@@ -187,12 +187,18 @@ export function JiraConnectionCard({
                   {connection.siteName}
                 </span>
                 {isExpired ? (
-                  <span className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-500">
+                  <span
+                    className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 font-semibold text-amber-500"
+                    style={{ fontSize: scaled(9) }}
+                  >
                     <AlertTriangle className="h-2.5 w-2.5" />
                     Reconnect
                   </span>
                 ) : (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                  <span
+                    className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary"
+                    style={{ fontSize: scaled(9) }}
+                  >
                     Connected
                   </span>
                 )}

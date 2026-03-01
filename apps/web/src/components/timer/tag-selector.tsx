@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, ChevronDown, Plus, Tags } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { scaled } from '@/lib/scaled';
 import { useTags, useCreateTag } from '@/hooks/use-reference-data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -50,10 +51,11 @@ export function TagSelector({ value, onChange, triggerClassName }: Props) {
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs transition-colors hover:bg-accent',
+            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 transition-colors hover:bg-accent',
             selectedTags.length > 0 ? 'text-foreground' : 'text-muted-foreground',
             triggerClassName,
           )}
+          style={{ fontSize: scaled(12) }}
         >
           <Tags className="h-3.5 w-3.5" />
           {selectedTags.length > 0 ? (

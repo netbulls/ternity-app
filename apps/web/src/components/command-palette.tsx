@@ -887,7 +887,9 @@ function PaletteSwitchDialog({
             checked={dontAskAgain}
             onCheckedChange={(checked) => setDontAskAgain(checked === true)}
           />
-          <span className="text-[12px] text-muted-foreground">Don&apos;t ask again</span>
+          <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Don&apos;t ask again
+          </span>
         </label>
 
         <DialogFooter>

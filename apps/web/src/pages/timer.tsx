@@ -121,7 +121,12 @@ export function TimerPage() {
             {formatLongDate(selectedDate)}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => setManualOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setManualOpen(true)}
+          style={{ fontSize: scaled(12) }}
+        >
           <Plus className="mr-1 h-3.5 w-3.5" />
           Manual Entry
         </Button>
@@ -150,7 +155,9 @@ export function TimerPage() {
 
       {/* Day entries */}
       {weekLoading ? (
-        <div className="py-10 text-center text-sm text-muted-foreground">Loading entries...</div>
+        <div className="py-10 text-center text-muted-foreground" style={{ fontSize: scaled(14) }}>
+          Loading entries...
+        </div>
       ) : correctedGroup ? (
         <ActiveEditProvider>
           <DraftEntryProvider>
@@ -159,7 +166,10 @@ export function TimerPage() {
         </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
-          <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">
+          <div
+            className="px-3.5 py-10 text-center text-muted-foreground"
+            style={{ fontSize: scaled(14) }}
+          >
             {isToday
               ? 'No entries yet today. Start the timer to begin tracking.'
               : 'No entries for this day.'}

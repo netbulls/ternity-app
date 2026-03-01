@@ -92,7 +92,7 @@ export function JiraSearchDropdown({ onSelect, onClose, anchorRight }: JiraSearc
         <div className="flex gap-0 border-b border-border">
           <button
             className={cn(
-              'px-4 py-2 font-brand text-xs transition-colors',
+              'px-4 py-2 font-brand transition-colors',
               tab === 'browse'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-muted-foreground hover:text-foreground',
@@ -104,7 +104,7 @@ export function JiraSearchDropdown({ onSelect, onClose, anchorRight }: JiraSearc
           </button>
           <button
             className={cn(
-              'px-4 py-2 font-brand text-xs transition-colors',
+              'px-4 py-2 font-brand transition-colors',
               tab === 'search'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-muted-foreground hover:text-foreground',
@@ -141,7 +141,10 @@ export function JiraSearchDropdown({ onSelect, onClose, anchorRight }: JiraSearc
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-border px-3 py-2">
-        <div className="flex items-center gap-3 text-muted-foreground" style={{ fontSize: scaled(9) }}>
+        <div
+          className="flex items-center gap-3 text-muted-foreground"
+          style={{ fontSize: scaled(9) }}
+        >
           <span className="flex items-center gap-1">
             <ArrowUp className="h-3 w-3" />
             <ArrowDown className="h-3 w-3" /> Navigate
@@ -176,7 +179,10 @@ function SearchResults({
 }) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground gap-2" style={{ fontSize: scaled(12) }}>
+      <div
+        className="flex items-center justify-center py-8 text-muted-foreground gap-2"
+        style={{ fontSize: scaled(12) }}
+      >
         <Loader2 className="h-4 w-4 animate-spin" />
         Searching...
       </div>
@@ -234,7 +240,10 @@ function BrowseResults({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground gap-2" style={{ fontSize: scaled(12) }}>
+      <div
+        className="flex items-center justify-center py-8 text-muted-foreground gap-2"
+        style={{ fontSize: scaled(12) }}
+      >
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading...
       </div>

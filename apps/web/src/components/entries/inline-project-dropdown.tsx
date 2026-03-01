@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Check, Clock, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { scaled } from '@/lib/scaled';
 import { getRecentProjectIds, trackRecentProject } from '@/hooks/use-recent-projects';
 import type { ProjectOption } from '@ternity/shared';
 
@@ -73,9 +74,7 @@ export function InlineProjectDropdown({
         }))
         .filter((g) => g.projects.length > 0)
     : [
-        ...(recentProjects.length > 0
-          ? [{ client: 'Recent', projects: recentProjects }]
-          : []),
+        ...(recentProjects.length > 0 ? [{ client: 'Recent', projects: recentProjects }] : []),
         ...grouped,
       ];
 
@@ -94,8 +93,8 @@ export function InlineProjectDropdown({
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <motion.input
-            className="h-8 w-full rounded-md bg-muted/40 pl-8 pr-3 text-[12px] text-foreground outline-none"
-            style={{ border: '1px solid hsl(var(--border))' }}
+            className="h-8 w-full rounded-md bg-muted/40 pl-8 pr-3 text-foreground outline-none"
+            style={{ border: '1px solid hsl(var(--border))', fontSize: scaled(12) }}
             whileFocus={{ borderColor: 'hsl(var(--primary) / 0.5)' }}
             placeholder="Search projects..."
             value={search}
@@ -108,15 +107,18 @@ export function InlineProjectDropdown({
       {/* Project list */}
       <div className="max-h-[220px] overflow-y-auto p-1">
         {filtered.length === 0 ? (
-          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+          <div
+            className="px-3 py-4 text-center text-muted-foreground"
+            style={{ fontSize: scaled(11) }}
+          >
             No projects match &ldquo;{search}&rdquo;
           </div>
         ) : (
           filtered.map((group, gi) => (
             <div key={group.client}>
               <div
-                className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
-                style={{ letterSpacing: '1.5px', opacity: 0.6 }}
+                className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand font-semibold uppercase tracking-widest text-muted-foreground"
+                style={{ letterSpacing: '1.5px', opacity: 0.6, fontSize: scaled(9) }}
               >
                 {group.client === 'Recent' && <Clock className="h-2.5 w-2.5" />}
                 {group.client}
@@ -127,11 +129,12 @@ export function InlineProjectDropdown({
                   <motion.button
                     key={p.id}
                     className={cn(
-                      'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[12px] transition-colors',
+                      'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
                       isSelected
                         ? 'bg-primary/8 text-foreground'
                         : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
                     )}
+                    style={{ fontSize: scaled(12) }}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: gi * 0.05 + pi * 0.03, duration: 0.15 }}
@@ -171,7 +174,8 @@ export function InlineProjectDropdown({
       {/* No project option */}
       <div className="border-t border-border p-1">
         <motion.button
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[12px] text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          style={{ fontSize: scaled(12) }}
           whileTap={{ scale: 0.98 }}
           onClick={() => onSelect(null)}
         >

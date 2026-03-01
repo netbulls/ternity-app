@@ -169,7 +169,10 @@ export function SplitEntryDialog({ entry, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Split Time</DialogTitle>
           <div className="flex flex-col gap-0.5 pt-1">
-            <span className="truncate text-[13px] font-medium text-foreground/90">
+            <span
+              className="truncate font-medium text-foreground/90"
+              style={{ fontSize: scaled(13) }}
+            >
               {entry.description || 'No description'}
             </span>
             {originalProjectLabel && (

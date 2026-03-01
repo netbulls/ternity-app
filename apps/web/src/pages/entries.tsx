@@ -152,7 +152,7 @@ export function EntriesPage() {
           <Button
             variant="outline"
             size="sm"
-            className="text-xs"
+            style={{ fontSize: scaled(12) }}
             onClick={() => setManualOpen(true)}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
@@ -301,14 +301,19 @@ export function EntriesPage() {
 
       {/* Deleted entries banner */}
       {showDeleted && (
-        <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-2.5 text-xs text-destructive">
+        <div
+          className="mb-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-2.5 text-destructive"
+          style={{ fontSize: scaled(12) }}
+        >
           Showing deleted entries. These entries are excluded from stats and timers.
         </div>
       )}
 
       {/* Entries list */}
       {isLoading ? (
-        <div className="py-10 text-center text-sm text-muted-foreground">Loading entries...</div>
+        <div className="py-10 text-center text-muted-foreground" style={{ fontSize: scaled(13) }}>
+          Loading entries...
+        </div>
       ) : filteredGroups.length > 0 ? (
         <ActiveEditProvider>
           <DraftEntryProvider>
@@ -321,7 +326,10 @@ export function EntriesPage() {
         </ActiveEditProvider>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
-          <div className="px-3.5 py-10 text-center text-sm text-muted-foreground">
+          <div
+            className="px-3.5 py-10 text-center text-muted-foreground"
+            style={{ fontSize: scaled(13) }}
+          >
             {hasFilters ? 'No entries match the current filters.' : 'No entries for this period.'}
           </div>
         </div>

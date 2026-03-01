@@ -5,6 +5,7 @@ import { ImpersonationBanner } from './impersonation-banner';
 import { IdentityShift } from './identity-shift';
 import { CommandPalette } from '@/components/command-palette';
 import { useAuth } from '@/providers/auth-provider';
+import { scaled } from '@/lib/scaled';
 
 const authMode = import.meta.env.VITE_AUTH_MODE ?? 'stub';
 
@@ -34,13 +35,15 @@ export function AppShell() {
         <div className="flex gap-2">
           <button
             onClick={() => window.location.reload()}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+            style={{ fontSize: scaled(13) }}
           >
             Retry
           </button>
           <button
             onClick={signOut}
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
+            className="rounded-md border border-border px-4 py-2 font-medium text-muted-foreground hover:bg-muted"
+            style={{ fontSize: scaled(13) }}
           >
             Sign out
           </button>

@@ -29,11 +29,7 @@ export function WeekHistogram({
       const height = 100;
       const margin = { top: 8, right: 10, bottom: 22, left: 0 };
 
-      const svg = d3
-        .select(container)
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height);
+      const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
 
       svgRef.current = svg.node();
 
@@ -85,7 +81,7 @@ export function WeekHistogram({
         .attr('y', y(8) - 3)
         .attr('text-anchor', 'end')
         .attr('font-family', "'Oxanium', sans-serif")
-        .attr('font-size', '9px')
+        .style('font-size', scaled(9))
         .attr('fill', destructive)
         .attr('opacity', 0.5)
         .text('8h');
@@ -122,7 +118,7 @@ export function WeekHistogram({
               .attr('y', y(d.hours) - 4)
               .attr('text-anchor', 'middle')
               .attr('font-family', "'Oxanium', sans-serif")
-              .attr('font-size', '9px')
+              .style('font-size', scaled(9))
               .attr('font-weight', '600')
               .attr('fill', fg)
               .text(label);
@@ -134,7 +130,7 @@ export function WeekHistogram({
             .attr('y', height - 4)
             .attr('text-anchor', 'middle')
             .attr('font-family', "'Oxanium', sans-serif")
-            .attr('font-size', '9px')
+            .style('font-size', scaled(9))
             .attr('fill', mutedFg)
             .text(d.label);
         });
@@ -161,7 +157,10 @@ export function WeekHistogram({
         >
           This Week
         </span>
-        <span className="font-brand font-bold text-[hsl(var(--primary))]" style={{ fontSize: scaled(16) }}>
+        <span
+          className="font-brand font-bold text-[hsl(var(--primary))]"
+          style={{ fontSize: scaled(16) }}
+        >
           <span
             className="mr-2 font-normal tracking-[1px] text-muted-foreground"
             style={{ fontSize: scaled(10) }}

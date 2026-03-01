@@ -87,10 +87,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     };
 
     if (isEdit) {
-      updateProject.mutate(
-        { id: project!.id, ...data },
-        { onSuccess: () => onOpenChange(false) },
-      );
+      updateProject.mutate({ id: project!.id, ...data }, { onSuccess: () => onOpenChange(false) });
     } else {
       createProject.mutate(data, {
         onSuccess: () => onOpenChange(false),
@@ -157,7 +154,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
                   id="project-client"
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   style={{ fontSize: scaled(13) }}
                 >
                   <option value="">Select client...</option>
@@ -197,7 +194,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief project description..."
               rows={2}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               style={{ fontSize: scaled(13) }}
             />
           </div>

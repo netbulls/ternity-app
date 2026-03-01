@@ -14,6 +14,7 @@ import { TagSelector } from '@/components/timer/tag-selector';
 import { useCreateEntry } from '@/hooks/use-entries';
 import { getPreference, usePreferences } from '@/providers/preferences-provider';
 import { formatDuration, orgTimeToISO } from '@/lib/format';
+import { scaled } from '@/lib/scaled';
 
 interface Props {
   open: boolean;
@@ -154,7 +155,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
             </div>
 
             {durationSec > 0 && (
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-muted-foreground" style={{ fontSize: scaled(14) }}>
                 Duration:{' '}
                 <span className="font-brand font-semibold text-foreground">
                   {formatDuration(durationSec)}

@@ -375,8 +375,12 @@ export function EntryRow({ entry }: Props) {
                 className="relative flex w-full items-center gap-2"
               >
                 <motion.input
-                  className="flex-1 rounded-md bg-muted/40 px-2 text-[13px] leading-5 text-foreground outline-none"
-                  style={{ height: '20px', border: '1px solid hsl(var(--primary) / 0.4)' }}
+                  className="flex-1 rounded-md bg-muted/40 px-2 leading-5 text-foreground outline-none"
+                  style={{
+                    height: '20px',
+                    border: '1px solid hsl(var(--primary) / 0.4)',
+                    fontSize: scaled(13),
+                  }}
                   animate={breathingBorderAnimation}
                   transition={breathingBorderTransition}
                   value={editDesc}
@@ -452,13 +456,14 @@ export function EntryRow({ entry }: Props) {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   className={cn(
-                    'cursor-pointer truncate text-[13px] leading-5 hover:text-primary',
+                    'cursor-pointer truncate leading-5 hover:text-primary',
                     noDesc
                       ? 'italic text-muted-foreground'
                       : isRunning
                         ? 'text-primary'
                         : 'text-foreground',
                   )}
+                  style={{ fontSize: scaled(13) }}
                   onClick={handleEditDescription}
                 >
                   {entry.description || 'No description'}
@@ -601,10 +606,8 @@ export function EntryRow({ entry }: Props) {
         {/* Time range — read-only display */}
         <div className="relative z-10 flex h-5 items-center gap-1 text-right shrink-0">
           <span
-            className={cn(
-              'text-[11px] tabular-nums',
-              isRunning ? 'text-primary/70' : 'text-muted-foreground',
-            )}
+            className={cn('tabular-nums', isRunning ? 'text-primary/70' : 'text-muted-foreground')}
+            style={{ fontSize: scaled(11) }}
           >
             {timeRange}
           </span>
@@ -613,9 +616,10 @@ export function EntryRow({ entry }: Props) {
         {/* Duration */}
         <span
           className={cn(
-            'relative z-10 font-brand text-sm font-semibold tabular-nums shrink-0',
+            'relative z-10 font-brand font-semibold tabular-nums shrink-0',
             isRunning ? 'text-primary' : 'text-foreground',
           )}
+          style={{ fontSize: scaled(14) }}
         >
           {durationStr}
         </span>

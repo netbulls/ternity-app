@@ -5,7 +5,12 @@ import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { formatDuration } from '@/lib/format';
 import { useProjects } from '@/hooks/use-reference-data';
-import { BreathingGlow, SaveFlash, breathingBorderAnimation, breathingBorderTransition } from '@/components/ui/breathing-glow';
+import {
+  BreathingGlow,
+  SaveFlash,
+  breathingBorderAnimation,
+  breathingBorderTransition,
+} from '@/components/ui/breathing-glow';
 import { InlineProjectDropdown } from './inline-project-dropdown';
 import { useDraftEntry } from './draft-entry-context';
 
@@ -14,7 +19,10 @@ const frozenAnimation = { borderColor: 'transparent', backgroundColor: 'transpar
 const frozenTransition = { duration: 0.2 };
 
 // When editing: breathing border + subtle background
-const editingAnimation = { ...breathingBorderAnimation, backgroundColor: 'hsl(var(--muted) / 0.4)' };
+const editingAnimation = {
+  ...breathingBorderAnimation,
+  backgroundColor: 'hsl(var(--muted) / 0.4)',
+};
 
 export function DraftEntryRow() {
   const { draft, updateDraft, saveDraft, dismissDraft, isSaving, savedEntryId } = useDraftEntry();
@@ -37,7 +45,7 @@ export function DraftEntryRow() {
   // not after POST completes. This matches regular entry save behavior.
   const isDisplayMode = isSaving || !!savedEntryId;
 
-  const isDirty = draft ? (draft.description !== '' || draft.projectId !== null) : false;
+  const isDirty = draft ? draft.description !== '' || draft.projectId !== null : false;
 
   // Global Esc to dismiss draft — works even when focus is elsewhere
   // Disabled during save to prevent interrupting the save flow
@@ -89,10 +97,21 @@ export function DraftEntryRow() {
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto', overflow: 'visible', transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } }}
-      exit={wasSavedRef.current
-        ? { opacity: 0, height: 0, overflow: 'hidden', transition: { duration: 0 } }
-        : { opacity: 0, height: 0, overflow: 'hidden', transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }
+      animate={{
+        opacity: 1,
+        height: 'auto',
+        overflow: 'visible',
+        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
+      }}
+      exit={
+        wasSavedRef.current
+          ? { opacity: 0, height: 0, overflow: 'hidden', transition: { duration: 0 } }
+          : {
+              opacity: 0,
+              height: 0,
+              overflow: 'hidden',
+              transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+            }
       }
     >
       <motion.div
@@ -101,9 +120,7 @@ export function DraftEntryRow() {
           editingProject && !isDisplayMode && 'z-20',
         )}
         animate={{
-          backgroundColor: isDisplayMode
-            ? 'transparent'
-            : 'hsl(var(--muted) / 0.15)',
+          backgroundColor: isDisplayMode ? 'transparent' : 'hsl(var(--muted) / 0.15)',
         }}
         transition={{ duration: 0.2 }}
       >
@@ -130,9 +147,7 @@ export function DraftEntryRow() {
         </AnimatePresence>
 
         {/* Save flash — plays when transitioning to display mode */}
-        <AnimatePresence>
-          {isDisplayMode && <SaveFlash />}
-        </AnimatePresence>
+        <AnimatePresence>{isDisplayMode && <SaveFlash />}</AnimatePresence>
 
         {/* Description + project */}
         <div className="relative z-10 flex-1 min-w-0">
@@ -142,21 +157,31 @@ export function DraftEntryRow() {
               <motion.input
                 ref={descRef}
                 className={cn(
-                  'flex-1 rounded-md px-2 text-[13px] leading-5 text-foreground outline-none',
+                  'flex-1 rounded-md px-2 leading-5 text-foreground outline-none',
                   !isDisplayMode && 'placeholder:text-muted-foreground/50',
                 )}
-                style={{ height: '20px', border: '1px solid hsl(var(--primary) / 0.4)' }}
+                style={{
+                  height: '20px',
+                  border: '1px solid hsl(var(--primary) / 0.4)',
+                  fontSize: scaled(13),
+                }}
                 animate={isDisplayMode ? frozenAnimation : editingAnimation}
                 transition={isDisplayMode ? frozenTransition : breathingBorderTransition}
                 value={displayDraft.description}
-                onChange={isDisplayMode ? undefined : (e) => updateDraft({ description: e.target.value })}
+                onChange={
+                  isDisplayMode ? undefined : (e) => updateDraft({ description: e.target.value })
+                }
                 readOnly={isDisplayMode}
                 tabIndex={isDisplayMode ? -1 : undefined}
                 placeholder={isDisplayMode ? undefined : 'What are you working on?'}
                 autoFocus={!isDisplayMode}
-                onKeyDown={isDisplayMode ? undefined : (e) => {
-                  if (e.key === 'Enter' && isDirty) handleSave();
-                }}
+                onKeyDown={
+                  isDisplayMode
+                    ? undefined
+                    : (e) => {
+                        if (e.key === 'Enter' && isDirty) handleSave();
+                      }
+                }
               />
             </div>
           </div>
@@ -187,7 +212,9 @@ export function DraftEntryRow() {
                       className="h-2 w-2 rounded-full"
                       style={{ backgroundColor: selectedProject?.color ?? '#00D4AA' }}
                     />
-                    <span className="text-foreground">{selectedProject?.name || 'Select project'}</span>
+                    <span className="text-foreground">
+                      {selectedProject?.name || 'Select project'}
+                    </span>
                     <ChevronDown className="h-3 w-3 rotate-180 text-muted-foreground" />
                   </motion.div>
                   <motion.button
@@ -247,8 +274,8 @@ export function DraftEntryRow() {
         {/* Time range — always two inputs, readOnly + borders fade on save */}
         <div className="relative z-10 flex h-5 items-center gap-1 text-right shrink-0">
           <motion.input
-            className="h-5 w-[48px] rounded-md px-1 text-center text-[11px] tabular-nums text-foreground outline-none"
-            style={{ border: '1px solid hsl(var(--primary) / 0.4)' }}
+            className="h-5 w-[48px] rounded-md px-1 text-center tabular-nums text-foreground outline-none"
+            style={{ border: '1px solid hsl(var(--primary) / 0.4)', fontSize: scaled(11) }}
             animate={isDisplayMode ? frozenAnimation : editingAnimation}
             transition={isDisplayMode ? frozenTransition : breathingBorderTransition}
             value={displayDraft.startTime}
@@ -256,26 +283,35 @@ export function DraftEntryRow() {
             readOnly={isDisplayMode}
             tabIndex={isDisplayMode ? -1 : undefined}
           />
-          <span className="text-[11px] text-muted-foreground">&ndash;</span>
+          <span className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+            &ndash;
+          </span>
           <motion.input
-            className="h-5 w-[48px] rounded-md px-1 text-center text-[11px] tabular-nums text-foreground outline-none"
-            style={{ border: '1px solid hsl(var(--primary) / 0.4)' }}
+            className="h-5 w-[48px] rounded-md px-1 text-center tabular-nums text-foreground outline-none"
+            style={{ border: '1px solid hsl(var(--primary) / 0.4)', fontSize: scaled(11) }}
             animate={isDisplayMode ? frozenAnimation : editingAnimation}
             transition={isDisplayMode ? frozenTransition : breathingBorderTransition}
             value={displayDraft.endTime}
             onChange={isDisplayMode ? undefined : (e) => updateDraft({ endTime: e.target.value })}
             readOnly={isDisplayMode}
             tabIndex={isDisplayMode ? -1 : undefined}
-            onKeyDown={isDisplayMode ? undefined : (e) => {
-              if (e.key === 'Enter' && isDirty) handleSave();
-            }}
+            onKeyDown={
+              isDisplayMode
+                ? undefined
+                : (e) => {
+                    if (e.key === 'Enter' && isDirty) handleSave();
+                  }
+            }
           />
         </div>
 
         {/* Duration — always formatDuration (matches EntryRow's format) */}
         <motion.span
-          className="relative z-10 font-brand text-sm font-semibold tabular-nums shrink-0"
-          animate={{ color: isDisplayMode ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }}
+          className="relative z-10 font-brand font-semibold tabular-nums shrink-0"
+          style={{ fontSize: scaled(14) }}
+          animate={{
+            color: isDisplayMode ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+          }}
           transition={{ duration: 0.2 }}
         >
           {formatDuration(durationSec)}

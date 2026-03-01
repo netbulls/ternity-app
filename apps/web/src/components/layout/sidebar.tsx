@@ -135,7 +135,10 @@ export function Sidebar() {
       {/* Logo */}
       <div className="mb-5 flex items-center gap-2 px-2.5">
         <HourglassLogo className="h-[22px] w-[18px] text-primary" />
-        <span className="font-brand text-[15px] font-semibold uppercase tracking-[3px] text-sidebar-foreground">
+        <span
+          className="font-brand font-semibold uppercase tracking-[3px] text-sidebar-foreground"
+          style={{ fontSize: 'calc(15px * var(--t-scale, 1.1))' }}
+        >
           Ternity
         </span>
       </div>

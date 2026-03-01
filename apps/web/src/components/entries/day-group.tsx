@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { formatDateLabel, formatDuration } from '@/lib/format';
+import { scaled } from '@/lib/scaled';
 import { EntryRow } from './entry-row';
 import { DraftEntryRow } from './draft-entry-row';
 import { useDraftEntry } from './draft-entry-context';
@@ -36,7 +37,10 @@ export function DayGroup({ group }: Props) {
           style={{ background: 'hsl(var(--muted) / 0.3)' }}
         >
           <div className="flex items-center gap-2">
-            <span className="font-brand text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span
+              className="font-brand font-semibold uppercase tracking-wider text-muted-foreground"
+              style={{ fontSize: scaled(12) }}
+            >
               {formatDateLabel(group.date)}
             </span>
             <button
@@ -47,7 +51,10 @@ export function DayGroup({ group }: Props) {
               <Plus className="h-3 w-3" />
             </button>
           </div>
-          <span className="font-brand text-xs font-semibold tabular-nums text-foreground">
+          <span
+            className="font-brand font-semibold tabular-nums text-foreground"
+            style={{ fontSize: scaled(12) }}
+          >
             {formatDuration(group.totalSeconds)}
           </span>
         </div>

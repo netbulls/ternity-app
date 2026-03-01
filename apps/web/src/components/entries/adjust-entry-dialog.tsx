@@ -49,8 +49,13 @@ function parseTimeInput(raw: string): ParseResult | null {
 
   // Determine sign
   let sign: 1 | -1 = 1;
-  if (str.startsWith('+')) { sign = 1; str = str.slice(1).trim(); }
-  else if (str.startsWith('-')) { sign = -1; str = str.slice(1).trim(); }
+  if (str.startsWith('+')) {
+    sign = 1;
+    str = str.slice(1).trim();
+  } else if (str.startsWith('-')) {
+    sign = -1;
+    str = str.slice(1).trim();
+  }
 
   // Pattern 1: h:m:s or h:m
   const colonMatch = str.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
@@ -180,7 +185,10 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Adjust Time</DialogTitle>
           <div className="flex flex-col gap-0.5 pt-1">
-            <span className="truncate text-[13px] font-medium text-foreground/90">
+            <span
+              className="truncate font-medium text-foreground/90"
+              style={{ fontSize: scaled(13) }}
+            >
               {entry.description || 'No description'}
             </span>
             {projectLabel && (
@@ -188,7 +196,10 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
                 {projectLabel}
               </span>
             )}
-            <span className="font-brand tabular-nums text-muted-foreground" style={{ fontSize: scaled(11) }}>
+            <span
+              className="font-brand tabular-nums text-muted-foreground"
+              style={{ fontSize: scaled(11) }}
+            >
               Current: {formatDuration(segmentsTotal)}
             </span>
           </div>
@@ -203,8 +214,16 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
                 'w-full rounded-lg border-2 bg-muted/40 px-4 py-3 text-center font-brand text-xl font-semibold tabular-nums text-foreground outline-none transition-all',
                 'placeholder:font-normal placeholder:text-muted-foreground/25',
                 isEmpty && 'border-border',
-                !isEmpty && isValid && !exceedsTotal && isPositive && 'border-primary/50 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]',
-                !isEmpty && isValid && !exceedsTotal && !isPositive && 'border-destructive/50 shadow-[0_0_0_3px_hsl(var(--destructive)/0.08)]',
+                !isEmpty &&
+                  isValid &&
+                  !exceedsTotal &&
+                  isPositive &&
+                  'border-primary/50 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]',
+                !isEmpty &&
+                  isValid &&
+                  !exceedsTotal &&
+                  !isPositive &&
+                  'border-destructive/50 shadow-[0_0_0_3px_hsl(var(--destructive)/0.08)]',
                 !isEmpty && isValid && exceedsTotal && 'border-destructive/30',
                 !isEmpty && !isValid && 'border-destructive/30',
               )}
@@ -241,7 +260,8 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
                 <span className="text-muted-foreground/30">Enter a non-zero value</span>
               ) : (
                 <span className="italic text-destructive/60">
-                  Could not parse — try &quot;30m&quot;, &quot;+1h15m&quot;, &quot;1.5h&quot;, or &quot;1:30&quot;
+                  Could not parse — try &quot;30m&quot;, &quot;+1h15m&quot;, &quot;1.5h&quot;, or
+                  &quot;1:30&quot;
                 </span>
               )}
             </div>
@@ -297,7 +317,9 @@ export function AdjustEntryDialog({ entry, open, onOpenChange }: Props) {
                       ? 'border-destructive bg-destructive/8 text-destructive'
                       : 'border-primary bg-primary/8 text-primary'
                     : 'border-border/60 text-muted-foreground/60 hover:border-primary/50 hover:bg-primary/5 hover:text-primary',
-                  s.negative && activeShortcut !== s.value && 'hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive',
+                  s.negative &&
+                    activeShortcut !== s.value &&
+                    'hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive',
                 )}
                 style={{ fontSize: scaled(10) }}
                 onClick={() => handleShortcut(s.value)}

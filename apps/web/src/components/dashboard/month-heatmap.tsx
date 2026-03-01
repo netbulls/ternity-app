@@ -41,18 +41,12 @@ export function MonthHeatmap({
       const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
       const numWeeks =
-        heatmapDays.length > 0
-          ? heatmapDays[heatmapDays.length - 1]!.weekIndex + 1
-          : 0;
+        heatmapDays.length > 0 ? heatmapDays[heatmapDays.length - 1]!.weekIndex + 1 : 0;
 
       const width = 7 * (cellSize + cellGap) + 10;
       const height = headerHeight + numWeeks * (cellSize + cellGap) + 10;
 
-      const svg = d3
-        .select(container)
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height);
+      const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
 
       // Day labels header
       dayLabels.forEach((label, i) => {
@@ -62,7 +56,7 @@ export function MonthHeatmap({
           .attr('y', 10)
           .attr('text-anchor', 'middle')
           .attr('font-family', "'Oxanium', sans-serif")
-          .attr('font-size', '8px')
+          .style('font-size', scaled(8))
           .attr('fill', mutedFg)
           .attr('opacity', 0.5)
           .text(label);
@@ -72,8 +66,7 @@ export function MonthHeatmap({
       heatmapDays.forEach((d) => {
         const col = d.dayOfWeek - 1; // 0=Mon, 6=Sun
         const hours = d.totalSeconds / 3600;
-        const opacity =
-          hours === 0 ? 0 : Math.min(1, 0.15 + (hours / 10) * 0.85);
+        const opacity = hours === 0 ? 0 : Math.min(1, 0.15 + (hours / 10) * 0.85);
         const fill = hours === 0 ? muted : primary;
 
         svg
@@ -93,13 +86,10 @@ export function MonthHeatmap({
         svg
           .append('text')
           .attr('x', col * (cellSize + cellGap) + cellSize / 2)
-          .attr(
-            'y',
-            headerHeight + d.weekIndex * (cellSize + cellGap) + cellSize / 2 + 3,
-          )
+          .attr('y', headerHeight + d.weekIndex * (cellSize + cellGap) + cellSize / 2 + 3)
           .attr('text-anchor', 'middle')
           .attr('font-family', "'Oxanium', sans-serif")
-          .attr('font-size', '8px')
+          .style('font-size', scaled(8))
           .attr('font-weight', '600')
           .attr('fill', hours > 4 ? fg : mutedFg)
           .attr('opacity', hours === 0 ? 0.3 : 0.8)
@@ -133,10 +123,7 @@ export function MonthHeatmap({
           style={{ fontSize: scaled(9) }}
         >
           <span>Less</span>
-          <div
-            className="h-2.5 w-2.5 rounded-sm"
-            style={{ background: 'hsl(var(--muted))' }}
-          />
+          <div className="h-2.5 w-2.5 rounded-sm" style={{ background: 'hsl(var(--muted))' }} />
           <div
             className="h-2.5 w-2.5 rounded-sm"
             style={{ background: 'hsl(var(--primary) / 0.2)' }}
@@ -149,10 +136,7 @@ export function MonthHeatmap({
             className="h-2.5 w-2.5 rounded-sm"
             style={{ background: 'hsl(var(--primary) / 0.7)' }}
           />
-          <div
-            className="h-2.5 w-2.5 rounded-sm"
-            style={{ background: 'hsl(var(--primary))' }}
-          />
+          <div className="h-2.5 w-2.5 rounded-sm" style={{ background: 'hsl(var(--primary))' }} />
           <span>More</span>
         </div>
       </div>

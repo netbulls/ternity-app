@@ -21,6 +21,7 @@ export const SCALES = [
   { label: 'Compact', value: 0.9 },
   { label: 'Default', value: 1.1 },
   { label: 'Comfortable', value: 1.2 },
+  { label: 'Huge', value: 1.4 },
 ] as const;
 
 export type ScaleMeta = (typeof SCALES)[number];

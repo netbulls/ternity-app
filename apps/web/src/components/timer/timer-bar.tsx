@@ -322,7 +322,10 @@ export function TimerBar() {
 
         {/* Animated digits when running, static when idle */}
         <div className="relative z-10 flex flex-col items-end font-brand tabular-nums">
-          <div className="text-xl font-semibold tracking-wider text-primary">
+          <div
+            className="font-semibold tracking-wider text-primary"
+            style={{ fontSize: scaled(20) }}
+          >
             {running ? (
               <span className="inline-flex">
                 {digits.map((d, i) => (
@@ -334,8 +337,8 @@ export function TimerBar() {
             )}
           </div>
           <span
-            className="text-[9px] font-normal tracking-wider text-muted-foreground"
-            style={{ opacity: 0.5 }}
+            className="font-normal tracking-wider text-muted-foreground"
+            style={{ opacity: 0.5, fontSize: scaled(9) }}
           >
             {getTimezoneLabel()}
           </span>

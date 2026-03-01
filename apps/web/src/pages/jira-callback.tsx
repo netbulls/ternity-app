@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
+import { scaled } from '@/lib/scaled';
 
 export function JiraCallbackPage() {
   const navigate = useNavigate();
@@ -46,11 +47,14 @@ export function JiraCallbackPage() {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
         <p className="text-destructive">Jira connection failed</p>
-        <p className="max-w-md text-center text-sm text-muted-foreground">{error}</p>
+        <p className="max-w-md text-center text-muted-foreground" style={{ fontSize: scaled(13) }}>
+          {error}
+        </p>
         <div className="flex gap-3">
           <button
             onClick={() => navigate('/settings/integrations', { replace: true })}
-            className="rounded-md border border-border px-4 py-2 text-sm text-foreground hover:bg-muted"
+            className="rounded-md border border-border px-4 py-2 text-foreground hover:bg-muted"
+            style={{ fontSize: scaled(13) }}
           >
             Back to Settings
           </button>
@@ -60,7 +64,8 @@ export function JiraCallbackPage() {
               setError(null);
               window.location.reload();
             }}
-            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+            className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+            style={{ fontSize: scaled(13) }}
           >
             Retry
           </button>

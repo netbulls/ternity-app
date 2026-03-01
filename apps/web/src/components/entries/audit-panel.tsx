@@ -671,12 +671,18 @@ export function AuditPanel({ entry, open, onOpenChange }: Props) {
         {/* Day-grouped timeline */}
         <div className="mt-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-[13px] text-muted-foreground">
+            <div
+              className="flex items-center justify-center gap-2 py-8 text-muted-foreground"
+              style={{ fontSize: scaled(13) }}
+            >
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading history...
             </div>
           ) : dayGroups.length === 0 ? (
-            <div className="py-8 text-center text-[13px] text-muted-foreground/50">
+            <div
+              className="py-8 text-center text-muted-foreground/50"
+              style={{ fontSize: scaled(13) }}
+            >
               No history recorded yet
             </div>
           ) : (
