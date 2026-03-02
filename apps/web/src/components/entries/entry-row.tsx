@@ -113,7 +113,7 @@ export function EntryRow({ entry }: Props) {
   const { data: allProjects } = useProjects();
   const { activeEntryId, claim, release } = useActiveEdit();
   const { justCreatedId } = useDraftEntry();
-  const { hoveredEntryId, selectedEntryId, registerEnterHandler } = useTimelineFocus();
+  const { hoveredEntryId, selectedEntryId, select, registerEnterHandler } = useTimelineFocus();
   const editingFieldRef = useRef(editingField);
   editingFieldRef.current = editingField;
   const rowRef = useRef<HTMLDivElement>(null);
@@ -360,6 +360,7 @@ export function EntryRow({ entry }: Props) {
 
   // Resolve the project color for the timeline focus indicator
   const focusBarColor = displayProjectColor ?? 'hsl(var(--primary))';
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
@@ -368,10 +369,22 @@ export function EntryRow({ entry }: Props) {
     >
       <motion.div
         className={cn(
-          'group/row relative flex items-center gap-3 px-4 py-2.5 transition-colors',
-          !isRunning && !isTimelineFocused && !isEditing && 'hover:bg-[hsl(var(--muted)/0.08)]',
+          'group/row relative flex items-center gap-3 px-4 py-2.5',
           (isEditingProject || jiraDropdownOpen) && 'z-20',
         )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={(e) => {
+          // Don't select when clicking interactive elements inside the row
+          const target = e.target as HTMLElement;
+          if (
+            target.closest(
+              'button, input, textarea, [role="menuitem"], [data-radix-collection-item]',
+            )
+          )
+            return;
+          select(entry.id);
+        }}
         animate={{
           backgroundColor: isRunning
             ? 'hsl(var(--primary) / 0.06)'
@@ -379,7 +392,9 @@ export function EntryRow({ entry }: Props) {
               ? `color-mix(in srgb, ${focusBarColor} 6%, transparent)`
               : isEditing
                 ? 'hsl(var(--muted) / 0.15)'
-                : 'transparent',
+                : isHovered
+                  ? 'hsl(var(--muted) / 0.08)'
+                  : 'transparent',
         }}
         transition={{ duration: 0.15 }}
       >

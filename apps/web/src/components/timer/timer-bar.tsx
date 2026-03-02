@@ -33,7 +33,7 @@ export function TimerBar() {
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
   const { data: allProjects } = useProjects();
-  const { selectedEntryId, registerEnterHandler } = useTimelineFocus();
+  const { selectedEntryId, select, registerEnterHandler } = useTimelineFocus();
   const isHighlighted = selectedEntryId === TIMER_BAR_ID;
   const [isInputFocused, setIsInputFocused] = useState(false);
   const timerBarRef = useRef<HTMLDivElement>(null);
@@ -44,6 +44,8 @@ export function TimerBar() {
     getPreference('defaultProjectId'),
   );
   const [tagIds, setTagIds] = useState<string[]>([]);
+
+  const [isTimerHovered, setIsTimerHovered] = useState(false);
 
   // Resolve the current project color for the highlight bar
   const currentProjectColor =
@@ -308,10 +310,15 @@ export function TimerBar() {
       {running && <LiquidEdgeKeyframes />}
       <motion.div
         ref={timerBarRef}
-        className={cn(
-          'relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3 transition-[border-color]',
-          !isHighlighted && !running && 'hover:border-[hsl(var(--muted-foreground)/0.2)]',
-        )}
+        className="relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3"
+        onMouseEnter={() => setIsTimerHovered(true)}
+        onMouseLeave={() => setIsTimerHovered(false)}
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('button, input, [role="menuitem"], [data-radix-collection-item]'))
+            return;
+          select(TIMER_BAR_ID);
+        }}
         animate={{
           borderColor: isHighlighted
             ? isInputFocused
@@ -319,7 +326,9 @@ export function TimerBar() {
               : currentProjectColor
             : running
               ? 'hsl(var(--primary) / 0.3)'
-              : 'hsl(var(--t-timer-border))',
+              : isTimerHovered
+                ? 'hsl(var(--muted-foreground) / 0.2)'
+                : 'hsl(var(--t-timer-border))',
           backgroundColor: isHighlighted
             ? `color-mix(in srgb, ${currentProjectColor} ${isInputFocused ? '3' : '6'}%, hsl(var(--t-timer-bg)))`
             : 'hsl(var(--t-timer-bg))',
