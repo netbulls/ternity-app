@@ -43,8 +43,6 @@ export function TimerBar() {
   );
   const [tagIds, setTagIds] = useState<string[]>([]);
 
-  const [isTimerHovered, setIsTimerHovered] = useState(false);
-
   // Auto-scroll into view when highlighted via keyboard
   useEffect(() => {
     if (isHighlighted && timerBarRef.current) {
@@ -305,8 +303,6 @@ export function TimerBar() {
       <motion.div
         ref={timerBarRef}
         className="relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3"
-        onMouseEnter={() => setIsTimerHovered(true)}
-        onMouseLeave={() => setIsTimerHovered(false)}
         onClick={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest('button, input, [role="menuitem"], [data-radix-collection-item]'))
@@ -318,16 +314,16 @@ export function TimerBar() {
             ? isInputFocused
               ? 'hsl(var(--primary) / 0.4)'
               : 'hsl(var(--primary) / 0.6)'
-            : isInputFocused || isTimerHovered
-              ? 'hsl(var(--t-timer-border))'
-              : running
+            : isInputFocused
+              ? running
                 ? 'hsl(var(--primary) / 0.35)'
-                : 'hsl(var(--primary) / 0.25)',
+                : 'hsl(var(--primary) / 0.25)'
+              : 'hsl(var(--t-timer-border))',
           backgroundColor: isHighlighted
             ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : isInputFocused || isTimerHovered
-              ? 'hsl(var(--t-timer-bg))'
-              : 'hsl(var(--primary) / 0.05)',
+            : isInputFocused
+              ? 'hsl(var(--primary) / 0.05)'
+              : 'hsl(var(--t-timer-bg))',
         }}
         transition={{ duration: 0.15 }}
       >
