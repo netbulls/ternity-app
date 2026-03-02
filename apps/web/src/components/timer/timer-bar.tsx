@@ -310,7 +310,6 @@ export function TimerBar() {
           select(TIMER_BAR_ID);
         }}
         animate={{
-          opacity: !isHighlighted && !isInputFocused && !running ? 0.45 : 1,
           borderColor: isHighlighted
             ? isInputFocused
               ? 'hsl(var(--primary) / 0.4)'
