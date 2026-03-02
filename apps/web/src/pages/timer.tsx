@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { TimerBar } from '@/components/timer/timer-bar';
 import { DayTimeline, calcTodaySeconds } from '@/components/timer/day-timeline';
 import { WeekStrip } from '@/components/timer/week-strip';
-import { TimelineFocusProvider } from '@/components/timer/timeline-focus-context';
+import { TimelineFocusProvider, useTimelineFocus } from '@/components/timer/timeline-focus-context';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
 import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
@@ -16,6 +16,46 @@ import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Keyboard handler for day navigation (Left/Right/T).
+ *  Lives inside TimelineFocusProvider so it can auto-select the first entry
+ *  after changing day, giving an immediate "selected" feel for ArrowDown. */
+function DayKeyboardNav({
+  setSelectedDate,
+}: {
+  setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
+}) {
+  const { selectFirst } = useTimelineFocus();
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't capture when typing in inputs
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setSelectedDate((d) => shiftDays(d, -1));
+        selectFirst();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setSelectedDate((d) => shiftDays(d, 1));
+        selectFirst();
+      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setSelectedDate(getToday());
+        selectFirst();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setSelectedDate, selectFirst]);
+
+  return null;
 }
 
 function formatLongDate(dateStr: string): string {
@@ -82,31 +122,6 @@ export function TimerPage() {
     setSelectedDate(getToday());
   }, []);
 
-  // ── Keyboard navigation ──
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      // Don't capture when typing in inputs
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-        return;
-      }
-
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        setSelectedDate((d) => shiftDays(d, -1));
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        setSelectedDate((d) => shiftDays(d, 1));
-      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        setSelectedDate(getToday());
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
     <div>
       {/* Header */}
@@ -147,6 +162,8 @@ export function TimerPage() {
       </div>
 
       <TimelineFocusProvider>
+        <DayKeyboardNav setSelectedDate={setSelectedDate} />
+
         {/* Day Timeline */}
         <div className="mb-5">
           <DayTimeline date={selectedDate} entries={dayEntries} />

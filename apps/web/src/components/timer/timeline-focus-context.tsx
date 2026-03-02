@@ -19,6 +19,8 @@ interface TimelineFocusContextValue {
   select: (entryId: string) => void;
   /** Clear selection (Esc or clicking elsewhere) */
   clearSelection: () => void;
+  /** Select the first entry in the list (used after day navigation) */
+  selectFirst: () => void;
   /** Register the ordered list of entry IDs (called by DayGroup) */
   setEntryIds: (ids: string[]) => void;
   /** Register a callback for Enter key on the selected entry (called by EntryRow) */
@@ -31,6 +33,7 @@ const TimelineFocusContext = createContext<TimelineFocusContextValue>({
   setHovered: () => {},
   select: () => {},
   clearSelection: () => {},
+  selectFirst: () => {},
   setEntryIds: () => {},
   registerEnterHandler: () => {},
 });
@@ -51,6 +54,13 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
 
   const clearSelection = useCallback(() => {
     setSelectedEntryId(null);
+  }, []);
+
+  const selectFirst = useCallback(() => {
+    const ids = entryIdsRef.current;
+    if (ids.length > 0) {
+      setSelectedEntryId(ids[0]!);
+    }
   }, []);
 
   const setEntryIds = useCallback((ids: string[]) => {
@@ -122,6 +132,7 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
         setHovered,
         select,
         clearSelection,
+        selectFirst,
         setEntryIds,
         registerEnterHandler,
       }}
