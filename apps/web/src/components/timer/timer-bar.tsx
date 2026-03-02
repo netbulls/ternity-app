@@ -38,6 +38,13 @@ export function TimerBar() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const timerBarRef = useRef<HTMLDivElement>(null);
 
+  // Local state for the "next timer" description/project/tags
+  const [description, setDescription] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(() =>
+    getPreference('defaultProjectId'),
+  );
+  const [tagIds, setTagIds] = useState<string[]>([]);
+
   // Resolve the current project color for the highlight bar
   const currentProjectColor =
     allProjects?.find((p) => p.id === projectId)?.color ?? 'hsl(var(--primary))';
@@ -48,13 +55,6 @@ export function TimerBar() {
       timerBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [isHighlighted]);
-
-  // Local state for the "next timer" description/project/tags
-  const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(() =>
-    getPreference('defaultProjectId'),
-  );
-  const [tagIds, setTagIds] = useState<string[]>([]);
 
   // Track palette state to ignore leaked Enter keydown after palette closes
   const { open: paletteOpen } = usePalette();
