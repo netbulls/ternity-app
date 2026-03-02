@@ -15,7 +15,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { useUpdateEntry, useDeleteEntry, useRestoreEntry, useMoveBlock } from '@/hooks/use-entries';
+import {
+  useUpdateEntry,
+  useDeleteEntry,
+  useRestoreEntry,
+  useMoveBlock,
+  useOptimisticEntryPatch,
+} from '@/hooks/use-entries';
 import { useTimer, useResumeTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { formatTime, formatDuration } from '@/lib/format';
@@ -57,6 +63,7 @@ import { getPreference, setPreference } from '@/providers/preferences-provider';
 import type { Entry, JiraIssue } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
+import { useTimelineFocus } from '@/components/timer/timeline-focus-context';
 
 type EditingField = 'description' | 'project' | null;
 
@@ -70,6 +77,7 @@ interface Props {
 export function EntryRow({ entry }: Props) {
   const { data: timerState } = useTimer();
   const updateEntry = useUpdateEntry();
+  const patchEntry = useOptimisticEntryPatch();
   const deleteEntry = useDeleteEntry();
   const restoreEntry = useRestoreEntry();
   const moveBlock = useMoveBlock();
@@ -105,8 +113,33 @@ export function EntryRow({ entry }: Props) {
   const { data: allProjects } = useProjects();
   const { activeEntryId, claim, release } = useActiveEdit();
   const { justCreatedId } = useDraftEntry();
+  const { hoveredEntryId, selectedEntryId, registerEnterHandler } = useTimelineFocus();
   const editingFieldRef = useRef(editingField);
   editingFieldRef.current = editingField;
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Timeline focus states
+  const isTimelineHovered = hoveredEntryId === entry.id;
+  const isTimelineSelected = selectedEntryId === entry.id;
+  const isTimelineFocused = isTimelineHovered || isTimelineSelected;
+
+  // Auto-scroll into view when selected from the timeline
+  useEffect(() => {
+    if (isTimelineSelected && rowRef.current) {
+      rowRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isTimelineSelected]);
+
+  // Register Enter key handler for timeline selection (resume timer)
+  // Uses a ref so the effect doesn't re-run when handlePlay's dependencies change
+  const handlePlayRef = useRef<() => void>(() => {});
+  // (handlePlayRef.current is updated below after handlePlay is defined)
+  useEffect(() => {
+    if (isTimelineSelected) {
+      registerEnterHandler(entry.id, () => handlePlayRef.current());
+      return () => registerEnterHandler(entry.id, null);
+    }
+  }, [isTimelineSelected, entry.id, registerEnterHandler]);
 
   // Auto-cancel when another entry claims the active edit
   useEffect(() => {
@@ -234,6 +267,7 @@ export function EntryRow({ entry }: Props) {
     }
     resumeTimer.mutate(entry.id);
   };
+  handlePlayRef.current = handlePlay;
 
   const handleSwitchConfirm = (dontAskAgain: boolean) => {
     if (dontAskAgain) {
@@ -324,8 +358,14 @@ export function EntryRow({ entry }: Props) {
   const displayProjectColor = optimisticProject?.color ?? entry.projectColor;
   const displayClientName = optimisticProject?.clientName ?? entry.clientName;
 
+  // Resolve the project color for the timeline focus indicator
+  const focusBarColor = displayProjectColor ?? 'hsl(var(--primary))';
+
   return (
-    <div className={cn('border-b border-border last:border-b-0', isDeleted && 'opacity-60')}>
+    <div
+      ref={rowRef}
+      className={cn('border-b border-border last:border-b-0', isDeleted && 'opacity-60')}
+    >
       <motion.div
         className={cn(
           'group/row relative flex items-center gap-3 px-4 py-2.5',
@@ -334,19 +374,26 @@ export function EntryRow({ entry }: Props) {
         animate={{
           backgroundColor: isRunning
             ? 'hsl(var(--primary) / 0.06)'
-            : isEditing
-              ? 'hsl(var(--muted) / 0.15)'
-              : 'transparent',
+            : isTimelineFocused
+              ? `color-mix(in srgb, ${focusBarColor} 6%, transparent)`
+              : isEditing
+                ? 'hsl(var(--muted) / 0.15)'
+                : 'transparent',
         }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.15 }}
       >
-        {/* Left border indicator — amber for incomplete, teal for running */}
+        {/* Left border indicator — project color (5px) for timeline focus, amber for incomplete, teal for running */}
         <AnimatePresence>
-          {(isRunning || noProject || noDesc) && (
+          {(isRunning || noProject || noDesc || isTimelineFocused) && (
             <motion.div
-              className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
+              className="absolute left-0 top-0 bottom-0 rounded-l"
               style={{
-                background: noProject || noDesc ? 'hsl(35 100% 60%)' : 'hsl(var(--primary))',
+                width: isTimelineFocused ? '5px' : '3px',
+                background: isTimelineFocused
+                  ? focusBarColor
+                  : noProject || noDesc
+                    ? 'hsl(35 100% 60%)'
+                    : 'hsl(var(--primary))',
               }}
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
@@ -387,6 +434,8 @@ export function EntryRow({ entry }: Props) {
                   onChange={(e) => {
                     const val = e.target.value;
                     setEditDesc(val);
+                    // Optimistically patch cache so timer bar updates in real-time
+                    patchEntry(entry.id, { description: val });
                     // Detect # trigger
                     const hashIdx = val.lastIndexOf('#');
                     if (hashIdx >= 0 && (hashIdx === 0 || val[hashIdx - 1] === ' ')) {

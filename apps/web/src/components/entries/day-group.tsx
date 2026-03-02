@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { formatDateLabel, formatDuration } from '@/lib/format';
@@ -6,6 +6,7 @@ import { scaled } from '@/lib/scaled';
 import { EntryRow } from './entry-row';
 import { DraftEntryRow } from './draft-entry-row';
 import { useDraftEntry } from './draft-entry-context';
+import { useTimelineFocus } from '@/components/timer/timeline-focus-context';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 
 export function DayGroup({ group }: Props) {
   const { draft, openDraft, savedEntryId } = useDraftEntry();
+  const { setEntryIds } = useTimelineFocus();
 
   const handleAdd = useCallback(() => {
     openDraft(group.date);
@@ -27,6 +29,11 @@ export function DayGroup({ group }: Props) {
     }
     return group.entries;
   }, [group.entries, savedEntryId, draft]);
+
+  // Register entry IDs for keyboard navigation
+  useEffect(() => {
+    setEntryIds(visibleEntries.map((e) => e.id));
+  }, [visibleEntries, setEntryIds]);
 
   return (
     <div className="group/day mb-4">

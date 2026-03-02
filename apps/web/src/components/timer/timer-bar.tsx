@@ -3,7 +3,7 @@ import { Play, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
-import { useUpdateEntry } from '@/hooks/use-entries';
+import { useUpdateEntry, useOptimisticEntryPatch } from '@/hooks/use-entries';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
@@ -23,6 +23,7 @@ export function TimerBar() {
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
   const updateEntry = useUpdateEntry();
+  const patchEntry = useOptimisticEntryPatch();
   const linkJira = useLinkJiraIssue();
   const { data: jiraConnections } = useJiraConnections();
   const hasJira = (jiraConnections?.length ?? 0) > 0;
@@ -56,17 +57,26 @@ export function TimerBar() {
     siteUrl: string;
   } | null>(null);
 
-  // When timer data loads or entry changes, sync local state from running entry
-  const [syncedEntryId, setSyncedEntryId] = useState<string | null>(null);
-  if (running && currentEntry && syncedEntryId !== currentEntry.id) {
-    setDescription(currentEntry.description);
-    setProjectId(currentEntry.projectId);
-    setTagIds(currentEntry.tags.map((t) => t.id));
-    setPendingJira(null); // linked issue comes from entry, not local state
-    setSyncedEntryId(currentEntry.id);
+  // When timer data loads or entry changes, sync local state from running entry.
+  // We track a fingerprint (id + description + projectId) so that edits made
+  // from the entries list (which refetch the timer query) are picked up here.
+  const [syncedFingerprint, setSyncedFingerprint] = useState<string | null>(null);
+  const currentFingerprint =
+    running && currentEntry
+      ? `${currentEntry.id}::${currentEntry.description}::${currentEntry.projectId ?? ''}`
+      : null;
+  if (currentFingerprint && syncedFingerprint !== currentFingerprint) {
+    setDescription(currentEntry!.description);
+    setProjectId(currentEntry!.projectId);
+    setTagIds(currentEntry!.tags.map((t) => t.id));
+    if (syncedFingerprint === null) {
+      // First sync for this entry — clear pending Jira (linked issue comes from entry)
+      setPendingJira(null);
+    }
+    setSyncedFingerprint(currentFingerprint);
   }
-  if (!running && syncedEntryId !== null) {
-    setSyncedEntryId(null);
+  if (!running && syncedFingerprint !== null) {
+    setSyncedFingerprint(null);
   }
 
   // Debounced description save while running (800ms after typing stops)
@@ -156,6 +166,11 @@ export function TimerBar() {
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setDescription(val);
+
+    // Optimistically patch the cache so the entry list updates in real-time
+    if (running && currentEntry) {
+      patchEntry(currentEntry.id, { description: val });
+    }
 
     const hashIdx = val.lastIndexOf('#');
     if (hashIdx >= 0 && (hashIdx === 0 || val[hashIdx - 1] === ' ')) {

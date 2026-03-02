@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { useImpersonation } from '@/providers/impersonation-provider';
@@ -11,7 +12,44 @@ import type {
   AdjustEntry,
   MoveBlock,
   AuditEvent,
+  TimerState,
 } from '@ternity/shared';
+
+/* ── Shared optimistic cache patch ──────────────────────────────── */
+
+/**
+ * Instantly patch an entry in both ['entries'] and ['timer'] query caches.
+ * Use this for real-time UI sync (e.g. keystroke-by-keystroke) without an API call.
+ * The actual API save should be debounced separately.
+ */
+function patchEntryInCache(queryClient: QueryClient, entryId: string, patch: Partial<Entry>) {
+  const patchEntry = (entry: Entry): Entry => ({ ...entry, ...patch });
+
+  queryClient.setQueriesData<DayGroup[]>({ queryKey: ['entries'] }, (old) => {
+    if (!old) return old;
+    return old.map((group) => ({
+      ...group,
+      entries: group.entries.map((e) => (e.id === entryId ? patchEntry(e) : e)),
+    }));
+  });
+
+  queryClient.setQueriesData<TimerState>({ queryKey: ['timer'] }, (old) => {
+    if (!old?.entry || old.entry.id !== entryId) return old;
+    return { ...old, entry: patchEntry(old.entry) };
+  });
+}
+
+/**
+ * Hook that returns a function to optimistically patch an entry in both caches.
+ * Call on every keystroke for real-time bidirectional sync between timer bar and entry list.
+ */
+export function useOptimisticEntryPatch() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (entryId: string, patch: Partial<Entry>) => patchEntryInCache(queryClient, entryId, patch),
+    [queryClient],
+  );
+}
 
 export function useEntries(from: string, to: string, deleted = false) {
   const { effectiveUserId } = useImpersonation();
@@ -57,6 +95,15 @@ export function useUpdateEntry() {
         body: JSON.stringify(data),
         headers: source ? { 'X-Audit-Source': source } : undefined,
       }),
+    onMutate: async (variables) => {
+      const { id, source: _source, ...patch } = variables;
+
+      // Cancel in-flight refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['entries'] });
+      await queryClient.cancelQueries({ queryKey: ['timer'] });
+
+      patchEntryInCache(queryClient, id, patch);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['entries'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
@@ -64,6 +111,9 @@ export function useUpdateEntry() {
       queryClient.invalidateQueries({ queryKey: ['audit'] });
     },
     onError: (_error, variables) => {
+      // Rollback: refetch to get correct server state
+      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['timer'] });
       toast.error('Failed to save changes', {
         action: { label: 'Retry', onClick: () => mutation.mutate(variables) },
       });

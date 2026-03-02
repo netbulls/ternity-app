@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { TimerBar } from '@/components/timer/timer-bar';
 import { DayTimeline, calcTodaySeconds } from '@/components/timer/day-timeline';
 import { WeekStrip } from '@/components/timer/week-strip';
+import { TimelineFocusProvider } from '@/components/timer/timeline-focus-context';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
 import { DraftEntryProvider } from '@/components/entries/draft-entry-context';
@@ -145,37 +146,39 @@ export function TimerPage() {
         />
       </div>
 
-      {/* Day Timeline */}
-      <div className="mb-5">
-        <DayTimeline date={selectedDate} entries={dayEntries} />
-      </div>
-
-      {/* Timer Bar — only show on today */}
-      {isToday && <TimerBar />}
-
-      {/* Day entries */}
-      {weekLoading ? (
-        <div className="py-10 text-center text-muted-foreground" style={{ fontSize: scaled(14) }}>
-          Loading entries...
+      <TimelineFocusProvider>
+        {/* Day Timeline */}
+        <div className="mb-5">
+          <DayTimeline date={selectedDate} entries={dayEntries} />
         </div>
-      ) : correctedGroup ? (
-        <ActiveEditProvider>
-          <DraftEntryProvider>
-            <DayGroup group={correctedGroup} />
-          </DraftEntryProvider>
-        </ActiveEditProvider>
-      ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <div
-            className="px-3.5 py-10 text-center text-muted-foreground"
-            style={{ fontSize: scaled(14) }}
-          >
-            {isToday
-              ? 'No entries yet today. Start the timer to begin tracking.'
-              : 'No entries for this day.'}
+
+        {/* Timer Bar — only show on today */}
+        {isToday && <TimerBar />}
+
+        {/* Day entries */}
+        {weekLoading ? (
+          <div className="py-10 text-center text-muted-foreground" style={{ fontSize: scaled(14) }}>
+            Loading entries...
           </div>
-        </div>
-      )}
+        ) : correctedGroup ? (
+          <ActiveEditProvider>
+            <DraftEntryProvider>
+              <DayGroup group={correctedGroup} />
+            </DraftEntryProvider>
+          </ActiveEditProvider>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border">
+            <div
+              className="px-3.5 py-10 text-center text-muted-foreground"
+              style={{ fontSize: scaled(14) }}
+            >
+              {isToday
+                ? 'No entries yet today. Start the timer to begin tracking.'
+                : 'No entries for this day.'}
+            </div>
+          </div>
+        )}
+      </TimelineFocusProvider>
 
       <ManualEntryDialog open={manualOpen} onOpenChange={setManualOpen} />
     </div>
