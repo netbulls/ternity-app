@@ -10,10 +10,12 @@ export function ImpersonationBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 z-50 flex items-center justify-between overflow-hidden px-4 py-2 backdrop-blur-md animate-banner-slide-in"
+      className="fixed inset-x-0 top-0 z-50 flex items-center justify-between overflow-hidden px-4 py-2 animate-banner-slide-in"
       style={{
-        background: 'linear-gradient(90deg, hsl(35 100% 50% / 0.12), hsl(25 100% 45% / 0.06))',
-        backgroundColor: 'hsl(var(--background) / 0.7)',
+        background: 'hsl(30 80% 15% / 0.65)',
+        backdropFilter: 'blur(16px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+        borderBottom: '1px solid hsl(35 100% 50% / 0.2)',
       }}
     >
       {/* Shimmer overlay */}
