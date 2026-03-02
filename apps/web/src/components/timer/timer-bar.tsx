@@ -322,9 +322,7 @@ export function TimerBar() {
               : 'hsl(var(--t-timer-border))',
           backgroundColor: isHighlighted
             ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : isInputFocused
-              ? 'hsl(var(--primary) / 0.05)'
-              : 'hsl(var(--t-timer-bg))',
+            : 'hsl(var(--t-timer-bg))',
         }}
         transition={{ duration: 0.3 }}
       >
