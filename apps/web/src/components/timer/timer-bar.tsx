@@ -321,11 +321,13 @@ export function TimerBar() {
             : running
               ? 'hsl(var(--primary) / 0.3)'
               : isTimerHovered
-                ? 'hsl(var(--muted-foreground) / 0.2)'
+                ? 'hsl(var(--primary) / 0.2)'
                 : 'hsl(var(--t-timer-border))',
           backgroundColor: isHighlighted
             ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : 'hsl(var(--t-timer-bg))',
+            : isTimerHovered && !running
+              ? 'hsl(var(--primary) / 0.03)'
+              : 'hsl(var(--t-timer-bg))',
         }}
         transition={{ duration: 0.15 }}
       >
