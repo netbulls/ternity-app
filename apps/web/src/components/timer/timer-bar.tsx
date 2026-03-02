@@ -7,6 +7,7 @@ import { useUpdateEntry, useOptimisticEntryPatch } from '@/hooks/use-entries';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
+import { useProjects } from '@/hooks/use-reference-data';
 import { formatTimer, getTimezoneLabel } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
@@ -16,6 +17,7 @@ import { JiraChip } from '@/components/jira/jira-chip';
 import { JiraIcon } from '@/components/jira/jira-icon';
 import { JiraSearchDropdown } from '@/components/jira/jira-search-dropdown';
 import { HashAutocomplete } from '@/components/jira/hash-autocomplete';
+import { useTimelineFocus, TIMER_BAR_ID } from '@/components/timer/timeline-focus-context';
 import type { JiraIssue, JiraIssueLink } from '@ternity/shared';
 
 export function TimerBar() {
@@ -30,6 +32,22 @@ export function TimerBar() {
 
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
+  const { data: allProjects } = useProjects();
+  const { selectedEntryId, registerEnterHandler } = useTimelineFocus();
+  const isHighlighted = selectedEntryId === TIMER_BAR_ID;
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const timerBarRef = useRef<HTMLDivElement>(null);
+
+  // Resolve the current project color for the highlight bar
+  const currentProjectColor =
+    allProjects?.find((p) => p.id === projectId)?.color ?? 'hsl(var(--primary))';
+
+  // Auto-scroll into view when highlighted via keyboard
+  useEffect(() => {
+    if (isHighlighted && timerBarRef.current) {
+      timerBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isHighlighted]);
 
   // Local state for the "next timer" description/project/tags
   const [description, setDescription] = useState('');
@@ -137,6 +155,16 @@ export function TimerBar() {
       },
     });
   }, [stopTimer]);
+
+  // Register Enter handler for keyboard navigation — toggle start/stop
+  const handleToggleRef = useRef<() => void>(() => {});
+  handleToggleRef.current = running ? handleStop : handleStart;
+  useEffect(() => {
+    if (isHighlighted) {
+      registerEnterHandler(TIMER_BAR_ID, () => handleToggleRef.current());
+      return () => registerEnterHandler(TIMER_BAR_ID, null);
+    }
+  }, [isHighlighted, registerEnterHandler]);
 
   const descriptionInputRef = useRef<HTMLInputElement>(null);
 
@@ -279,13 +307,41 @@ export function TimerBar() {
     <div ref={wrapperRef} className="relative z-50">
       {running && <LiquidEdgeKeyframes />}
       <motion.div
+        ref={timerBarRef}
         className="relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3"
         animate={{
-          borderColor: running ? 'hsl(var(--primary) / 0.3)' : 'hsl(var(--t-timer-border))',
-          backgroundColor: 'hsl(var(--t-timer-bg))',
+          borderColor: isHighlighted
+            ? isInputFocused
+              ? `color-mix(in srgb, ${currentProjectColor} 40%, hsl(var(--t-timer-border)))`
+              : currentProjectColor
+            : running
+              ? 'hsl(var(--primary) / 0.3)'
+              : 'hsl(var(--t-timer-border))',
+          backgroundColor: isHighlighted
+            ? `color-mix(in srgb, ${currentProjectColor} ${isInputFocused ? '3' : '6'}%, hsl(var(--t-timer-bg)))`
+            : 'hsl(var(--t-timer-bg))',
         }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.15 }}
       >
+        {/* Left border indicator — project color when keyboard-highlighted */}
+        <AnimatePresence>
+          {isHighlighted && (
+            <motion.div
+              className="absolute left-0 top-0 bottom-0 rounded-l"
+              style={{
+                width: isInputFocused ? '3px' : '5px',
+                background: isInputFocused
+                  ? `color-mix(in srgb, ${currentProjectColor} 60%, transparent)`
+                  : currentProjectColor,
+              }}
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              exit={{ scaleY: 0 }}
+              transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+            />
+          )}
+        </AnimatePresence>
+
         {/* F3c Liquid Edge — two fluid blobs along the bottom */}
         {running && <LiquidEdge />}
 
@@ -320,6 +376,8 @@ export function TimerBar() {
             value={description}
             onChange={handleDescriptionChange}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
           />
         </div>
 

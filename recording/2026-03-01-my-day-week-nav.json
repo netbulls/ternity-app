@@ -1,0 +1,149 @@
+{
+  "url": "http://localhost:5173",
+  "resolution": "1080p",
+  "format": "mp4",
+  "osdTheme": "dark",
+  "defaultPause": 1000,
+  "trimStart": 1,
+  "videoQuality": "high",
+  "steps": [
+    {
+      "action": "narrate",
+      "narrate": "My Day — your daily time tracking cockpit",
+      "osdPosition": "top-center",
+      "duration": 3000
+    },
+    {
+      "action": "wait",
+      "duration": 2500,
+      "narrate": "Katarzyna's day at a glance — timeline, entries, and week overview"
+    },
+    {
+      "action": "highlight",
+      "selector": ".grid.grid-cols-7",
+      "style": "dim-others",
+      "duration": 3000,
+      "narrate": "The Week Overview strip shows tracked hours for each day"
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "narrate",
+      "narrate": "Navigate through the week by clicking any day",
+      "osdPosition": "bottom-center",
+      "duration": 2000
+    },
+    {
+      "action": "click",
+      "selector": ".grid.grid-cols-7 > button:nth-child(4)",
+      "narrate": "Clicking Thursday — the busiest day this week",
+      "emphasize": "pulse"
+    },
+    {
+      "action": "wait",
+      "duration": 2500,
+      "narrate": "Thursday's timeline shows 8+ hours of focused Ternity App work"
+    },
+    {
+      "action": "click",
+      "selector": ".grid.grid-cols-7 > button:nth-child(2)",
+      "narrate": "Switching to Tuesday — a mixed day across multiple projects",
+      "emphasize": "pulse"
+    },
+    {
+      "action": "wait",
+      "duration": 2500,
+      "narrate": "Entries from Exegy and Legal500 projects with color-coded timeline"
+    },
+    {
+      "action": "click",
+      "selector": ".grid.grid-cols-7 > button:nth-child(6)",
+      "narrate": "Saturday — weekends are dimmed with zero hours",
+      "emphasize": "pulse"
+    },
+    {
+      "action": "wait",
+      "duration": 2000,
+      "narrate": "No entries for this day"
+    },
+    {
+      "action": "narrate",
+      "narrate": "Navigate entire weeks with the arrow buttons",
+      "osdPosition": "top-center",
+      "duration": 2000
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label='Previous week']",
+      "narrate": "Going to the previous week",
+      "emphasize": "ring"
+    },
+    {
+      "action": "wait",
+      "duration": 2000,
+      "narrate": "Previous week's data loads instantly"
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label='Next week']",
+      "narrate": "Back to the current week",
+      "emphasize": "ring"
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "click",
+      "selector": ".grid.grid-cols-7 > button:nth-child(7)",
+      "narrate": "Back to today — Sunday",
+      "emphasize": "pulse"
+    },
+    {
+      "action": "wait",
+      "duration": 2000,
+      "narrate": "Today's entries with the day timeline above"
+    },
+    {
+      "action": "narrate",
+      "narrate": "Keyboard navigation: Arrow keys switch days, T jumps to today",
+      "osdPosition": "bottom-center",
+      "duration": 3000
+    },
+    {
+      "action": "keypress",
+      "key": "ArrowLeft",
+      "narrate": "Press ← to go to yesterday"
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "keypress",
+      "key": "ArrowLeft",
+      "narrate": "And again — two days back"
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "keypress",
+      "key": "t",
+      "narrate": "Press T to jump back to today"
+    },
+    {
+      "action": "wait",
+      "duration": 2000
+    },
+    {
+      "action": "narrate",
+      "narrate": "My Day — time tracking that stays out of your way",
+      "osdPosition": "top-center",
+      "duration": 3500
+    }
+  ]
+}

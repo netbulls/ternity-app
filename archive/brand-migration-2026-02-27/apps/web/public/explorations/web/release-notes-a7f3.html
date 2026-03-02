@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Release Notes Prominence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .variant-label {
+            text-align: center; margin: 48px 0 8px;
+            font-family: 'Oxanium', sans-serif; font-size: 10px; font-weight: 400;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .variant-label:first-of-type { margin-top: 20px; }
+        .variant-desc {
+            text-align: center; font-size: 11px;
+            color: rgba(255,255,255,0.12); margin-bottom: 16px;
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+
+        /* ============================================ */
+        /* Shared: downloads card shell                 */
+        /* ============================================ */
+
+        .theme-container {
+            max-width: 900px; margin: 0 auto;
+            border-radius: 12px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .card-shell {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 780px;
+            margin: 32px auto;
+        }
+
+        /* Header row */
+        .card-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .card-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .card-icon i { color: hsl(var(--primary)); width: 20px; height: 20px; }
+        .card-title {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .card-subtitle {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .card-title-group { flex: 1; }
+        .fw-tabs {
+            display: flex; gap: 4px;
+        }
+        .fw-tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+        }
+        .fw-tab:hover { background: hsl(var(--accent) / 0.5); }
+        .fw-tab.active {
+            background: hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .fw-tab i { width: 14px; height: 14px; }
+
+        /* Platform tabs */
+        .platform-row {
+            display: flex; align-items: center; gap: 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .plat-tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+            border: none; background: none;
+            border-bottom: 2px solid transparent;
+            opacity: 0.5;
+        }
+        .plat-tab:hover { opacity: 0.8; }
+        .plat-tab.active {
+            opacity: 1;
+            color: hsl(var(--foreground));
+            border-bottom-color: hsl(var(--primary));
+        }
+        .plat-tab.disabled { opacity: 0.2; cursor: default; }
+        .plat-tab i { width: 14px; height: 14px; }
+        .plat-tab .detected {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; text-transform: uppercase;
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px;
+        }
+
+        /* Channel badges */
+        .channel-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .ch-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+        .ch-badge i { width: 12px; height: 12px; }
+        .ch-badge.release {
+            background: hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .ch-badge.snapshot {
+            border-color: hsl(var(--border));
+            color: hsl(var(--muted-foreground)); opacity: 0.6;
+        }
+        .ch-badge .ch-version {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 400; opacity: 0.6;
+        }
+
+        /* Download rows */
+        .dl-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.15);
+            transition: background 0.15s;
+        }
+        .dl-row:hover { background: hsl(var(--accent) / 0.3); }
+        .dl-row:last-of-type { border-bottom: none; }
+        .dl-icon {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: hsl(var(--muted) / 0.3);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .dl-icon i { width: 16px; height: 16px; color: hsl(var(--muted-foreground)); }
+        .dl-info { flex: 1; }
+        .dl-name {
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 500;
+            color: hsl(var(--foreground));
+        }
+        .dl-name .rec {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; text-transform: uppercase;
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px;
+            margin-left: 6px;
+        }
+        .dl-meta {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.6;
+        }
+        .dl-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            margin-right: 8px;
+        }
+        .dl-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 6px 14px; border-radius: 8px;
+            border: 1px solid hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.08);
+            color: hsl(var(--primary));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .dl-btn:hover { background: hsl(var(--primary) / 0.15); }
+        .dl-btn i { width: 14px; height: 14px; }
+
+        /* Footer items */
+        .card-footer {
+            display: flex; align-items: center; gap: 4px;
+            padding: 8px 20px;
+            border-top: 1px solid hsl(var(--border) / 0.15);
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.4;
+        }
+        .card-footer i { width: 12px; height: 12px; }
+
+        /* ============================================ */
+        /* Release notes shared styles                  */
+        /* ============================================ */
+
+        .notes-category {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: hsl(var(--foreground)); opacity: 0.5;
+            margin-bottom: 3px;
+        }
+        .notes-category:not(:first-child) { margin-top: 8px; }
+        .notes-entry {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            line-height: 1.6;
+            padding-left: 10px;
+            position: relative;
+        }
+        .notes-entry::before {
+            content: ''; position: absolute; left: 0; top: 9px;
+            width: 3px; height: 3px; border-radius: 50%;
+            background: hsl(var(--muted-foreground)); opacity: 0.35;
+        }
+
+        /* ============================================ */
+        /* A: Open by default — same position           */
+        /* ============================================ */
+
+        .notes-section-a {
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            padding: 12px 20px 16px;
+        }
+        .notes-header-a {
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .notes-header-a i { width: 12px; height: 12px; color: hsl(var(--muted-foreground)); opacity: 0.4; }
+        .notes-header-a span {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+        }
+
+        /* ============================================ */
+        /* B: Promoted section with teal accent          */
+        /* ============================================ */
+
+        .notes-section-b {
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            padding: 0;
+        }
+        .notes-bar-b {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px;
+            background: hsl(var(--primary) / 0.03);
+        }
+        .notes-bar-b .notes-icon-b {
+            width: 24px; height: 24px; border-radius: 6px;
+            background: hsl(var(--primary) / 0.1);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .notes-bar-b .notes-icon-b i { width: 12px; height: 12px; color: hsl(var(--primary)); }
+        .notes-bar-b .notes-title-b {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .notes-bar-b .notes-ver-b {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 400;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+        }
+        .notes-body-b {
+            padding: 10px 20px 14px;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 24px;
+        }
+
+        /* ============================================ */
+        /* C: Above downloads — hero callout             */
+        /* ============================================ */
+
+        .notes-section-c {
+            margin: 0 16px 0;
+            border: 1px solid hsl(var(--primary) / 0.12);
+            border-radius: 8px;
+            background: hsl(var(--primary) / 0.03);
+            overflow: hidden;
+        }
+        .notes-header-c {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px;
+            border-bottom: 1px solid hsl(var(--primary) / 0.08);
+        }
+        .notes-header-c i { width: 14px; height: 14px; color: hsl(var(--primary)); opacity: 0.7; }
+        .notes-header-c .notes-title-c {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--primary));
+        }
+        .notes-header-c .notes-ver-c {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--primary)); opacity: 0.5;
+            margin-left: auto;
+        }
+        .notes-body-c {
+            padding: 10px 14px 12px;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 20px;
+        }
+
+        /* ============================================ */
+        /* D: Inline with channel badge                  */
+        /* ============================================ */
+
+        .channel-row-d {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 12px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .ch-badges-d { display: flex; gap: 8px; flex-shrink: 0; }
+        .notes-inline-d {
+            flex: 1;
+            padding-left: 8px;
+            border-left: 2px solid hsl(var(--primary) / 0.15);
+            margin-left: 4px;
+        }
+        .notes-inline-d .notes-summary-d {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            line-height: 1.5;
+        }
+        .notes-inline-d .notes-summary-d strong {
+            color: hsl(var(--foreground)); font-weight: 500;
+        }
+        .notes-more-d {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--primary)); opacity: 0.6;
+            cursor: pointer; margin-top: 2px;
+        }
+        .notes-more-d:hover { opacity: 1; }
+
+        /* ============================================ */
+        /* E: Side panel / split view                    */
+        /* ============================================ */
+
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 260px;
+        }
+        .split-main {
+            border-right: 1px solid hsl(var(--border) / 0.3);
+        }
+        .split-notes {
+            padding: 16px;
+            background: hsl(var(--background) / 0.5);
+        }
+        .split-notes-header {
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 12px;
+        }
+        .split-notes-header i { width: 14px; height: 14px; color: hsl(var(--primary)); opacity: 0.6; }
+        .split-notes-header span {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .split-notes-ver {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.4;
+            margin-bottom: 12px;
+        }
+
+        /* ============================================ */
+        /* F: Expandable ribbon                          */
+        /* ============================================ */
+
+        .notes-ribbon {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 20px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            background: hsl(var(--primary) / 0.02);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .notes-ribbon:hover { background: hsl(var(--primary) / 0.05); }
+        .notes-ribbon i { width: 14px; height: 14px; color: hsl(var(--primary)); opacity: 0.5; }
+        .notes-ribbon .ribbon-text {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground)); opacity: 0.7;
+        }
+        .notes-ribbon .ribbon-text strong {
+            color: hsl(var(--primary)); font-weight: 500;
+        }
+        .notes-ribbon .ribbon-count {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px;
+            font-weight: 600;
+        }
+        .notes-ribbon .ribbon-arrow {
+            margin-left: auto;
+            width: 12px; height: 12px;
+            color: hsl(var(--muted-foreground)); opacity: 0.3;
+        }
+        .notes-expanded {
+            padding: 12px 20px 16px;
+            border-top: 1px solid hsl(var(--border) / 0.15);
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 24px;
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Release Notes — Prominence</h1>
+    <p>6 variants: A) Open by default, B) Promoted section, C) Hero callout above downloads, D) Inline with badge, E) Side panel, F) Expandable ribbon</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- A: Open by default — same position, just not collapsed    -->
+<!-- ======================================================== -->
+
+<div class="variant-label">A — Open by Default</div>
+<div class="variant-desc">Minimal change — same position after downloads, but expanded by default. Collapsible chevron for those who want to hide it.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <!-- Notes: open by default -->
+        <div class="notes-section-a">
+            <div class="notes-header-a">
+                <i data-lucide="chevron-down"></i>
+                <span>What's new in 0.3.0</span>
+            </div>
+            <div>
+                <div class="notes-category">Added</div>
+                <div class="notes-entry">System tray with idle detection and break reminders</div>
+                <div class="notes-entry">Offline mode with automatic sync on reconnect</div>
+                <div class="notes-entry">Global keyboard shortcut to start/stop timer</div>
+                <div class="notes-category">Fixed</div>
+                <div class="notes-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                <div class="notes-entry">Window position not restored after relaunch</div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- B: Promoted section with teal accent bar                  -->
+<!-- ======================================================== -->
+
+<div class="variant-label">B — Promoted Section</div>
+<div class="variant-desc">Release notes get a proper header bar with icon and version. Two-column layout for categories. Sits between downloads and checksums.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <!-- Notes: promoted section -->
+        <div class="notes-section-b">
+            <div class="notes-bar-b">
+                <div class="notes-icon-b"><i data-lucide="sparkles"></i></div>
+                <span class="notes-title-b">What's new</span>
+                <span class="notes-ver-b">0.3.0</span>
+            </div>
+            <div class="notes-body-b">
+                <div>
+                    <div class="notes-category">Added</div>
+                    <div class="notes-entry">System tray with idle detection and break reminders</div>
+                    <div class="notes-entry">Offline mode with automatic sync on reconnect</div>
+                    <div class="notes-entry">Global keyboard shortcut to start/stop timer</div>
+                </div>
+                <div>
+                    <div class="notes-category">Fixed</div>
+                    <div class="notes-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                    <div class="notes-entry">Window position not restored after relaunch</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- C: Hero callout above downloads                           -->
+<!-- ======================================================== -->
+
+<div class="variant-label">C — Hero Callout</div>
+<div class="variant-desc">Notes move above the download rows, inside a teal-tinted card. First thing you see after selecting a channel. Most prominent.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <!-- Notes: hero callout ABOVE downloads -->
+        <div style="padding: 0 16px 4px; margin-top: -4px;">
+            <div class="notes-section-c">
+                <div class="notes-header-c">
+                    <i data-lucide="sparkles"></i>
+                    <span class="notes-title-c">What's new</span>
+                    <span class="notes-ver-c">0.3.0 · Feb 19, 2026</span>
+                </div>
+                <div class="notes-body-c">
+                    <div>
+                        <div class="notes-category">Added</div>
+                        <div class="notes-entry">System tray with idle detection and break reminders</div>
+                        <div class="notes-entry">Offline mode with automatic sync on reconnect</div>
+                        <div class="notes-entry">Global keyboard shortcut to start/stop timer</div>
+                    </div>
+                    <div>
+                        <div class="notes-category">Fixed</div>
+                        <div class="notes-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                        <div class="notes-entry">Window position not restored after relaunch</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- D: Inline summary next to channel badges                  -->
+<!-- ======================================================== -->
+
+<div class="variant-label">D — Inline with Badge</div>
+<div class="variant-desc">Compact summary next to channel badges with a left border accent. Shows top 2-3 items + "and 2 more" link. Minimal vertical footprint.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <!-- Notes: inline with channel badges -->
+        <div class="channel-row-d">
+            <div class="ch-badges-d">
+                <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+                <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+            </div>
+            <div class="notes-inline-d">
+                <div class="notes-summary-d">
+                    <strong>Added:</strong> System tray with idle detection, offline sync, global shortcut
+                    · <strong>Fixed:</strong> Sleep/wake timer, window position
+                </div>
+                <div class="notes-more-d">View full changelog →</div>
+            </div>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- E: Side panel — notes always visible on the right         -->
+<!-- ======================================================== -->
+
+<div class="variant-label">E — Side Panel</div>
+<div class="variant-desc">Notes live in a permanent right column. Always visible alongside downloads. Card gets wider. Good for desktop, questionable for narrow screens.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell" style="max-width: 920px;">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="split-layout">
+            <div class="split-main">
+                <div class="platform-row">
+                    <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+                    <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+                    <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+                </div>
+                <div class="channel-row">
+                    <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+                    <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+                </div>
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+                    <div class="dl-info">
+                        <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                        <div class="dl-meta">M1, M2, M3, M4 · .dmg installer</div>
+                    </div>
+                    <span class="dl-size">98 MB</span>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+                    <div class="dl-info">
+                        <div class="dl-name">macOS — Intel</div>
+                        <div class="dl-meta">x86_64 · .dmg installer</div>
+                    </div>
+                    <span class="dl-size">106 MB</span>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+                <div class="card-footer">Released February 19, 2026</div>
+            </div>
+            <!-- Notes: side panel -->
+            <div class="split-notes">
+                <div class="split-notes-header">
+                    <i data-lucide="sparkles"></i>
+                    <span>What's new</span>
+                </div>
+                <div class="split-notes-ver">0.3.0 · Feb 19, 2026</div>
+                <div class="notes-category">Added</div>
+                <div class="notes-entry">System tray with idle detection and break reminders</div>
+                <div class="notes-entry">Offline mode with automatic sync on reconnect</div>
+                <div class="notes-entry">Global keyboard shortcut to start/stop timer</div>
+                <div class="notes-category">Fixed</div>
+                <div class="notes-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                <div class="notes-entry">Window position not restored after relaunch</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- F: Expandable ribbon with summary                         -->
+<!-- ======================================================== -->
+
+<div class="variant-label">F — Summary Ribbon</div>
+<div class="variant-desc">Colored ribbon between downloads and checksums with a one-line summary. Expandable to full notes. Visible but not overwhelming.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row" style="border-bottom: none;">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <!-- Notes: ribbon + expanded -->
+        <div class="notes-ribbon">
+            <i data-lucide="sparkles"></i>
+            <span class="ribbon-text"><strong>What's new in 0.3.0</strong> — System tray, offline mode, global shortcut</span>
+            <span class="ribbon-count">5 changes</span>
+            <i data-lucide="chevron-down" class="ribbon-arrow"></i>
+        </div>
+        <div class="notes-expanded">
+            <div>
+                <div class="notes-category">Added</div>
+                <div class="notes-entry">System tray with idle detection and break reminders</div>
+                <div class="notes-entry">Offline mode with automatic sync on reconnect</div>
+                <div class="notes-entry">Global keyboard shortcut to start/stop timer</div>
+            </div>
+            <div>
+                <div class="notes-category">Fixed</div>
+                <div class="notes-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                <div class="notes-entry">Window position not restored after relaunch</div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<script>
+    // Theme + scale switcher
+    document.getElementById('theme-switcher').addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const theme = btn.dataset.theme;
+        document.querySelectorAll('.switcher-group#theme-switcher button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.theme-container').forEach(el => el.dataset.theme = theme);
+    });
+    document.getElementById('scale-switcher').addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const scale = btn.dataset.scale;
+        document.querySelectorAll('.switcher-group#scale-switcher button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.theme-container').forEach(el => el.dataset.scale = scale);
+    });
+
+    // Init lucide
+    lucide.createIcons();
+</script>
+
+</body>
+</html>

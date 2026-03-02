@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — Jira Project Mapping V2: Connection Lines</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 20px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.5);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-top: 4px;
+        max-width: 640px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground) / 0.6);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button.active {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      .instances {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 20px 0;
+      }
+      .instance-label {
+        text-align: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-bottom: 12px;
+      }
+
+      /* Mapping card */
+      .mapping-card {
+        width: 600px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+      }
+      .card-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--primary) / 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: hsl(var(--primary));
+      }
+      .card-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .card-meta {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* Column headers */
+      .col-headers {
+        display: flex;
+        padding: 8px 20px;
+        border-top: 1px solid hsl(var(--border) / 0.5);
+        border-bottom: 1px solid hsl(var(--border) / 0.3);
+        background: hsl(var(--muted) / 0.15);
+      }
+      .col-header {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground) / 0.45);
+      }
+      .col-left {
+        width: 44%;
+      }
+      .col-mid {
+        width: 12%;
+        text-align: center;
+      }
+      .col-right {
+        flex: 1;
+      }
+
+      /* Wiring area */
+      .wiring-area {
+        padding: 8px 20px 16px;
+        position: relative;
+      }
+
+      .wire-row {
+        display: flex;
+        align-items: center;
+        padding: 6px 0;
+        min-height: 40px;
+      }
+
+      /* Left node (Jira) */
+      .node-left {
+        width: 44%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .node-key {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.1);
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .node-name {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--foreground) / 0.7);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Connection line area */
+      .wire-mid {
+        width: 12%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .wire-line {
+        width: 100%;
+        height: 2px;
+        border-radius: 1px;
+        background: hsl(var(--border) / 0.3);
+        position: relative;
+      }
+      .wire-line.connected {
+        background: hsl(var(--primary) / 0.4);
+      }
+      .wire-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground) / 0.2);
+        border: 1.5px solid hsl(var(--muted-foreground) / 0.3);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .wire-dot.left {
+        left: -3px;
+      }
+      .wire-dot.right {
+        right: -3px;
+      }
+      .wire-line.connected .wire-dot {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 6px hsl(var(--primary) / 0.3);
+      }
+
+      /* Right node (Ternity) */
+      .node-right {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .t-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .t-name {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--foreground));
+      }
+      .t-client {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.4);
+        margin-left: auto;
+      }
+
+      /* Unlinked state */
+      .node-unlinked {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.3);
+        font-style: italic;
+        cursor: pointer;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px dashed hsl(var(--border) / 0.4);
+        transition: all 0.15s;
+      }
+      .node-unlinked:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--primary) / 0.6);
+        background: hsl(var(--primary) / 0.03);
+      }
+
+      /* Legend */
+      .legend {
+        display: flex;
+        gap: 16px;
+        padding: 10px 20px;
+        border-top: 1px solid hsl(var(--border) / 0.3);
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .legend-line {
+        width: 20px;
+        height: 2px;
+        border-radius: 1px;
+      }
+      .legend-line.solid {
+        background: hsl(var(--primary) / 0.4);
+      }
+      .legend-line.dashed {
+        background: none;
+        border-top: 2px dashed hsl(var(--muted-foreground) / 0.2);
+      }
+
+      /* Many-to-one indicator */
+      .many-badge {
+        font-size: calc(9px * var(--t-scale, 1.1));
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary) / 0.7);
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Jira Project Mapping V2</h1>
+      <p>
+        Connection Lines — two-column wiring diagram with Jira projects on the left and Ternity
+        projects on the right. Visual lines show connections. Click unlinked slots to wire them up.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <div>
+        <div class="switcher-label">Theme</div>
+        <div class="switcher-group" id="theme-switcher">
+          <button onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button class="active" onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <div>
+        <div class="switcher-label">Scale</div>
+        <div class="switcher-group" id="scale-switcher">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="instances">
+      <!-- STATE 1: Partially wired -->
+      <div>
+        <div class="instance-label">Partial — 3 of 5 wired</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">NB</div>
+            <div class="card-info">
+              <div class="card-name">netbulls.atlassian.net</div>
+              <div class="card-meta">5 Jira projects &middot; 3 mapped to Ternity</div>
+            </div>
+          </div>
+          <div class="col-headers">
+            <div class="col-header col-left">Jira Project</div>
+            <div class="col-header col-mid"></div>
+            <div class="col-header col-right">Ternity Project</div>
+          </div>
+          <div class="wiring-area">
+            <!-- Connected: ADM -> Admin Portal -->
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">ADM</span>
+                <span class="node-name">Admin Dashboard</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #00d4aa"></span>
+                <span class="t-name">Admin Portal</span>
+                <span class="t-client">NETBULLS</span>
+              </div>
+            </div>
+
+            <!-- Connected: BIT -> Bitflow -->
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">BIT</span>
+                <span class="node-name">Bitflow Platform</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #6366f1"></span>
+                <span class="t-name">Bitflow</span>
+                <span class="t-client">NETBULLS</span>
+              </div>
+            </div>
+
+            <!-- Connected: INT -> Internal Tools -->
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">INT</span>
+                <span class="node-name">Internal Tools</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #f59e0b"></span>
+                <span class="t-name">Internal Tools</span>
+                <span class="t-client">NETBULLS</span>
+              </div>
+            </div>
+
+            <!-- Unlinked: MOB -->
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">MOB</span>
+                <span class="node-name">Mobile App</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="node-unlinked">Click to map...</span>
+              </div>
+            </div>
+
+            <!-- Unlinked: WEB -->
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">WEB</span>
+                <span class="node-name">Marketing Website</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="node-unlinked">Click to map...</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-line solid"></div>
+              Mapped
+            </div>
+            <div class="legend-item">
+              <div class="legend-line dashed"></div>
+              Unmapped
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATE 2: All wired, with many-to-one -->
+      <div>
+        <div class="instance-label">Many-to-one — 2 Jira projects share 1 Ternity project</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">AC</div>
+            <div class="card-info">
+              <div class="card-name">acme-corp.atlassian.net</div>
+              <div class="card-meta">4 Jira projects &middot; 4 mapped (2 sharing)</div>
+            </div>
+          </div>
+          <div class="col-headers">
+            <div class="col-header col-left">Jira Project</div>
+            <div class="col-header col-mid"></div>
+            <div class="col-header col-right">Ternity Project</div>
+          </div>
+          <div class="wiring-area">
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">CRM</span>
+                <span class="node-name">Customer Portal</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #f59e0b"></span>
+                <span class="t-name">CRM Platform</span>
+                <span class="many-badge">2:1</span>
+                <span class="t-client">ACME</span>
+              </div>
+            </div>
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">OPS</span>
+                <span class="node-name">Operations</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #f59e0b"></span>
+                <span class="t-name">CRM Platform</span>
+                <span class="many-badge">2:1</span>
+                <span class="t-client">ACME</span>
+              </div>
+            </div>
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">PAY</span>
+                <span class="node-name">Payment Engine</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #ef4444"></span>
+                <span class="t-name">Payments</span>
+                <span class="t-client">ACME</span>
+              </div>
+            </div>
+            <div class="wire-row">
+              <div class="node-left">
+                <span class="node-key">MKT</span>
+                <span class="node-name">Marketing Hub</span>
+              </div>
+              <div class="wire-mid">
+                <div class="wire-line connected">
+                  <div class="wire-dot left"></div>
+                  <div class="wire-dot right"></div>
+                </div>
+              </div>
+              <div class="node-right">
+                <span class="t-dot" style="background: #8b5cf6"></span>
+                <span class="t-name">Marketing</span>
+                <span class="t-client">ACME</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-line solid"></div>
+              Mapped
+            </div>
+            <div class="legend-item">
+              <span class="many-badge" style="font-size: 9px">2:1</span>
+              Many-to-one
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.className = [
+          'ternity-light',
+          'warm-sand',
+          'high-contrast',
+        ].includes(t)
+          ? 'light'
+          : 'dark';
+        document
+          .querySelectorAll('#theme-switcher button')
+          .forEach((b) =>
+            b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g, '-') === t),
+          );
+      }
+      function setScale(s) {
+        document.documentElement.setAttribute('data-scale', s);
+        document
+          .querySelectorAll('#scale-switcher button')
+          .forEach((b) => b.classList.toggle('active', b.textContent.toLowerCase() === s));
+      }
+    </script>
+  </body>
+</html>

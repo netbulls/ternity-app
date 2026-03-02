@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Downloads v2 (App-First)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .variant-nav {
+            display: flex; justify-content: center; gap: 4px; margin-bottom: 12px;
+        }
+        .variant-nav button {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+            padding: 5px 12px; border-radius: 6px;
+            border: 1px solid #2a2a2a; background: #1a1a1a;
+            color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s;
+        }
+        .variant-nav button:hover { border-color: #444; }
+        .variant-nav button.active {
+            background: #00D4AA; border-color: #00D4AA;
+            color: #0a0a0a; font-weight: 600;
+        }
+
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* App layout */
+        .app { display: grid; grid-template-columns: 220px 1fr; min-height: 700px; }
+
+        .sidebar {
+            display: flex; flex-direction: column; gap: 2px;
+            border-right: 1px solid hsl(var(--sidebar-border));
+            background: hsl(var(--sidebar-background));
+            padding: 20px 12px;
+        }
+        .sidebar-brand {
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar-brand span {
+            font-family: 'Oxanium', sans-serif; font-size: 15px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+        }
+        .sidebar-section {
+            padding: 12px 10px 4px;
+            font-family: 'Oxanium', sans-serif; font-size: 9px; font-weight: 400;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+        }
+        .sidebar-item {
+            padding: 8px 10px; border-radius: 6px;
+            font-size: 13px; color: hsl(var(--muted-foreground));
+        }
+        .sidebar-item.active {
+            background: hsl(var(--sidebar-accent));
+            color: hsl(var(--sidebar-accent-foreground)); font-weight: 600;
+        }
+        .sidebar-spacer { flex: 1; }
+
+        .main {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            padding: 32px 40px; overflow: auto;
+        }
+
+        .variant { display: none; }
+        .variant.active { display: block; }
+
+        .variant-label {
+            text-align: center; margin-bottom: 20px; padding: 8px 16px;
+            font-size: 11px; color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.03); border-radius: 6px;
+        }
+
+        /* ============================================ */
+        /* VARIANT D: Big CTA Hero                      */
+        /* ============================================ */
+
+        .hero-d {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; padding: 40px 0 24px;
+        }
+        .hero-d .app-icon {
+            width: 72px; height: 72px; border-radius: 18px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+        }
+        .hero-d .app-icon i { color: hsl(var(--primary)); width: 36px; height: 36px; }
+        .hero-d .app-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 700;
+            font-size: calc(28px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            letter-spacing: 1px;
+        }
+        .hero-d .app-tagline {
+            font-size: calc(14px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 6px; max-width: 400px;
+        }
+        .hero-d .big-cta {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 14px 36px; border-radius: 12px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(16px * var(--t-scale, 1.1));
+            font-weight: 600; background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground)); transition: all 0.15s;
+            margin-top: 24px;
+        }
+        .hero-d .big-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+        .hero-d .big-cta i { width: 20px; height: 20px; }
+        .hero-d .cta-meta {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 8px;
+        }
+        .hero-d .cta-meta strong { color: hsl(var(--foreground)); font-weight: 500; }
+
+        /* Framework selector — inline under CTA */
+        .fw-selector-d {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 20px; padding: 4px; border-radius: 8px;
+            background: hsl(var(--muted) / 0.3);
+        }
+        .fw-selector-d button {
+            padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1.1));
+            background: none; color: hsl(var(--muted-foreground)); transition: all 0.15s;
+        }
+        .fw-selector-d button:hover { color: hsl(var(--foreground)); }
+        .fw-selector-d button.active {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground)); font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .fw-selector-d .fw-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            opacity: 0.5; margin-left: 4px;
+        }
+
+        /* Other platforms row */
+        .other-platforms-d {
+            display: flex; justify-content: center; gap: 16px;
+            margin-top: 24px; padding-top: 20px;
+            border-top: 1px solid hsl(var(--border) / 0.5);
+        }
+        .other-platforms-d a {
+            display: flex; align-items: center; gap: 6px;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            text-decoration: none; transition: color 0.15s;
+            cursor: pointer;
+        }
+        .other-platforms-d a:hover { color: hsl(var(--primary)); }
+        .other-platforms-d a svg { width: 16px; height: 16px; fill: currentColor; }
+        .other-platforms-d a i { width: 14px; height: 14px; }
+
+        /* ============================================ */
+        /* VARIANT E: Split — Info Left, Download Right */
+        /* ============================================ */
+
+        .split-e {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0; min-height: 500px;
+        }
+        .split-e .left {
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 40px 40px 40px 0;
+        }
+        .split-e .left .app-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 700;
+            font-size: calc(32px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            letter-spacing: 1px; line-height: 1.1;
+        }
+        .split-e .left .app-tagline {
+            font-size: calc(14px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 10px; line-height: 1.5;
+        }
+        .split-e .left .features {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 24px;
+        }
+        .split-e .left .feature {
+            display: flex; align-items: center; gap: 10px;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .split-e .left .feature i { color: hsl(var(--primary)); width: 16px; height: 16px; }
+        .split-e .left .version-info {
+            margin-top: 24px;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.6;
+        }
+
+        .split-e .right {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 0 40px 40px;
+            border-left: 1px solid hsl(var(--border) / 0.3);
+        }
+        .split-e .right .download-box {
+            width: 100%; max-width: 340px;
+            border-radius: 12px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+        }
+        .split-e .right .download-box .box-header {
+            padding: 20px 20px 0;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .split-e .right .download-box .box-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .split-e .right .download-box .box-icon i { color: hsl(var(--primary)); width: 22px; height: 22px; }
+        .split-e .right .download-box .box-title {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(14px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .split-e .right .download-box .box-detect {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); margin-top: 2px;
+        }
+
+        .split-e .right .download-box .box-fw {
+            display: flex; gap: 4px; padding: 16px 20px 0; margin: 0;
+        }
+        .split-e .right .download-box .box-fw button {
+            flex: 1; padding: 8px 4px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1.1));
+            background: hsl(var(--muted) / 0.3); color: hsl(var(--muted-foreground));
+            transition: all 0.15s; text-align: center;
+        }
+        .split-e .right .download-box .box-fw button:hover {
+            background: hsl(var(--muted) / 0.5);
+        }
+        .split-e .right .download-box .box-fw button.active {
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary)); font-weight: 500;
+        }
+        .split-e .right .download-box .box-fw .fw-tiny {
+            display: block; font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1)); opacity: 0.5; margin-top: 2px;
+        }
+
+        .split-e .right .download-box .box-cta {
+            padding: 16px 20px;
+        }
+        .split-e .right .download-box .box-cta button {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(14px * var(--t-scale, 1.1));
+            font-weight: 600; background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground)); transition: all 0.15s;
+        }
+        .split-e .right .download-box .box-cta button:hover { opacity: 0.9; }
+        .split-e .right .download-box .box-cta button i { width: 18px; height: 18px; }
+        .split-e .right .download-box .box-cta .cta-sub {
+            text-align: center; margin-top: 6px;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+
+        .split-e .right .download-box .box-platforms {
+            display: flex; justify-content: center; gap: 16px;
+            padding: 12px 20px 16px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+        }
+        .split-e .right .download-box .box-platforms a {
+            display: flex; align-items: center; gap: 4px;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            text-decoration: none; cursor: pointer; transition: color 0.15s;
+        }
+        .split-e .right .download-box .box-platforms a:hover { color: hsl(var(--primary)); }
+        .split-e .right .download-box .box-platforms a svg { width: 14px; height: 14px; fill: currentColor; }
+
+        /* ============================================ */
+        /* VARIANT F: Centered Minimal                  */
+        /* ============================================ */
+
+        .centered-f {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; padding: 24px 0 16px;
+        }
+        .centered-f .app-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+        }
+        .centered-f .app-icon i { color: hsl(var(--primary)); width: 32px; height: 32px; }
+        .centered-f .app-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 700;
+            font-size: calc(24px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .centered-f .app-tagline {
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+        }
+
+        /* Platform row — large pills */
+        .platform-pills-f {
+            display: flex; gap: 8px; margin-top: 24px;
+        }
+        .platform-pills-f button {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 10px;
+            border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+            cursor: pointer; transition: all 0.15s;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .platform-pills-f button:hover {
+            border-color: hsl(var(--primary) / 0.3);
+        }
+        .platform-pills-f button.active {
+            border-color: hsl(var(--primary) / 0.4);
+            background: hsl(var(--primary) / 0.06);
+            color: hsl(var(--primary)); font-weight: 500;
+        }
+        .platform-pills-f button svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* Download cards — horizontal for selected platform */
+        .fw-cards-f {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; margin-top: 20px; width: 100%; max-width: 700px;
+        }
+        .fw-card-f {
+            border-radius: 10px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            padding: 20px 16px; text-align: center;
+            transition: all 0.15s; cursor: pointer;
+            position: relative;
+        }
+        .fw-card-f:hover {
+            border-color: hsl(var(--primary) / 0.4);
+        }
+        .fw-card-f.recommended {
+            border-color: hsl(var(--primary) / 0.3);
+        }
+        .fw-card-f.recommended::before {
+            content: 'RECOMMENDED';
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 3px 0;
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(8px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 1.5px;
+            background: hsl(var(--primary) / 0.08);
+            color: hsl(var(--primary));
+        }
+        .fw-card-f .fw-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(15px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            margin-top: 4px;
+        }
+        .fw-card-f .fw-size {
+            font-family: 'Oxanium', sans-serif; font-weight: 700;
+            font-size: calc(28px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            margin-top: 8px; line-height: 1;
+        }
+        .fw-card-f .fw-size-unit {
+            font-size: calc(14px * var(--t-scale, 1.1));
+            font-weight: 400; color: hsl(var(--muted-foreground));
+        }
+        .fw-card-f .fw-desc {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 6px; line-height: 1.3;
+        }
+        .fw-card-f .fw-version {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            margin-top: 8px;
+        }
+        .fw-card-f .fw-dl {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; margin-top: 14px; transition: all 0.15s;
+        }
+        .fw-card-f .fw-dl i { width: 14px; height: 14px; }
+        .fw-card-f.recommended .fw-dl {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .fw-card-f.recommended .fw-dl:hover { opacity: 0.9; }
+        .fw-card-f:not(.recommended) .fw-dl {
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+        }
+        .fw-card-f:not(.recommended) .fw-dl:hover { background: hsl(var(--primary) / 0.18); }
+
+        .checksum-link {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin-top: 16px;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            cursor: pointer; transition: opacity 0.15s;
+        }
+        .checksum-link:hover { opacity: 0.8; }
+        .checksum-link i { width: 14px; height: 14px; }
+
+        /* OS icons */
+        .os-apple { }
+        .os-windows { }
+        .os-linux { }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Downloads v2 — App-First</h1>
+    <p>Prominent app identity, clean download action, framework as secondary choice</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<div class="variant-nav" id="variant-nav">
+    <button class="active" data-variant="d">D — Big CTA Hero</button>
+    <button data-variant="e">E — Split Layout</button>
+    <button data-variant="f">F — Platform First</button>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT D: Big CTA Hero                          -->
+<!-- ================================================ -->
+
+<div class="variant active" id="variant-d">
+<div class="variant-label">
+    App name dominates. One massive download button. Framework is a subtle segmented control below. Inspired by VS Code / GitHub Desktop.
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px">
+                    <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                    <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                </svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main">
+            <div class="hero-d">
+                <div class="app-icon"><i data-lucide="monitor"></i></div>
+                <div class="app-name">Ternity Desktop</div>
+                <div class="app-tagline">Track time, manage projects, and stay in sync — right from your desktop.</div>
+
+                <button class="big-cta"><i data-lucide="download"></i> Download for macOS</button>
+                <div class="cta-meta"><strong>Apple Silicon</strong> · .dmg · 5 MB · v0.1.0</div>
+
+                <div class="fw-selector-d">
+                    <button class="active">Tauri <span class="fw-size">5 MB</span></button>
+                    <button>Electron <span class="fw-size">98 MB</span></button>
+                    <button>Flutter <span class="fw-size">43 MB</span></button>
+                </div>
+
+                <div class="other-platforms-d">
+                    <a>
+                        <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        macOS (Intel)
+                    </a>
+                    <a>
+                        <svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg>
+                        Windows
+                    </a>
+                    <a>
+                        <svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg>
+                        Linux
+                    </a>
+                    <a><i data-lucide="shield-check"></i> SHA-256</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT E: Split Layout                          -->
+<!-- ================================================ -->
+
+<div class="variant" id="variant-e">
+<div class="variant-label">
+    Left side: app identity and value props. Right side: compact download card with framework toggle. Clean separation of "what" and "get it".
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px">
+                    <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                    <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                </svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main" style="padding: 0 40px; display: flex; align-items: center;">
+            <div class="split-e">
+                <div class="left">
+                    <div class="app-name">Ternity<br>Desktop</div>
+                    <div class="app-tagline">Track time, manage projects, and stay in sync — right from your desktop. Start and stop timers, log entries, and switch between projects with native speed.</div>
+                    <div class="features">
+                        <div class="feature"><i data-lucide="zap"></i> Native performance — starts in under a second</div>
+                        <div class="feature"><i data-lucide="wifi-off"></i> Works offline — syncs when you're back</div>
+                        <div class="feature"><i data-lucide="layout-grid"></i> System tray integration</div>
+                        <div class="feature"><i data-lucide="bell"></i> Smart reminders to track your time</div>
+                    </div>
+                    <div class="version-info">Released February 19, 2026</div>
+                </div>
+                <div class="right">
+                    <div class="download-box">
+                        <div class="box-header">
+                            <div class="box-icon"><i data-lucide="monitor"></i></div>
+                            <div>
+                                <div class="box-title">Download for macOS</div>
+                                <div class="box-detect">Apple Silicon detected</div>
+                            </div>
+                        </div>
+                        <div class="box-fw">
+                            <button class="active">Tauri<span class="fw-tiny">5 MB</span></button>
+                            <button>Electron<span class="fw-tiny">98 MB</span></button>
+                            <button>Flutter<span class="fw-tiny">43 MB</span></button>
+                        </div>
+                        <div class="box-cta">
+                            <button><i data-lucide="download"></i> Download .dmg</button>
+                            <div class="cta-sub">Ternity-Tauri-0.1.0-arm64.dmg · 5 MB · v0.1.0</div>
+                        </div>
+                        <div class="box-platforms">
+                            <a>
+                                <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                                Intel
+                            </a>
+                            <a>
+                                <svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg>
+                                Windows
+                            </a>
+                            <a>
+                                <svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg>
+                                Linux
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT F: Platform First, then Framework cards  -->
+<!-- ================================================ -->
+
+<div class="variant" id="variant-f">
+<div class="variant-label">
+    Centered app hero. Platform pills (macOS/Windows/Linux). Then three framework cards with prominent sizes for easy comparison. Recommended card highlighted.
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px">
+                    <path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/>
+                    <path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/>
+                </svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main">
+            <div class="centered-f">
+                <div class="app-icon"><i data-lucide="monitor"></i></div>
+                <div class="app-name">Ternity Desktop</div>
+                <div class="app-tagline">Track time and manage projects from your desktop</div>
+
+                <div class="platform-pills-f">
+                    <button class="active">
+                        <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        macOS
+                    </button>
+                    <button>
+                        <svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg>
+                        Windows
+                    </button>
+                    <button>
+                        <svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg>
+                        Linux
+                    </button>
+                </div>
+
+                <div class="fw-cards-f">
+                    <div class="fw-card-f recommended">
+                        <div class="fw-name">Tauri</div>
+                        <div class="fw-size">5 <span class="fw-size-unit">MB</span></div>
+                        <div class="fw-desc">Lightweight native app built with Rust</div>
+                        <div class="fw-version">v0.1.0</div>
+                        <button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button>
+                    </div>
+                    <div class="fw-card-f">
+                        <div class="fw-name">Flutter</div>
+                        <div class="fw-size">43 <span class="fw-size-unit">MB</span></div>
+                        <div class="fw-desc">Cross-platform native app</div>
+                        <div class="fw-version">v0.1.0</div>
+                        <button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button>
+                    </div>
+                    <div class="fw-card-f">
+                        <div class="fw-name">Electron</div>
+                        <div class="fw-size">98 <span class="fw-size-unit">MB</span></div>
+                        <div class="fw-desc">Full-featured app with system tray and offline support</div>
+                        <div class="fw-version">v0.2.1</div>
+                        <button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button>
+                    </div>
+                </div>
+
+                <div class="checksum-link"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    // Theme switcher
+    document.getElementById('theme-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-theme', e.target.dataset.theme);
+    });
+
+    // Scale switcher
+    document.getElementById('scale-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-scale', e.target.dataset.scale);
+    });
+
+    // Variant switcher
+    document.getElementById('variant-nav').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('.variant-nav button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+        document.getElementById('variant-' + e.target.dataset.variant).classList.add('active');
+    });
+
+    // Init Lucide icons
+    lucide.createIcons();
+</script>
+</body>
+</html>

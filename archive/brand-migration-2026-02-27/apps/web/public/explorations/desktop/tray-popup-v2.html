@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity Desktop — Tray Popup v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111;
+            color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px;
+            font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 8px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p {
+            font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px;
+        }
+
+        .controls {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+        }
+        .controls-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .controls-group { display: flex; gap: 4px; }
+        .controls-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .controls-group button:hover { border-color: #444; }
+        .controls-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        .variants {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            align-items: start;
+        }
+        @media (max-width: 1000px) {
+            .variants { grid-template-columns: 1fr; justify-items: center; }
+        }
+        .variant {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .variant-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+        .variant-desc {
+            font-size: 10px;
+            color: rgba(255,255,255,0.12);
+            max-width: 420px;
+            text-align: center;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        /* ============================================
+           POPUP FRAME
+           ============================================ */
+        .popup-frame {
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+
+        .popup {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        /* ============================================
+           SHARED ELEMENTS
+           ============================================ */
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .popup-logo {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--primary));
+            display: flex; align-items: center; gap: 6px;
+        }
+        .popup-logo svg { width: 12px; height: 15px; }
+        .hdr-btn {
+            width: 24px; height: 24px; border-radius: 4px; border: none;
+            background: transparent; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .hdr-btn:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+        .hdr-actions { display: flex; gap: 2px; }
+
+        .popup-footer {
+            padding: 6px 16px;
+            border-top: 1px solid hsl(var(--border));
+            display: flex; align-items: center; justify-content: center;
+        }
+        .open-web {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            transition: color 0.15s;
+        }
+        .open-web:hover { color: hsl(var(--primary)); }
+
+        /* Shared entry row */
+        .entry {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 16px; cursor: default; transition: background 0.1s;
+        }
+        .entry:hover { background: hsl(var(--muted) / 0.5); }
+        .entry-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+        .entry-info { flex: 1; min-width: 0; }
+        .entry-desc {
+            font-size: 11px; color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-meta {
+            font-size: 9px; color: hsl(var(--muted-foreground));
+        }
+        .entry-dur {
+            font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 600;
+            color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; flex-shrink: 0;
+        }
+        .entry-play {
+            width: 20px; height: 20px; border-radius: 50%; border: none;
+            background: transparent; color: hsl(var(--muted-foreground) / 0.3);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; opacity: 0; transition: all 0.15s;
+        }
+        .entry:hover .entry-play { opacity: 1; }
+        .entry-play:hover { background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); }
+
+        .sect-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+            padding: 8px 16px 4px;
+        }
+
+        /* Stop button */
+        .stop-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: hsl(var(--destructive)); color: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: transform 0.15s;
+        }
+        .stop-btn:hover { transform: scale(1.1); }
+        .start-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: transform 0.15s;
+        }
+        .start-btn:hover { transform: scale(1.1); }
+
+        /* SVG icons */
+        .hourglass-svg { display: inline-flex; }
+        .icon-sm { width: 14px; height: 14px; }
+        .icon-xs { width: 10px; height: 10px; }
+
+        /* ============================================
+           C / PANORAMA — wide, day-at-a-glance
+           ============================================ */
+        .panorama { width: 440px; }
+
+        .pan-timer {
+            padding: 14px 16px;
+            background: hsl(var(--primary) / 0.04);
+            border-bottom: 1px solid hsl(var(--primary) / 0.12);
+        }
+        .pan-timer-top {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .pan-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 28px; font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums; letter-spacing: 2px;
+        }
+        .pan-task-info { flex: 1; min-width: 0; }
+        .pan-task-name {
+            font-size: 13px; font-weight: 500; color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pan-task-project {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 4px;
+        }
+        .pan-task-project .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+
+        .pan-progress { margin-top: 0; }
+        .pan-progress-bar {
+            height: 3px; border-radius: 2px;
+            background: hsl(var(--muted));
+            overflow: hidden;
+        }
+        .pan-progress-fill {
+            height: 100%; border-radius: 2px;
+            background: hsl(var(--primary));
+            transition: width 0.3s;
+        }
+        .pan-progress-labels {
+            display: flex; justify-content: space-between;
+            margin-top: 3px;
+        }
+        .pan-progress-label {
+            font-size: 9px; color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .pan-progress-label strong {
+            color: hsl(var(--primary)); font-weight: 600;
+        }
+
+        .pan-stats {
+            display: flex; gap: 1px; border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--border));
+        }
+        .pan-stat {
+            flex: 1; padding: 8px 12px; text-align: center;
+            background: hsl(var(--background));
+        }
+        .pan-stat-val {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 15px; font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .pan-stat-val.accent { color: hsl(var(--primary)); }
+        .pan-stat-label {
+            font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin-top: 1px;
+        }
+
+        /* Week bar chart */
+        .pan-week {
+            padding: 8px 16px 10px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .pan-week-bars {
+            display: flex; align-items: flex-end; gap: 6px; height: 40px;
+        }
+        .pan-bar-col {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .pan-bar {
+            width: 100%; border-radius: 2px 2px 0 0;
+            background: hsl(var(--primary) / 0.2);
+            min-height: 2px;
+            position: relative;
+        }
+        .pan-bar.today { background: hsl(var(--primary) / 0.5); }
+        .pan-bar-label {
+            font-size: 8px; color: hsl(var(--muted-foreground) / 0.5);
+            font-variant-numeric: tabular-nums;
+        }
+        .pan-bar-label.today { color: hsl(var(--primary)); }
+
+
+        /* ============================================
+           D / SPOTLIGHT — dramatic timer with ring
+           ============================================ */
+        .spotlight { width: 400px; }
+
+        .spot-hero {
+            padding: 24px 16px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .spot-hero::before {
+            content: '';
+            position: absolute;
+            top: -40px; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .spot-ring-wrap {
+            position: relative; display: inline-block;
+            width: 140px; height: 140px; margin-bottom: 12px;
+        }
+        .spot-ring {
+            width: 140px; height: 140px;
+            transform: rotate(-90deg);
+        }
+        .spot-ring-bg {
+            fill: none;
+            stroke: hsl(var(--muted));
+            stroke-width: 4;
+        }
+        .spot-ring-fill {
+            fill: none;
+            stroke: hsl(var(--primary));
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 408;
+            transition: stroke-dashoffset 0.5s;
+        }
+        .spot-elapsed {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -55%);
+            font-family: 'Oxanium', sans-serif;
+            font-size: 26px; font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums; letter-spacing: 1px;
+        }
+        .spot-goal {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, 50%);
+            font-size: 9px; color: hsl(var(--muted-foreground));
+        }
+        .spot-goal strong {
+            color: hsl(var(--foreground)); font-weight: 600;
+        }
+        .spot-task {
+            position: relative;
+        }
+        .spot-task-name {
+            font-size: 14px; font-weight: 500;
+            color: hsl(var(--foreground)); margin-bottom: 3px;
+        }
+        .spot-task-project {
+            font-size: 11px; color: hsl(var(--primary) / 0.7);
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .spot-task-project .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .spot-actions {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; margin-top: 14px; position: relative;
+        }
+
+        .spot-week {
+            display: flex; gap: 1px; border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--border));
+        }
+        .spot-day {
+            flex: 1; padding: 6px 0; text-align: center;
+            background: hsl(var(--background));
+        }
+        .spot-day-val {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 600;
+            color: hsl(var(--muted-foreground) / 0.4);
+            font-variant-numeric: tabular-nums;
+        }
+        .spot-day-val.active { color: hsl(var(--primary)); }
+        .spot-day-val.done { color: hsl(var(--foreground)); }
+        .spot-day-label {
+            font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px;
+            color: hsl(var(--muted-foreground) / 0.4); margin-top: 1px;
+        }
+        .spot-day-label.active { color: hsl(var(--primary)); font-weight: 600; }
+
+
+        /* ============================================
+           E / WORKSPACE — two-column mini-app
+           ============================================ */
+        .workspace { width: 460px; }
+
+        .ws-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 280px;
+        }
+        .ws-left {
+            border-right: 1px solid hsl(var(--border));
+            display: flex; flex-direction: column;
+        }
+        .ws-right {
+            display: flex; flex-direction: column;
+        }
+
+        .ws-timer {
+            padding: 16px 14px;
+            flex: 1;
+            display: flex; flex-direction: column;
+            justify-content: center;
+        }
+        .ws-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 32px; font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums; letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .ws-task-name {
+            font-size: 12px; font-weight: 500;
+            color: hsl(var(--foreground));
+            margin-bottom: 2px;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .ws-task-project {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 4px;
+            margin-bottom: 12px;
+        }
+        .ws-task-project .dot { width: 5px; height: 5px; border-radius: 50%; }
+        .ws-actions {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ws-action-btn {
+            padding: 5px 10px; border-radius: 5px; border: none;
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            background: hsl(var(--muted)); color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+        }
+        .ws-action-btn:hover {
+            background: hsl(var(--muted-foreground) / 0.2);
+            color: hsl(var(--foreground));
+        }
+
+        .ws-stats {
+            padding: 10px 14px;
+            border-top: 1px solid hsl(var(--border));
+            display: flex; gap: 16px;
+        }
+        .ws-stat-val {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 13px; font-weight: 700;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .ws-stat-val.accent { color: hsl(var(--primary)); }
+        .ws-stat-label {
+            font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .ws-entries {
+            flex: 1; overflow: hidden;
+        }
+        .ws-entries .entry { padding: 5px 12px; }
+        .ws-entries .sect-title { padding: 8px 12px 4px; }
+
+        .ws-quick {
+            padding: 8px 12px;
+            border-top: 1px solid hsl(var(--border));
+        }
+        .ws-quick-title {
+            font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); margin-bottom: 5px;
+            font-family: 'Oxanium', sans-serif;
+        }
+        .ws-favs {
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+        .ws-fav {
+            padding: 3px 8px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            font-size: 9px; color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .ws-fav:hover {
+            border-color: hsl(var(--primary) / 0.4);
+            color: hsl(var(--foreground));
+        }
+        .ws-fav .dot { width: 4px; height: 4px; border-radius: 50%; }
+
+
+        /* ============================================
+           F / PULSE — team-aware companion
+           ============================================ */
+        .pulse { width: 420px; }
+
+        .pulse-timer {
+            padding: 14px 16px;
+            background: hsl(var(--primary) / 0.03);
+            border-bottom: 1px solid hsl(var(--primary) / 0.1);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .pulse-timer-left { flex: 1; min-width: 0; }
+        .pulse-elapsed {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 24px; font-weight: 700;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums; letter-spacing: 1px;
+        }
+        .pulse-task {
+            font-size: 12px; font-weight: 500;
+            color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pulse-project {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            display: flex; align-items: center; gap: 4px;
+        }
+        .pulse-project .dot { width: 5px; height: 5px; border-radius: 50%; }
+
+        .pulse-progress {
+            padding: 10px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .pulse-pbar-wrap {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .pulse-pbar {
+            flex: 1; height: 6px; border-radius: 3px;
+            background: hsl(var(--muted));
+            overflow: hidden;
+        }
+        .pulse-pbar-fill {
+            height: 100%; border-radius: 3px;
+            background: hsl(var(--primary));
+        }
+        .pulse-pbar-text {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 600;
+            color: hsl(var(--primary));
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .pulse-pbar-label {
+            font-size: 9px; color: hsl(var(--muted-foreground));
+            margin-top: 3px;
+            display: flex; justify-content: space-between;
+        }
+
+        .pulse-team {
+            padding: 8px 16px 10px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .pulse-team-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .pulse-team-grid {
+            display: flex; flex-wrap: wrap; gap: 6px;
+        }
+        .pulse-person {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 8px; border-radius: 5px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border) / 0.5);
+            font-size: 10px; color: hsl(var(--muted-foreground));
+        }
+        .pulse-avatar {
+            width: 18px; height: 18px; border-radius: 50%;
+            font-size: 7px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            color: white; flex-shrink: 0;
+        }
+        .pulse-status-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+        }
+        .pulse-person-name { white-space: nowrap; }
+
+        .pulse-out {
+            padding: 6px 16px 8px;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        .pulse-out-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 3px 0;
+        }
+        .pulse-out-name {
+            font-size: 10px; color: hsl(var(--muted-foreground));
+            flex: 1;
+        }
+        .pulse-out-reason {
+            font-size: 9px; color: hsl(var(--muted-foreground) / 0.5);
+            padding: 1px 6px; border-radius: 3px;
+            background: hsl(var(--muted));
+        }
+
+        /* Keyboard shortcut hints */
+        .kbd {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 18px; height: 16px; padding: 0 4px;
+            border-radius: 3px; border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600;
+            color: hsl(var(--muted-foreground)); line-height: 1;
+        }
+
+        .shortcuts-bar {
+            padding: 5px 16px;
+            border-top: 1px solid hsl(var(--border));
+            display: flex; justify-content: center; gap: 14px;
+        }
+        .shortcut {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 9px; color: hsl(var(--muted-foreground) / 0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>Ternity Desktop / Tray Popup v2</h1>
+    <p>Bolder, bigger — 4 new directions</p>
+</div>
+
+<div class="controls">
+    <span class="controls-label">Theme</span>
+    <div class="controls-group" id="themeNav">
+        <button onclick="setTheme('ternity-dark')" class="active">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+    </div>
+</div>
+
+<div class="variants" id="variants">
+
+    <!-- =============================================
+         C / PANORAMA — wide, day at a glance
+         Timer + progress bar + week chart + entries
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">C / Panorama</div>
+        <div class="variant-desc">Wide, breathable. Your whole day + week at a glance. Progress bar toward daily goal. Mini week chart.</div>
+        <div class="popup-frame panorama">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="hdr-actions">
+                        <button class="hdr-btn" title="Settings"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+                    </div>
+                </div>
+
+                <div class="pan-timer">
+                    <div class="pan-timer-top">
+                        <div class="pan-elapsed">1:23:47</div>
+                        <div class="pan-task-info">
+                            <div class="pan-task-name">TERN-42 Implement timer component</div>
+                            <div class="pan-task-project">
+                                <span class="dot" style="background: hsl(var(--t-project-1));"></span>
+                                Acme Corp · Ternity App
+                            </div>
+                        </div>
+                        <button class="stop-btn">
+                            <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        </button>
+                    </div>
+                    <div class="pan-progress">
+                        <div class="pan-progress-bar">
+                            <div class="pan-progress-fill" style="width: 64%;"></div>
+                        </div>
+                        <div class="pan-progress-labels">
+                            <span class="pan-progress-label"><strong>5h 08m</strong> tracked</span>
+                            <span class="pan-progress-label">Goal: 8h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pan-week">
+                    <div class="sect-title" style="padding: 0 0 6px;">This Week</div>
+                    <div class="pan-week-bars">
+                        <div class="pan-bar-col">
+                            <div class="pan-bar" style="height: 34px;"></div>
+                            <span class="pan-bar-label">Mon</span>
+                        </div>
+                        <div class="pan-bar-col">
+                            <div class="pan-bar" style="height: 30px;"></div>
+                            <span class="pan-bar-label">Tue</span>
+                        </div>
+                        <div class="pan-bar-col">
+                            <div class="pan-bar" style="height: 38px;"></div>
+                            <span class="pan-bar-label">Wed</span>
+                        </div>
+                        <div class="pan-bar-col">
+                            <div class="pan-bar" style="height: 28px;"></div>
+                            <span class="pan-bar-label">Thu</span>
+                        </div>
+                        <div class="pan-bar-col">
+                            <div class="pan-bar today" style="height: 22px;"></div>
+                            <span class="pan-bar-label today">Fri</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sect-title">Today's Entries</div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning</div>
+                        <div class="entry-meta">Legal500 · 08:30–09:45</div>
+                    </div>
+                    <div class="entry-dur">1h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Auth flow with Logto</div>
+                        <div class="entry-meta">Ternity App · 10:00–12:15</div>
+                    </div>
+                    <div class="entry-dur">2h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Morning standup</div>
+                        <div class="entry-meta">Internal · 08:00–08:15</div>
+                    </div>
+                    <div class="entry-dur">15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+
+                <div class="shortcuts-bar">
+                    <span class="shortcut"><span class="kbd">S</span> stop</span>
+                    <span class="shortcut"><span class="kbd">N</span> new</span>
+                    <span class="shortcut"><span class="kbd">R</span> resume last</span>
+                    <span class="shortcut"><span class="kbd">Q</span> close</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         D / SPOTLIGHT — dramatic ring timer
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">D / Spotlight</div>
+        <div class="variant-desc">The timer commands attention. Progress ring shows daily goal. Week strip below. Dramatic, focused.</div>
+        <div class="popup-frame spotlight">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="hdr-actions">
+                        <button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+                    </div>
+                </div>
+
+                <div class="spot-hero">
+                    <div class="spot-ring-wrap">
+                        <svg class="spot-ring" viewBox="0 0 140 140">
+                            <circle class="spot-ring-bg" cx="70" cy="70" r="65"/>
+                            <circle class="spot-ring-fill" cx="70" cy="70" r="65" style="stroke-dashoffset: 147;"/>
+                        </svg>
+                        <div class="spot-elapsed">1:23:47</div>
+                        <div class="spot-goal"><strong>5h 08m</strong> / 8h</div>
+                    </div>
+                    <div class="spot-task">
+                        <div class="spot-task-name">TERN-42 Implement timer component</div>
+                        <div class="spot-task-project">
+                            <span class="dot" style="background: hsl(var(--t-project-1));"></span>
+                            Acme Corp · Ternity App
+                        </div>
+                    </div>
+                    <div class="spot-actions">
+                        <button class="stop-btn" style="width: 36px; height: 36px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="spot-week">
+                    <div class="spot-day">
+                        <div class="spot-day-val done">8:10</div>
+                        <div class="spot-day-label">Mon</div>
+                    </div>
+                    <div class="spot-day">
+                        <div class="spot-day-val done">7:45</div>
+                        <div class="spot-day-label">Tue</div>
+                    </div>
+                    <div class="spot-day">
+                        <div class="spot-day-val done">8:30</div>
+                        <div class="spot-day-label">Wed</div>
+                    </div>
+                    <div class="spot-day">
+                        <div class="spot-day-val done">7:10</div>
+                        <div class="spot-day-label">Thu</div>
+                    </div>
+                    <div class="spot-day">
+                        <div class="spot-day-val active">5:08</div>
+                        <div class="spot-day-label active">Fri</div>
+                    </div>
+                </div>
+
+                <div class="sect-title">Earlier Today</div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning</div>
+                        <div class="entry-meta">Legal500</div>
+                    </div>
+                    <div class="entry-dur">1h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Auth flow with Logto</div>
+                        <div class="entry-meta">Ternity App</div>
+                    </div>
+                    <div class="entry-dur">2h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Morning standup</div>
+                        <div class="entry-meta">Internal</div>
+                    </div>
+                    <div class="entry-dur">15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         E / WORKSPACE — two-column mini-app
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">E / Workspace</div>
+        <div class="variant-desc">Split layout — timer & controls on the left, today's entries on the right. Favorite projects for quick start. Mini-app energy.</div>
+        <div class="popup-frame workspace">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="hdr-actions">
+                        <button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+                    </div>
+                </div>
+
+                <div class="ws-body">
+                    <div class="ws-left">
+                        <div class="ws-timer">
+                            <div class="ws-elapsed">1:23:47</div>
+                            <div class="ws-task-name">TERN-42 Implement timer component</div>
+                            <div class="ws-task-project">
+                                <span class="dot" style="background: hsl(var(--t-project-1));"></span>
+                                Ternity App
+                            </div>
+                            <div class="ws-actions">
+                                <button class="stop-btn" style="width: 28px; height: 28px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                                </button>
+                                <button class="ws-action-btn">+ Note</button>
+                            </div>
+                        </div>
+                        <div class="ws-stats">
+                            <div>
+                                <div class="ws-stat-val accent">5h 08m</div>
+                                <div class="ws-stat-label">Today</div>
+                            </div>
+                            <div>
+                                <div class="ws-stat-val">29h 53m</div>
+                                <div class="ws-stat-label">Week</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ws-right">
+                        <div class="ws-entries">
+                            <div class="sect-title" style="padding: 8px 12px 4px;">Earlier Today</div>
+                            <div class="entry" style="padding: 5px 12px;">
+                                <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                                <div class="entry-info">
+                                    <div class="entry-desc">Sprint planning</div>
+                                    <div class="entry-meta">Legal500</div>
+                                </div>
+                                <div class="entry-dur">1h 15m</div>
+                            </div>
+                            <div class="entry" style="padding: 5px 12px;">
+                                <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                                <div class="entry-info">
+                                    <div class="entry-desc">Auth flow with Logto</div>
+                                    <div class="entry-meta">Ternity App</div>
+                                </div>
+                                <div class="entry-dur">2h 15m</div>
+                            </div>
+                            <div class="entry" style="padding: 5px 12px;">
+                                <div class="entry-dot" style="background: hsl(var(--t-project-3));"></div>
+                                <div class="entry-info">
+                                    <div class="entry-desc">Morning standup</div>
+                                    <div class="entry-meta">Internal</div>
+                                </div>
+                                <div class="entry-dur">15m</div>
+                            </div>
+                            <div class="entry" style="padding: 5px 12px;">
+                                <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                                <div class="entry-info">
+                                    <div class="entry-desc">Email + Slack catchup</div>
+                                    <div class="entry-meta">Admin</div>
+                                </div>
+                                <div class="entry-dur">25m</div>
+                            </div>
+                        </div>
+                        <div class="ws-quick">
+                            <div class="ws-quick-title">Favorites</div>
+                            <div class="ws-favs">
+                                <span class="ws-fav"><span class="dot" style="background: hsl(var(--t-project-1));"></span>Ternity App</span>
+                                <span class="ws-fav"><span class="dot" style="background: hsl(var(--t-project-2));"></span>Legal500</span>
+                                <span class="ws-fav"><span class="dot" style="background: hsl(var(--t-project-3));"></span>Internal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shortcuts-bar">
+                    <span class="shortcut"><span class="kbd">S</span> stop</span>
+                    <span class="shortcut"><span class="kbd">N</span> new</span>
+                    <span class="shortcut"><span class="kbd">1-3</span> favorite</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+         F / PULSE — team-aware companion
+         ============================================= -->
+    <div class="variant">
+        <div class="variant-label">F / Pulse</div>
+        <div class="variant-desc">Team-aware. See who's tracking, who's out. Daily progress bar. You're not just tracking time — you're part of a team.</div>
+        <div class="popup-frame pulse">
+            <div class="popup" data-theme="ternity-dark">
+                <div class="popup-header">
+                    <div class="popup-logo">
+                        <svg viewBox="0 0 100 120" fill="none"><path d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z" stroke="currentColor" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="50" cy="32" r="6" fill="currentColor"/><circle cx="49" cy="52" r="7.5" fill="currentColor"/><circle cx="54" cy="67" r="5.5" fill="currentColor"/><circle cx="44" cy="77" r="7" fill="currentColor"/><circle cx="56" cy="83" r="6" fill="currentColor"/></svg>
+                        TERNITY
+                    </div>
+                    <div class="hdr-actions">
+                        <button class="hdr-btn"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+                    </div>
+                </div>
+
+                <div class="pulse-timer">
+                    <div class="pulse-timer-left">
+                        <div class="pulse-elapsed">1:23:47</div>
+                        <div class="pulse-task">TERN-42 Implement timer component</div>
+                        <div class="pulse-project">
+                            <span class="dot" style="background: hsl(var(--t-project-1));"></span>
+                            Acme Corp · Ternity App
+                        </div>
+                    </div>
+                    <button class="stop-btn" style="width: 36px; height: 36px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                    </button>
+                </div>
+
+                <div class="pulse-progress">
+                    <div class="pulse-pbar-wrap">
+                        <div class="pulse-pbar">
+                            <div class="pulse-pbar-fill" style="width: 64%;"></div>
+                        </div>
+                        <span class="pulse-pbar-text">5h 08m</span>
+                    </div>
+                    <div class="pulse-pbar-label">
+                        <span>Daily goal: 8h</span>
+                        <span>2h 52m remaining</span>
+                    </div>
+                </div>
+
+                <div class="pulse-team">
+                    <div class="pulse-team-header">
+                        <span class="sect-title" style="padding: 0;">Team</span>
+                        <span style="font-size: 9px; color: hsl(var(--muted-foreground) / 0.4);">5 tracking · 2 idle</span>
+                    </div>
+                    <div class="pulse-team-grid">
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-1));">EM</div>
+                            <span class="pulse-person-name">Elena</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--primary));"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-2));">JO</div>
+                            <span class="pulse-person-name">James</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--primary));"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-3));">AM</div>
+                            <span class="pulse-person-name">Alex</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--primary));"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-4, 200 60% 50%));">SC</div>
+                            <span class="pulse-person-name">Sofia</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--muted-foreground) / 0.3);"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-5, 280 50% 50%));">LP</div>
+                            <span class="pulse-person-name">Lena</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--primary));"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-1));">MW</div>
+                            <span class="pulse-person-name">Marcus</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--muted-foreground) / 0.3);"></div>
+                        </div>
+                        <div class="pulse-person">
+                            <div class="pulse-avatar" style="background: hsl(var(--t-project-2));">NC</div>
+                            <span class="pulse-person-name">Nina</span>
+                            <div class="pulse-status-dot" style="background: hsl(var(--primary));"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pulse-out">
+                    <div class="sect-title" style="padding: 0 0 4px;">Out Today</div>
+                    <div class="pulse-out-row">
+                        <div class="pulse-avatar" style="background: hsl(var(--t-project-3)); width: 16px; height: 16px; font-size: 6px;">TB</div>
+                        <span class="pulse-out-name">Tom Baker</span>
+                        <span class="pulse-out-reason">Holiday</span>
+                    </div>
+                    <div class="pulse-out-row">
+                        <div class="pulse-avatar" style="background: hsl(var(--t-project-4, 200 60% 50%)); width: 16px; height: 16px; font-size: 6px;">MN</div>
+                        <span class="pulse-out-name">Marta Nowak</span>
+                        <span class="pulse-out-reason">Sick</span>
+                    </div>
+                </div>
+
+                <div class="sect-title">Earlier Today</div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-2));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning</div>
+                        <div class="entry-meta">Legal500</div>
+                    </div>
+                    <div class="entry-dur">1h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+                <div class="entry">
+                    <div class="entry-dot" style="background: hsl(var(--t-project-1));"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Auth flow with Logto</div>
+                        <div class="entry-meta">Ternity App</div>
+                    </div>
+                    <div class="entry-dur">2h 15m</div>
+                    <button class="entry-play"><svg class="icon-xs" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+
+                <div class="popup-footer">
+                    <span class="open-web">
+                        Open Ternity
+                        <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function setTheme(id) {
+    document.querySelectorAll('.popup').forEach(p => p.setAttribute('data-theme', id));
+    document.querySelectorAll('#themeNav button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

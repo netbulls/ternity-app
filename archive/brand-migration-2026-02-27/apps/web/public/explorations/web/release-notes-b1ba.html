@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Release Notes: G1 Content Styling</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .variant-label {
+            text-align: center; margin: 48px 0 8px;
+            font-family: 'Oxanium', sans-serif; font-size: 10px; font-weight: 400;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .variant-label:first-of-type { margin-top: 20px; }
+        .variant-desc {
+            text-align: center; font-size: 11px;
+            color: rgba(255,255,255,0.12); margin-bottom: 16px;
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+
+        /* ============================================ */
+        /* Card shell (shared)                          */
+        /* ============================================ */
+
+        .theme-container {
+            max-width: 900px; margin: 0 auto;
+            border-radius: 12px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .card-shell {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 780px;
+            margin: 32px auto;
+        }
+
+        .card-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .card-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .card-icon i { color: hsl(var(--primary)); width: 20px; height: 20px; }
+        .card-title {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .card-subtitle {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .card-title-group { flex: 1; }
+        .fw-tabs { display: flex; gap: 4px; }
+        .fw-tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 8px;
+            border: 1px solid transparent; background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; color: hsl(var(--muted-foreground));
+            cursor: pointer; transition: all 0.15s;
+        }
+        .fw-tab:hover { background: hsl(var(--accent) / 0.5); }
+        .fw-tab.active {
+            background: hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .fw-tab i { width: 14px; height: 14px; }
+
+        .platform-row {
+            display: flex; align-items: center;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .plat-tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            cursor: pointer; border: none; background: none;
+            border-bottom: 2px solid transparent; opacity: 0.5;
+        }
+        .plat-tab.active { opacity: 1; color: hsl(var(--foreground)); border-bottom-color: hsl(var(--primary)); }
+        .plat-tab.disabled { opacity: 0.2; cursor: default; }
+        .plat-tab i { width: 14px; height: 14px; }
+        .plat-tab .detected {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; text-transform: uppercase;
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px;
+        }
+
+        .channel-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .ch-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500; cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .ch-badge i { width: 12px; height: 12px; }
+        .ch-badge.release {
+            background: hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.2);
+            color: hsl(var(--primary));
+        }
+        .ch-badge.snapshot {
+            border-color: hsl(var(--border));
+            color: hsl(var(--muted-foreground)); opacity: 0.6;
+        }
+        .ch-badge .ch-version {
+            font-family: 'Oxanium', sans-serif; font-weight: 400; opacity: 0.6;
+        }
+
+        .dl-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid hsl(var(--border) / 0.15);
+        }
+        .dl-row:hover { background: hsl(var(--accent) / 0.3); }
+        .dl-row.no-border { border-bottom: none; }
+        .dl-icon {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: hsl(var(--muted) / 0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dl-icon i { width: 16px; height: 16px; color: hsl(var(--muted-foreground)); }
+        .dl-info { flex: 1; }
+        .dl-name { font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500; color: hsl(var(--foreground)); }
+        .dl-name .rec {
+            font-size: calc(9px * var(--t-scale, 1.1)); font-weight: 600; text-transform: uppercase;
+            background: hsl(var(--primary) / 0.15); color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+        }
+        .dl-meta { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.6; }
+        .dl-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5; margin-right: 8px;
+        }
+        .dl-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 6px 14px; border-radius: 8px;
+            border: 1px solid hsl(var(--primary) / 0.3);
+            background: hsl(var(--primary) / 0.08);
+            color: hsl(var(--primary));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; cursor: pointer;
+        }
+        .dl-btn:hover { background: hsl(var(--primary) / 0.15); }
+        .dl-btn i { width: 14px; height: 14px; }
+
+        .card-footer {
+            display: flex; align-items: center; gap: 4px;
+            padding: 8px 20px;
+            border-top: 1px solid hsl(var(--border) / 0.15);
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.4;
+        }
+
+        /* ============================================ */
+        /* Ribbon (shared across all variants)          */
+        /* ============================================ */
+
+        .ribbon {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 20px;
+            border-top: 1px solid hsl(var(--primary) / 0.08);
+            background: hsl(var(--primary) / 0.02);
+            cursor: pointer; transition: background 0.15s;
+        }
+        .ribbon:hover { background: hsl(var(--primary) / 0.05); }
+        .ribbon i.ribbon-icon { width: 14px; height: 14px; color: hsl(var(--primary)); opacity: 0.5; }
+        .ribbon .ribbon-text {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground)); opacity: 0.7;
+        }
+        .ribbon .ribbon-text strong { color: hsl(var(--primary)); font-weight: 500; }
+        .ribbon .ribbon-count {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+            padding: 1px 6px; border-radius: 4px; font-weight: 600;
+        }
+        .ribbon .ribbon-arrow {
+            margin-left: auto; width: 12px; height: 12px;
+            color: hsl(var(--muted-foreground)); opacity: 0.3;
+            transition: transform 0.25s ease;
+        }
+        .ribbon.open .ribbon-arrow { transform: rotate(180deg); }
+        .ribbon.open { background: hsl(var(--primary) / 0.04); }
+
+        .notes-expand {
+            overflow: hidden; max-height: 0;
+            transition: max-height 0.3s ease;
+        }
+        .notes-expand.open { max-height: 400px; }
+
+        /* ============================================ */
+        /* G1a: Colored category pills + tighter list   */
+        /* ============================================ */
+
+        .g1a-body {
+            padding: 12px 20px 16px;
+            border-top: 1px solid hsl(var(--border) / 0.1);
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 32px;
+        }
+        .g1a-cat {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-bottom: 6px;
+        }
+        .g1a-cat:not(:first-child) { margin-top: 10px; }
+        .g1a-cat-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .g1a-cat-dot.added { background: hsl(142 71% 45%); }
+        .g1a-cat-dot.fixed { background: hsl(38 92% 50%); }
+        .g1a-cat-dot.changed { background: hsl(217 91% 60%); }
+        .g1a-cat-dot.removed { background: hsl(0 84% 60%); }
+        .g1a-cat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: hsl(var(--foreground)); opacity: 0.5;
+        }
+        .g1a-entry {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            line-height: 1.7;
+            padding-left: 11px; position: relative;
+        }
+        .g1a-entry::before {
+            content: '–'; position: absolute; left: 0; top: 0;
+            color: hsl(var(--muted-foreground)); opacity: 0.2;
+            font-size: calc(11px * var(--t-scale, 1.1));
+        }
+
+        /* ============================================ */
+        /* G1b: Left accent bars per category            */
+        /* ============================================ */
+
+        .g1b-body {
+            padding: 14px 20px 16px;
+            border-top: 1px solid hsl(var(--border) / 0.1);
+            display: flex; gap: 24px;
+        }
+        .g1b-group {
+            flex: 1;
+            border-left: 2px solid hsl(var(--border) / 0.2);
+            padding-left: 12px;
+        }
+        .g1b-group.added { border-left-color: hsl(142 71% 45% / 0.4); }
+        .g1b-group.fixed { border-left-color: hsl(38 92% 50% / 0.4); }
+        .g1b-cat {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: hsl(var(--foreground)); opacity: 0.45;
+            margin-bottom: 5px;
+        }
+        .g1b-entry {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            line-height: 1.7;
+        }
+
+        /* ============================================ */
+        /* G1c: Compact badges + icon per category       */
+        /* ============================================ */
+
+        .g1c-body {
+            padding: 12px 20px 16px;
+            border-top: 1px solid hsl(var(--border) / 0.1);
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 28px;
+        }
+        .g1c-cat {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-bottom: 5px;
+            padding: 2px 8px 2px 6px; border-radius: 4px;
+        }
+        .g1c-cat:not(:first-child) { margin-top: 8px; }
+        .g1c-cat.added { background: hsl(142 71% 45% / 0.08); }
+        .g1c-cat.fixed { background: hsl(38 92% 50% / 0.08); }
+        .g1c-cat i { width: 10px; height: 10px; }
+        .g1c-cat.added i { color: hsl(142 71% 45% / 0.6); }
+        .g1c-cat.fixed i { color: hsl(38 92% 50% / 0.6); }
+        .g1c-cat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .g1c-cat.added .g1c-cat-label { color: hsl(142 71% 45% / 0.7); }
+        .g1c-cat.fixed .g1c-cat-label { color: hsl(38 92% 50% / 0.7); }
+        .g1c-entry {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            line-height: 1.7;
+            padding-left: 14px; position: relative;
+        }
+        .g1c-entry::before {
+            content: ''; position: absolute; left: 4px; top: 9px;
+            width: 3px; height: 3px; border-radius: 50%;
+            background: hsl(var(--muted-foreground)); opacity: 0.25;
+        }
+
+        /* ============================================ */
+        /* G1d: Minimal — single column, tighter         */
+        /* ============================================ */
+
+        .g1d-body {
+            padding: 10px 20px 14px;
+            border-top: 1px solid hsl(var(--border) / 0.1);
+        }
+        .g1d-cat {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-bottom: 3px;
+        }
+        .g1d-cat:not(:first-child) { margin-top: 6px; }
+        .g1d-cat-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+        }
+        .g1d-cat-dot.added { background: hsl(142 71% 45% / 0.5); }
+        .g1d-cat-dot.fixed { background: hsl(38 92% 50% / 0.5); }
+        .g1d-cat-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: hsl(var(--foreground)); opacity: 0.4;
+        }
+        .g1d-entries {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.8;
+            line-height: 1.6;
+            padding-left: 9px;
+        }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Release Notes — G1 Content Styling</h1>
+    <p>Same ribbon + expand down. 4 treatments for the expanded content area. Interactive — click ribbon to toggle.</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- G1a: Colored dots + dashes                                -->
+<!-- ======================================================== -->
+
+<div class="variant-label">G1a — Colored Dots</div>
+<div class="variant-desc">Category label gets a colored status dot (green=Added, amber=Fixed). Entries use dashes instead of tiny bullets. Two columns.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row no-border">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="ribbon open" onclick="toggleExpand(this)">
+            <i data-lucide="sparkles" class="ribbon-icon"></i>
+            <span class="ribbon-text"><strong>What's new in 0.3.0</strong> — System tray, offline mode, global shortcut</span>
+            <span class="ribbon-count">5 changes</span>
+            <i data-lucide="chevron-down" class="ribbon-arrow"></i>
+        </div>
+        <div class="notes-expand open">
+            <div class="g1a-body">
+                <div>
+                    <div class="g1a-cat"><span class="g1a-cat-dot added"></span><span class="g1a-cat-label">Added</span></div>
+                    <div class="g1a-entry">System tray with idle detection and break reminders</div>
+                    <div class="g1a-entry">Offline mode with automatic sync on reconnect</div>
+                    <div class="g1a-entry">Global keyboard shortcut to start/stop timer</div>
+                </div>
+                <div>
+                    <div class="g1a-cat"><span class="g1a-cat-dot fixed"></span><span class="g1a-cat-label">Fixed</span></div>
+                    <div class="g1a-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                    <div class="g1a-entry">Window position not restored after relaunch</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- G1b: Left accent bars                                     -->
+<!-- ======================================================== -->
+
+<div class="variant-label">G1b — Accent Bars</div>
+<div class="variant-desc">Each category gets a colored left border (green for Added, amber for Fixed). No bullets — clean list. Two flexible columns.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row no-border">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="ribbon open" onclick="toggleExpand(this)">
+            <i data-lucide="sparkles" class="ribbon-icon"></i>
+            <span class="ribbon-text"><strong>What's new in 0.3.0</strong> — System tray, offline mode, global shortcut</span>
+            <span class="ribbon-count">5 changes</span>
+            <i data-lucide="chevron-down" class="ribbon-arrow"></i>
+        </div>
+        <div class="notes-expand open">
+            <div class="g1b-body">
+                <div class="g1b-group added">
+                    <div class="g1b-cat">Added</div>
+                    <div class="g1b-entry">System tray with idle detection and break reminders</div>
+                    <div class="g1b-entry">Offline mode with automatic sync on reconnect</div>
+                    <div class="g1b-entry">Global keyboard shortcut to start/stop timer</div>
+                </div>
+                <div class="g1b-group fixed">
+                    <div class="g1b-cat">Fixed</div>
+                    <div class="g1b-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                    <div class="g1b-entry">Window position not restored after relaunch</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- G1c: Category badge pills with icons                      -->
+<!-- ======================================================== -->
+
+<div class="variant-label">G1c — Badge Pills</div>
+<div class="variant-desc">Category labels are tinted pills with small icons (plus for Added, wrench for Fixed). Subtle color coding. Two columns with dot bullets.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row no-border">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="ribbon open" onclick="toggleExpand(this)">
+            <i data-lucide="sparkles" class="ribbon-icon"></i>
+            <span class="ribbon-text"><strong>What's new in 0.3.0</strong> — System tray, offline mode, global shortcut</span>
+            <span class="ribbon-count">5 changes</span>
+            <i data-lucide="chevron-down" class="ribbon-arrow"></i>
+        </div>
+        <div class="notes-expand open">
+            <div class="g1c-body">
+                <div>
+                    <div class="g1c-cat added"><i data-lucide="plus"></i><span class="g1c-cat-label">Added</span></div>
+                    <div class="g1c-entry">System tray with idle detection and break reminders</div>
+                    <div class="g1c-entry">Offline mode with automatic sync on reconnect</div>
+                    <div class="g1c-entry">Global keyboard shortcut to start/stop timer</div>
+                </div>
+                <div>
+                    <div class="g1c-cat fixed"><i data-lucide="wrench"></i><span class="g1c-cat-label">Fixed</span></div>
+                    <div class="g1c-entry">Timer not stopping on macOS sleep/wake cycle</div>
+                    <div class="g1c-entry">Window position not restored after relaunch</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- G1d: Single column, ultra minimal                         -->
+<!-- ======================================================== -->
+
+<div class="variant-label">G1d — Single Column Minimal</div>
+<div class="variant-desc">One column, no grid. Colored dots for categories, comma-joined entries as flowing text. Most compact.</div>
+
+<div class="theme-container" data-theme="ternity-dark" data-scale="default">
+    <div class="card-shell">
+        <div class="card-header">
+            <div class="card-icon"><i data-lucide="monitor"></i></div>
+            <div class="card-title-group">
+                <div class="card-title">Ternity Desktop</div>
+                <div class="card-subtitle">Full-featured app with system tray and offline support</div>
+            </div>
+            <div class="fw-tabs">
+                <div class="fw-tab"><i data-lucide="atom"></i> Tauri</div>
+                <div class="fw-tab active"><i data-lucide="zap"></i> Electron</div>
+                <div class="fw-tab"><i data-lucide="smartphone"></i> Flutter</div>
+            </div>
+        </div>
+        <div class="platform-row">
+            <button class="plat-tab active"><i data-lucide="apple"></i> macOS <span class="detected">detected</span></button>
+            <button class="plat-tab disabled"><i data-lucide="monitor"></i> Windows</button>
+            <button class="plat-tab"><i data-lucide="terminal"></i> Linux</button>
+        </div>
+        <div class="channel-row">
+            <span class="ch-badge release"><i data-lucide="tag"></i> Release <span class="ch-version">0.3.0</span></span>
+            <span class="ch-badge snapshot"><i data-lucide="git-commit-horizontal"></i> Snapshot <span class="ch-version">0.3.0-1-gbed02cb</span></span>
+        </div>
+        <div class="dl-row">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Apple Silicon <span class="rec">recommended</span></div>
+                <div class="dl-meta">M1, M2, M3, M4 · .dmg installer · Ternity-Electron-0.3.0-arm64.dmg</div>
+            </div>
+            <span class="dl-size">98 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="dl-row no-border">
+            <div class="dl-icon"><i data-lucide="hard-drive"></i></div>
+            <div class="dl-info">
+                <div class="dl-name">macOS — Intel</div>
+                <div class="dl-meta">x86_64 · .dmg installer · Ternity-Electron-0.3.0-x64.dmg</div>
+            </div>
+            <span class="dl-size">106 MB</span>
+            <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+        </div>
+        <div class="ribbon open" onclick="toggleExpand(this)">
+            <i data-lucide="sparkles" class="ribbon-icon"></i>
+            <span class="ribbon-text"><strong>What's new in 0.3.0</strong> — System tray, offline mode, global shortcut</span>
+            <span class="ribbon-count">5 changes</span>
+            <i data-lucide="chevron-down" class="ribbon-arrow"></i>
+        </div>
+        <div class="notes-expand open">
+            <div class="g1d-body">
+                <div class="g1d-cat"><span class="g1d-cat-dot added"></span><span class="g1d-cat-label">Added</span></div>
+                <div class="g1d-entries">System tray with idle detection and break reminders · Offline mode with automatic sync on reconnect · Global keyboard shortcut to start/stop timer</div>
+                <div class="g1d-cat"><span class="g1d-cat-dot fixed"></span><span class="g1d-cat-label">Fixed</span></div>
+                <div class="g1d-entries">Timer not stopping on macOS sleep/wake cycle · Window position not restored after relaunch</div>
+            </div>
+        </div>
+        <div class="card-footer">Released February 19, 2026</div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('theme-switcher').addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.theme-container').forEach(el => el.dataset.theme = btn.dataset.theme);
+    });
+    document.getElementById('scale-switcher').addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.theme-container').forEach(el => el.dataset.scale = btn.dataset.scale);
+    });
+
+    function toggleExpand(ribbon) {
+        ribbon.classList.toggle('open');
+        ribbon.nextElementSibling.classList.toggle('open');
+    }
+
+    lucide.createIcons();
+</script>
+
+</body>
+</html>

@@ -6,7 +6,7 @@ import { scaled } from '@/lib/scaled';
 import { EntryRow } from './entry-row';
 import { DraftEntryRow } from './draft-entry-row';
 import { useDraftEntry } from './draft-entry-context';
-import { useTimelineFocus } from '@/components/timer/timeline-focus-context';
+import { useTimelineFocus, TIMER_BAR_ID } from '@/components/timer/timeline-focus-context';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 interface Props {
@@ -30,9 +30,9 @@ export function DayGroup({ group }: Props) {
     return group.entries;
   }, [group.entries, savedEntryId, draft]);
 
-  // Register entry IDs for keyboard navigation
+  // Register entry IDs for keyboard navigation (timer bar is always first)
   useEffect(() => {
-    setEntryIds(visibleEntries.map((e) => e.id));
+    setEntryIds([TIMER_BAR_ID, ...visibleEntries.map((e) => e.id)]);
   }, [visibleEntries, setEntryIds]);
 
   return (

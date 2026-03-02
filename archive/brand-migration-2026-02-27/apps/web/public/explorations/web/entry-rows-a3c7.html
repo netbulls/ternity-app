@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Entry Row Variants (Multi-line)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* Page header */
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.3);
+            margin-top: 4px;
+        }
+
+        /* Switchers */
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: hsl(var(--border)); }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+
+        /* Scale */
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* Section */
+        .section {
+            max-width: 900px; margin: 0 auto 40px;
+            padding-top: 20px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+        }
+        .section:first-of-type { border-top: none; padding-top: 0; }
+        .section-title {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 11px; color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 16px;
+            max-width: 600px;
+        }
+
+        /* Day group wrapper */
+        .day-group {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .day-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.3);
+        }
+        .day-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; font-weight: 600;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.6);
+        }
+        .day-total {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 13px; font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+
+        /* ============================================================
+           SHARED ENTRY ROW BASE
+           ============================================================ */
+        .entry-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+            transition: background 0.15s;
+        }
+        .entry-row:last-child { border-bottom: none; }
+        .entry-row:hover { background: hsl(var(--muted) / 0.15); }
+
+        /* Left content area */
+        .entry-left { flex: 1; min-width: 0; }
+
+        /* Right side — always same */
+        .entry-right {
+            display: flex; align-items: center; gap: 12px;
+            flex-shrink: 0;
+        }
+        .entry-time {
+            font-size: 11px; color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 14px; font-weight: 600;
+            color: hsl(var(--foreground));
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            min-width: 56px;
+            text-align: right;
+        }
+        .entry-play {
+            width: 28px; height: 28px;
+            border-radius: 50%; border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.4);
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .entry-row:hover .entry-play {
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+        }
+        .entry-more {
+            width: 24px; height: 24px;
+            border-radius: 4px; border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.3);
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            opacity: 0; transition: all 0.15s;
+        }
+        .entry-row:hover .entry-more { opacity: 1; }
+        .entry-more:hover {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+        }
+
+        /* Description common */
+        .entry-desc {
+            color: hsl(var(--foreground));
+            font-size: 13px;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+        .entry-desc:hover { color: hsl(var(--primary)); }
+        .entry-desc.empty {
+            font-style: italic;
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* Project common */
+        .project-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            border-radius: 12px;
+            padding: 1px 8px 1px 6px;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .project-pill:hover {
+            color: hsl(var(--primary));
+            border-color: hsl(var(--primary) / 0.2);
+        }
+        .project-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%; flex-shrink: 0;
+        }
+        .project-no {
+            font-size: 11px;
+            color: hsl(35 100% 60% / 0.7);
+            cursor: pointer;
+        }
+        .project-no:hover { color: hsl(35 100% 60%); }
+
+        /* Running indicator */
+        .entry-row.running {
+            background: hsl(var(--primary) / 0.06);
+        }
+        .entry-row.running::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: hsl(var(--primary));
+            border-radius: 0 2px 2px 0;
+        }
+        .entry-row.running { position: relative; }
+        .entry-row.running .entry-desc { color: hsl(var(--primary)); }
+        .entry-row.running .entry-duration { color: hsl(var(--primary)); }
+
+        /* Incomplete amber stripe */
+        .entry-row.incomplete { position: relative; }
+        .entry-row.incomplete::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: hsl(35 100% 60%);
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* Label tag */
+        .label-tag {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 10px; padding: 1px 6px;
+            border-radius: 8px;
+            background: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+        }
+
+        /* ============================================================
+           VARIANT A — Current (baseline reference)
+           1-line desc (truncate), 1-line project (truncate)
+           ============================================================ */
+        .variant-a .entry-row { height: 52px; }
+        .variant-a .entry-desc {
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .variant-a .project-line {
+            margin-top: 3px;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ============================================================
+           VARIANT B — 2-line desc, 1-line project
+           Fixed height reserves space for 2 lines of desc
+           ============================================================ */
+        .variant-b .entry-row { height: 64px; }
+        .variant-b .entry-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .variant-b .project-line {
+            margin-top: 3px;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ============================================================
+           VARIANT C — 2-line desc, client/project stacked
+           Client on top, project on second line
+           ============================================================ */
+        .variant-c .entry-row { height: 76px; }
+        .variant-c .entry-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .variant-c .project-line { margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+        .variant-c .project-client {
+            font-size: 10px;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .variant-c .project-name {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* ============================================================
+           VARIANT D — 2-line desc, 2-line project (both clamp)
+           Both areas reserve 2 lines, tallest variant
+           ============================================================ */
+        .variant-d .entry-row { height: 88px; }
+        .variant-d .entry-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .variant-d .project-line {
+            margin-top: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            line-height: 1.4;
+        }
+
+        /* ============================================================
+           VARIANT E — Compact 2-line with inline project
+           Desc wraps, project is inline after desc (saves vertical space)
+           ============================================================ */
+        .variant-e .entry-row { height: 52px; }
+        .variant-e .entry-content {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+        .variant-e .entry-desc-inline {
+            font-size: 13px;
+            color: hsl(var(--foreground));
+            cursor: pointer;
+        }
+        .variant-e .entry-desc-inline:hover { color: hsl(var(--primary)); }
+        .variant-e .project-inline {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.6);
+            white-space: nowrap;
+        }
+        .variant-e .project-inline .project-dot {
+            display: inline-block;
+            width: 6px; height: 6px;
+            vertical-align: middle;
+            margin: 0 3px;
+        }
+
+        /* ============================================================
+           VARIANT F — Grid layout: desc top, project+labels bottom row
+           Fixed 2-row grid, consistent height
+           ============================================================ */
+        .variant-f .entry-row {
+            height: 62px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: 1fr auto;
+            gap: 2px 12px;
+            align-items: center;
+        }
+        .variant-f .entry-left {
+            grid-column: 1; grid-row: 1;
+            min-width: 0;
+        }
+        .variant-f .entry-desc {
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .variant-f .entry-meta {
+            grid-column: 1; grid-row: 2;
+            display: flex; align-items: center; gap: 6px;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .variant-f .entry-right {
+            grid-column: 2; grid-row: 1 / -1;
+        }
+
+        /* ============================================================
+           VARIANT G — Two-line desc, project as subtle underline
+           Project sits below desc with a thin left-border accent
+           ============================================================ */
+        .variant-g .entry-row { height: 68px; }
+        .variant-g .entry-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .variant-g .project-line {
+            margin-top: 4px;
+            display: flex; align-items: center; gap: 6px;
+            padding-left: 8px;
+            border-left: 2px solid hsl(var(--primary) / 0.2);
+        }
+        .variant-g .project-text {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.6);
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ============================================================
+           VARIANT H — Current height, smart truncation
+           Same height as A, but mid-truncates "Client...Project"
+           ============================================================ */
+        .variant-h .entry-row { height: 52px; }
+        .variant-h .entry-desc {
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .variant-h .project-line {
+            margin-top: 3px;
+            display: flex; align-items: center; gap: 5px;
+            min-width: 0;
+        }
+        .variant-h .project-client-part {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.45);
+            flex-shrink: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .variant-h .project-sep {
+            font-size: 9px;
+            color: hsl(var(--muted-foreground) / 0.3);
+            flex-shrink: 0;
+        }
+        .variant-h .project-name-part {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* Comparison note */
+        .note {
+            font-size: 10px;
+            color: hsl(var(--muted-foreground) / 0.3);
+            margin-top: 6px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Entry Row Variants</h1>
+        <p>Multi-line descriptions and project names — consistent row height regardless of content length</p>
+    </div>
+
+    <!-- Theme/scale switcher -->
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="ternity-dark">Ternity Dark</button>
+                <button data-theme="ternity-light">Ternity Light</button>
+                <button data-theme="midnight">Midnight</button>
+                <button data-theme="warm-sand">Warm Sand</button>
+                <button data-theme="carbon" class="active">Carbon</button>
+                <button data-theme="high-contrast">High Contrast</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default" class="active">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT A — Current baseline (1-line truncate)
+         ============================================================ -->
+    <div class="section variant-a">
+        <div class="section-title">A — Current (Baseline)</div>
+        <div class="section-desc">Single-line truncation for both description and project. Compact but clips long content.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <!-- Short content -->
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(var(--primary))"></span> Acme Corp · Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <!-- Long content -->
+            <div class="entry-row incomplete">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(236 100% 77%)"></span> Meridian Consulting Group · Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <!-- Medium content -->
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(35 100% 64%)"></span> Oakfield Digital · Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">52px rows. Long text clips — you lose context.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT B — 2-line desc, 1-line project
+         ============================================================ -->
+    <div class="section variant-b">
+        <div class="section-title">B — Two-Line Description</div>
+        <div class="section-desc">Description wraps to 2 lines (line-clamp). Project stays single-line. Fixed 64px height regardless of content.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(var(--primary))"></span> Acme Corp · Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(236 100% 77%)"></span> Meridian Consulting Group · Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-pill"><span class="project-dot" style="background: hsl(35 100% 64%)"></span> Oakfield Digital · Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">64px rows. Desc can breathe, project still clips on long client+project combos.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT C — 2-line desc, client/project stacked
+         ============================================================ -->
+    <div class="section variant-c">
+        <div class="section-title">C — Stacked Client / Project</div>
+        <div class="section-desc">Description wraps to 2 lines. Client and project shown as separate elements: dot + client (muted) then project name. Fixed 76px.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(var(--primary))"></span>
+                        <span class="project-client">Acme Corp</span>
+                        <span style="color: hsl(var(--muted-foreground) / 0.3); font-size: 9px;">&#8250;</span>
+                        <span class="project-name">Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(236 100% 77%)"></span>
+                        <span class="project-client">Meridian Consulting Group</span>
+                        <span style="color: hsl(var(--muted-foreground) / 0.3); font-size: 9px;">&#8250;</span>
+                        <span class="project-name">Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(35 100% 64%)"></span>
+                        <span class="project-client">Oakfield Digital</span>
+                        <span style="color: hsl(var(--muted-foreground) / 0.3); font-size: 9px;">&#8250;</span>
+                        <span class="project-name">Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">76px rows. Clear hierarchy: client &#8250; project. More vertical space used.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT D — 2-line desc, 2-line project
+         ============================================================ -->
+    <div class="section variant-d">
+        <div class="section-title">D — Both Two-Line</div>
+        <div class="section-desc">Both description and project can wrap to 2 lines. Maximum content visibility. Fixed 88px height.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(var(--primary)); display: inline-block; flex-shrink: 0; vertical-align: middle; margin-right: 4px;"></span>Acme Corp · Internal
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections and resource allocation</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(236 100% 77%); display: inline-block; flex-shrink: 0; vertical-align: middle; margin-right: 4px;"></span>Meridian Consulting Group · Website Redesign Phase 2 — Front-end Development
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(35 100% 64%); display: inline-block; flex-shrink: 0; vertical-align: middle; margin-right: 4px;"></span>Oakfield Digital · Mobile App
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">88px rows. Everything visible, but tall rows — fewer entries on screen.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT E — Inline project after desc
+         ============================================================ -->
+    <div class="section variant-e">
+        <div class="section-title">E — Inline Project</div>
+        <div class="section-desc">Project name flows inline after description text in the same block. 2-line clamp on the combined content. Very compact.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-content">
+                        <span class="entry-desc-inline">Weekly standup</span>
+                        <span class="project-inline">&nbsp;&nbsp;<span class="project-dot" style="background: hsl(var(--primary))"></span> Acme Corp · Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-content">
+                        <span class="entry-desc-inline">Quarterly budget review meeting with finance team and department heads</span>
+                        <span class="project-inline">&nbsp;&nbsp;<span class="project-dot" style="background: hsl(236 100% 77%)"></span> Meridian Consulting · Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-content">
+                        <span class="entry-desc-inline">API endpoint refactor</span>
+                        <span class="project-inline">&nbsp;&nbsp;<span class="project-dot" style="background: hsl(35 100% 64%)"></span> Oakfield Digital · Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">52px rows. Most compact 2-line option. But harder to visually separate desc from project.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT F — Grid: desc top, meta bottom
+         ============================================================ -->
+    <div class="section variant-f">
+        <div class="section-title">F — Two-Row Grid</div>
+        <div class="section-desc">Grid layout: description on top row (full width, truncate), project + labels on bottom row. Time/duration spans both rows on the right.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Weekly standup</div>
+                </div>
+                <div class="entry-meta">
+                    <span class="project-pill"><span class="project-dot" style="background: hsl(var(--primary))"></span> Acme Corp · Internal</span>
+                    <span class="label-tag">planning</span>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                </div>
+                <div class="entry-meta">
+                    <span class="project-pill"><span class="project-dot" style="background: hsl(236 100% 77%)"></span> Meridian Consulting · Website Redesign Phase 2</span>
+                    <span class="label-tag">meetings</span>
+                    <span class="label-tag" style="background: hsl(236 100% 77% / 0.1); color: hsl(236 100% 77%);">finance</span>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">API endpoint refactor for authentication service</div>
+                </div>
+                <div class="entry-meta">
+                    <span class="project-pill"><span class="project-dot" style="background: hsl(35 100% 64%)"></span> Oakfield Digital · Mobile App</span>
+                    <span class="label-tag" style="background: hsl(35 100% 64% / 0.1); color: hsl(35 100% 64%);">backend</span>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">62px rows. Clear separation: desc is always line 1, project+labels always line 2. Room for label tags. Desc still truncates on line 1.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT G — 2-line desc, accent-border project
+         ============================================================ -->
+    <div class="section variant-g">
+        <div class="section-title">G — Accent Border Project</div>
+        <div class="section-desc">Description wraps to 2 lines. Project shown with a subtle left border accent for visual grouping.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(var(--primary))"></span>
+                        <span class="project-text">Acme Corp · Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(236 100% 77%)"></span>
+                        <span class="project-text">Meridian Consulting Group · Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(35 100% 64%)"></span>
+                        <span class="project-text">Oakfield Digital · Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">68px rows. The accent border creates visual connection between desc and its project.</div>
+    </div>
+
+    <!-- ============================================================
+         VARIANT H — Smart truncation
+         ============================================================ -->
+    <div class="section variant-h">
+        <div class="section-title">H — Smart Truncation</div>
+        <div class="section-desc">Same compact height as A, but client truncates first (shrinks) while project name is always fully visible.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Monday, Feb 17</span>
+                <span class="day-total">6h 45m</span>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Weekly standup</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(var(--primary))"></span>
+                        <span class="project-client-part">Acme Corp</span>
+                        <span class="project-sep">·</span>
+                        <span class="project-name-part">Internal</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">09:00 – 09:30</span>
+                    <span class="entry-duration">0h 30m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">Quarterly budget review meeting with finance team and department heads to discuss Q2 projections</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(236 100% 77%)"></span>
+                        <span class="project-client-part">Meridian Consulting Group</span>
+                        <span class="project-sep">·</span>
+                        <span class="project-name-part">Website Redesign Phase 2</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">10:00 – 12:15</span>
+                    <span class="entry-duration">2h 15m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+            <div class="entry-row">
+                <div class="entry-left">
+                    <div class="entry-desc">API endpoint refactor for authentication service</div>
+                    <div class="project-line">
+                        <span class="project-dot" style="background: hsl(35 100% 64%)"></span>
+                        <span class="project-client-part">Oakfield Digital</span>
+                        <span class="project-sep">·</span>
+                        <span class="project-name-part">Mobile App</span>
+                    </div>
+                </div>
+                <div class="entry-right">
+                    <span class="entry-time">13:00 – 17:00</span>
+                    <span class="entry-duration">4h 00m</span>
+                    <button class="entry-play">&#9654;</button>
+                    <button class="entry-more">&#8943;</button>
+                </div>
+            </div>
+        </div>
+        <div class="note">52px rows. Project name always visible; client name shrinks/clips first. Desc still clips though.</div>
+    </div>
+
+    <script>
+        // Theme switcher
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.setAttribute('data-theme', btn.dataset.theme);
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Update color-scheme for browser
+            const lightThemes = ['ternity-light', 'warm-sand'];
+            document.documentElement.classList.toggle('dark', !lightThemes.includes(btn.dataset.theme));
+        });
+
+        // Scale switcher
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.setAttribute('data-scale', btn.dataset.scale);
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    </script>
+</body>
+</html>

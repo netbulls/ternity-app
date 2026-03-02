@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Segments V2: Inline Timeline Strip</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .section {
+            max-width: 900px; margin: 0 auto 48px;
+            padding-top: 24px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+        }
+        .section:first-of-type { border-top: none; padding-top: 0; }
+        .section-title {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 11px; color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 16px;
+            max-width: 700px;
+        }
+
+        .day-group {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .day-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.3);
+        }
+        .day-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .day-total {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1)); font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        /* Entry row — stacked with optional timeline strip */
+        .entry-wrapper {
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .entry-wrapper:last-child { border-bottom: none; }
+
+        .entry-row {
+            display: grid;
+            grid-template-columns: 6px 1fr auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+        .entry-row:hover { background: hsl(var(--muted) / 0.3); }
+
+        .project-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+        .entry-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .entry-desc {
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500;
+            color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-meta {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* Mini timeline bar — always visible */
+        .timeline-bar {
+            display: flex;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            gap: 2px;
+            min-width: 80px;
+            max-width: 120px;
+        }
+        .timeline-bar .bar-segment {
+            height: 100%;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .timeline-bar .bar-segment:hover {
+            opacity: 0.7;
+        }
+        .timeline-bar .bar-segment.manual {
+            opacity: 0.4;
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent, transparent 2px,
+                hsl(var(--background)) 2px, hsl(var(--background)) 4px
+            );
+        }
+
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+            min-width: 56px; text-align: right;
+        }
+
+        .entry-actions {
+            display: flex; gap: 4px;
+        }
+        .action-btn {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.5);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+        }
+        .action-btn svg { width: 14px; height: 14px; }
+
+        /* Expanded detail — full block list */
+        .block-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s ease-out;
+        }
+        .block-detail.open {
+            max-height: 500px;
+            transition: max-height 0.3s ease-in;
+        }
+        .block-detail-inner {
+            padding: 0 16px 12px 34px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+
+        .block-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: hsl(var(--muted) / 0.2);
+            transition: background 0.15s;
+        }
+        .block-row:hover {
+            background: hsl(var(--muted) / 0.5);
+        }
+
+        .block-color {
+            width: 3px;
+            height: 24px;
+            border-radius: 2px;
+        }
+        .block-color.manual {
+            opacity: 0.4;
+        }
+
+        .block-time {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .block-time strong {
+            color: hsl(var(--foreground));
+            font-weight: 500;
+        }
+        .block-type {
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .block-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+            min-width: 44px; text-align: right;
+        }
+
+        .block-action {
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .block-row:hover .block-action {
+            opacity: 1;
+        }
+        .block-action button {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .block-action button:hover {
+            border-color: hsl(var(--primary) / 0.5);
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.05);
+        }
+        .block-action button svg {
+            width: 10px; height: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>V2 — Inline Timeline Strip</h1>
+        <p>Mini color bar always visible showing proportional time blocks. Click entry to expand full detail with "Move to new entry" on hover.</p>
+    </div>
+
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ember">Ember</button>
+                <button data-theme="ocean">Ocean</button>
+                <button data-theme="sandstone">Sandstone</button>
+                <button data-theme="forest">Forest</button>
+                <button data-theme="arctic">Arctic</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collapsed with mini bars -->
+    <div class="section">
+        <div class="section-title">Collapsed — Mini Bar Always Visible</div>
+        <div class="section-desc">The proportional timeline strip gives at-a-glance insight into how the time was split. Click anywhere on the row to expand.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Today — Wed, Feb 26</span>
+                <span class="day-total">5h 30m</span>
+            </div>
+
+            <div class="entry-wrapper">
+                <div class="entry-row" onclick="this.nextElementSibling.classList.toggle('open')">
+                    <div class="project-dot" style="background: #00D4AA"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-meta">
+                            <span class="entry-project">API Platform · Netbulls</span>
+                            <div class="timeline-bar">
+                                <div class="bar-segment" style="flex: 90; background: #00D4AA;"></div>
+                                <div class="bar-segment" style="flex: 30; background: #00D4AA;"></div>
+                                <div class="bar-segment manual" style="flex: 15; background: #00D4AA;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="entry-duration">2h 15m</div>
+                    <div class="entry-actions">
+                        <button class="action-btn" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                    </div>
+                </div>
+                <div class="block-detail">
+                    <div class="block-detail-inner">
+                        <div class="block-row">
+                            <div class="block-color" style="background: #00D4AA"></div>
+                            <div class="block-time"><strong>09:00 → 10:30</strong></div>
+                            <div class="block-dur">1h 30m</div>
+                            <div class="block-action"><button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #00D4AA"></div>
+                            <div class="block-time"><strong>11:00 → 11:30</strong></div>
+                            <div class="block-dur">30m</div>
+                            <div class="block-action"><button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color manual" style="background: #00D4AA"></div>
+                            <div class="block-time"><strong>14:00 → 14:15</strong> <span class="block-type">manual</span></div>
+                            <div class="block-dur">15m</div>
+                            <div class="block-action"><button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>Move to new entry</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-wrapper">
+                <div class="entry-row">
+                    <div class="project-dot" style="background: #6366f1"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning meeting</div>
+                        <div class="entry-meta">
+                            <span class="entry-project">Mobile App · Netbulls</span>
+                            <div class="timeline-bar">
+                                <div class="bar-segment" style="flex: 1; background: #6366f1;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="entry-duration">1h 30m</div>
+                    <div class="entry-actions">
+                        <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-wrapper">
+                <div class="entry-row" onclick="this.nextElementSibling.classList.toggle('open')">
+                    <div class="project-dot" style="background: #f59e0b"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Design review for new dashboard</div>
+                        <div class="entry-meta">
+                            <span class="entry-project">Brand Refresh · Acme Corp</span>
+                            <div class="timeline-bar">
+                                <div class="bar-segment" style="flex: 20; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 15; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 30; background: #f59e0b;"></div>
+                                <div class="bar-segment manual" style="flex: 15; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 25; background: #f59e0b;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="entry-duration">1h 45m</div>
+                    <div class="entry-actions">
+                        <button class="action-btn" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                    </div>
+                </div>
+                <div class="block-detail">
+                    <div class="block-detail-inner">
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>08:00 → 08:20</strong></div>
+                            <div class="block-dur">20m</div>
+                            <div class="block-action"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>08:45 → 09:00</strong></div>
+                            <div class="block-dur">15m</div>
+                            <div class="block-action"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>10:30 → 11:00</strong></div>
+                            <div class="block-dur">30m</div>
+                            <div class="block-action"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color manual" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>12:00 → 12:15</strong> <span class="block-type">manual</span></div>
+                            <div class="block-dur">15m</div>
+                            <div class="block-action"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>15:00 → 15:25</strong></div>
+                            <div class="block-dur">25m</div>
+                            <div class="block-action"><button>Move to new entry</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expanded state -->
+    <div class="section">
+        <div class="section-title">Expanded State</div>
+        <div class="section-desc">Entry with 5 blocks expanded, showing card-style block rows with color accent and hover actions.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Today — Wed, Feb 26</span>
+                <span class="day-total">1h 45m</span>
+            </div>
+
+            <div class="entry-wrapper">
+                <div class="entry-row" style="background: hsl(var(--muted) / 0.2);">
+                    <div class="project-dot" style="background: #f59e0b"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Design review for new dashboard</div>
+                        <div class="entry-meta">
+                            <span class="entry-project">Brand Refresh · Acme Corp</span>
+                            <div class="timeline-bar">
+                                <div class="bar-segment" style="flex: 20; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 15; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 30; background: #f59e0b;"></div>
+                                <div class="bar-segment manual" style="flex: 15; background: #f59e0b;"></div>
+                                <div class="bar-segment" style="flex: 25; background: #f59e0b;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="entry-duration">1h 45m</div>
+                    <div class="entry-actions">
+                        <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+                    </div>
+                </div>
+                <div class="block-detail open">
+                    <div class="block-detail-inner">
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>08:00 → 08:20</strong></div>
+                            <div class="block-dur">20m</div>
+                            <div class="block-action" style="opacity:1"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>08:45 → 09:00</strong></div>
+                            <div class="block-dur">15m</div>
+                            <div class="block-action" style="opacity:1"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>10:30 → 11:00</strong></div>
+                            <div class="block-dur">30m</div>
+                            <div class="block-action" style="opacity:1"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color manual" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>12:00 → 12:15</strong> <span class="block-type">manual</span></div>
+                            <div class="block-dur">15m</div>
+                            <div class="block-action" style="opacity:1"><button>Move to new entry</button></div>
+                        </div>
+                        <div class="block-row">
+                            <div class="block-color" style="background: #f59e0b"></div>
+                            <div class="block-time"><strong>15:00 → 15:25</strong></div>
+                            <div class="block-dur">25m</div>
+                            <div class="block-action" style="opacity:1"><button>Move to new entry</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector(`#theme-switcher [data-theme="${document.documentElement.dataset.theme}"]`)?.classList.add('active');
+        document.querySelector(`#scale-switcher [data-scale="${document.documentElement.dataset.scale}"]`)?.classList.add('active');
+    </script>
+</body>
+</html>

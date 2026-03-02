@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Segments V5: Stacked Rows</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .section {
+            max-width: 900px; margin: 0 auto 48px;
+            padding-top: 24px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+        }
+        .section:first-of-type { border-top: none; padding-top: 0; }
+        .section-title {
+            font-family: 'Oxanium', sans-serif; font-size: 13px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 11px; color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 16px;
+            max-width: 700px;
+        }
+
+        .day-group {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .day-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.3);
+        }
+        .day-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+        .day-total {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1)); font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        /* Entry — parent row */
+        .entry-item {
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .entry-item:last-child { border-bottom: none; }
+
+        .entry-row {
+            display: grid;
+            grid-template-columns: 6px 1fr auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .entry-row:hover { background: hsl(var(--muted) / 0.2); }
+
+        .project-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+        .entry-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .entry-desc {
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500;
+            color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground));
+            min-width: 56px; text-align: right;
+        }
+
+        .entry-expand {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; border: none;
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.4);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .entry-expand:hover {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+        }
+        .entry-expand svg {
+            width: 14px; height: 14px;
+            transition: transform 0.2s;
+        }
+        .entry-item.expanded .entry-expand svg {
+            transform: rotate(180deg);
+        }
+        .entry-item.expanded .entry-expand {
+            color: hsl(var(--primary));
+        }
+
+        /* Stacked sub-rows — indented, same grid alignment */
+        .sub-rows {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s ease-out;
+        }
+        .entry-item.expanded .sub-rows {
+            max-height: 500px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .sub-row {
+            display: grid;
+            grid-template-columns: 6px 1fr auto auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 16px 6px 34px;
+            border-top: 1px solid hsl(var(--border) / 0.2);
+            transition: background 0.15s;
+            background: hsl(var(--muted) / 0.08);
+        }
+        .sub-row:hover {
+            background: hsl(var(--muted) / 0.2);
+        }
+
+        .sub-dot {
+            width: 4px; height: 4px; border-radius: 50%;
+            background: hsl(var(--primary) / 0.5);
+        }
+        .sub-dot.manual {
+            background: hsl(var(--muted-foreground) / 0.3);
+        }
+
+        .sub-time {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.8);
+        }
+        .sub-type {
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sub-dur {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600;
+            color: hsl(var(--foreground) / 0.8);
+            min-width: 44px; text-align: right;
+        }
+
+        .sub-action {
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .sub-row:hover .sub-action { opacity: 1; }
+        .sub-action button {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sub-action button:hover {
+            border-color: hsl(var(--primary) / 0.5);
+            color: hsl(var(--primary));
+        }
+
+        /* Summary line */
+        .sub-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 16px 6px 34px;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.4);
+            border-top: 1px solid hsl(var(--border) / 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>V5 — Stacked Rows</h1>
+        <p>Time blocks appear as indented sub-rows below the parent entry, maintaining the same table-like grid alignment. Minimal visual hierarchy — just indentation and lighter styling.</p>
+    </div>
+
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ember">Ember</button>
+                <button data-theme="ocean">Ocean</button>
+                <button data-theme="sandstone">Sandstone</button>
+                <button data-theme="forest">Forest</button>
+                <button data-theme="arctic">Arctic</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Collapsed + Expanded</div>
+        <div class="section-desc">First entry expanded, second collapsed. Sub-rows have the same grid layout as parent rows, just indented.</div>
+
+        <div class="day-group">
+            <div class="day-header">
+                <span class="day-label">Today — Wed, Feb 26</span>
+                <span class="day-total">5h 30m</span>
+            </div>
+
+            <div class="entry-item expanded">
+                <div class="entry-row" onclick="this.parentElement.classList.toggle('expanded')">
+                    <div class="project-dot" style="background: #00D4AA"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">API Platform · Netbulls</div>
+                    </div>
+                    <div class="entry-duration">2h 15m</div>
+                    <button class="entry-expand" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                </div>
+                <div class="sub-rows" style="max-height: 500px;">
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">09:00 → 10:30</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">1h 30m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">11:00 → 11:30</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">30m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot manual"></div>
+                        <div class="sub-time">14:00 → 14:15</div>
+                        <div class="sub-type">manual</div>
+                        <div class="sub-dur">15m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-summary">
+                        <span>3 time blocks</span>
+                        <span>Total: 2h 15m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-item" onclick="this.classList.toggle('expanded')">
+                <div class="entry-row">
+                    <div class="project-dot" style="background: #6366f1"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Sprint planning meeting</div>
+                        <div class="entry-project">Mobile App · Netbulls</div>
+                    </div>
+                    <div class="entry-duration">1h 30m</div>
+                    <button class="entry-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                </div>
+                <div class="sub-rows">
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">13:00 → 14:30</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">1h 30m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-item" onclick="this.classList.toggle('expanded')">
+                <div class="entry-row">
+                    <div class="project-dot" style="background: #f59e0b"></div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Design review for new dashboard</div>
+                        <div class="entry-project">Brand Refresh · Acme Corp</div>
+                    </div>
+                    <div class="entry-duration">1h 45m</div>
+                    <button class="entry-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                </div>
+                <div class="sub-rows">
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">08:00 → 08:20</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">20m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">08:45 → 09:00</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">15m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">10:30 → 11:00</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">30m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot manual"></div>
+                        <div class="sub-time">12:00 → 12:15</div>
+                        <div class="sub-type">manual</div>
+                        <div class="sub-dur">15m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-dot"></div>
+                        <div class="sub-time">15:00 → 15:25</div>
+                        <div class="sub-type">tracked</div>
+                        <div class="sub-dur">25m</div>
+                        <div class="sub-action"><button>Move to new entry</button></div>
+                    </div>
+                    <div class="sub-summary">
+                        <span>5 time blocks</span>
+                        <span>Total: 1h 45m</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector(`#theme-switcher [data-theme="${document.documentElement.dataset.theme}"]`)?.classList.add('active');
+        document.querySelector(`#scale-switcher [data-scale="${document.documentElement.dataset.scale}"]`)?.classList.add('active');
+    </script>
+</body>
+</html>

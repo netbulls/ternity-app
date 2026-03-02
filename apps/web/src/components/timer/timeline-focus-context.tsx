@@ -129,3 +129,6 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
 }
 
 export const useTimelineFocus = () => useContext(TimelineFocusContext);
+
+/** Sentinel ID used to include the timer bar in keyboard navigation */
+export const TIMER_BAR_ID = '__timer__';

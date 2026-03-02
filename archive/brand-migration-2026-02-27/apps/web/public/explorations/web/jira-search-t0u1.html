@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Jira Search V10: Dialog with Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.5); }
+        .page-header p { font-size: 11px; color: hsl(var(--muted-foreground) / 0.35); margin-top: 4px; max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.4); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted)); color: hsl(var(--muted-foreground) / 0.6); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button.active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        /* Layout */
+        .context-group { margin-bottom: 48px; }
+        .context-title { font-family: 'Oxanium', sans-serif; font-size: calc(14px * var(--t-scale, 1.1)); font-weight: 600; text-transform: uppercase; letter-spacing: 3px; color: hsl(var(--muted-foreground) / 0.3); text-align: center; margin-bottom: 20px; }
+        .states-row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; padding: 0 16px; }
+        .state-card { }
+        .state-card-narrow { width: 380px; }
+        .state-card-wide { width: 700px; }
+        .state-label { text-align: center; font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground) / 0.3); margin-bottom: 10px; }
+
+        /* ===== TIMER BAR ===== */
+        .timer-bar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+        }
+        .timer-desc {
+            flex: 1; min-width: 0;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            padding: 6px 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .timer-desc-ph { color: hsl(var(--muted-foreground) / 0.4); }
+        .timer-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            padding: 4px 10px; border-radius: 6px;
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border) / 0.5);
+            white-space: nowrap;
+        }
+        .timer-project .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+        .timer-start {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: hsl(var(--primary));
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .timer-start svg { width: 14px; height: 14px; fill: hsl(var(--primary-foreground)); }
+        .jira-trigger {
+            width: 32px; height: 32px; border-radius: 6px;
+            border: 1px dashed hsl(var(--border));
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.35);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .jira-trigger:hover { border-color: hsl(var(--primary) / 0.4); color: hsl(var(--primary) / 0.6); background: hsl(var(--primary) / 0.05); }
+        .jira-trigger svg { width: 16px; height: 16px; }
+
+        /* ===== ENTRY ROW ===== */
+        .entry-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+        }
+        .entry-desc { font-size: calc(13px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            padding: 3px 8px; border-radius: 5px;
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground));
+            white-space: nowrap;
+        }
+        .entry-project .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+        .entry-time {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.6);
+            white-space: nowrap;
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            white-space: nowrap;
+            min-width: 52px; text-align: right;
+        }
+
+        /* ===== JIRA KEY CHIP (linked state) ===== */
+        .jira-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: hsl(var(--primary) / 0.1);
+            border: 1px solid hsl(var(--primary) / 0.2);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .jira-chip-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--primary));
+        }
+        .jira-chip svg { width: 10px; height: 10px; color: hsl(var(--primary) / 0.6); }
+
+        /* ===== DIALOG ===== */
+        .dialog-backdrop {
+            position: relative;
+            background: hsl(var(--background) / 0.7);
+            border-radius: 12px;
+            padding: 32px;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 420px;
+            backdrop-filter: blur(4px);
+            border: 1px solid hsl(var(--border) / 0.2);
+        }
+        .dialog {
+            width: 680px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            box-shadow: 0 20px 60px hsl(0 0% 0% / 0.5);
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .dialog-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid hsl(var(--border) / 0.4);
+        }
+        .dialog-title {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(14px * var(--t-scale, 1.1));
+            font-weight: 600;
+        }
+        .dialog-close {
+            width: 28px; height: 28px; border-radius: 6px;
+            border: none; background: transparent;
+            color: hsl(var(--muted-foreground) / 0.4);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .dialog-close svg { width: 16px; height: 16px; }
+
+        .dialog-body { display: flex; min-height: 300px; }
+
+        /* Left panel */
+        .dlg-left { width: 55%; border-right: 1px solid hsl(var(--border) / 0.3); display: flex; flex-direction: column; }
+        .dlg-search {
+            padding: 12px 14px;
+            border-bottom: 1px solid hsl(var(--border) / 0.3);
+        }
+        .dlg-search-input {
+            width: 100%;
+            padding: 8px 10px 8px 32px;
+            border-radius: 7px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted) / 0.3);
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            outline: none;
+            position: relative;
+        }
+        .dlg-search-wrap { position: relative; }
+        .dlg-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: hsl(var(--muted-foreground) / 0.4); pointer-events: none; }
+
+        .dlg-filters { padding: 8px 14px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid hsl(var(--border) / 0.2); }
+        .dlg-filter-select {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            padding: 4px 8px;
+            border-radius: 5px;
+            border: 1px solid hsl(var(--border) / 0.5);
+            background: hsl(var(--muted) / 0.3);
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+        }
+        .dlg-filter-pill {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            padding: 3px 8px; border-radius: 4px;
+            border: 1px solid hsl(var(--border) / 0.4);
+            background: transparent;
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.12s;
+        }
+        .dlg-filter-pill.active {
+            background: hsl(var(--primary) / 0.1);
+            border-color: hsl(var(--primary) / 0.25);
+            color: hsl(var(--primary));
+            font-weight: 500;
+        }
+
+        .dlg-results { flex: 1; overflow-y: auto; }
+        .dlg-result {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid hsl(var(--border) / 0.15);
+            transition: background 0.1s;
+        }
+        .dlg-result:hover { background: hsl(var(--muted) / 0.3); }
+        .dlg-result.selected { background: hsl(var(--primary) / 0.08); }
+        .dlg-result-icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dlg-result-icon.bug { background: hsl(0 70% 50% / 0.15); color: hsl(0 70% 55%); }
+        .dlg-result-icon.story { background: hsl(145 60% 45% / 0.15); color: hsl(145 60% 50%); }
+        .dlg-result-icon.task { background: hsl(210 70% 55% / 0.15); color: hsl(210 70% 60%); }
+        .dlg-result-icon svg { width: 12px; height: 12px; }
+        .dlg-result-body { flex: 1; min-width: 0; }
+        .dlg-result-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--primary) / 0.8);
+        }
+        .dlg-result-title {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dlg-result-status {
+            font-size: calc(9px * var(--t-scale, 1.1));
+            padding: 2px 6px; border-radius: 3px;
+            background: hsl(var(--muted) / 0.5);
+            color: hsl(var(--muted-foreground) / 0.7);
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .dlg-result-status.prog { background: hsl(210 80% 55% / 0.15); color: hsl(210 80% 60%); }
+        .dlg-result-status.review { background: hsl(270 60% 55% / 0.15); color: hsl(270 60% 60%); }
+        .dlg-result-status.todo { background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground) / 0.6); }
+        .dlg-result-status.done { background: hsl(145 60% 45% / 0.15); color: hsl(145 60% 50%); }
+
+        /* Right panel — preview */
+        .dlg-right { width: 45%; padding: 20px 18px; display: flex; flex-direction: column; }
+        .dlg-right-empty {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            color: hsl(var(--muted-foreground) / 0.25);
+            font-size: calc(12px * var(--t-scale, 1.1));
+            text-align: center;
+        }
+        .dlg-preview-key {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(18px * var(--t-scale, 1.1));
+            font-weight: 700;
+            color: hsl(var(--primary));
+            margin-bottom: 4px;
+        }
+        .dlg-preview-title {
+            font-size: calc(14px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        .dlg-preview-meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin-bottom: 16px; }
+        .dlg-meta-label {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Oxanium', sans-serif;
+        }
+        .dlg-meta-value {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.8);
+        }
+        .dlg-meta-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 7px; border-radius: 4px;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 500;
+        }
+        .dlg-meta-badge.prog { background: hsl(210 80% 55% / 0.15); color: hsl(210 80% 60%); }
+        .dlg-meta-badge.review { background: hsl(270 60% 55% / 0.15); color: hsl(270 60% 60%); }
+        .dlg-meta-badge.todo { background: hsl(var(--muted) / 0.5); color: hsl(var(--muted-foreground) / 0.7); }
+        .dlg-meta-badge.bug { background: hsl(0 70% 50% / 0.15); color: hsl(0 70% 55%); }
+        .dlg-meta-badge.story { background: hsl(145 60% 45% / 0.15); color: hsl(145 60% 50%); }
+        .dlg-meta-badge.task { background: hsl(210 70% 55% / 0.15); color: hsl(210 70% 60%); }
+        .dlg-preview-desc-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground) / 0.4);
+            margin-bottom: 6px;
+        }
+        .dlg-preview-desc {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.6);
+            line-height: 1.6;
+        }
+
+        .dialog-footer {
+            display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+            padding: 12px 18px;
+            border-top: 1px solid hsl(var(--border) / 0.3);
+            background: hsl(var(--muted) / 0.1);
+        }
+        .btn-cancel {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            padding: 7px 16px; border-radius: 7px;
+            border: 1px solid hsl(var(--border));
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+        }
+        .btn-primary {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 7px 18px; border-radius: 7px;
+            border: none;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            cursor: pointer;
+        }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Divider */
+        .divider { width: 100%; height: 1px; background: hsl(var(--border) / 0.3); margin: 40px 0; }
+
+        /* Avatar */
+        .avatar-circle { width: 22px; height: 22px; border-radius: 50%; background: hsl(var(--primary) / 0.15); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: hsl(var(--primary)); flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Jira Search V10</h1>
+        <p>Dialog with Preview — full modal with search, project filter, status filter, and a split-pane preview. Power-user approach for verifying the correct issue before linking.</p>
+    </div>
+    <div class="switcher-row">
+        <div><div class="switcher-label">Theme</div><div class="switcher-group" id="theme-switcher">
+            <button onclick="setTheme('ternity-dark')">Ternity Dark</button><button onclick="setTheme('ternity-light')">Ternity Light</button><button onclick="setTheme('midnight')">Midnight</button><button onclick="setTheme('warm-sand')">Warm Sand</button><button class="active" onclick="setTheme('carbon')">Carbon</button><button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div></div>
+        <div><div class="switcher-label">Scale</div><div class="switcher-group" id="scale-switcher">
+            <button onclick="setScale('compact')">Compact</button><button class="active" onclick="setScale('default')">Default</button><button onclick="setScale('comfortable')">Comfortable</button>
+        </div></div>
+    </div>
+
+    <!-- ==================== TIMER BAR CONTEXT ==================== -->
+    <div class="context-group">
+        <div class="context-title">Timer Bar</div>
+        <div class="states-row">
+
+            <!-- Timer: Idle -->
+            <div class="state-card state-card-narrow">
+                <div class="state-label">Idle &mdash; trigger visible</div>
+                <div class="timer-bar">
+                    <div class="timer-desc timer-desc-ph">What are you working on?</div>
+                    <button class="jira-trigger" title="Link Jira Issue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    </button>
+                    <div class="timer-project"><span class="dot" style="background:#6366f1;"></span>Ternity</div>
+                    <button class="timer-start"><svg viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+            </div>
+
+            <!-- Timer: Dialog Open (no selection) -->
+            <div class="state-card state-card-wide">
+                <div class="state-label">Dialog open &mdash; searching</div>
+                <div class="dialog-backdrop">
+                    <div class="dialog">
+                        <div class="dialog-header">
+                            <span class="dialog-title">Link Jira Issue</span>
+                            <button class="dialog-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="dialog-body">
+                            <div class="dlg-left">
+                                <div class="dlg-search">
+                                    <div class="dlg-search-wrap">
+                                        <svg class="dlg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                        <input class="dlg-search-input" type="text" value="onboarding" readonly>
+                                    </div>
+                                </div>
+                                <div class="dlg-filters">
+                                    <select class="dlg-filter-select"><option>All Projects</option></select>
+                                    <span class="dlg-filter-pill active">All</span>
+                                    <span class="dlg-filter-pill">In Progress</span>
+                                    <span class="dlg-filter-pill">To Do</span>
+                                    <span class="dlg-filter-pill">In Review</span>
+                                </div>
+                                <div class="dlg-results">
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">NETB-142</div>
+                                            <div class="dlg-result-title">Implement user onboarding flow</div>
+                                        </div>
+                                        <span class="dlg-result-status prog">In Progress</span>
+                                    </div>
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">NETB-201</div>
+                                            <div class="dlg-result-title">Add export to PDF feature</div>
+                                        </div>
+                                        <span class="dlg-result-status todo">To Do</span>
+                                    </div>
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon bug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">NETB-189</div>
+                                            <div class="dlg-result-title">Fix timezone handling in reports</div>
+                                        </div>
+                                        <span class="dlg-result-status review">In Review</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dlg-right">
+                                <div class="dlg-right-empty">
+                                    <div>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;margin-bottom:8px;opacity:0.3;"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                                        <div>Select an issue to preview</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dialog-footer">
+                            <button class="btn-cancel">Cancel</button>
+                            <button class="btn-primary" disabled>Link Issue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer: Issue selected in dialog -->
+            <div class="state-card state-card-wide">
+                <div class="state-label">Issue selected &mdash; preview visible</div>
+                <div class="dialog-backdrop">
+                    <div class="dialog">
+                        <div class="dialog-header">
+                            <span class="dialog-title">Link Jira Issue</span>
+                            <button class="dialog-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="dialog-body">
+                            <div class="dlg-left">
+                                <div class="dlg-search">
+                                    <div class="dlg-search-wrap">
+                                        <svg class="dlg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                        <input class="dlg-search-input" type="text" value="onboarding" readonly>
+                                    </div>
+                                </div>
+                                <div class="dlg-filters">
+                                    <select class="dlg-filter-select"><option>netbulls.atlassian.net</option></select>
+                                    <span class="dlg-filter-pill">All</span>
+                                    <span class="dlg-filter-pill active">In Progress</span>
+                                    <span class="dlg-filter-pill">To Do</span>
+                                    <span class="dlg-filter-pill">In Review</span>
+                                </div>
+                                <div class="dlg-results">
+                                    <div class="dlg-result selected">
+                                        <div class="dlg-result-icon story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">NETB-142</div>
+                                            <div class="dlg-result-title">Implement user onboarding flow</div>
+                                        </div>
+                                        <span class="dlg-result-status prog">In Progress</span>
+                                    </div>
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon bug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">ACME-87</div>
+                                            <div class="dlg-result-title">Fix login timeout on mobile</div>
+                                        </div>
+                                        <span class="dlg-result-status prog">In Progress</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dlg-right">
+                                <div class="dlg-preview-key">NETB-142</div>
+                                <div class="dlg-preview-title">Implement user onboarding flow</div>
+                                <div class="dlg-preview-meta">
+                                    <span class="dlg-meta-label">Status</span>
+                                    <span class="dlg-meta-value"><span class="dlg-meta-badge prog">In Progress</span></span>
+                                    <span class="dlg-meta-label">Type</span>
+                                    <span class="dlg-meta-value"><span class="dlg-meta-badge story">Story</span></span>
+                                    <span class="dlg-meta-label">Project</span>
+                                    <span class="dlg-meta-value">netbulls.atlassian.net</span>
+                                    <span class="dlg-meta-label">Assignee</span>
+                                    <span class="dlg-meta-value" style="display:flex;align-items:center;gap:6px;"><span class="avatar-circle">EM</span> Elena Marsh</span>
+                                </div>
+                                <div class="dlg-preview-desc-label">Description</div>
+                                <div class="dlg-preview-desc">Build the multi-step onboarding wizard for new team members. Includes profile setup, project selection, and notification preferences. Should integrate with the existing invitation flow.</div>
+                            </div>
+                        </div>
+                        <div class="dialog-footer">
+                            <button class="btn-cancel">Cancel</button>
+                            <button class="btn-primary">Link Issue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer: Linked -->
+            <div class="state-card state-card-narrow">
+                <div class="state-label">Linked</div>
+                <div class="timer-bar">
+                    <span class="jira-chip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        <span class="jira-chip-key">NETB-142</span>
+                    </span>
+                    <div class="timer-desc">Implement user onboarding flow</div>
+                    <div class="timer-project"><span class="dot" style="background:#6366f1;"></span>Ternity</div>
+                    <button class="timer-start"><svg viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></svg></button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ==================== ENTRY ROW CONTEXT ==================== -->
+    <div class="context-group">
+        <div class="context-title">Entry Row</div>
+        <div class="states-row">
+
+            <!-- Entry: Idle -->
+            <div class="state-card state-card-narrow">
+                <div class="state-label">Idle &mdash; trigger visible</div>
+                <div class="entry-row">
+                    <div class="entry-desc">Update billing page design</div>
+                    <button class="jira-trigger" title="Link Jira Issue" style="width:26px;height:26px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    </button>
+                    <div class="entry-project"><span class="dot" style="background:#f59e0b;"></span>ACME Corp</div>
+                    <div class="entry-time">09:15 – 11:30</div>
+                    <div class="entry-duration">2:15</div>
+                </div>
+            </div>
+
+            <!-- Entry: Dialog Open with issue selected -->
+            <div class="state-card state-card-wide">
+                <div class="state-label">Dialog open &mdash; issue selected</div>
+                <div class="dialog-backdrop">
+                    <div class="dialog">
+                        <div class="dialog-header">
+                            <span class="dialog-title">Link Jira Issue</span>
+                            <button class="dialog-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="dialog-body">
+                            <div class="dlg-left">
+                                <div class="dlg-search">
+                                    <div class="dlg-search-wrap">
+                                        <svg class="dlg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                        <input class="dlg-search-input" type="text" value="billing" readonly>
+                                    </div>
+                                </div>
+                                <div class="dlg-filters">
+                                    <select class="dlg-filter-select"><option>acme.atlassian.net</option></select>
+                                    <span class="dlg-filter-pill active">All</span>
+                                    <span class="dlg-filter-pill">In Progress</span>
+                                    <span class="dlg-filter-pill">To Do</span>
+                                    <span class="dlg-filter-pill">Done</span>
+                                </div>
+                                <div class="dlg-results">
+                                    <div class="dlg-result selected">
+                                        <div class="dlg-result-icon story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">ACME-112</div>
+                                            <div class="dlg-result-title">Update billing page design</div>
+                                        </div>
+                                        <span class="dlg-result-status todo">To Do</span>
+                                    </div>
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon bug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">ACME-87</div>
+                                            <div class="dlg-result-title">Fix login timeout on mobile</div>
+                                        </div>
+                                        <span class="dlg-result-status prog">In Progress</span>
+                                    </div>
+                                    <div class="dlg-result">
+                                        <div class="dlg-result-icon task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                                        <div class="dlg-result-body">
+                                            <div class="dlg-result-key">OAK-34</div>
+                                            <div class="dlg-result-title">Set up CI/CD pipeline</div>
+                                        </div>
+                                        <span class="dlg-result-status done">Done</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dlg-right">
+                                <div class="dlg-preview-key">ACME-112</div>
+                                <div class="dlg-preview-title">Update billing page design</div>
+                                <div class="dlg-preview-meta">
+                                    <span class="dlg-meta-label">Status</span>
+                                    <span class="dlg-meta-value"><span class="dlg-meta-badge todo">To Do</span></span>
+                                    <span class="dlg-meta-label">Type</span>
+                                    <span class="dlg-meta-value"><span class="dlg-meta-badge story">Story</span></span>
+                                    <span class="dlg-meta-label">Project</span>
+                                    <span class="dlg-meta-value">acme.atlassian.net</span>
+                                    <span class="dlg-meta-label">Assignee</span>
+                                    <span class="dlg-meta-value" style="display:flex;align-items:center;gap:6px;"><span class="avatar-circle">JO</span> James Oakley</span>
+                                </div>
+                                <div class="dlg-preview-desc-label">Description</div>
+                                <div class="dlg-preview-desc">Redesign the billing overview page with new card layouts, invoice history table, and payment method management. Follow the updated brand guidelines from the marketing team.</div>
+                            </div>
+                        </div>
+                        <div class="dialog-footer">
+                            <button class="btn-cancel">Cancel</button>
+                            <button class="btn-primary">Link Issue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entry: Linked -->
+            <div class="state-card state-card-narrow">
+                <div class="state-label">Linked</div>
+                <div class="entry-row">
+                    <span class="jira-chip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        <span class="jira-chip-key">ACME-112</span>
+                    </span>
+                    <div class="entry-desc">Update billing page design</div>
+                    <div class="entry-project"><span class="dot" style="background:#f59e0b;"></span>ACME Corp</div>
+                    <div class="entry-time">09:15 – 11:30</div>
+                    <div class="entry-duration">2:15</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function setTheme(t) { document.documentElement.setAttribute('data-theme', t); document.documentElement.className = ['ternity-light','warm-sand','high-contrast'].includes(t) ? 'light' : 'dark'; document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g,'-') === t)); }
+        function setScale(s) { document.documentElement.setAttribute('data-scale', s); document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === s)); }
+    </script>
+</body>
+</html>
