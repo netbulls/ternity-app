@@ -7,7 +7,6 @@ import { useUpdateEntry, useOptimisticEntryPatch } from '@/hooks/use-entries';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
-import { useProjects } from '@/hooks/use-reference-data';
 import { formatTimer, getTimezoneLabel } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
@@ -32,7 +31,6 @@ export function TimerBar() {
 
   const running = timerState?.running ?? false;
   const currentEntry = timerState?.entry ?? null;
-  const { data: allProjects } = useProjects();
   const { selectedEntryId, select, registerEnterHandler } = useTimelineFocus();
   const isHighlighted = selectedEntryId === TIMER_BAR_ID;
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -46,10 +44,6 @@ export function TimerBar() {
   const [tagIds, setTagIds] = useState<string[]>([]);
 
   const [isTimerHovered, setIsTimerHovered] = useState(false);
-
-  // Resolve the current project color for the highlight bar
-  const currentProjectColor =
-    allProjects?.find((p) => p.id === projectId)?.color ?? 'hsl(var(--primary))';
 
   // Auto-scroll into view when highlighted via keyboard
   useEffect(() => {
@@ -322,29 +316,27 @@ export function TimerBar() {
         animate={{
           borderColor: isHighlighted
             ? isInputFocused
-              ? `color-mix(in srgb, ${currentProjectColor} 40%, hsl(var(--t-timer-border)))`
-              : currentProjectColor
+              ? 'hsl(var(--primary) / 0.4)'
+              : 'hsl(var(--primary) / 0.6)'
             : running
               ? 'hsl(var(--primary) / 0.3)'
               : isTimerHovered
                 ? 'hsl(var(--muted-foreground) / 0.2)'
                 : 'hsl(var(--t-timer-border))',
           backgroundColor: isHighlighted
-            ? `color-mix(in srgb, ${currentProjectColor} ${isInputFocused ? '3' : '6'}%, hsl(var(--t-timer-bg)))`
+            ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
             : 'hsl(var(--t-timer-bg))',
         }}
         transition={{ duration: 0.15 }}
       >
-        {/* Left border indicator — project color when keyboard-highlighted */}
+        {/* Left border indicator — primary green when focused */}
         <AnimatePresence>
           {isHighlighted && (
             <motion.div
               className="absolute left-0 top-0 bottom-0 rounded-l"
               style={{
                 width: isInputFocused ? '3px' : '5px',
-                background: isInputFocused
-                  ? `color-mix(in srgb, ${currentProjectColor} 60%, transparent)`
-                  : currentProjectColor,
+                background: isInputFocused ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--primary))',
               }}
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
