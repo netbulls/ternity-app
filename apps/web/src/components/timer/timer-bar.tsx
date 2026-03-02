@@ -310,6 +310,7 @@ export function TimerBar() {
           select(TIMER_BAR_ID);
         }}
         animate={{
+          opacity: !isHighlighted && !isInputFocused && !running ? 0.45 : 1,
           borderColor: isHighlighted
             ? isInputFocused
               ? 'hsl(var(--primary) / 0.4)'
@@ -325,7 +326,7 @@ export function TimerBar() {
               ? 'hsl(var(--primary) / 0.05)'
               : 'hsl(var(--t-timer-bg))',
         }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.3 }}
       >
         {/* Left border indicator — primary green when focused */}
         <AnimatePresence>
