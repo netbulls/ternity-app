@@ -318,14 +318,14 @@ export function TimerBar() {
             ? isInputFocused
               ? 'hsl(var(--primary) / 0.4)'
               : 'hsl(var(--primary) / 0.6)'
-            : isTimerHovered
+            : isTimerHovered && !isInputFocused
               ? 'hsl(var(--t-timer-border))'
               : running
                 ? 'hsl(var(--primary) / 0.35)'
                 : 'hsl(var(--primary) / 0.25)',
           backgroundColor: isHighlighted
             ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : isTimerHovered
+            : isTimerHovered && !isInputFocused
               ? 'hsl(var(--t-timer-bg))'
               : 'hsl(var(--primary) / 0.05)',
         }}
