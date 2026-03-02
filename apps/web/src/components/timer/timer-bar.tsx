@@ -320,9 +320,7 @@ export function TimerBar() {
                 ? 'hsl(var(--primary) / 0.35)'
                 : 'hsl(var(--primary) / 0.25)'
               : 'hsl(var(--t-timer-border))',
-          backgroundColor: isHighlighted
-            ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : 'hsl(var(--t-timer-bg))',
+          backgroundColor: 'hsl(var(--t-timer-bg))',
         }}
         transition={{ duration: 0.3 }}
       >
