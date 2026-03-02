@@ -1,8 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Square } from 'lucide-react';
+import { Play, Square, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { useTimer, useStartTimer, useStopTimer, useElapsedSeconds } from '@/hooks/use-timer';
+import {
+  useTimer,
+  useStartTimer,
+  useStopTimer,
+  useResumeTimer,
+  useElapsedSeconds,
+} from '@/hooks/use-timer';
 import { useUpdateEntry, useOptimisticEntryPatch } from '@/hooks/use-entries';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
@@ -15,14 +21,15 @@ import { LiquidEdge, LiquidEdgeKeyframes } from '@/components/ui/liquid-edge';
 import { JiraChip } from '@/components/jira/jira-chip';
 import { JiraIcon } from '@/components/jira/jira-icon';
 import { JiraSearchDropdown } from '@/components/jira/jira-search-dropdown';
-import { HashAutocomplete } from '@/components/jira/hash-autocomplete';
 import { useTimelineFocus, TIMER_BAR_ID } from '@/components/timer/timeline-focus-context';
-import type { JiraIssue, JiraIssueLink } from '@ternity/shared';
+import { TimerSuggest } from './timer-suggest';
+import type { EntrySearchHit, JiraIssue, JiraIssueLink } from '@ternity/shared';
 
 export function TimerBar() {
   const { data: timerState } = useTimer();
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
+  const resumeTimer = useResumeTimer();
   const updateEntry = useUpdateEntry();
   const patchEntry = useOptimisticEntryPatch();
   const linkJira = useLinkJiraIssue();
@@ -34,7 +41,9 @@ export function TimerBar() {
   const { selectedEntryId, select, registerEnterHandler } = useTimelineFocus();
   const isHighlighted = selectedEntryId === TIMER_BAR_ID;
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const timerBarRef = useRef<HTMLDivElement>(null);
+  const lastStoppedEntryIdRef = useRef<string | null>(null);
 
   // Local state for the "next timer" description/project/tags
   const [description, setDescription] = useState('');
@@ -61,7 +70,6 @@ export function TimerBar() {
 
   // Jira state
   const [jiraDropdownOpen, setJiraDropdownOpen] = useState(false);
-  const [hashTrigger, setHashTrigger] = useState<string | null>(null);
   const [pendingJira, setPendingJira] = useState<{
     key: string;
     summary: string;
@@ -125,6 +133,12 @@ export function TimerBar() {
     : pendingJira;
 
   const handleStart = useCallback(() => {
+    // If we just stopped an entry and nothing was changed, resume it (new segment)
+    if (lastStoppedEntryIdRef.current) {
+      resumeTimer.mutate(lastStoppedEntryIdRef.current);
+      lastStoppedEntryIdRef.current = null;
+      return;
+    }
     startTimer.mutate({
       description,
       projectId,
@@ -137,18 +151,15 @@ export function TimerBar() {
           }
         : {}),
     });
-  }, [description, projectId, tagIds, pendingJira, startTimer]);
+  }, [description, projectId, tagIds, pendingJira, startTimer, resumeTimer]);
 
   const handleStop = useCallback(() => {
-    stopTimer.mutate(undefined, {
-      onSuccess: () => {
-        setDescription('');
-        setProjectId(getPreference('defaultProjectId'));
-        setTagIds([]);
-        setPendingJira(null);
-      },
-    });
-  }, [stopTimer]);
+    // Remember which entry we're stopping so Enter can resume it
+    if (currentEntry) {
+      lastStoppedEntryIdRef.current = currentEntry.id;
+    }
+    stopTimer.mutate();
+  }, [stopTimer, currentEntry]);
 
   // Register Enter handler for keyboard navigation — toggle start/stop
   const handleToggleRef = useRef<() => void>(() => {});
@@ -163,15 +174,19 @@ export function TimerBar() {
   const descriptionInputRef = useRef<HTMLInputElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // When suggest dropdown is open, it handles Enter/Arrow/Escape via its own keydown listener
+    if (suggestOpen && (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      return; // let TimerSuggest handle it
+    }
     if (e.key === 'Enter' && !running) {
       // Ignore Enter events that leak from the command palette closing
       if (Date.now() - paletteClosedAtRef.current < 200) return;
       handleStart();
     }
     if (e.key === 'Escape') {
-      if (hashTrigger !== null || jiraDropdownOpen) {
-        // First Esc: close dropdowns
-        setHashTrigger(null);
+      if (suggestOpen) {
+        setSuggestOpen(false);
+      } else if (jiraDropdownOpen) {
         setJiraDropdownOpen(false);
       } else if (!running) {
         // Second Esc (or no dropdown open): reset to vanilla state
@@ -179,33 +194,49 @@ export function TimerBar() {
         setProjectId(getPreference('defaultProjectId'));
         setTagIds([]);
         setPendingJira(null);
+        lastStoppedEntryIdRef.current = null;
         descriptionInputRef.current?.blur();
       }
     }
   };
 
-  // Detect # trigger in description
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setDescription(val);
+    // User changed the description — don't resume the old entry, create new on next start
+    lastStoppedEntryIdRef.current = null;
 
     // Optimistically patch the cache so the entry list updates in real-time
     if (running && currentEntry) {
       patchEntry(currentEntry.id, { description: val });
     }
 
-    const hashIdx = val.lastIndexOf('#');
-    if (hashIdx >= 0 && (hashIdx === 0 || val[hashIdx - 1] === ' ')) {
-      const afterHash = val.substring(hashIdx + 1);
-      if (!afterHash.includes(' ')) {
-        setHashTrigger(afterHash);
-        return;
-      }
-    }
-    setHashTrigger(null);
+    // Open suggest dropdown when 2+ effective chars typed and timer not running
+    // For # mode: need # + 2 chars (e.g. "#ab"). For normal: 2+ chars.
+    const isHash = val.startsWith('#');
+    const effectiveLen = isHash ? val.length - 1 : val.length;
+    setSuggestOpen(!running && effectiveLen >= 2);
   };
 
-  // Issue select handler — used by both dropdown and hash autocomplete
+  // Handle suggestion selection — fill description, project, and Jira link
+  const handleSuggestSelect = useCallback((entry: EntrySearchHit) => {
+    setDescription(entry.description);
+    if (entry.projectId) setProjectId(entry.projectId);
+    if (entry.jiraIssueKey && entry.jiraConnectionId) {
+      setPendingJira({
+        key: entry.jiraIssueKey,
+        summary: entry.jiraIssueSummary ?? '',
+        connectionId: entry.jiraConnectionId,
+        siteUrl: '', // not available from search hit, will be resolved on start
+      });
+    } else {
+      setPendingJira(null);
+    }
+    setSuggestOpen(false);
+    lastStoppedEntryIdRef.current = null; // selected a different entry, don't resume old one
+  }, []);
+
+  // Issue select handler — used by Jira dropdown and suggest
   const handleIssueSelect = useCallback(
     (issue: JiraIssue, connectionId: string, siteUrl: string) => {
       const jiraLink = {
@@ -244,7 +275,7 @@ export function TimerBar() {
       }
 
       setJiraDropdownOpen(false);
-      setHashTrigger(null);
+      setSuggestOpen(false);
     },
     [running, currentEntry, updateEntry, linkJira, jiraConnections],
   );
@@ -261,6 +292,15 @@ export function TimerBar() {
       setPendingJira(null);
     }
   }, [running, currentEntry, linkJira]);
+
+  // Handle Jira issue selected from the unified suggest dropdown
+  const handleSuggestJiraSelect = useCallback(
+    (issue: JiraIssue, connectionId: string, siteUrl: string) => {
+      lastStoppedEntryIdRef.current = null;
+      handleIssueSelect(issue, connectionId, siteUrl);
+    },
+    [handleIssueSelect],
+  );
 
   // Listen for command palette "prepare" event (⌘Enter — fill details without starting)
   useEffect(() => {
@@ -283,19 +323,18 @@ export function TimerBar() {
     return () => window.removeEventListener('ternity-palette-prepare', handler);
   }, [running]);
 
-  // Close dropdown/autocomplete on click outside
+  // Close dropdown on click outside
   const wrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!jiraDropdownOpen && hashTrigger === null) return;
+    if (!jiraDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setJiraDropdownOpen(false);
-        setHashTrigger(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [jiraDropdownOpen, hashTrigger]);
+  }, [jiraDropdownOpen]);
 
   return (
     <div ref={wrapperRef} className="relative z-50">
@@ -368,18 +407,41 @@ export function TimerBar() {
           </div>
         )}
 
-        <div className="relative z-10 flex-1">
+        <div className="relative z-10 flex flex-1 items-center gap-1">
           <input
             ref={descriptionInputRef}
-            className="w-full border-none bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+            className="w-full border-none bg-transparent text-foreground outline-none placeholder:italic placeholder:text-muted-foreground/50"
             style={{ fontSize: scaled(13) }}
             placeholder="What are you working on?"
             value={description}
             onChange={handleDescriptionChange}
             onKeyDown={handleKeyDown}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
+            onFocus={() => {
+              setIsInputFocused(true);
+              if (!isHighlighted) select(TIMER_BAR_ID);
+            }}
+            onBlur={() => {
+              setIsInputFocused(false);
+              setSuggestOpen(false);
+            }}
           />
+          {/* Clear button — resets to empty state */}
+          {!running && description && (
+            <button
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/30 hover:text-muted-foreground"
+              onClick={() => {
+                setDescription('');
+                setProjectId(getPreference('defaultProjectId'));
+                setTagIds([]);
+                setPendingJira(null);
+                lastStoppedEntryIdRef.current = null;
+                descriptionInputRef.current?.focus();
+              }}
+              title="Clear"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         <div className="relative z-10">
@@ -387,6 +449,7 @@ export function TimerBar() {
             value={projectId}
             onChange={(id) => {
               setProjectId(id);
+              lastStoppedEntryIdRef.current = null; // project changed, don't resume old entry
               if (running && currentEntry) {
                 updateEntry.mutate({ id: currentEntry.id, projectId: id, source: 'timer_bar' });
               }
@@ -464,19 +527,15 @@ export function TimerBar() {
         )}
       </AnimatePresence>
 
-      {/* Hash autocomplete */}
+      {/* Unified autosuggest — entries + Jira, # limits to Jira only */}
       <AnimatePresence>
-        {hasJira && hashTrigger !== null && !jiraDropdownOpen && (
-          <HashAutocomplete
-            query={hashTrigger}
-            onSelect={(issue, connectionId, siteUrl) => {
-              // Replace the #query part with the issue summary
-              const hashIdx = description.lastIndexOf('#');
-              const newDesc =
-                hashIdx >= 0 ? description.substring(0, hashIdx) + issue.summary : issue.summary;
-              setDescription(newDesc);
-              handleIssueSelect(issue, connectionId, siteUrl);
-            }}
+        {suggestOpen && !jiraDropdownOpen && (
+          <TimerSuggest
+            query={description}
+            onSelectEntry={handleSuggestSelect}
+            onSelectJira={handleSuggestJiraSelect}
+            onClose={() => setSuggestOpen(false)}
+            inputRef={descriptionInputRef}
           />
         )}
       </AnimatePresence>

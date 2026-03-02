@@ -370,7 +370,7 @@ export function EntryRow({ entry }: Props) {
       <motion.div
         className={cn(
           'group/row relative flex items-center gap-3 px-4 py-2.5',
-          (isEditingProject || jiraDropdownOpen) && 'z-20',
+          (isEditingProject || jiraDropdownOpen || hashTrigger !== null) && 'z-20',
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

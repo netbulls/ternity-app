@@ -262,7 +262,8 @@ export function useRecentEntries() {
 export function useEntrySearch(query: string) {
   return useQuery({
     queryKey: ['entries-search', query],
-    queryFn: () => apiFetch<EntrySearchHit[]>(`/entries/search?q=${encodeURIComponent(query)}`),
+    queryFn: () =>
+      apiFetch<EntrySearchHit[]>(`/entries/search?q=${encodeURIComponent(query)}&limit=20`),
     enabled: query.length >= 2,
     staleTime: 30 * 1000,
     placeholderData: (prev) => prev,

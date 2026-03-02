@@ -68,9 +68,12 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
   // Keyboard navigation: up/down arrows move selection between entries
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Don't capture when typing in inputs
+      // Don't capture when typing in inputs or when a dialog/overlay is open
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+      if (target.closest('[role="dialog"], [role="alertdialog"]')) {
         return;
       }
 
