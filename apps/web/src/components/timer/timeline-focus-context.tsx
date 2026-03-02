@@ -68,9 +68,6 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
   // Keyboard navigation: up/down arrows move selection between entries
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Only when an entry is selected
-      if (!selectedEntryId) return;
-
       // Don't capture when typing in inputs
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
@@ -82,6 +79,14 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
 
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
+
+        // Nothing selected yet — pick first (ArrowDown) or last (ArrowUp)
+        if (!selectedEntryId) {
+          const initial = e.key === 'ArrowDown' ? ids[0] : ids[ids.length - 1];
+          if (initial) setSelectedEntryId(initial);
+          return;
+        }
+
         const currentIdx = ids.indexOf(selectedEntryId);
         if (currentIdx === -1) return;
 
@@ -93,7 +98,7 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
         if (nextIdx !== currentIdx) {
           setSelectedEntryId(ids[nextIdx]!);
         }
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && selectedEntryId) {
         e.preventDefault();
         const handler = enterHandlersRef.current.get(selectedEntryId);
         if (handler) handler();
