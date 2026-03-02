@@ -10,17 +10,17 @@ export function ImpersonationBanner() {
 
   return (
     <div
-      className="relative flex shrink-0 items-center justify-between overflow-hidden px-4 py-2 animate-banner-slide-in"
+      className="fixed inset-x-0 top-0 z-50 flex items-center justify-between overflow-hidden px-4 py-2 backdrop-blur-md animate-banner-slide-in"
       style={{
-        background: 'linear-gradient(90deg, hsl(35 100% 50% / 0.15), hsl(25 100% 45% / 0.08))',
+        background: 'linear-gradient(90deg, hsl(35 100% 50% / 0.12), hsl(25 100% 45% / 0.06))',
+        backgroundColor: 'hsl(var(--background) / 0.7)',
       }}
     >
       {/* Shimmer overlay */}
       <div
         className="pointer-events-none absolute inset-0 animate-banner-shimmer"
         style={{
-          background:
-            'linear-gradient(90deg, transparent, hsl(35 100% 50% / 0.06), transparent)',
+          background: 'linear-gradient(90deg, transparent, hsl(35 100% 50% / 0.06), transparent)',
           width: '50%',
           position: 'absolute',
         }}
@@ -45,10 +45,7 @@ export function ImpersonationBanner() {
           >
             Impersonating
           </span>
-          <span
-            className="font-semibold text-foreground"
-            style={{ fontSize: scaled(14) }}
-          >
+          <span className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
             {targetDisplayName}
           </span>
           {targetRole && (
