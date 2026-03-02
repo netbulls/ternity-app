@@ -318,16 +318,16 @@ export function TimerBar() {
             ? isInputFocused
               ? 'hsl(var(--primary) / 0.4)'
               : 'hsl(var(--primary) / 0.6)'
-            : running
-              ? 'hsl(var(--primary) / 0.3)'
-              : isTimerHovered
-                ? 'hsl(var(--primary) / 0.2)'
-                : 'hsl(var(--t-timer-border))',
+            : isTimerHovered
+              ? 'hsl(var(--t-timer-border))'
+              : running
+                ? 'hsl(var(--primary) / 0.35)'
+                : 'hsl(var(--primary) / 0.25)',
           backgroundColor: isHighlighted
             ? `hsl(var(--primary) / ${isInputFocused ? '0.04' : '0.08'})`
-            : isTimerHovered && !running
-              ? 'hsl(var(--primary) / 0.03)'
-              : 'hsl(var(--t-timer-bg))',
+            : isTimerHovered
+              ? 'hsl(var(--t-timer-bg))'
+              : 'hsl(var(--primary) / 0.05)',
         }}
         transition={{ duration: 0.15 }}
       >
