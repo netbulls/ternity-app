@@ -308,7 +308,10 @@ export function TimerBar() {
       {running && <LiquidEdgeKeyframes />}
       <motion.div
         ref={timerBarRef}
-        className="relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3"
+        className={cn(
+          'relative mb-5 flex items-center gap-3 overflow-hidden rounded-lg border px-4 py-3 transition-[border-color]',
+          !isHighlighted && !running && 'hover:border-[hsl(var(--muted-foreground)/0.2)]',
+        )}
         animate={{
           borderColor: isHighlighted
             ? isInputFocused

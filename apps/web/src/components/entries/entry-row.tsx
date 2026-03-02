@@ -368,7 +368,8 @@ export function EntryRow({ entry }: Props) {
     >
       <motion.div
         className={cn(
-          'group/row relative flex items-center gap-3 px-4 py-2.5',
+          'group/row relative flex items-center gap-3 px-4 py-2.5 transition-colors',
+          !isRunning && !isTimelineFocused && !isEditing && 'hover:bg-[hsl(var(--muted)/0.08)]',
           (isEditingProject || jiraDropdownOpen) && 'z-20',
         )}
         animate={{
