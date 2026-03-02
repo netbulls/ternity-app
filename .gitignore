@@ -39,3 +39,6 @@ inbox/
 # Secrets — plaintext gitignored, only .age files committed
 secrets/*.md
 !secrets/README.md
+
+# Recordings (demo artifacts)
+recording/
