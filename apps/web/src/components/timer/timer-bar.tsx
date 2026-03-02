@@ -312,14 +312,17 @@ export function TimerBar() {
         animate={{
           borderColor: isHighlighted
             ? isInputFocused
-              ? 'hsl(var(--primary) / 0.4)'
+              ? 'hsl(var(--primary) / 0.5)'
               : 'hsl(var(--primary) / 0.6)'
             : isInputFocused
               ? running
-                ? 'hsl(var(--primary) / 0.35)'
-                : 'hsl(var(--primary) / 0.25)'
+                ? 'hsl(var(--primary) / 0.4)'
+                : 'hsl(var(--primary) / 0.35)'
               : 'hsl(var(--t-timer-border))',
           backgroundColor: 'hsl(var(--t-timer-bg))',
+          boxShadow: isInputFocused
+            ? '0 0 12px hsl(var(--primary) / 0.15), 0 0 4px hsl(var(--primary) / 0.1)'
+            : '0 0 0px transparent',
         }}
         transition={{ duration: 0.3 }}
       >
