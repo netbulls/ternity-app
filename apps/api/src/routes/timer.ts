@@ -12,6 +12,7 @@ import {
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { StartTimer, Entry, JiraIssueLink } from '@ternity/shared';
+import { GlobalRole } from '@ternity/shared';
 
 /** Build a full entry response with segments, project + tags joined */
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
@@ -120,6 +121,16 @@ function getActorId(request: { auth: { realUserId?: string; userId: string } }):
   return request.auth.realUserId ?? request.auth.userId;
 }
 
+/** Check if user is allowed to use this project. Admins can use any project. */
+function isProjectAllowed(
+  request: { auth: { globalRole: string; orgRoles: Record<string, string> } },
+  projectId: string | null,
+): boolean {
+  if (!projectId) return true;
+  if (request.auth.globalRole === GlobalRole.Admin) return true;
+  return projectId in request.auth.orgRoles;
+}
+
 /** Stop a running segment (if any) for a given user. Returns the entry ID that was stopped, or null. */
 async function stopRunningSegment(
   tx: Database,
@@ -203,7 +214,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   });
 
   /** POST /api/timer/start — start a new timer (stops any running one first) */
-  fastify.post('/api/timer/start', async (request) => {
+  fastify.post('/api/timer/start', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const body = (request.body ?? {}) as StartTimer;
@@ -213,6 +224,11 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const jiraIssueKey = body.jiraIssueKey ?? null;
     const jiraIssueSummary = body.jiraIssueSummary ?? null;
     const jiraConnectionId = body.jiraConnectionId ?? null;
+
+    // Project assignment check
+    if (!isProjectAllowed(request, projectId)) {
+      return reply.code(403).send({ error: 'You are not assigned to this project' });
+    }
 
     const result = await db.transaction(async (tx) => {
       // Stop any running segment first
@@ -337,7 +353,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   });
 
   /** POST /api/timer/start-or-resume — resume existing entry by jiraIssueKey, or start new */
-  fastify.post('/api/timer/start-or-resume', async (request) => {
+  fastify.post('/api/timer/start-or-resume', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const body = (request.body ?? {}) as StartTimer;
@@ -347,6 +363,11 @@ export async function timerRoutes(fastify: FastifyInstance) {
     const jiraIssueKey = body.jiraIssueKey ?? null;
     const jiraIssueSummary = body.jiraIssueSummary ?? null;
     const jiraConnectionId = body.jiraConnectionId ?? null;
+
+    // Project assignment check
+    if (!isProjectAllowed(request, projectId)) {
+      return reply.code(403).send({ error: 'You are not assigned to this project' });
+    }
 
     // If we have a jiraIssueKey, look for an existing stopped entry to resume
     if (jiraIssueKey) {

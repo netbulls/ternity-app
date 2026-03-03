@@ -23,6 +23,7 @@ import type {
   DayGroup,
   Entry,
 } from '@ternity/shared';
+import { GlobalRole } from '@ternity/shared';
 
 /** Format seconds into h:mm or h:mm:ss */
 function formatDuration(seconds: number): string {
@@ -45,6 +46,16 @@ function getAuditSource(request: {
   headers: Record<string, string | string[] | undefined>;
 }): string {
   return (request.headers['x-audit-source'] as string) ?? 'api';
+}
+
+/** Check if user is allowed to use this project. Admins can use any project. */
+function isProjectAllowed(
+  request: { auth: { globalRole: string; orgRoles: Record<string, string> } },
+  projectId: string | null,
+): boolean {
+  if (!projectId) return true; // No project is always fine
+  if (request.auth.globalRole === GlobalRole.Admin) return true;
+  return projectId in request.auth.orgRoles;
 }
 
 /** Extract base name: "name (3)" → "name", "name" → "name" */
@@ -530,11 +541,16 @@ export async function entriesRoutes(fastify: FastifyInstance) {
   });
 
   /** POST /api/entries — create a manual entry */
-  fastify.post('/api/entries', async (request) => {
+  fastify.post('/api/entries', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const source = getAuditSource(request);
     const body = request.body as CreateEntry;
+
+    // Project assignment check
+    if (!isProjectAllowed(request, body.projectId ?? null)) {
+      return reply.code(403).send({ error: 'You are not assigned to this project' });
+    }
 
     const startedAt = new Date(body.startedAt);
     const stoppedAt = new Date(body.stoppedAt);
@@ -612,6 +628,11 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     }
     if (existing.userId !== userId) {
       return reply.code(403).send({ error: 'Not your entry' });
+    }
+
+    // Project assignment check (only when changing project)
+    if (body.projectId !== undefined && !isProjectAllowed(request, body.projectId)) {
+      return reply.code(403).send({ error: 'You are not assigned to this project' });
     }
 
     const result = await db.transaction(async (tx) => {

@@ -1,12 +1,28 @@
 import { FastifyInstance } from 'fastify';
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, inArray } from 'drizzle-orm';
 import { GlobalRole, CreateTagSchema, UpdateTagSchema } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { projects, clients, tags, entryTags, users, projectMembers } from '../db/schema.js';
 
 export async function referenceRoutes(fastify: FastifyInstance) {
-  /** GET /api/projects — active projects with active clients (for pickers) */
+  /** GET /api/projects — active projects with active clients (for pickers)
+   *  Admins see all active projects. Regular users see only assigned projects. */
   fastify.get('/api/projects', async (request) => {
+    const isAdmin = request.auth.globalRole === GlobalRole.Admin;
+
+    // For non-admin users, restrict to assigned projects
+    const assignedProjectIds = Object.keys(request.auth.orgRoles);
+
+    // If non-admin has no assignments, return empty list immediately
+    if (!isAdmin && assignedProjectIds.length === 0) {
+      return [];
+    }
+
+    const conditions = [eq(projects.isActive, true), eq(clients.isActive, true)];
+    if (!isAdmin) {
+      conditions.push(inArray(projects.id, assignedProjectIds));
+    }
+
     const rows = await db
       .select({
         id: projects.id,
@@ -16,7 +32,7 @@ export async function referenceRoutes(fastify: FastifyInstance) {
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
-      .where(and(eq(projects.isActive, true), eq(clients.isActive, true)))
+      .where(and(...conditions))
       .orderBy(asc(projects.name));
 
     return rows;
