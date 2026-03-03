@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign User to Projects — V4 The Inline Table</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* === Main container === */
+      .main-container {
+        max-width: 860px;
+        margin: 0 auto;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      /* === Breadcrumb === */
+      .breadcrumb {
+        padding: 12px 24px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        border-bottom: 1px solid hsl(var(--border));
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .breadcrumb a {
+        color: hsl(var(--muted-foreground));
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .breadcrumb a:hover {
+        color: hsl(var(--primary));
+      }
+      .breadcrumb .sep {
+        opacity: 0.4;
+      }
+      .breadcrumb .current {
+        color: hsl(var(--foreground));
+      }
+
+      /* === User profile header === */
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 24px;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .profile-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .profile-details {
+        flex: 1;
+        min-width: 0;
+      }
+      .profile-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .profile-meta {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .profile-meta .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .profile-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 500;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--secondary));
+        color: hsl(var(--secondary-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn:hover {
+        background: hsl(var(--accent));
+        border-color: hsl(var(--accent-foreground) / 0.2);
+      }
+      .btn i {
+        width: 14px;
+        height: 14px;
+      }
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      /* === Tab nav === */
+      .tab-nav {
+        display: flex;
+        border-bottom: 1px solid hsl(var(--border));
+        padding: 0 24px;
+      }
+      .tab-item {
+        padding: 10px 16px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        font-weight: 500;
+      }
+      .tab-item:hover {
+        color: hsl(var(--foreground));
+      }
+      .tab-item.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+      }
+
+      /* === Toolbar === */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        max-width: 280px;
+        padding: 7px 12px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--input));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+      .search-box i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .search-box input {
+        border: none;
+        background: none;
+        outline: none;
+        color: inherit;
+        font-family: inherit;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        width: 100%;
+      }
+      .search-box input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .filter-check {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        user-select: none;
+      }
+      .filter-check input[type='checkbox'] {
+        accent-color: hsl(var(--primary));
+        cursor: pointer;
+      }
+      .toolbar .count-badge {
+        margin-left: auto;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .count-badge strong {
+        color: hsl(var(--primary));
+      }
+
+      /* === Data table === */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .data-table thead th {
+        text-align: left;
+        padding: 10px 16px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+        border-bottom: 1px solid hsl(var(--border));
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.15s;
+        white-space: nowrap;
+      }
+      .data-table thead th:first-child {
+        padding-left: 24px;
+      }
+      .data-table thead th:last-child {
+        padding-right: 24px;
+      }
+      .data-table thead th:hover {
+        color: hsl(var(--foreground));
+      }
+      .data-table thead th .sort-icon {
+        display: inline-flex;
+        vertical-align: middle;
+        margin-left: 4px;
+        opacity: 0.3;
+      }
+      .data-table thead th.sorted .sort-icon {
+        opacity: 1;
+        color: hsl(var(--primary));
+      }
+      .data-table thead th .sort-icon i {
+        width: 12px;
+        height: 12px;
+      }
+
+      .data-table tbody tr {
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+        transition: background 0.1s;
+      }
+      .data-table tbody tr:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .data-table tbody tr.assigned {
+        background: hsl(var(--primary) / 0.04);
+      }
+      .data-table tbody tr.assigned:hover {
+        background: hsl(var(--primary) / 0.08);
+      }
+      .data-table tbody td {
+        padding: 10px 16px;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        color: hsl(var(--foreground));
+        vertical-align: middle;
+      }
+      .data-table tbody td:first-child {
+        padding-left: 24px;
+      }
+      .data-table tbody td:last-child {
+        padding-right: 24px;
+      }
+
+      /* Project cell */
+      .project-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .project-name {
+        font-weight: 500;
+      }
+      .client-cell {
+        color: hsl(var(--muted-foreground));
+        font-size: calc(12px * var(--t-scale, 1.1));
+      }
+
+      /* Role dropdown */
+      .role-select {
+        padding: 5px 8px;
+        border-radius: 5px;
+        border: 1px solid hsl(var(--input));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .role-select:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .role-select:not(:disabled):hover {
+        border-color: hsl(var(--primary) / 0.5);
+      }
+
+      /* Toggle switch */
+      .toggle {
+        position: relative;
+        display: inline-block;
+        width: 36px;
+        height: 20px;
+      }
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        border-radius: 10px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .toggle-slider::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: hsl(var(--muted-foreground));
+        transition: all 0.2s;
+      }
+      .toggle input:checked + .toggle-slider {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .toggle input:checked + .toggle-slider::before {
+        transform: translateX(16px);
+        background: hsl(var(--primary-foreground));
+      }
+
+      /* Row checkbox */
+      .row-check {
+        accent-color: hsl(var(--primary));
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+      }
+
+      /* === Bulk actions bar === */
+      .bulk-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 24px;
+        background: hsl(var(--muted) / 0.5);
+        border-top: 1px solid hsl(var(--border));
+      }
+      .bulk-bar .bulk-count {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .bulk-bar .bulk-count strong {
+        color: hsl(var(--foreground));
+      }
+      .bulk-bar .btn {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        padding: 6px 12px;
+      }
+      .bulk-spacer {
+        flex: 1;
+      }
+      .btn-destructive {
+        color: hsl(var(--destructive));
+        border-color: hsl(var(--destructive) / 0.3);
+      }
+      .btn-destructive:hover {
+        background: hsl(var(--destructive) / 0.1);
+      }
+
+      /* === Design notes === */
+      .design-notes {
+        max-width: 860px;
+        margin: 24px auto 0;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        color: hsl(var(--foreground));
+        font-size: calc(13px * var(--t-scale, 1.1));
+        line-height: 1.7;
+      }
+      .design-notes h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        color: hsl(var(--primary));
+      }
+      .design-notes h3 {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        margin: 16px 0 6px;
+        color: hsl(var(--foreground));
+      }
+      .design-notes ul {
+        padding-left: 16px;
+      }
+      .design-notes li {
+        margin-bottom: 4px;
+      }
+      .design-notes code {
+        background: hsl(var(--muted));
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>V4 — The Inline Table</h1>
+      <p>
+        Data table with toggle switches, sortable columns, and bulk actions. Most data-dense
+        approach.
+      </p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfortable</button>
+      </div>
+    </div>
+
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <div class="main-container">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+          <a href="#">Users</a>
+          <span class="sep">/</span>
+          <span class="current">Elena Marsh</span>
+        </div>
+
+        <!-- User profile header -->
+        <div class="user-profile">
+          <div class="profile-avatar">EM</div>
+          <div class="profile-details">
+            <div class="profile-name">Elena Marsh</div>
+            <div class="profile-meta">
+              <span>elena.marsh@stellarlabs.com</span>
+              <span class="role-badge"
+                ><i data-lucide="shield" style="width: 10px; height: 10px"></i> Admin</span
+              >
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button class="btn"><i data-lucide="pencil"></i> Edit Profile</button>
+            <button class="btn-primary btn"><i data-lucide="save"></i> Save Changes</button>
+          </div>
+        </div>
+
+        <!-- Tab navigation -->
+        <div class="tab-nav">
+          <div class="tab-item">Profile</div>
+          <div class="tab-item">Working Hours</div>
+          <div class="tab-item active">Projects</div>
+          <div class="tab-item">Leave Balances</div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input
+              type="text"
+              placeholder="Search projects..."
+              id="searchInput"
+              oninput="filterTable()"
+            />
+          </div>
+          <label class="filter-check">
+            <input type="checkbox" id="assignedOnly" onchange="filterTable()" />
+            Show assigned only
+          </label>
+          <div class="count-badge">
+            <strong id="assignedCount">3</strong> of <span id="totalCount">8</span> assigned
+          </div>
+        </div>
+
+        <!-- Data table -->
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px">
+                <input
+                  type="checkbox"
+                  class="row-check"
+                  id="selectAll"
+                  onchange="toggleSelectAll()"
+                />
+              </th>
+              <th class="sorted" onclick="sortTable('project')">
+                Project <span class="sort-icon"><i data-lucide="arrow-up"></i></span>
+              </th>
+              <th onclick="sortTable('client')">
+                Client <span class="sort-icon"><i data-lucide="arrow-up-down"></i></span>
+              </th>
+              <th onclick="sortTable('role')">
+                Role <span class="sort-icon"><i data-lucide="arrow-up-down"></i></span>
+              </th>
+              <th style="width: 80px">Assigned</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+
+        <!-- Bulk actions bar -->
+        <div class="bulk-bar" id="bulkBar">
+          <div class="bulk-count"><strong id="selectedCount">0</strong> selected</div>
+          <button class="btn btn-primary" onclick="bulkAssign()">
+            <i data-lucide="plus"></i> Assign Selected
+          </button>
+          <button class="btn btn-destructive" onclick="bulkRemove()">
+            <i data-lucide="minus"></i> Remove Selected
+          </button>
+          <div class="bulk-spacer"></div>
+          <button class="btn" onclick="clearSelection()">Clear Selection</button>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h2>V4 — The Inline Table</h2>
+        <p>
+          A data table approach integrated into the user detail page. Every project in the
+          organization is listed as a row, with toggle switches for instant assignment control.
+        </p>
+
+        <h3>Pros</h3>
+        <ul>
+          <li>Most data-dense — see all projects at a glance in a familiar table layout</li>
+          <li>Sortable columns make it easy to find projects by name, client, or role</li>
+          <li>Filter + "assigned only" checkbox quickly narrows the view</li>
+          <li>Toggle switches provide instant, single-click assignment changes</li>
+          <li>Bulk actions allow assigning/removing many projects at once via checkboxes</li>
+          <li>Role dropdown is contextually enabled — only when the project is assigned</li>
+          <li>Tab navigation integrates naturally into a user profile page</li>
+        </ul>
+
+        <h3>Cons</h3>
+        <ul>
+          <li>Can feel overwhelming with dozens of projects — all visible simultaneously</li>
+          <li>No visual grouping by client — relies on sorting to cluster related projects</li>
+          <li>
+            Toggle + checkbox in same row may cause confusion (one for assignment, one for bulk
+            select)
+          </li>
+          <li>Less visual richness — no project colors or metadata beyond name/client/role</li>
+          <li>Horizontal space usage is suboptimal (wide table, mostly empty cells)</li>
+        </ul>
+
+        <h3>Best for</h3>
+        <ul>
+          <li>Organizations with many projects (20+) where scanning efficiency matters</li>
+          <li>Admins who prefer data-table workflows and keyboard-driven interaction</li>
+          <li>
+            Situations where bulk assignment operations are common (onboarding new team members)
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const projects = [
+        {
+          name: 'API Gateway',
+          client: 'NovaTech',
+          color: '#00D4AA',
+          assigned: true,
+          role: 'manager',
+        },
+        {
+          name: 'Brand Refresh',
+          client: 'Acme Corp',
+          color: '#7B8CFF',
+          assigned: false,
+          role: 'user',
+        },
+        {
+          name: 'Cloud Migration',
+          client: 'BluePeak',
+          color: '#FF9F43',
+          assigned: true,
+          role: 'user',
+        },
+        {
+          name: 'Data Pipeline',
+          client: 'NovaTech',
+          color: '#FF6B81',
+          assigned: false,
+          role: 'user',
+        },
+        {
+          name: 'Internal Tools',
+          client: 'Acme Corp',
+          color: '#A86BFF',
+          assigned: false,
+          role: 'user',
+        },
+        {
+          name: 'Marketing Portal',
+          client: 'Stellar Labs',
+          color: '#43C6FF',
+          assigned: false,
+          role: 'user',
+        },
+        {
+          name: 'Mobile App v3',
+          client: 'Stellar Labs',
+          color: '#FFD93D',
+          assigned: true,
+          role: 'user',
+        },
+        {
+          name: 'Website Redesign',
+          client: 'BluePeak',
+          color: '#6BCB77',
+          assigned: false,
+          role: 'user',
+        },
+      ];
+
+      let selectedRows = new Set();
+
+      function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = data
+          .map((p, i) => {
+            const origIdx = projects.indexOf(p);
+            const checked = selectedRows.has(origIdx);
+            return `
+            <tr class="${p.assigned ? 'assigned' : ''}" data-idx="${origIdx}">
+              <td><input type="checkbox" class="row-check" ${checked ? 'checked' : ''} onchange="toggleRow(${origIdx})" /></td>
+              <td>
+                <div class="project-cell">
+                  <span class="project-dot" style="background:${p.color}"></span>
+                  <span class="project-name">${p.name}</span>
+                </div>
+              </td>
+              <td><span class="client-cell">${p.client}</span></td>
+              <td>
+                <select class="role-select" ${p.assigned ? '' : 'disabled'} onchange="changeRole(${origIdx}, this.value)">
+                  <option value="user" ${p.role === 'user' ? 'selected' : ''}>User</option>
+                  <option value="manager" ${p.role === 'manager' ? 'selected' : ''}>Manager</option>
+                </select>
+              </td>
+              <td>
+                <label class="toggle">
+                  <input type="checkbox" ${p.assigned ? 'checked' : ''} onchange="toggleAssignment(${origIdx})" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </td>
+            </tr>`;
+          })
+          .join('');
+        updateCounts();
+      }
+
+      function filterTable() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const assignedOnly = document.getElementById('assignedOnly').checked;
+        const filtered = projects.filter((p) => {
+          const matchesSearch =
+            p.name.toLowerCase().includes(query) || p.client.toLowerCase().includes(query);
+          const matchesFilter = assignedOnly ? p.assigned : true;
+          return matchesSearch && matchesFilter;
+        });
+        renderTable(filtered);
+      }
+
+      function toggleAssignment(idx) {
+        projects[idx].assigned = !projects[idx].assigned;
+        filterTable();
+      }
+
+      function changeRole(idx, value) {
+        projects[idx].role = value;
+      }
+
+      function toggleRow(idx) {
+        if (selectedRows.has(idx)) {
+          selectedRows.delete(idx);
+        } else {
+          selectedRows.add(idx);
+        }
+        document.getElementById('selectedCount').textContent = selectedRows.size;
+      }
+
+      function toggleSelectAll() {
+        const all = document.getElementById('selectAll').checked;
+        const visibleRows = document.querySelectorAll('#tableBody tr');
+        visibleRows.forEach((row) => {
+          const idx = parseInt(row.dataset.idx);
+          if (all) {
+            selectedRows.add(idx);
+          } else {
+            selectedRows.delete(idx);
+          }
+          const cb = row.querySelector('.row-check');
+          if (cb) cb.checked = all;
+        });
+        document.getElementById('selectedCount').textContent = selectedRows.size;
+      }
+
+      function bulkAssign() {
+        selectedRows.forEach((idx) => {
+          projects[idx].assigned = true;
+        });
+        selectedRows.clear();
+        document.getElementById('selectAll').checked = false;
+        filterTable();
+      }
+
+      function bulkRemove() {
+        selectedRows.forEach((idx) => {
+          projects[idx].assigned = false;
+        });
+        selectedRows.clear();
+        document.getElementById('selectAll').checked = false;
+        filterTable();
+      }
+
+      function clearSelection() {
+        selectedRows.clear();
+        document.getElementById('selectAll').checked = false;
+        filterTable();
+      }
+
+      function updateCounts() {
+        const assigned = projects.filter((p) => p.assigned).length;
+        document.getElementById('assignedCount').textContent = assigned;
+        document.getElementById('totalCount').textContent = projects.length;
+        document.getElementById('selectedCount').textContent = selectedRows.size;
+      }
+
+      let sortCol = 'project';
+      let sortAsc = true;
+
+      function sortTable(col) {
+        if (sortCol === col) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = col;
+          sortAsc = true;
+        }
+        projects.sort((a, b) => {
+          let va, vb;
+          if (col === 'project') {
+            va = a.name;
+            vb = b.name;
+          } else if (col === 'client') {
+            va = a.client;
+            vb = b.client;
+          } else if (col === 'role') {
+            va = a.role;
+            vb = b.role;
+          }
+          const cmp = va.localeCompare(vb);
+          return sortAsc ? cmp : -cmp;
+        });
+        filterTable();
+        // Update header visuals
+        document
+          .querySelectorAll('.data-table thead th')
+          .forEach((th) => th.classList.remove('sorted'));
+        event.currentTarget.classList.add('sorted');
+      }
+
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        const group = event.target.parentElement;
+        group.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      // Initial render
+      renderTable(projects);
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

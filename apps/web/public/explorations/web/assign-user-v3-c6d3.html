@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign User to Projects — V3 Tag Cloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── App container ── */
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 760px;
+        margin: 0 auto;
+        min-height: 580px;
+        padding: calc(28px * var(--t-scale, 1.1));
+      }
+
+      /* ── Breadcrumb ── */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(20px * var(--t-scale, 1.1));
+      }
+      .breadcrumb a {
+        color: hsl(var(--muted-foreground));
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .breadcrumb a:hover {
+        color: hsl(var(--primary));
+      }
+      .breadcrumb .sep {
+        opacity: 0.4;
+      }
+      .breadcrumb .current {
+        color: hsl(var(--foreground));
+        font-weight: 500;
+      }
+      .breadcrumb i {
+        width: 12px;
+        height: 12px;
+      }
+
+      /* ── User profile section ── */
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: calc(16px * var(--t-scale, 1.1));
+        padding: calc(20px * var(--t-scale, 1.1));
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        margin-bottom: calc(24px * var(--t-scale, 1.1));
+      }
+      .user-avatar {
+        width: calc(52px * var(--t-scale, 1.1));
+        height: calc(52px * var(--t-scale, 1.1));
+        border-radius: 12px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(17px * var(--t-scale, 1.1));
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-details {
+        flex: 1;
+        min-width: 0;
+      }
+      .user-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .user-email {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+      .user-role {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 5px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        display: inline-block;
+        margin-top: 6px;
+      }
+      .floating-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: calc(8px * var(--t-scale, 1.1)) calc(14px * var(--t-scale, 1.1));
+        background: hsl(var(--primary) / 0.1);
+        border: 1px solid hsl(var(--primary) / 0.2);
+        border-radius: 10px;
+        flex-shrink: 0;
+      }
+      .floating-count-number {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1.1));
+        font-weight: 700;
+        color: hsl(var(--primary));
+        line-height: 1;
+      }
+      .floating-count-label {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--primary));
+        opacity: 0.8;
+        line-height: 1.2;
+      }
+
+      /* ── Section title ── */
+      .section-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(14px * var(--t-scale, 1.1));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-title i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Client group ── */
+      .client-group {
+        margin-bottom: calc(20px * var(--t-scale, 1.1));
+      }
+      .client-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+        margin-bottom: calc(8px * var(--t-scale, 1.1));
+        padding-left: 2px;
+      }
+
+      /* ── Tag cloud pills ── */
+      .tag-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: calc(8px * var(--t-scale, 1.1));
+      }
+
+      .project-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: calc(6px * var(--t-scale, 1.1));
+        padding: calc(7px * var(--t-scale, 1.1)) calc(14px * var(--t-scale, 1.1));
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+        position: relative;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 500;
+      }
+
+      /* Ghost / unassigned pill */
+      .project-pill.ghost {
+        background: transparent;
+        border: 1.5px dashed hsl(var(--border));
+        color: hsl(var(--muted-foreground));
+      }
+      .project-pill.ghost:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--foreground));
+        background: hsl(var(--primary) / 0.05);
+      }
+
+      /* Filled / assigned pill */
+      .project-pill.assigned {
+        background: hsl(var(--primary) / 0.15);
+        border: 1.5px solid hsl(var(--primary) / 0.35);
+        color: hsl(var(--primary));
+      }
+      .project-pill.assigned:hover {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.5);
+      }
+
+      .pill-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .pill-name {
+        white-space: nowrap;
+      }
+
+      .pill-x {
+        display: none;
+        width: calc(14px * var(--t-scale, 1.1));
+        height: calc(14px * var(--t-scale, 1.1));
+        border-radius: 50%;
+        background: hsl(var(--primary) / 0.2);
+        color: hsl(var(--primary));
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-left: 2px;
+        transition: background 0.15s;
+      }
+      .project-pill.assigned .pill-x {
+        display: flex;
+      }
+      .pill-x:hover {
+        background: hsl(var(--destructive) / 0.2);
+        color: hsl(var(--destructive));
+      }
+      .pill-x i {
+        width: 10px;
+        height: 10px;
+      }
+
+      /* ── Role dropdown on assigned pills ── */
+      .pill-role {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 1px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+        flex-shrink: 0;
+        border: none;
+        display: none;
+      }
+      .project-pill.assigned .pill-role {
+        display: inline-block;
+      }
+      .pill-role.role-user {
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+      }
+      .pill-role.role-manager {
+        background: hsl(var(--primary) / 0.25);
+        color: hsl(var(--primary));
+      }
+
+      /* ── Plus icon for ghost pills ── */
+      .pill-plus {
+        width: calc(14px * var(--t-scale, 1.1));
+        height: calc(14px * var(--t-scale, 1.1));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.15s;
+        flex-shrink: 0;
+      }
+      .project-pill.ghost:hover .pill-plus {
+        opacity: 1;
+      }
+      .pill-plus i {
+        width: 12px;
+        height: 12px;
+      }
+
+      /* ── Save bar ── */
+      .save-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: calc(24px * var(--t-scale, 1.1));
+        padding-top: calc(16px * var(--t-scale, 1.1));
+        border-top: 1px solid hsl(var(--border));
+      }
+      .btn {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        padding: calc(8px * var(--t-scale, 1.1)) calc(18px * var(--t-scale, 1.1));
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: none;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        border: 1px solid hsl(var(--border));
+      }
+      .btn-ghost:hover {
+        border-color: hsl(var(--foreground) / 0.3);
+        color: hsl(var(--foreground));
+      }
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 4px 20px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        max-width: 760px;
+        margin: 32px auto 0;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.25);
+        margin-bottom: 10px;
+      }
+      .design-notes ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .design-notes li {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.35);
+        padding-left: 14px;
+        position: relative;
+      }
+      .design-notes li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+      }
+      .design-notes .pro::before {
+        background: hsl(168 100% 42% / 0.5);
+      }
+      .design-notes .con::before {
+        background: hsl(355 100% 64% / 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>V3 — The Tag Cloud: pill/tag chips with click-to-toggle assignment</p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="#"><i data-lucide="settings"></i></a>
+        <span class="sep">/</span>
+        <a href="#">User Management</a>
+        <span class="sep">/</span>
+        <span class="current">Elena Marsh</span>
+      </div>
+
+      <!-- User profile -->
+      <div class="user-profile">
+        <div class="user-avatar">EM</div>
+        <div class="user-details">
+          <div class="user-name">Elena Marsh</div>
+          <div class="user-email">elena.marsh@acmecorp.com</div>
+          <div class="user-role">Member</div>
+        </div>
+        <div class="floating-count">
+          <span class="floating-count-number" id="assignedNum">4</span>
+          <span class="floating-count-label">of <span id="totalNum">8</span><br />projects</span>
+        </div>
+      </div>
+
+      <!-- Section title -->
+      <div class="section-title">
+        <i data-lucide="folder-kanban"></i>
+        Project Assignments
+      </div>
+
+      <!-- Tag cloud grouped by client -->
+      <div id="tagCloud">
+        <!-- Acme Corp -->
+        <div class="client-group">
+          <div class="client-label">Acme Corp</div>
+          <div class="tag-cloud">
+            <div
+              class="project-pill assigned"
+              data-name="brand refresh"
+              data-role="manager"
+              onclick="togglePill(this)"
+            >
+              <span class="pill-dot" style="background: hsl(var(--t-project-1))"></span>
+              <span class="pill-name">Brand Refresh</span>
+              <button class="pill-role role-manager" onclick="togglePillRole(event, this)">
+                Manager
+              </button>
+              <span class="pill-x" onclick="togglePill(this.parentElement)"
+                ><i data-lucide="x"></i
+              ></span>
+            </div>
+            <div
+              class="project-pill assigned"
+              data-name="mobile app v3"
+              data-role="user"
+              onclick="togglePill(this)"
+            >
+              <span class="pill-dot" style="background: hsl(var(--t-project-2))"></span>
+              <span class="pill-name">Mobile App v3</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x" onclick="togglePill(this.parentElement)"
+                ><i data-lucide="x"></i
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stellar Labs -->
+        <div class="client-group">
+          <div class="client-label">Stellar Labs</div>
+          <div class="tag-cloud">
+            <div
+              class="project-pill assigned"
+              data-name="cloud migration"
+              data-role="user"
+              onclick="togglePill(this)"
+            >
+              <span class="pill-dot" style="background: hsl(var(--t-project-3))"></span>
+              <span class="pill-name">Cloud Migration</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x" onclick="togglePill(this.parentElement)"
+                ><i data-lucide="x"></i
+              ></span>
+            </div>
+            <div class="project-pill ghost" data-name="website redesign" onclick="togglePill(this)">
+              <span class="pill-dot" style="background: hsl(355 100% 64%)"></span>
+              <span class="pill-name">Website Redesign</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x"><i data-lucide="x"></i></span>
+              <span class="pill-plus"><i data-lucide="plus"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NovaTech -->
+        <div class="client-group">
+          <div class="client-label">NovaTech</div>
+          <div class="tag-cloud">
+            <div
+              class="project-pill assigned"
+              data-name="api gateway"
+              data-role="user"
+              onclick="togglePill(this)"
+            >
+              <span class="pill-dot" style="background: hsl(280 60% 65%)"></span>
+              <span class="pill-name">API Gateway</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x" onclick="togglePill(this.parentElement)"
+                ><i data-lucide="x"></i
+              ></span>
+            </div>
+            <div class="project-pill ghost" data-name="data pipeline" onclick="togglePill(this)">
+              <span class="pill-dot" style="background: hsl(var(--t-project-1))"></span>
+              <span class="pill-name">Data Pipeline</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x"><i data-lucide="x"></i></span>
+              <span class="pill-plus"><i data-lucide="plus"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BluePeak -->
+        <div class="client-group">
+          <div class="client-label">BluePeak</div>
+          <div class="tag-cloud">
+            <div class="project-pill ghost" data-name="marketing portal" onclick="togglePill(this)">
+              <span class="pill-dot" style="background: hsl(var(--t-project-2))"></span>
+              <span class="pill-name">Marketing Portal</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x"><i data-lucide="x"></i></span>
+              <span class="pill-plus"><i data-lucide="plus"></i></span>
+            </div>
+            <div class="project-pill ghost" data-name="internal tools" onclick="togglePill(this)">
+              <span class="pill-dot" style="background: hsl(var(--t-project-3))"></span>
+              <span class="pill-name">Internal Tools</span>
+              <button class="pill-role role-user" onclick="togglePillRole(event, this)">
+                User
+              </button>
+              <span class="pill-x"><i data-lucide="x"></i></span>
+              <span class="pill-plus"><i data-lucide="plus"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-ghost" onclick="showToast('Changes discarded')">Cancel</button>
+        <button class="btn btn-primary" onclick="showToast('Project assignments saved')">
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Design Notes -->
+    <div class="design-notes">
+      <h3>Design Notes — V3 The Tag Cloud</h3>
+      <ul>
+        <li class="pro">
+          Most compact layout — all projects visible at a glance without scrolling.
+        </li>
+        <li class="pro">
+          Visual distinction is immediate: filled teal = assigned, dashed outline = available.
+        </li>
+        <li class="pro">
+          Single click to toggle — fastest interaction model of all three variants.
+        </li>
+        <li class="pro">
+          Floating count badge gives instant summary without scanning individual items.
+        </li>
+        <li class="pro">Client grouping with labels provides context without heavy UI chrome.</li>
+        <li class="con">
+          Role selector is tiny and easy to miss on each pill — limited space for metadata.
+        </li>
+        <li class="con">
+          Pill layout reflows unpredictably at different widths — less structured than a list.
+        </li>
+        <li class="con">
+          Doesn't scale well past ~20 projects — pill cloud becomes visually noisy.
+        </li>
+        <li class="con">
+          No search/filter — relies on the compact view being sufficient. Would need search for
+          larger lists.
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      /* ── Theme & Scale ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        var group = event.target.parentElement;
+        group.querySelectorAll('button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+
+      /* ── Toggle pill assignment ── */
+      function togglePill(pill) {
+        // Don't toggle if clicking role button
+        if (event && event.target.closest('.pill-role')) return;
+
+        var isAssigned = pill.classList.contains('assigned');
+        if (isAssigned) {
+          pill.classList.remove('assigned');
+          pill.classList.add('ghost');
+        } else {
+          pill.classList.remove('ghost');
+          pill.classList.add('assigned');
+          // Default to 'user' role when newly assigned
+          pill.setAttribute('data-role', 'user');
+          var roleBtn = pill.querySelector('.pill-role');
+          if (roleBtn) {
+            roleBtn.textContent = 'User';
+            roleBtn.className = 'pill-role role-user';
+          }
+        }
+        updateCount();
+        // Re-init icons for any newly shown elements
+        lucide.createIcons();
+      }
+
+      /* ── Toggle role on pill ── */
+      function togglePillRole(e, btn) {
+        e.stopPropagation();
+        var pill = btn.closest('.project-pill');
+        var currentRole = pill.getAttribute('data-role');
+        var newRole = currentRole === 'user' ? 'manager' : 'user';
+        pill.setAttribute('data-role', newRole);
+        btn.textContent = newRole === 'manager' ? 'Manager' : 'User';
+        btn.className = 'pill-role ' + (newRole === 'manager' ? 'role-manager' : 'role-user');
+      }
+
+      /* ── Update floating count ── */
+      function updateCount() {
+        var total = document.querySelectorAll('.project-pill').length;
+        var assigned = document.querySelectorAll('.project-pill.assigned').length;
+        document.getElementById('assignedNum').textContent = assigned;
+        document.getElementById('totalNum').textContent = total;
+      }
+
+      /* ── Toast ── */
+      function showToast(message) {
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('visible');
+        setTimeout(function () {
+          toast.classList.remove('visible');
+        }, 2500);
+      }
+
+      /* ── Init ── */
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

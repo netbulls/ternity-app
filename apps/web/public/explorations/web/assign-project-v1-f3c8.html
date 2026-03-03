@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign Project Members — V1 Member List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── Switcher row ── */
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        background: #080808;
+        border-bottom: 1px solid #1a1a1a;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav,
+      .scale-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App container ── */
+      #app {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+
+      /* ── Project header ── */
+      .project-header {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .project-color-bar {
+        height: 4px;
+        background: #00d4aa;
+      }
+      .project-header-body {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .project-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .project-client {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+      }
+      .project-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .project-status {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+
+      /* ── Section ── */
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .section-header h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .member-count {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        background: hsl(var(--muted));
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .btn-add {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        transition: all 0.15s;
+      }
+      .btn-add:hover {
+        opacity: 0.9;
+      }
+      .btn-add i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Add member panel ── */
+      .add-panel {
+        display: none;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--primary) / 0.3);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+      }
+      .add-panel.open {
+        display: block;
+      }
+      .add-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .add-panel-header h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .btn-close-panel {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-close-panel:hover {
+        color: hsl(var(--foreground));
+      }
+      .btn-close-panel i {
+        width: 16px;
+        height: 16px;
+      }
+      .search-input-wrap {
+        position: relative;
+        margin-bottom: 10px;
+      }
+      .search-input-wrap i {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        pointer-events: none;
+      }
+      .search-input {
+        width: 100%;
+        padding: 8px 12px 8px 32px;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        color: hsl(var(--foreground));
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .search-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .search-input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .search-results {
+        max-height: 200px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .search-result-item:hover {
+        background: hsl(var(--muted));
+      }
+      .search-result-item .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .search-result-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .search-result-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .search-result-email {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .btn-add-small {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--primary) / 0.4);
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      .btn-add-small:hover {
+        background: hsl(var(--primary) / 0.2);
+      }
+      .no-results {
+        text-align: center;
+        padding: 16px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Member list ── */
+      .member-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .member-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        transition: all 0.12s;
+      }
+      .member-item:hover {
+        border-color: hsl(var(--border));
+        background: hsl(var(--muted) / 0.5);
+      }
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .member-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .member-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .member-email {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .role-badge {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .role-badge.manager {
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .role-badge.user {
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+      }
+      .btn-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.12s;
+      }
+      .btn-remove:hover {
+        background: hsl(var(--destructive) / 0.1);
+        color: hsl(var(--destructive));
+      }
+      .btn-remove i {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ── Empty state ── */
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: hsl(var(--muted-foreground));
+      }
+      .empty-state i {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 12px;
+        opacity: 0.4;
+      }
+      .empty-state p {
+        font-size: calc(13px * var(--t-scale, 1.1));
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        margin-top: 48px;
+        padding: 20px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 10px;
+      }
+      .design-notes p,
+      .design-notes li {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        line-height: 1.6;
+      }
+      .design-notes ul {
+        padding-left: 18px;
+        margin-top: 6px;
+      }
+      .design-notes li {
+        margin-bottom: 4px;
+      }
+      .design-notes strong {
+        color: hsl(var(--foreground));
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(40px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.25s;
+        pointer-events: none;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 16px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast i {
+        width: 14px;
+        height: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Switcher row -->
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <div class="scale-nav">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Project header -->
+      <div class="project-header">
+        <div class="project-color-bar"></div>
+        <div class="project-header-body">
+          <div class="project-info">
+            <span class="project-client">Acme Corp</span>
+            <span class="project-name">Brand Refresh</span>
+          </div>
+          <span class="project-status">Active</span>
+        </div>
+      </div>
+
+      <!-- Team Members section -->
+      <div class="section-header">
+        <h2>
+          <i data-lucide="users" style="width: 16px; height: 16px"></i>
+          Team Members
+          <span class="member-count" id="memberCount">5</span>
+        </h2>
+        <button class="btn-add" id="btnAdd" onclick="toggleAddPanel()">
+          <i data-lucide="user-plus"></i> Add Members
+        </button>
+      </div>
+
+      <!-- Add member panel (inline search) -->
+      <div class="add-panel" id="addPanel">
+        <div class="add-panel-header">
+          <h3>Search team members to add</h3>
+          <button class="btn-close-panel" onclick="toggleAddPanel()">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="search-input-wrap">
+          <i data-lucide="search"></i>
+          <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            placeholder="Search by name or email..."
+            oninput="filterSearch()"
+          />
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <!-- Member list -->
+      <div class="member-list" id="memberList"></div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h3>Design Notes — V1: The Member List</h3>
+        <p>
+          <strong>Approach:</strong> A straightforward list-based member management panel within a
+          project settings page. An "Add Members" button reveals an inline search panel above the
+          list.
+        </p>
+        <ul>
+          <li>
+            <strong>Pro:</strong> Familiar list pattern — minimal learning curve. Users immediately
+            see who is assigned.
+          </li>
+          <li>
+            <strong>Pro:</strong> Search-to-add is inline, no modal interruption. Fast for adding
+            one or two people.
+          </li>
+          <li>
+            <strong>Pro:</strong> Role badges are visible at a glance. Member count in the header
+            gives quick context.
+          </li>
+          <li>
+            <strong>Con:</strong> Can get long for large teams — no grouping or filtering of
+            existing members.
+          </li>
+          <li>
+            <strong>Con:</strong> No bulk operations — each member must be removed individually.
+          </li>
+          <li>
+            <strong>Con:</strong> Role changes would need an additional interaction (not shown:
+            dropdown on badge click).
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"><i data-lucide="check"></i> <span id="toastMsg">Done</span></div>
+
+    <script>
+      // ── Data ──
+      const allUsers = [
+        { id: 1, name: 'Elena Marsh', email: 'elena.marsh@acme.co', initials: 'EM' },
+        { id: 2, name: 'James Oakley', email: 'james.oakley@acme.co', initials: 'JO' },
+        { id: 3, name: 'Alex Morgan', email: 'alex.morgan@acme.co', initials: 'AM' },
+        { id: 4, name: 'Sofia Chen', email: 'sofia.chen@acme.co', initials: 'SC' },
+        { id: 5, name: 'Marcus Rivera', email: 'marcus.rivera@acme.co', initials: 'MR' },
+        { id: 6, name: 'Lena Kowalski', email: 'lena.kowalski@acme.co', initials: 'LK' },
+        { id: 7, name: 'Tom Bradley', email: 'tom.bradley@acme.co', initials: 'TB' },
+        { id: 8, name: 'Nina Petrova', email: 'nina.petrova@acme.co', initials: 'NP' },
+      ];
+
+      let members = [
+        { userId: 1, role: 'manager' },
+        { userId: 2, role: 'user' },
+        { userId: 3, role: 'user' },
+        { userId: 4, role: 'manager' },
+        { userId: 5, role: 'user' },
+      ];
+
+      function getUserById(id) {
+        return allUsers.find((u) => u.id === id);
+      }
+
+      function getAssignedIds() {
+        return new Set(members.map((m) => m.userId));
+      }
+
+      function renderMembers() {
+        const list = document.getElementById('memberList');
+        const countEl = document.getElementById('memberCount');
+        countEl.textContent = members.length;
+
+        if (members.length === 0) {
+          list.innerHTML =
+            '<div class="empty-state"><i data-lucide="users"></i><p>No members assigned to this project yet.</p></div>';
+          lucide.createIcons({ nodes: [list] });
+          return;
+        }
+
+        list.innerHTML = members
+          .map((m) => {
+            const u = getUserById(m.userId);
+            return `
+            <div class="member-item">
+              <div class="avatar">${u.initials}</div>
+              <div class="member-info">
+                <div class="member-name">${u.name}</div>
+                <div class="member-email">${u.email}</div>
+              </div>
+              <span class="role-badge ${m.role}">${m.role}</span>
+              <button class="btn-remove" title="Remove member" onclick="removeMember(${u.id})">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          `;
+          })
+          .join('');
+
+        lucide.createIcons({ nodes: [list] });
+      }
+
+      function renderSearch() {
+        const input = document.getElementById('searchInput');
+        const query = input.value.toLowerCase().trim();
+        const container = document.getElementById('searchResults');
+        const assigned = getAssignedIds();
+
+        const available = allUsers.filter(
+          (u) =>
+            !assigned.has(u.id) &&
+            (query === '' ||
+              u.name.toLowerCase().includes(query) ||
+              u.email.toLowerCase().includes(query)),
+        );
+
+        if (available.length === 0) {
+          container.innerHTML =
+            '<div class="no-results">' +
+            (query ? 'No matching users found' : 'All team members are assigned') +
+            '</div>';
+          return;
+        }
+
+        container.innerHTML = available
+          .map(
+            (u) => `
+          <div class="search-result-item" onclick="addMember(${u.id})">
+            <div class="avatar" style="width:28px;height:28px;font-size:calc(10px * var(--t-scale,1.1));background:hsl(var(--muted));color:hsl(var(--muted-foreground))">${u.initials}</div>
+            <div class="search-result-info">
+              <div class="search-result-name">${u.name}</div>
+              <div class="search-result-email">${u.email}</div>
+            </div>
+            <button class="btn-add-small" onclick="event.stopPropagation();addMember(${u.id})">Add</button>
+          </div>
+        `,
+          )
+          .join('');
+      }
+
+      function filterSearch() {
+        renderSearch();
+      }
+
+      function toggleAddPanel() {
+        const panel = document.getElementById('addPanel');
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open');
+        if (!isOpen) {
+          document.getElementById('searchInput').value = '';
+          renderSearch();
+          setTimeout(() => document.getElementById('searchInput').focus(), 50);
+        }
+      }
+
+      function addMember(userId) {
+        if (getAssignedIds().has(userId)) return;
+        members.push({ userId, role: 'user' });
+        const u = getUserById(userId);
+        showToast(`${u.name} added`);
+        renderMembers();
+        renderSearch();
+      }
+
+      function removeMember(userId) {
+        const u = getUserById(userId);
+        members = members.filter((m) => m.userId !== userId);
+        showToast(`${u.name} removed`);
+        renderMembers();
+        renderSearch();
+      }
+
+      // ── Toast ──
+      let toastTimer;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        document.getElementById('toastMsg').textContent = msg;
+        el.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('visible'), 1800);
+      }
+
+      // ── Theme / Scale ──
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        document.querySelectorAll('.scale-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      // ── Init ──
+      renderMembers();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

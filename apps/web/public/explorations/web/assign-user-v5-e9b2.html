@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign User to Projects — V5 The Accordion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* === Main container === */
+      .main-container {
+        max-width: 780px;
+        margin: 0 auto;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      /* === Breadcrumb === */
+      .breadcrumb {
+        padding: 12px 24px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        border-bottom: 1px solid hsl(var(--border));
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .breadcrumb a {
+        color: hsl(var(--muted-foreground));
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .breadcrumb a:hover {
+        color: hsl(var(--primary));
+      }
+      .breadcrumb .sep {
+        opacity: 0.4;
+      }
+      .breadcrumb .current {
+        color: hsl(var(--foreground));
+      }
+
+      /* === User profile header === */
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 24px;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .profile-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .profile-details {
+        flex: 1;
+        min-width: 0;
+      }
+      .profile-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .profile-meta {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .profile-meta .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+
+      /* === Section header === */
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 24px;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .section-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        letter-spacing: 0.5px;
+      }
+      .section-header .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--input));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        max-width: 220px;
+      }
+      .section-header .search-box i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .section-header .search-box input {
+        border: none;
+        background: none;
+        outline: none;
+        color: inherit;
+        font-family: inherit;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        width: 100%;
+      }
+      .section-header .search-box input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* === Accordion === */
+      .accordion {
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .accordion:last-of-type {
+        border-bottom: none;
+      }
+      .accordion-trigger {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 24px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+        font-family: inherit;
+      }
+      .accordion-trigger:hover {
+        background: hsl(var(--muted) / 0.3);
+      }
+      .accordion-chevron {
+        color: hsl(var(--muted-foreground));
+        transition: transform 0.25s ease;
+        flex-shrink: 0;
+      }
+      .accordion.open .accordion-chevron {
+        transform: rotate(90deg);
+      }
+      .client-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 700;
+      }
+      .client-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .client-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .client-sub {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 1px;
+      }
+      .count-badge {
+        padding: 3px 10px;
+        border-radius: 10px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .count-badge.has-assigned {
+        background: hsl(var(--primary) / 0.15);
+        color: hsl(var(--primary));
+      }
+      .select-all-btn {
+        padding: 4px 10px;
+        border-radius: 5px;
+        border: 1px solid hsl(var(--border));
+        background: none;
+        color: hsl(var(--muted-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .select-all-btn:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--primary));
+      }
+
+      /* Accordion content */
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .accordion.open .accordion-content {
+        max-height: 600px;
+      }
+      .project-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 4px 24px 18px 24px;
+      }
+
+      /* === Project card === */
+      .project-card {
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        overflow: hidden;
+        background: hsl(var(--background));
+        transition: all 0.15s;
+      }
+      .project-card:hover {
+        border-color: hsl(var(--border));
+        box-shadow: 0 2px 8px hsl(var(--background) / 0.5);
+      }
+      .project-card.assigned {
+        border-color: hsl(var(--primary) / 0.3);
+        background: hsl(var(--primary) / 0.04);
+      }
+      .project-card.assigned:hover {
+        border-color: hsl(var(--primary) / 0.5);
+      }
+      .project-color-bar {
+        height: 4px;
+      }
+      .project-card-body {
+        padding: 12px 14px;
+      }
+      .project-card-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .project-card-name {
+        flex: 1;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        line-height: 1.3;
+      }
+      /* Card checkbox */
+      .card-check {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .card-check input {
+        width: 16px;
+        height: 16px;
+        accent-color: hsl(var(--primary));
+        cursor: pointer;
+      }
+
+      /* Role selector in card */
+      .card-role {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .card-role-label {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .role-pills {
+        display: flex;
+        gap: 4px;
+      }
+      .role-pill {
+        padding: 3px 10px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: none;
+        color: hsl(var(--muted-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .role-pill:disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+      }
+      .role-pill.active {
+        background: hsl(var(--primary) / 0.15);
+        border-color: hsl(var(--primary) / 0.3);
+        color: hsl(var(--primary));
+      }
+      .role-pill:not(:disabled):hover {
+        border-color: hsl(var(--primary) / 0.4);
+      }
+
+      /* === Summary bar === */
+      .summary-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 24px;
+        background: hsl(var(--muted) / 0.4);
+        border-top: 1px solid hsl(var(--border));
+      }
+      .summary-stat {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .summary-stat i {
+        width: 14px;
+        height: 14px;
+      }
+      .summary-stat strong {
+        color: hsl(var(--foreground));
+        font-weight: 600;
+      }
+      .summary-stat .primary-num {
+        color: hsl(var(--primary));
+        font-weight: 700;
+      }
+      .summary-spacer {
+        flex: 1;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 500;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--secondary));
+        color: hsl(var(--secondary-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn:hover {
+        background: hsl(var(--accent));
+        border-color: hsl(var(--accent-foreground) / 0.2);
+      }
+      .btn i {
+        width: 14px;
+        height: 14px;
+      }
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      /* === Design notes === */
+      .design-notes {
+        max-width: 780px;
+        margin: 24px auto 0;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 24px;
+        color: hsl(var(--foreground));
+        font-size: calc(13px * var(--t-scale, 1.1));
+        line-height: 1.7;
+      }
+      .design-notes h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        color: hsl(var(--primary));
+      }
+      .design-notes h3 {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        margin: 16px 0 6px;
+        color: hsl(var(--foreground));
+      }
+      .design-notes ul {
+        padding-left: 16px;
+      }
+      .design-notes li {
+        margin-bottom: 4px;
+      }
+      .design-notes code {
+        background: hsl(var(--muted));
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>V5 — The Accordion</h1>
+      <p>
+        Client-grouped accordion sections with project cards. Most organized for multi-client orgs.
+      </p>
+    </div>
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfortable</button>
+      </div>
+    </div>
+
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <div class="main-container">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+          <a href="#">Users</a>
+          <span class="sep">/</span>
+          <span class="current">James Oakley</span>
+        </div>
+
+        <!-- User profile header -->
+        <div class="user-profile">
+          <div class="profile-avatar">JO</div>
+          <div class="profile-details">
+            <div class="profile-name">James Oakley</div>
+            <div class="profile-meta">
+              <span>james.oakley@novtech.io</span>
+              <span class="role-badge"
+                ><i data-lucide="user" style="width: 10px; height: 10px"></i> User</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Section header with search -->
+        <div class="section-header">
+          <i
+            data-lucide="folder-kanban"
+            style="width: 16px; height: 16px; color: hsl(var(--muted-foreground))"
+          ></i>
+          <span class="section-title">Project Assignments</span>
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input
+              type="text"
+              placeholder="Filter projects..."
+              id="searchInput"
+              oninput="filterAll()"
+            />
+          </div>
+        </div>
+
+        <!-- Accordion sections (rendered by JS) -->
+        <div id="accordionContainer"></div>
+
+        <!-- Summary bar -->
+        <div class="summary-bar">
+          <div class="summary-stat">
+            <i data-lucide="folder-check"></i>
+            <span><strong class="primary-num" id="totalAssigned">3</strong> projects assigned</span>
+          </div>
+          <div class="summary-stat">
+            <i data-lucide="building-2"></i>
+            <span><strong id="clientsWithAssigned">2</strong> of <strong>4</strong> clients</span>
+          </div>
+          <div class="summary-stat">
+            <i data-lucide="shield"></i>
+            <span><strong id="managerCount">1</strong> as manager</span>
+          </div>
+          <div class="summary-spacer"></div>
+          <button class="btn-primary btn"><i data-lucide="save"></i> Save Changes</button>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h2>V5 — The Accordion</h2>
+        <p>
+          Projects organized by client in collapsible accordion sections. Each client section shows
+          assignment counts and contains project cards in a 2-column grid with color bars,
+          checkboxes, and role selectors.
+        </p>
+
+        <h3>Pros</h3>
+        <ul>
+          <li>
+            Natural grouping by client — matches how organizations think about project ownership
+          </li>
+          <li>Collapsible sections reduce visual noise — focus on one client at a time</li>
+          <li>Count badges on headers give instant overview without expanding anything</li>
+          <li>
+            "Select All" per client enables fast bulk assignment for entire client engagements
+          </li>
+          <li>
+            Project cards offer more visual richness (color bar, spacious layout) than table rows
+          </li>
+          <li>
+            Role pill selector is more visual than a dropdown — shows both options at a glance
+          </li>
+          <li>Summary bar at bottom provides running totals while making changes</li>
+        </ul>
+
+        <h3>Cons</h3>
+        <ul>
+          <li>More clicks needed — must expand each section to see/manage projects</li>
+          <li>Can't see all projects at once — harder to compare across clients</li>
+          <li>2-column card grid uses more vertical space than a table per project</li>
+          <li>
+            Sorting options are limited — projects within a section are just listed alphabetically
+          </li>
+          <li>If a client has only 1-2 projects, the accordion overhead feels wasteful</li>
+          <li>
+            Search/filter must work across collapsed sections (current UX shows matched sections)
+          </li>
+        </ul>
+
+        <h3>Best for</h3>
+        <ul>
+          <li>Organizations with clear client boundaries (agency model, consulting)</li>
+          <li>When projects per client is 2-6 — the card grid feels right-sized</li>
+          <li>Admins who think in terms of "which clients should this user work on"</li>
+          <li>
+            Onboarding workflows where a user is assigned to a whole client's portfolio at once
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const clients = [
+        {
+          name: 'Acme Corp',
+          color: '#7B8CFF',
+          icon: 'AC',
+          projects: [
+            { name: 'Brand Refresh', color: '#7B8CFF', assigned: true, role: 'manager' },
+            { name: 'Internal Tools', color: '#A86BFF', assigned: false, role: 'user' },
+          ],
+        },
+        {
+          name: 'BluePeak',
+          color: '#43C6FF',
+          icon: 'BP',
+          projects: [
+            { name: 'Cloud Migration', color: '#FF9F43', assigned: false, role: 'user' },
+            { name: 'Website Redesign', color: '#6BCB77', assigned: true, role: 'user' },
+          ],
+        },
+        {
+          name: 'NovaTech',
+          color: '#00D4AA',
+          icon: 'NT',
+          projects: [
+            { name: 'API Gateway', color: '#00D4AA', assigned: true, role: 'user' },
+            { name: 'Data Pipeline', color: '#FF6B81', assigned: false, role: 'user' },
+          ],
+        },
+        {
+          name: 'Stellar Labs',
+          color: '#FFD93D',
+          icon: 'SL',
+          projects: [
+            { name: 'Marketing Portal', color: '#43C6FF', assigned: false, role: 'user' },
+            { name: 'Mobile App v3', color: '#FFD93D', assigned: false, role: 'user' },
+          ],
+        },
+      ];
+
+      // Track which accordions are open
+      const openAccordions = new Set([0, 2]); // Acme Corp and NovaTech open by default
+
+      function getAssignedCount(client) {
+        return client.projects.filter((p) => p.assigned).length;
+      }
+
+      function renderAccordions(filter = '') {
+        const container = document.getElementById('accordionContainer');
+        const query = filter.toLowerCase();
+
+        container.innerHTML = clients
+          .map((client, ci) => {
+            const filteredProjects = query
+              ? client.projects.filter(
+                  (p) =>
+                    p.name.toLowerCase().includes(query) ||
+                    client.name.toLowerCase().includes(query),
+                )
+              : client.projects;
+
+            if (query && filteredProjects.length === 0) return '';
+
+            const assignedCount = getAssignedCount(client);
+            const totalCount = client.projects.length;
+            const isOpen = openAccordions.has(ci) || (query && filteredProjects.length > 0);
+            const allAssigned = filteredProjects.every((p) => p.assigned);
+
+            return `
+            <div class="accordion ${isOpen ? 'open' : ''}" data-ci="${ci}">
+              <button class="accordion-trigger" onclick="toggleAccordion(${ci})">
+                <i data-lucide="chevron-right" class="accordion-chevron" style="width:16px;height:16px"></i>
+                <div class="client-icon" style="background:${client.color}22;color:${client.color}">${client.icon}</div>
+                <div class="client-info">
+                  <div class="client-name">${client.name}</div>
+                  <div class="client-sub">${totalCount} project${totalCount !== 1 ? 's' : ''}</div>
+                </div>
+                <span class="count-badge ${assignedCount > 0 ? 'has-assigned' : ''}">${assignedCount} of ${totalCount} assigned</span>
+                <span class="select-all-btn" onclick="event.stopPropagation();toggleAllClient(${ci})">${allAssigned ? 'Deselect All' : 'Select All'}</span>
+              </button>
+              <div class="accordion-content">
+                <div class="project-grid">
+                  ${filteredProjects
+                    .map((p) => {
+                      const pi = client.projects.indexOf(p);
+                      return `
+                      <div class="project-card ${p.assigned ? 'assigned' : ''}">
+                        <div class="project-color-bar" style="background:${p.color}"></div>
+                        <div class="project-card-body">
+                          <div class="project-card-top">
+                            <span class="project-card-name">${p.name}</span>
+                            <div class="card-check">
+                              <input type="checkbox" ${p.assigned ? 'checked' : ''} onchange="toggleProject(${ci},${pi})" />
+                            </div>
+                          </div>
+                          <div class="card-role">
+                            <span class="card-role-label">Role</span>
+                            <div class="role-pills">
+                              <button class="role-pill ${p.role === 'user' ? 'active' : ''}" ${p.assigned ? '' : 'disabled'} onclick="setRole(${ci},${pi},'user')">User</button>
+                              <button class="role-pill ${p.role === 'manager' ? 'active' : ''}" ${p.assigned ? '' : 'disabled'} onclick="setRole(${ci},${pi},'manager')">Manager</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>`;
+                    })
+                    .join('')}
+                </div>
+              </div>
+            </div>`;
+          })
+          .join('');
+
+        updateSummary();
+        lucide.createIcons();
+      }
+
+      function toggleAccordion(ci) {
+        if (openAccordions.has(ci)) {
+          openAccordions.delete(ci);
+        } else {
+          openAccordions.add(ci);
+        }
+        renderAccordions(document.getElementById('searchInput').value);
+      }
+
+      function toggleProject(ci, pi) {
+        clients[ci].projects[pi].assigned = !clients[ci].projects[pi].assigned;
+        renderAccordions(document.getElementById('searchInput').value);
+      }
+
+      function setRole(ci, pi, role) {
+        if (!clients[ci].projects[pi].assigned) return;
+        clients[ci].projects[pi].role = role;
+        renderAccordions(document.getElementById('searchInput').value);
+      }
+
+      function toggleAllClient(ci) {
+        const allAssigned = clients[ci].projects.every((p) => p.assigned);
+        clients[ci].projects.forEach((p) => {
+          p.assigned = !allAssigned;
+        });
+        if (!openAccordions.has(ci)) openAccordions.add(ci);
+        renderAccordions(document.getElementById('searchInput').value);
+      }
+
+      function filterAll() {
+        renderAccordions(document.getElementById('searchInput').value);
+      }
+
+      function updateSummary() {
+        let totalAssigned = 0;
+        let managerCount = 0;
+        let clientsWithAssigned = 0;
+
+        clients.forEach((c) => {
+          let clientHasAssigned = false;
+          c.projects.forEach((p) => {
+            if (p.assigned) {
+              totalAssigned++;
+              clientHasAssigned = true;
+              if (p.role === 'manager') managerCount++;
+            }
+          });
+          if (clientHasAssigned) clientsWithAssigned++;
+        });
+
+        document.getElementById('totalAssigned').textContent = totalAssigned;
+        document.getElementById('clientsWithAssigned').textContent = clientsWithAssigned;
+        document.getElementById('managerCount').textContent = managerCount;
+      }
+
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        const group = event.target.parentElement;
+        group.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      // Initial render
+      renderAccordions();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

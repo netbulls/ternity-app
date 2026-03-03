@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign Project Members — V2 Avatar Grid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── Switcher row ── */
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        background: #080808;
+        border-bottom: 1px solid #1a1a1a;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav,
+      .scale-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App container ── */
+      #app {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+
+      /* ── Project header ── */
+      .project-header {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .project-color-bar {
+        height: 4px;
+        background: #00d4aa;
+      }
+      .project-header-body {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .project-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .project-client {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+      }
+      .project-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .project-status {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+
+      /* ── View toggle ── */
+      .view-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .view-bar h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .view-bar h2 i {
+        width: 16px;
+        height: 16px;
+      }
+      .view-toggle {
+        display: flex;
+        gap: 2px;
+        background: hsl(var(--muted));
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .view-toggle button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.12s;
+      }
+      .view-toggle button i {
+        width: 12px;
+        height: 12px;
+      }
+      .view-toggle button.active {
+        background: hsl(var(--card));
+        color: hsl(var(--foreground));
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      /* ── Avatar grid ── */
+      .avatar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 16px;
+        padding: 20px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        margin-bottom: 20px;
+      }
+      .avatar-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+      .avatar-cell:hover {
+        transform: translateY(-2px);
+      }
+      .avatar-ring {
+        width: calc(52px * var(--t-scale, 1.1));
+        height: calc(52px * var(--t-scale, 1.1));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2.5px solid transparent;
+        transition: all 0.2s;
+        position: relative;
+      }
+      .avatar-cell.assigned .avatar-ring {
+        border-color: hsl(var(--primary));
+      }
+      .avatar-cell.unassigned .avatar-ring {
+        border-color: hsl(var(--border));
+      }
+      .avatar-ring .avatar-circle {
+        width: calc(44px * var(--t-scale, 1.1));
+        height: calc(44px * var(--t-scale, 1.1));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 700;
+      }
+      .avatar-cell.assigned .avatar-circle {
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+      }
+      .avatar-cell.unassigned .avatar-circle {
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+      }
+      .avatar-cell.unassigned:hover .avatar-circle {
+        opacity: 0.75;
+      }
+      .role-dot {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid hsl(var(--card));
+      }
+      .role-dot.manager {
+        background: hsl(var(--primary));
+      }
+      .role-dot.user-role {
+        background: hsl(var(--muted-foreground));
+      }
+      .avatar-label {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--foreground));
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+      }
+      .avatar-cell.unassigned .avatar-label {
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Tooltip ── */
+      .tooltip {
+        position: fixed;
+        background: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.12s;
+        z-index: 100;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+      }
+      .tooltip.visible {
+        opacity: 1;
+      }
+      .tooltip-name {
+        font-weight: 600;
+      }
+      .tooltip-role {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* ── Detail list view ── */
+      .detail-list {
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .detail-list.active {
+        display: flex;
+      }
+      .avatar-grid-wrap {
+        display: block;
+      }
+      .avatar-grid-wrap.hidden {
+        display: none;
+      }
+
+      .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        transition: all 0.12s;
+      }
+      .detail-item:hover {
+        background: hsl(var(--muted) / 0.5);
+      }
+      .detail-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+      }
+      .detail-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .detail-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .detail-email {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .role-select {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        outline: none;
+      }
+      .role-select:focus {
+        border-color: hsl(var(--primary));
+      }
+      .btn-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.12s;
+      }
+      .btn-remove:hover {
+        background: hsl(var(--destructive) / 0.1);
+        color: hsl(var(--destructive));
+      }
+      .btn-remove i {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        margin-top: 48px;
+        padding: 20px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 10px;
+      }
+      .design-notes p,
+      .design-notes li {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        line-height: 1.6;
+      }
+      .design-notes ul {
+        padding-left: 18px;
+        margin-top: 6px;
+      }
+      .design-notes li {
+        margin-bottom: 4px;
+      }
+      .design-notes strong {
+        color: hsl(var(--foreground));
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(40px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.25s;
+        pointer-events: none;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 16px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast i {
+        width: 14px;
+        height: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Switcher row -->
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <div class="scale-nav">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Project header -->
+      <div class="project-header">
+        <div class="project-color-bar"></div>
+        <div class="project-header-body">
+          <div class="project-info">
+            <span class="project-client">Acme Corp</span>
+            <span class="project-name">Brand Refresh</span>
+          </div>
+          <span class="project-status">Active</span>
+        </div>
+      </div>
+
+      <!-- View bar -->
+      <div class="view-bar">
+        <h2><i data-lucide="users"></i> Team Members</h2>
+        <div class="view-toggle">
+          <button class="active" id="btnGrid" onclick="setView('grid')">
+            <i data-lucide="layout-grid"></i> Grid
+          </button>
+          <button id="btnList" onclick="setView('list')"><i data-lucide="list"></i> List</button>
+        </div>
+      </div>
+
+      <!-- Avatar grid view -->
+      <div class="avatar-grid-wrap" id="gridView">
+        <div class="avatar-grid" id="avatarGrid"></div>
+      </div>
+
+      <!-- Detail list view -->
+      <div class="detail-list" id="listView"></div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h3>Design Notes — V2: The Avatar Grid</h3>
+        <p>
+          <strong>Approach:</strong> Visual avatar grid where assigned members have teal ring
+          borders and unassigned are dimmed. Click to toggle assignment. A role indicator dot
+          distinguishes managers from users. Toggle between grid and detailed list view.
+        </p>
+        <ul>
+          <li>
+            <strong>Pro:</strong> Highly visual — great for teams where people recognize each other
+            by initials/photos. Fast scanning.
+          </li>
+          <li>
+            <strong>Pro:</strong> Toggle-to-assign is extremely fast for bulk changes. One click per
+            person.
+          </li>
+          <li>
+            <strong>Pro:</strong> Role dots provide subtle but clear hierarchy info. Teal ring =
+            assigned is immediately obvious.
+          </li>
+          <li>
+            <strong>Pro:</strong> Dual view (grid + list) gives flexibility — grid for quick
+            overview, list for detailed control.
+          </li>
+          <li>
+            <strong>Con:</strong> Less information density than a list — no email visible in grid
+            mode.
+          </li>
+          <li>
+            <strong>Con:</strong> Scales poorly beyond ~20 people — grid becomes overwhelming.
+          </li>
+          <li>
+            <strong>Con:</strong> Toggle-to-assign could cause accidental removals if clicked
+            carelessly.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+      <div class="tooltip-name" id="tooltipName"></div>
+      <div class="tooltip-role" id="tooltipRole"></div>
+    </div>
+    <div class="toast" id="toast"><i data-lucide="check"></i> <span id="toastMsg">Done</span></div>
+
+    <script>
+      // ── Data ──
+      const allUsers = [
+        { id: 1, name: 'Elena Marsh', email: 'elena.marsh@acme.co', initials: 'EM' },
+        { id: 2, name: 'James Oakley', email: 'james.oakley@acme.co', initials: 'JO' },
+        { id: 3, name: 'Alex Morgan', email: 'alex.morgan@acme.co', initials: 'AM' },
+        { id: 4, name: 'Sofia Chen', email: 'sofia.chen@acme.co', initials: 'SC' },
+        { id: 5, name: 'Marcus Rivera', email: 'marcus.rivera@acme.co', initials: 'MR' },
+        { id: 6, name: 'Lena Kowalski', email: 'lena.kowalski@acme.co', initials: 'LK' },
+        { id: 7, name: 'Tom Bradley', email: 'tom.bradley@acme.co', initials: 'TB' },
+        { id: 8, name: 'Nina Petrova', email: 'nina.petrova@acme.co', initials: 'NP' },
+      ];
+
+      let members = [
+        { userId: 1, role: 'manager' },
+        { userId: 2, role: 'user' },
+        { userId: 3, role: 'user' },
+        { userId: 4, role: 'manager' },
+        { userId: 5, role: 'user' },
+      ];
+
+      let currentView = 'grid';
+
+      function getUserById(id) {
+        return allUsers.find((u) => u.id === id);
+      }
+      function getMember(id) {
+        return members.find((m) => m.userId === id);
+      }
+      function isAssigned(id) {
+        return members.some((m) => m.userId === id);
+      }
+
+      // ── Grid view ──
+      function renderGrid() {
+        const grid = document.getElementById('avatarGrid');
+        grid.innerHTML = allUsers
+          .map((u) => {
+            const assigned = isAssigned(u.id);
+            const member = getMember(u.id);
+            const roleClass = member ? (member.role === 'manager' ? 'manager' : 'user-role') : '';
+            return `
+            <div class="avatar-cell ${assigned ? 'assigned' : 'unassigned'}"
+                 data-user-id="${u.id}"
+                 onclick="toggleAssignment(${u.id})"
+                 onmouseenter="showTooltip(event, ${u.id})"
+                 onmousemove="moveTooltip(event)"
+                 onmouseleave="hideTooltip()">
+              <div class="avatar-ring">
+                <div class="avatar-circle">${u.initials}</div>
+                ${assigned ? `<div class="role-dot ${roleClass}"></div>` : ''}
+              </div>
+              <span class="avatar-label">${u.name.split(' ')[0]}</span>
+            </div>
+          `;
+          })
+          .join('');
+      }
+
+      // ── List view ──
+      function renderList() {
+        const list = document.getElementById('listView');
+        const assigned = members
+          .map((m) => {
+            const u = getUserById(m.userId);
+            return `
+            <div class="detail-item">
+              <div class="detail-avatar">${u.initials}</div>
+              <div class="detail-info">
+                <div class="detail-name">${u.name}</div>
+                <div class="detail-email">${u.email}</div>
+              </div>
+              <select class="role-select" onchange="changeRole(${u.id}, this.value)">
+                <option value="user" ${m.role === 'user' ? 'selected' : ''}>User</option>
+                <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Manager</option>
+              </select>
+              <button class="btn-remove" title="Remove" onclick="toggleAssignment(${u.id})">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          `;
+          })
+          .join('');
+
+        list.innerHTML =
+          assigned ||
+          '<div style="text-align:center;padding:24px;color:hsl(var(--muted-foreground));font-size:calc(12px*var(--t-scale,1.1))">No members assigned</div>';
+        lucide.createIcons({ nodes: [list] });
+      }
+
+      function toggleAssignment(userId) {
+        const u = getUserById(userId);
+        if (isAssigned(userId)) {
+          members = members.filter((m) => m.userId !== userId);
+          showToast(`${u.name} removed`);
+        } else {
+          members.push({ userId, role: 'user' });
+          showToast(`${u.name} added`);
+        }
+        renderGrid();
+        renderList();
+      }
+
+      function changeRole(userId, role) {
+        const m = getMember(userId);
+        if (m) {
+          m.role = role;
+          renderGrid();
+          showToast(`Role updated`);
+        }
+      }
+
+      function setView(view) {
+        currentView = view;
+        document.getElementById('btnGrid').classList.toggle('active', view === 'grid');
+        document.getElementById('btnList').classList.toggle('active', view === 'list');
+        document.getElementById('gridView').classList.toggle('hidden', view !== 'grid');
+        document.getElementById('listView').classList.toggle('active', view === 'list');
+      }
+
+      // ── Tooltip ──
+      function showTooltip(e, userId) {
+        const u = getUserById(userId);
+        const m = getMember(userId);
+        const tip = document.getElementById('tooltip');
+        document.getElementById('tooltipName').textContent = u.name;
+        document.getElementById('tooltipRole').textContent = m ? m.role : 'not assigned';
+        tip.classList.add('visible');
+        moveTooltip(e);
+      }
+      function moveTooltip(e) {
+        const tip = document.getElementById('tooltip');
+        tip.style.left = e.clientX + 12 + 'px';
+        tip.style.top = e.clientY - 40 + 'px';
+      }
+      function hideTooltip() {
+        document.getElementById('tooltip').classList.remove('visible');
+      }
+
+      // ── Toast ──
+      let toastTimer;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        document.getElementById('toastMsg').textContent = msg;
+        el.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('visible'), 1800);
+      }
+
+      // ── Theme / Scale ──
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        document.querySelectorAll('.scale-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      // ── Init ──
+      renderGrid();
+      renderList();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, UserCheck, UserX, List, Eye } from 'lucide-react';
+import { MoreHorizontal, UserCheck, UserX, List, Eye, FolderKanban } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ export function getUserColumns(opts: {
   onActivate: (user: AdminUser) => void;
   onDeactivate: (user: AdminUser) => void;
   onImpersonate?: (user: AdminUser) => void;
+  onProjects?: (user: AdminUser) => void;
 }): ColumnDef<AdminUser>[] {
   return [
     // Select
@@ -199,6 +200,15 @@ export function getUserColumns(opts: {
                     >
                       <Eye className="mr-2 h-3.5 w-3.5" />
                       View as this user
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {opts.onProjects && (
+                  <>
+                    <DropdownMenuItem onClick={() => opts.onProjects!(user)}>
+                      <FolderKanban className="mr-2 h-3.5 w-3.5" />
+                      Projects
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

@@ -58,6 +58,114 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'web',
     groups: [
       {
+        name: 'project-assignment',
+        id: 'project-assignment-lab',
+        description:
+          'Project Assignment — admin UX for assigning users to projects. Users can only create entries for assigned projects. Two directions explored: User→Projects and Project→Users.',
+        date: '2026-03-03T21:00:00',
+        items: [],
+        children: [
+          {
+            name: 'user-to-project',
+            id: 'user-to-project-lab',
+            description:
+              'User → Projects direction: looking at a user profile and choosing which projects they belong to.',
+            date: '2026-03-03T21:00:00',
+            items: [
+              {
+                kind: 'exploration',
+                title: 'V1 — The Checklist',
+                file: 'web/assign-user-v1-a2f7.html',
+                description:
+                  'Dual-column layout. User profile card on the left, all projects as a checkbox list grouped by client on the right. Role toggle per row. Search to filter.',
+                date: '2026-03-03T21:00:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V2 — The Transfer List',
+                file: 'web/assign-user-v2-b4e1.html',
+                description:
+                  'Side-by-side "Available" and "Assigned" panels with arrow buttons to move items between them. Classic enterprise multi-select transfer pattern.',
+                date: '2026-03-03T21:10:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V3 — The Tag Cloud',
+                file: 'web/assign-user-v3-c6d3.html',
+                description:
+                  'Projects as pill/tag chips — teal-filled for assigned, ghost for unassigned. Click to toggle. Grouped by client. Compact and visual.',
+                date: '2026-03-03T21:20:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V4 — The Inline Table',
+                file: 'web/assign-user-v4-d8a5.html',
+                description:
+                  'Data table in user detail page. Columns: Project, Client, Role dropdown, Assigned toggle. Sortable, filterable, with bulk actions. Power-user density.',
+                date: '2026-03-03T21:30:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V5 — The Accordion',
+                file: 'web/assign-user-v5-e9b2.html',
+                description:
+                  'Collapsible client sections with project card grids inside. Count badges per client, "Select All" per section, summary bar at bottom.',
+                date: '2026-03-03T21:40:00',
+              },
+            ],
+          },
+          {
+            name: 'project-to-user',
+            id: 'project-to-user-lab',
+            description:
+              'Project → Users direction: looking at a project and choosing which team members belong to it.',
+            date: '2026-03-03T21:00:00',
+            items: [
+              {
+                kind: 'exploration',
+                title: 'V1 — The Member List',
+                file: 'web/assign-project-v1-f3c8.html',
+                description:
+                  'Current members as a list with inline search-to-add panel. Clean and straightforward. Member count in header, role badges, remove buttons.',
+                date: '2026-03-03T21:00:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V2 — The Avatar Grid',
+                file: 'web/assign-project-v2-g5d9.html',
+                description:
+                  'Avatar circles with teal ring = assigned, dimmed = available. Click to toggle. Role indicator dots. Grid/list view toggle.',
+                date: '2026-03-03T21:10:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V3 — The Split Panel',
+                file: 'web/assign-project-v3-h7e2.html',
+                description:
+                  'Project info left panel + member management right panel. Combobox search to add, inline role editing, project-centric workflow.',
+                date: '2026-03-03T21:20:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V4 — The Kanban Swim',
+                file: 'web/assign-project-v4-i9f4.html',
+                description:
+                  'Three swim lanes: Not Assigned, Members, Managers. Drag cards between lanes to assign and set role. Visual and gamified.',
+                date: '2026-03-03T21:30:00',
+              },
+              {
+                kind: 'exploration',
+                title: 'V5 — The Bulk Matrix',
+                file: 'web/assign-project-v5-j2a6.html',
+                description:
+                  'Spreadsheet-style matrix. All users as rows with inline toggles, role dropdowns, status badges, bulk selection, and summary row. Maximum density.',
+                date: '2026-03-03T21:40:00',
+              },
+            ],
+          },
+        ],
+      },
+      {
         name: 'my-day',
         id: 'my-day-lab',
         description:

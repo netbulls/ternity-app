@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Pencil, CheckCircle2, XCircle, Building2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, CheckCircle2, XCircle, Building2, Users } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ export function getProjectColumns(opts: {
   onEdit: (project: AdminProject) => void;
   onActivate: (project: AdminProject) => void;
   onDeactivate: (project: AdminProject) => void;
+  onMembers?: (project: AdminProject) => void;
   onClientClick?: (clientId: string, clientName: string) => void;
   showClient?: boolean;
 }): ColumnDef<AdminProject>[] {
@@ -57,10 +58,7 @@ export function getProjectColumns(opts: {
         const project = row.original;
         return (
           <div className="flex items-center gap-2.5">
-            <span
-              className="h-3 w-3 shrink-0 rounded"
-              style={{ backgroundColor: project.color }}
-            />
+            <span className="h-3 w-3 shrink-0 rounded" style={{ backgroundColor: project.color }} />
             <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
               {project.name}
             </span>
@@ -158,6 +156,12 @@ export function getProjectColumns(opts: {
                   <Pencil className="mr-2 h-3.5 w-3.5" />
                   Edit
                 </DropdownMenuItem>
+                {opts.onMembers && (
+                  <DropdownMenuItem onClick={() => opts.onMembers!(project)}>
+                    <Users className="mr-2 h-3.5 w-3.5" />
+                    Members
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 {project.isActive ? (
                   <DropdownMenuItem

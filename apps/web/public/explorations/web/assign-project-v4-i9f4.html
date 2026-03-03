@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign Project Members — V4 Kanban Swim</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: calc(14px * var(--t-scale, 1));
+      }
+
+      /* ── Page header ── */
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      /* ── Switcher row ── */
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App container ── */
+      #app {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        padding: calc(24px * var(--t-scale, 1));
+      }
+
+      /* ── Project header ── */
+      .project-header {
+        display: flex;
+        align-items: center;
+        gap: calc(16px * var(--t-scale, 1));
+        margin-bottom: calc(24px * var(--t-scale, 1));
+        padding-bottom: calc(20px * var(--t-scale, 1));
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .project-color {
+        width: calc(40px * var(--t-scale, 1));
+        height: calc(40px * var(--t-scale, 1));
+        border-radius: 10px;
+        background: #00d4aa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .project-color i {
+        width: 20px;
+        height: 20px;
+        color: hsl(var(--primary-foreground));
+      }
+      .project-meta {
+        flex: 1;
+      }
+      .project-client {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+      }
+      .project-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .project-badge {
+        font-size: calc(10px * var(--t-scale, 1));
+        padding: 3px 10px;
+        border-radius: 100px;
+        background: hsl(var(--t-label-1-bg));
+        color: hsl(var(--t-label-1-text));
+        font-weight: 500;
+      }
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(12px * var(--t-scale, 1));
+      }
+      .breadcrumb a {
+        color: hsl(var(--primary));
+        text-decoration: none;
+      }
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Quick Add search ── */
+      .quick-add {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+        margin-bottom: calc(20px * var(--t-scale, 1));
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        padding: calc(10px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+      }
+      .quick-add i {
+        width: 18px;
+        height: 18px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .quick-add input {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .quick-add input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .quick-add .count {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+
+      /* ── Swim lanes ── */
+      .swim-lanes {
+        display: flex;
+        flex-direction: column;
+        gap: calc(16px * var(--t-scale, 1));
+      }
+      .lane {
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: calc(16px * var(--t-scale, 1));
+        min-height: calc(120px * var(--t-scale, 1));
+        transition: border-color 0.2s;
+      }
+      .lane:hover {
+        border-color: hsl(var(--muted-foreground) / 0.3);
+      }
+      .lane.drop-target {
+        border: 2px dashed hsl(var(--primary) / 0.5);
+        background: hsl(var(--primary) / 0.03);
+      }
+      .lane-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: calc(12px * var(--t-scale, 1));
+      }
+      .lane-title {
+        display: flex;
+        align-items: center;
+        gap: calc(8px * var(--t-scale, 1));
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--foreground));
+      }
+      .lane-title i {
+        width: 16px;
+        height: 16px;
+      }
+      .lane-title .badge {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .lane--unassigned .lane-title {
+        color: hsl(var(--muted-foreground));
+      }
+      .lane--unassigned .badge {
+        background: hsl(var(--muted) / 0.8);
+        color: hsl(var(--muted-foreground));
+      }
+      .lane--members .lane-title {
+        color: hsl(var(--primary));
+      }
+      .lane--members .badge {
+        background: hsl(var(--t-label-1-bg));
+        color: hsl(var(--t-label-1-text));
+      }
+      .lane--managers .lane-title {
+        color: hsl(var(--chart-3));
+      }
+      .lane--managers .badge {
+        background: hsl(var(--chart-3) / 0.12);
+        color: hsl(var(--chart-3));
+      }
+
+      .lane-arrow {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: calc(10px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground) / 0.5);
+        font-style: italic;
+      }
+      .lane-arrow i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Cards grid ── */
+      .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: calc(10px * var(--t-scale, 1));
+      }
+      .user-card {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+        padding: calc(10px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+        cursor: grab;
+        transition: all 0.2s;
+        min-width: calc(220px * var(--t-scale, 1));
+        max-width: calc(300px * var(--t-scale, 1));
+        flex: 1;
+      }
+      .user-card:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        box-shadow: 0 2px 8px hsl(var(--primary) / 0.08);
+        transform: translateY(-1px);
+      }
+      .user-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+      }
+      .user-card.dragging {
+        opacity: 0.5;
+        border-style: dashed;
+      }
+
+      .card-avatar {
+        width: calc(36px * var(--t-scale, 1));
+        height: calc(36px * var(--t-scale, 1));
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(12px * var(--t-scale, 1));
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .card-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-name {
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card-email {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card-grip {
+        color: hsl(var(--muted-foreground) / 0.3);
+        flex-shrink: 0;
+      }
+      .card-grip i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Lane-specific card accents ── */
+      .lane--members .user-card {
+        border-left: 3px solid hsl(var(--primary));
+      }
+      .lane--managers .user-card {
+        border-left: 3px solid hsl(var(--chart-3));
+      }
+
+      /* ── Empty state ── */
+      .lane-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: calc(24px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground) / 0.4);
+        font-size: calc(13px * var(--t-scale, 1));
+        border: 2px dashed hsl(var(--border));
+        border-radius: 8px;
+        font-style: italic;
+      }
+      .lane-empty i {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ── Arrows between lanes ── */
+      .lane-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: calc(4px * var(--t-scale, 1)) 0;
+        color: hsl(var(--muted-foreground) / 0.25);
+      }
+      .lane-divider i {
+        width: 16px;
+        height: 16px;
+      }
+      .lane-divider span {
+        font-size: calc(10px * var(--t-scale, 1));
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        margin-top: calc(32px * var(--t-scale, 1));
+        padding: calc(20px * var(--t-scale, 1));
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: calc(12px * var(--t-scale, 1));
+      }
+      .design-notes ul {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: calc(6px * var(--t-scale, 1));
+      }
+      .design-notes li {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        padding-left: 16px;
+        position: relative;
+      }
+      .design-notes li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .design-notes .pro::before {
+        background: hsl(var(--primary));
+      }
+      .design-notes .con::before {
+        background: hsl(var(--destructive));
+      }
+      .notes-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Assign Project Members — V4</h1>
+      <p>The Kanban Swim — drag between lanes to assign &amp; set roles</p>
+    </div>
+
+    <!-- Switcher row -->
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <nav class="theme-nav">
+          <button class="active" data-theme="ternity-dark">Dark</button>
+          <button data-theme="ternity-light">Light</button>
+          <button data-theme="midnight">Midnight</button>
+          <button data-theme="warm-sand">Sand</button>
+          <button data-theme="carbon">Carbon</button>
+          <button data-theme="high-contrast">Hi-Con</button>
+        </nav>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfort</button>
+      </div>
+    </div>
+
+    <!-- App container -->
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="#">Projects</a>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <a href="#">Acme Corp</a>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <span>Brand Refresh</span>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <span style="color: hsl(var(--foreground))">Members</span>
+      </div>
+
+      <!-- Project header -->
+      <div class="project-header">
+        <div class="project-color">
+          <i data-lucide="palette"></i>
+        </div>
+        <div class="project-meta">
+          <div class="project-client">Acme Corp</div>
+          <div class="project-name">Brand Refresh</div>
+        </div>
+        <span class="project-badge">5 of 8 assigned</span>
+      </div>
+
+      <!-- Quick Add search -->
+      <div class="quick-add">
+        <i data-lucide="search"></i>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search users to filter across all lanes..."
+        />
+        <span class="count" id="searchCount">8 users</span>
+      </div>
+
+      <!-- Swim lanes -->
+      <div class="swim-lanes">
+        <!-- Lane: Not Assigned -->
+        <div class="lane lane--unassigned" data-lane="unassigned">
+          <div class="lane-header">
+            <div class="lane-title">
+              <i data-lucide="user-x"></i>
+              Not Assigned
+              <span class="badge" id="countUnassigned">3</span>
+            </div>
+            <div class="lane-arrow">
+              <span>Drag to assign</span>
+              <i data-lucide="arrow-down"></i>
+            </div>
+          </div>
+          <div class="cards" id="laneUnassigned">
+            <div class="user-card" data-user="nina" draggable="true">
+              <div class="card-avatar">NP</div>
+              <div class="card-info">
+                <div class="card-name">Nina Petrova</div>
+                <div class="card-email">nina@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+            <div class="user-card" data-user="tom" draggable="true">
+              <div class="card-avatar">TB</div>
+              <div class="card-info">
+                <div class="card-name">Tom Bradley</div>
+                <div class="card-email">tom@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+            <div class="user-card" data-user="lena" draggable="true">
+              <div class="card-avatar">LK</div>
+              <div class="card-info">
+                <div class="card-name">Lena Kowalski</div>
+                <div class="card-email">lena@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="lane-divider">
+          <i data-lucide="arrow-down-up"></i>
+          <span>Drag to move</span>
+          <i data-lucide="arrow-down-up"></i>
+        </div>
+
+        <!-- Lane: Members -->
+        <div class="lane lane--members" data-lane="members">
+          <div class="lane-header">
+            <div class="lane-title">
+              <i data-lucide="user"></i>
+              Members
+              <span class="badge" id="countMembers">3</span>
+            </div>
+            <div class="lane-arrow">
+              <span>Role: user</span>
+              <i data-lucide="shield"></i>
+            </div>
+          </div>
+          <div class="cards" id="laneMembers">
+            <div class="user-card" data-user="sofia" draggable="true">
+              <div class="card-avatar">SC</div>
+              <div class="card-info">
+                <div class="card-name">Sofia Chen</div>
+                <div class="card-email">sofia@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+            <div class="user-card" data-user="marcus" draggable="true">
+              <div class="card-avatar">MR</div>
+              <div class="card-info">
+                <div class="card-name">Marcus Rivera</div>
+                <div class="card-email">marcus@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+            <div class="user-card" data-user="alex" draggable="true">
+              <div class="card-avatar">AM</div>
+              <div class="card-info">
+                <div class="card-name">Alex Morgan</div>
+                <div class="card-email">alex@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="lane-divider">
+          <i data-lucide="arrow-down-up"></i>
+          <span>Drag to move</span>
+          <i data-lucide="arrow-down-up"></i>
+        </div>
+
+        <!-- Lane: Managers -->
+        <div class="lane lane--managers" data-lane="managers">
+          <div class="lane-header">
+            <div class="lane-title">
+              <i data-lucide="shield-check"></i>
+              Managers
+              <span class="badge" id="countManagers">2</span>
+            </div>
+            <div class="lane-arrow">
+              <span>Role: manager</span>
+              <i data-lucide="crown"></i>
+            </div>
+          </div>
+          <div class="cards" id="laneManagers">
+            <div class="user-card" data-user="elena" draggable="true">
+              <div class="card-avatar">EM</div>
+              <div class="card-info">
+                <div class="card-name">Elena Marsh</div>
+                <div class="card-email">elena@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+            <div class="user-card" data-user="james" draggable="true">
+              <div class="card-avatar">JO</div>
+              <div class="card-info">
+                <div class="card-name">James Oakley</div>
+                <div class="card-email">james@acme.com</div>
+              </div>
+              <div class="card-grip"><i data-lucide="grip-vertical"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h3>Design Notes — The Kanban Swim</h3>
+        <div class="notes-columns">
+          <div>
+            <h3 style="font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--primary))">
+              Pros
+            </h3>
+            <ul>
+              <li class="pro">Role distinction is immediately visible — lane = role</li>
+              <li class="pro">Gamified feel makes bulk assignment less tedious</li>
+              <li class="pro">No modal or dropdown friction — direct manipulation</li>
+              <li class="pro">Visual card density shows team size at a glance</li>
+              <li class="pro">Search across all lanes unifies the experience</li>
+              <li class="pro">Horizontal cards maximize info density per lane</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--destructive))">
+              Cons
+            </h3>
+            <ul>
+              <li class="con">Drag &amp; drop can be fiddly on mobile / touchscreens</li>
+              <li class="con">Scales poorly beyond ~30 users (lanes get very long)</li>
+              <li class="con">No bulk operations — one card at a time</li>
+              <li class="con">Horizontal scrolling may be needed for many cards</li>
+              <li class="con">Users unfamiliar with kanban may not intuit the drag mechanic</li>
+              <li class="con">Accessibility concerns with drag-based interfaces</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Theme & scale switching ──
+      const app = document.getElementById('app');
+      document.querySelectorAll('.theme-nav button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document
+            .querySelectorAll('.theme-nav button')
+            .forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          app.setAttribute('data-theme', btn.dataset.theme);
+        });
+      });
+      document.querySelectorAll('[data-scale]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-scale]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          const scales = { compact: '0.9', default: '1', comfortable: '1.1' };
+          app.style.setProperty('--t-scale', scales[btn.dataset.scale]);
+          app.setAttribute('data-scale', btn.dataset.scale);
+        });
+      });
+
+      // ── Search filter ──
+      const searchInput = document.getElementById('searchInput');
+      const searchCount = document.getElementById('searchCount');
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.user-card');
+        let visible = 0;
+        cards.forEach((card) => {
+          const name = card.querySelector('.card-name').textContent.toLowerCase();
+          const email = card.querySelector('.card-email').textContent.toLowerCase();
+          const match = !q || name.includes(q) || email.includes(q);
+          card.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+        searchCount.textContent = visible + ' user' + (visible !== 1 ? 's' : '');
+        updateCounts();
+      });
+
+      // ── Drag & Drop ──
+      let draggedCard = null;
+
+      document.querySelectorAll('.user-card').forEach((card) => {
+        card.addEventListener('dragstart', (e) => {
+          draggedCard = card;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', () => {
+          if (draggedCard) draggedCard.classList.remove('dragging');
+          draggedCard = null;
+          document.querySelectorAll('.lane').forEach((l) => l.classList.remove('drop-target'));
+        });
+      });
+
+      document.querySelectorAll('.lane').forEach((lane) => {
+        lane.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          lane.classList.add('drop-target');
+        });
+        lane.addEventListener('dragleave', () => {
+          lane.classList.remove('drop-target');
+        });
+        lane.addEventListener('drop', (e) => {
+          e.preventDefault();
+          lane.classList.remove('drop-target');
+          if (draggedCard) {
+            const cardsContainer = lane.querySelector('.cards');
+            // Remove empty state if present
+            const empty = cardsContainer.querySelector('.lane-empty');
+            if (empty) empty.remove();
+            cardsContainer.appendChild(draggedCard);
+            draggedCard.classList.remove('dragging');
+            draggedCard = null;
+            updateCounts();
+            checkEmpty();
+          }
+        });
+      });
+
+      function updateCounts() {
+        const lanes = [
+          { id: 'laneUnassigned', counter: 'countUnassigned' },
+          { id: 'laneMembers', counter: 'countMembers' },
+          { id: 'laneManagers', counter: 'countManagers' },
+        ];
+        let total = 0,
+          assigned = 0;
+        lanes.forEach(({ id, counter }) => {
+          const visible = document
+            .getElementById(id)
+            .querySelectorAll('.user-card:not([style*="display: none"])').length;
+          document.getElementById(counter).textContent = visible;
+          total += visible;
+          if (id !== 'laneUnassigned') assigned += visible;
+        });
+        // Update project badge
+        const badge = document.querySelector('.project-badge');
+        if (badge) badge.textContent = assigned + ' of ' + total + ' assigned';
+      }
+
+      function checkEmpty() {
+        document.querySelectorAll('.lane').forEach((lane) => {
+          const cards = lane.querySelector('.cards');
+          const hasCards = cards.querySelectorAll('.user-card').length > 0;
+          const hasEmpty = cards.querySelector('.lane-empty');
+          if (!hasCards && !hasEmpty) {
+            const div = document.createElement('div');
+            div.className = 'lane-empty';
+            div.innerHTML = '<i data-lucide="inbox"></i> Drop users here';
+            cards.appendChild(div);
+            lucide.createIcons({ nodes: [div] });
+          }
+          if (hasCards && hasEmpty) hasEmpty.remove();
+        });
+      }
+
+      // Init
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

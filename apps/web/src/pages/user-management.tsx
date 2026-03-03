@@ -7,8 +7,9 @@ import {
   getPaginationRowModel,
   type SortingState,
   type RowSelectionState,
+  type Table as TanStackTable,
 } from '@tanstack/react-table';
-import { Search, X, UserCheck, UserX } from 'lucide-react';
+import { Search, X, UserCheck, UserX, ArrowLeft, FolderKanban, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { StatCard } from '@/components/ui/stat-card';
@@ -20,8 +21,15 @@ import {
   useBulkDeactivate,
   type AdminUser,
 } from '@/hooks/use-admin-users';
+import {
+  useUserProjects,
+  useAssignUserProject,
+  useRemoveUserProject,
+  useUpdateUserProjectRole,
+} from '@/hooks/use-admin-project-members';
 import { useImpersonation } from '@/providers/impersonation-provider';
 import { getUserColumns } from '@/pages/user-management-columns';
+import { getUserProjectColumns } from '@/pages/user-project-columns';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableBulkActions } from '@/components/ui/data-table-bulk-actions';
 import { Button } from '@/components/ui/button';
@@ -34,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { UserProjectRow } from '@ternity/shared';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -71,12 +80,42 @@ export function UserManagementPage() {
     setRowSelection({});
   }, [statusFilter, debouncedSearch]);
 
+  // ── Project drill-down state (V4 Inline Table) ──────────────────────
+  const [drilldownUser, setDrilldownUser] = useState<AdminUser | null>(null);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [debouncedProjectSearch, setDebouncedProjectSearch] = useState('');
+  const [projectFilter, setProjectFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  const [projectSorting, setProjectSorting] = useState<SortingState>([
+    { id: 'projectName', desc: false },
+  ]);
+  const [projectSelection, setProjectSelection] = useState<RowSelectionState>({});
+
+  const projectSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleProjectSearchChange = useCallback((value: string) => {
+    setProjectSearch(value);
+    if (projectSearchDebounceRef.current) clearTimeout(projectSearchDebounceRef.current);
+    projectSearchDebounceRef.current = setTimeout(() => setDebouncedProjectSearch(value), 300);
+  }, []);
+
+  // Reset project selection when filter changes
+  useEffect(() => {
+    setProjectSelection({});
+  }, [projectFilter, debouncedProjectSearch]);
+
   // Fetch ALL users once — stats computed from full list, filtered client-side
   const { data: allUsers, isLoading } = useAdminUsers('all', '');
   const activateUser = useActivateUser();
   const deactivateUser = useDeactivateUser();
   const bulkActivate = useBulkActivate();
   const bulkDeactivate = useBulkDeactivate();
+
+  // ── Project drill-down data & mutations ─────────────────────────────
+  const { data: allUserProjects, isLoading: projectsLoading } = useUserProjects(
+    drilldownUser?.id ?? null,
+  );
+  const assignUserProject = useAssignUserProject();
+  const removeUserProject = useRemoveUserProject();
+  const updateUserProjectRole = useUpdateUserProjectRole();
 
   // Stats always reflect the full dataset
   const stats = useMemo(() => {
@@ -102,6 +141,115 @@ export function UserManagementPage() {
     }
     return filtered;
   }, [allUsers, statusFilter, debouncedSearch]);
+
+  // ── Project drill-down stats & filtering ─────────────────────────────
+  const projectStats = useMemo(() => {
+    if (!allUserProjects) return { total: 0, assigned: 0, unassigned: 0 };
+    const active = allUserProjects.filter((p) => p.isActive);
+    const assigned = active.filter((p) => p.assigned).length;
+    return { total: active.length, assigned, unassigned: active.length - assigned };
+  }, [allUserProjects]);
+
+  const filteredProjects = useMemo(() => {
+    if (!allUserProjects) return [];
+    let items = allUserProjects.filter((p) => p.isActive); // Only show active projects
+    if (projectFilter === 'assigned') items = items.filter((p) => p.assigned);
+    if (projectFilter === 'unassigned') items = items.filter((p) => !p.assigned);
+    if (debouncedProjectSearch.trim()) {
+      const q = debouncedProjectSearch.toLowerCase();
+      items = items.filter(
+        (p) =>
+          p.projectName.toLowerCase().includes(q) ||
+          (p.clientName && p.clientName.toLowerCase().includes(q)),
+      );
+    }
+    return items;
+  }, [allUserProjects, projectFilter, debouncedProjectSearch]);
+
+  // ── Project drill-down handlers ─────────────────────────────────────
+  const handleToggleProjectAssign = useCallback(
+    (project: UserProjectRow) => {
+      if (!drilldownUser) return;
+      if (project.assigned) {
+        removeUserProject.mutate({ userId: drilldownUser.id, projectId: project.projectId });
+      } else {
+        assignUserProject.mutate({ userId: drilldownUser.id, projectId: project.projectId });
+      }
+    },
+    [drilldownUser, assignUserProject, removeUserProject],
+  );
+
+  const handleProjectRoleChange = useCallback(
+    (project: UserProjectRow, role: string) => {
+      if (!drilldownUser || !project.assigned) return;
+      updateUserProjectRole.mutate({
+        userId: drilldownUser.id,
+        projectId: project.projectId,
+        role,
+      });
+    },
+    [drilldownUser, updateUserProjectRole],
+  );
+
+  const handleUserProjects = useCallback((user: AdminUser) => {
+    setDrilldownUser(user);
+    setProjectSearch('');
+    setDebouncedProjectSearch('');
+    setProjectFilter('all');
+    setProjectSelection({});
+  }, []);
+
+  const handleBackFromProjects = useCallback(() => {
+    setDrilldownUser(null);
+    setProjectSearch('');
+    setDebouncedProjectSearch('');
+    setProjectFilter('all');
+    setProjectSelection({});
+  }, []);
+
+  // ── Project drill-down columns & table ──────────────────────────────
+  const projectColumns = useMemo(
+    () =>
+      getUserProjectColumns({
+        onToggleAssign: handleToggleProjectAssign,
+        onRoleChange: handleProjectRoleChange,
+      }),
+    [handleToggleProjectAssign, handleProjectRoleChange],
+  );
+
+  const projectTable = useReactTable({
+    data: filteredProjects,
+    columns: projectColumns,
+    state: { sorting: projectSorting, rowSelection: projectSelection },
+    onSortingChange: setProjectSorting,
+    onRowSelectionChange: setProjectSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getRowId: (row) => row.projectId,
+    autoResetPageIndex: true,
+    initialState: { pagination: { pageSize: PAGE_SIZE } },
+  });
+
+  const selectedProjectIds = Object.keys(projectSelection).filter((k) => projectSelection[k]);
+  const clearProjectSelection = useCallback(() => setProjectSelection({}), []);
+
+  const handleBulkAssignProjects = useCallback(() => {
+    if (!drilldownUser) return;
+    // Assign each project individually (no bulk endpoint for user→projects direction)
+    const promises = selectedProjectIds.map((projectId) =>
+      assignUserProject.mutateAsync({ userId: drilldownUser.id, projectId }),
+    );
+    Promise.all(promises).then(() => clearProjectSelection());
+  }, [drilldownUser, selectedProjectIds, assignUserProject, clearProjectSelection]);
+
+  const handleBulkRemoveProjects = useCallback(() => {
+    if (!drilldownUser) return;
+    const promises = selectedProjectIds.map((projectId) =>
+      removeUserProject.mutateAsync({ userId: drilldownUser.id, projectId }),
+    );
+    Promise.all(promises).then(() => clearProjectSelection());
+  }, [drilldownUser, selectedProjectIds, removeUserProject, clearProjectSelection]);
 
   // Single row actions
   const handleSingleActivate = useCallback(
@@ -132,8 +280,15 @@ export function UserManagementPage() {
         onActivate: handleSingleActivate,
         onDeactivate: handleSingleDeactivate,
         onImpersonate: canImpersonate ? handleImpersonate : undefined,
+        onProjects: handleUserProjects,
       }),
-    [handleSingleActivate, handleSingleDeactivate, canImpersonate, handleImpersonate],
+    [
+      handleSingleActivate,
+      handleSingleDeactivate,
+      canImpersonate,
+      handleImpersonate,
+      handleUserProjects,
+    ],
   );
 
   // TanStack Table instance — owned by the page for selection access
@@ -186,6 +341,148 @@ export function UserManagementPage() {
       }
     }
   }, [confirmDialog, deactivateUser, bulkDeactivate, clearSelection]);
+
+  // ── If drilling into a user's projects, show that view ───────────────
+  if (drilldownUser) {
+    return (
+      <div>
+        {/* Header */}
+        <div className="mb-5">
+          <button
+            onClick={handleBackFromProjects}
+            className="mb-1 flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+            style={{ fontSize: scaled(12) }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            All Users
+          </button>
+          <div className="flex items-center gap-2.5">
+            {drilldownUser.avatarUrl ? (
+              <img
+                src={drilldownUser.avatarUrl}
+                alt={drilldownUser.displayName}
+                className="h-6 w-6 shrink-0 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
+                style={{ fontSize: '9px' }}
+              >
+                {drilldownUser.displayName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2)}
+              </div>
+            )}
+            <h1
+              className="font-brand font-semibold tracking-wide text-foreground"
+              style={{ fontSize: scaled(18) }}
+            >
+              {drilldownUser.displayName}
+            </h1>
+            <FolderKanban className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Manage project assignments for this user
+          </p>
+        </div>
+
+        {/* Toolbar */}
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex max-w-[280px] flex-1 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-[7px]">
+            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              placeholder="Search by project or client..."
+              value={projectSearch}
+              onChange={(e) => handleProjectSearchChange(e.target.value)}
+              className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+            />
+            {projectSearch && (
+              <button
+                onClick={() => handleProjectSearchChange('')}
+                className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {(['assigned', 'unassigned', 'all'] as const).map((tab) => {
+              const label = tab === 'all' ? 'All' : tab === 'assigned' ? 'Assigned' : 'Unassigned';
+              const count =
+                tab === 'all'
+                  ? projectStats.total
+                  : tab === 'assigned'
+                    ? projectStats.assigned
+                    : projectStats.unassigned;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setProjectFilter(tab)}
+                  className={cn(
+                    'font-brand min-w-[5.5rem] border-r border-border px-3 py-1.5 text-center text-muted-foreground transition-colors last:border-r-0',
+                    projectFilter === tab
+                      ? 'bg-primary/[0.08] font-semibold text-foreground'
+                      : 'hover:bg-muted/30',
+                  )}
+                  style={{
+                    fontSize: scaled(11),
+                    fontWeight: projectFilter === tab ? 600 : 500,
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {label}
+                  <span
+                    className="ml-1 inline-block min-w-[1.25rem] rounded-full bg-muted/50 px-1.5 py-px font-brand text-muted-foreground"
+                    style={{ fontSize: scaled(10) }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <DataTable
+          columns={projectColumns}
+          data={filteredProjects}
+          table={projectTable}
+          isLoading={projectsLoading}
+          emptyMessage="No projects found"
+          entityName="project"
+          paginationSuffix={projectFilter !== 'all' ? `(${projectFilter})` : undefined}
+          rowClassName={(project) => cn(projectSelection[project.projectId] && 'bg-primary/5')}
+        />
+
+        {/* Bulk Action Bar */}
+        <DataTableBulkActions table={projectTable as TanStackTable<unknown>} entityName="project">
+          <button
+            onClick={handleBulkAssignProjects}
+            className="inline-flex items-center gap-1.5 rounded-md bg-[hsl(152_60%_50%/0.12)] px-2.5 py-1.5 font-medium text-[hsl(152,60%,50%)] transition-colors hover:bg-[hsl(152_60%_50%/0.2)]"
+            style={{ fontSize: scaled(12) }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Assign
+          </button>
+          <button
+            onClick={handleBulkRemoveProjects}
+            className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 font-medium text-destructive transition-colors hover:bg-destructive/20"
+            style={{ fontSize: scaled(12) }}
+          >
+            <Minus className="h-3.5 w-3.5" />
+            Remove
+          </button>
+        </DataTableBulkActions>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign Project Members — V3 Split Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── Switcher row ── */
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        background: #080808;
+        border-bottom: 1px solid #1a1a1a;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav,
+      .scale-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App container ── */
+      #app {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+
+      /* ── Split layout ── */
+      .split-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+
+      /* ── Left panel: Project info ── */
+      .project-panel {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+        position: sticky;
+        top: 24px;
+      }
+      .project-color-bar {
+        height: 4px;
+        background: #00d4aa;
+      }
+      .project-panel-body {
+        padding: 20px;
+      }
+      .project-label {
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 4px;
+      }
+      .project-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+      .project-client {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 16px;
+      }
+      .project-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 16px;
+        border-top: 1px solid hsl(var(--border));
+      }
+      .meta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .meta-label {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .meta-label i {
+        width: 13px;
+        height: 13px;
+        opacity: 0.6;
+      }
+      .meta-value {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .project-color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        background: #00d4aa;
+        display: inline-block;
+      }
+      .project-desc {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid hsl(var(--border));
+      }
+      .project-desc-label {
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 6px;
+      }
+      .project-desc p {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        line-height: 1.6;
+      }
+      .status-badge {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+
+      /* ── Right panel: Members ── */
+      .members-panel {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .members-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid hsl(var(--border));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .members-header h2 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .members-header h2 i {
+        width: 16px;
+        height: 16px;
+      }
+      .member-count-badge {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+
+      /* ── Member list ── */
+      .member-list {
+        padding: 8px;
+      }
+      .member-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        transition: background 0.1s;
+        position: relative;
+      }
+      .member-item:hover {
+        background: hsl(var(--muted) / 0.4);
+      }
+      .member-item + .member-item {
+        border-top: 1px solid hsl(var(--border) / 0.4);
+      }
+      .member-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .member-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .member-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .member-email {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .role-select {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        padding: 3px 6px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        outline: none;
+      }
+      .role-select:focus {
+        border-color: hsl(var(--primary));
+      }
+      .btn-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.12s;
+        opacity: 0;
+      }
+      .member-item:hover .btn-remove {
+        opacity: 1;
+      }
+      .btn-remove:hover {
+        background: hsl(var(--destructive) / 0.1);
+        color: hsl(var(--destructive));
+      }
+      .btn-remove i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* Drag hint */
+      .drag-hint {
+        opacity: 0;
+        cursor: grab;
+        color: hsl(var(--muted-foreground) / 0.4);
+        display: flex;
+        align-items: center;
+        transition: opacity 0.12s;
+      }
+      .member-item:hover .drag-hint {
+        opacity: 1;
+      }
+      .drag-hint i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── Add member area ── */
+      .add-member-area {
+        padding: 16px 20px;
+        border-top: 1px solid hsl(var(--border));
+      }
+      .add-member-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .add-member-label i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--primary));
+      }
+      .combobox-wrap {
+        position: relative;
+      }
+      .combobox-input {
+        width: 100%;
+        padding: 9px 12px 9px 34px;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        color: hsl(var(--foreground));
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .combobox-input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+      .combobox-input:focus {
+        border-color: hsl(var(--primary));
+      }
+      .combobox-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        pointer-events: none;
+      }
+      .combobox-dropdown {
+        display: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        background: hsl(var(--popover));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 50;
+        padding: 4px;
+      }
+      .combobox-dropdown.open {
+        display: block;
+      }
+      .combo-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .combo-item:hover {
+        background: hsl(var(--muted));
+      }
+      .combo-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .combo-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .combo-name {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--popover-foreground));
+      }
+      .combo-email {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .combo-add-hint {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--primary));
+        font-weight: 600;
+      }
+      .combo-empty {
+        text-align: center;
+        padding: 16px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Empty state ── */
+      .empty-members {
+        text-align: center;
+        padding: 32px 20px;
+        color: hsl(var(--muted-foreground));
+      }
+      .empty-members i {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 8px;
+        opacity: 0.4;
+      }
+      .empty-members p {
+        font-size: calc(12px * var(--t-scale, 1.1));
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        margin-top: 48px;
+        padding: 20px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 10px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 10px;
+      }
+      .design-notes p,
+      .design-notes li {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        line-height: 1.6;
+      }
+      .design-notes ul {
+        padding-left: 18px;
+        margin-top: 6px;
+      }
+      .design-notes li {
+        margin-bottom: 4px;
+      }
+      .design-notes strong {
+        color: hsl(var(--foreground));
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(40px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.25s;
+        pointer-events: none;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 16px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast i {
+        width: 14px;
+        height: 14px;
+      }
+
+      @media (max-width: 720px) {
+        .split-layout {
+          grid-template-columns: 1fr;
+        }
+        .project-panel {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Switcher row -->
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <div class="theme-nav">
+          <button class="active" onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <div class="scale-nav">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <div class="split-layout">
+        <!-- Left: Project info panel -->
+        <div class="project-panel">
+          <div class="project-color-bar"></div>
+          <div class="project-panel-body">
+            <div class="project-label">Project</div>
+            <div class="project-name">Brand Refresh</div>
+            <div class="project-client">Acme Corp</div>
+
+            <div class="project-meta">
+              <div class="meta-row">
+                <span class="meta-label"><i data-lucide="palette"></i> Color</span>
+                <span class="meta-value"><span class="project-color-dot"></span></span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label"><i data-lucide="activity"></i> Status</span>
+                <span class="status-badge">Active</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label"><i data-lucide="users"></i> Members</span>
+                <span class="meta-value" id="metaMemberCount">5</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label"><i data-lucide="clock"></i> Entries</span>
+                <span class="meta-value">127</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label"><i data-lucide="calendar"></i> Created</span>
+                <span class="meta-value">Jan 15, 2026</span>
+              </div>
+            </div>
+
+            <div class="project-desc">
+              <div class="project-desc-label">Description</div>
+              <p>
+                Complete visual identity overhaul for Acme Corp, including logo redesign, color
+                palette, typography system, and brand guidelines documentation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Members management -->
+        <div class="members-panel">
+          <div class="members-header">
+            <h2>
+              <i data-lucide="users"></i> Team Members
+              <span class="member-count-badge" id="memberCount">5</span>
+            </h2>
+          </div>
+
+          <!-- Member list -->
+          <div class="member-list" id="memberList"></div>
+
+          <!-- Add member combobox -->
+          <div class="add-member-area">
+            <div class="add-member-label"><i data-lucide="user-plus"></i> Add Member</div>
+            <div class="combobox-wrap">
+              <i data-lucide="search" class="combobox-icon"></i>
+              <input
+                type="text"
+                class="combobox-input"
+                id="comboInput"
+                placeholder="Search by name or email..."
+                oninput="filterCombo()"
+                onfocus="openCombo()"
+              />
+              <div class="combobox-dropdown" id="comboDropdown"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h3>Design Notes — V3: The Split Panel</h3>
+        <p>
+          <strong>Approach:</strong> A split-panel layout with project info on the left and member
+          management on the right. Project context (stats, description, color) is always visible
+          while managing members. A combobox search at the bottom lets you quickly find and add
+          users.
+        </p>
+        <ul>
+          <li>
+            <strong>Pro:</strong> Project context always visible — admin sees member count, entry
+            count, and project metadata while making changes.
+          </li>
+          <li>
+            <strong>Pro:</strong> Combobox pattern is familiar from tools like Linear, Notion — fast
+            keyboard-driven workflow.
+          </li>
+          <li>
+            <strong>Pro:</strong> Inline role editing via dropdown — no modal needed. Remove buttons
+            appear on hover to reduce clutter.
+          </li>
+          <li>
+            <strong>Pro:</strong> Drag-to-reorder hint signals future ordering capability without
+            needing full implementation.
+          </li>
+          <li>
+            <strong>Con:</strong> Split layout uses more horizontal space — less ideal on narrow
+            screens (collapses to stacked on mobile).
+          </li>
+          <li>
+            <strong>Con:</strong> Left panel is static info — could feel like wasted space once
+            you've seen it.
+          </li>
+          <li><strong>Con:</strong> No bulk add/remove — still one-at-a-time operations.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"><i data-lucide="check"></i> <span id="toastMsg">Done</span></div>
+
+    <script>
+      // ── Data ──
+      const allUsers = [
+        { id: 1, name: 'Elena Marsh', email: 'elena.marsh@acme.co', initials: 'EM' },
+        { id: 2, name: 'James Oakley', email: 'james.oakley@acme.co', initials: 'JO' },
+        { id: 3, name: 'Alex Morgan', email: 'alex.morgan@acme.co', initials: 'AM' },
+        { id: 4, name: 'Sofia Chen', email: 'sofia.chen@acme.co', initials: 'SC' },
+        { id: 5, name: 'Marcus Rivera', email: 'marcus.rivera@acme.co', initials: 'MR' },
+        { id: 6, name: 'Lena Kowalski', email: 'lena.kowalski@acme.co', initials: 'LK' },
+        { id: 7, name: 'Tom Bradley', email: 'tom.bradley@acme.co', initials: 'TB' },
+        { id: 8, name: 'Nina Petrova', email: 'nina.petrova@acme.co', initials: 'NP' },
+      ];
+
+      let members = [
+        { userId: 1, role: 'manager' },
+        { userId: 2, role: 'user' },
+        { userId: 3, role: 'user' },
+        { userId: 4, role: 'manager' },
+        { userId: 5, role: 'user' },
+      ];
+
+      function getUserById(id) {
+        return allUsers.find((u) => u.id === id);
+      }
+      function getAssignedIds() {
+        return new Set(members.map((m) => m.userId));
+      }
+
+      // ── Render members ──
+      function renderMembers() {
+        const list = document.getElementById('memberList');
+        const countEl = document.getElementById('memberCount');
+        const metaCountEl = document.getElementById('metaMemberCount');
+        countEl.textContent = members.length;
+        metaCountEl.textContent = members.length;
+
+        if (members.length === 0) {
+          list.innerHTML =
+            '<div class="empty-members"><i data-lucide="users"></i><p>No members assigned yet. Use the search below to add team members.</p></div>';
+          lucide.createIcons({ nodes: [list] });
+          return;
+        }
+
+        list.innerHTML = members
+          .map((m) => {
+            const u = getUserById(m.userId);
+            return `
+            <div class="member-item">
+              <div class="drag-hint"><i data-lucide="grip-vertical"></i></div>
+              <div class="member-avatar">${u.initials}</div>
+              <div class="member-info">
+                <div class="member-name">${u.name}</div>
+                <div class="member-email">${u.email}</div>
+              </div>
+              <select class="role-select" onchange="changeRole(${u.id}, this.value)">
+                <option value="user" ${m.role === 'user' ? 'selected' : ''}>User</option>
+                <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Manager</option>
+              </select>
+              <button class="btn-remove" title="Remove" onclick="removeMember(${u.id})">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          `;
+          })
+          .join('');
+
+        lucide.createIcons({ nodes: [list] });
+      }
+
+      // ── Combobox ──
+      function filterCombo() {
+        const query = document.getElementById('comboInput').value.toLowerCase().trim();
+        renderCombo(query);
+      }
+
+      function openCombo() {
+        renderCombo(document.getElementById('comboInput').value.toLowerCase().trim());
+        document.getElementById('comboDropdown').classList.add('open');
+      }
+
+      function closeCombo() {
+        setTimeout(() => {
+          document.getElementById('comboDropdown').classList.remove('open');
+        }, 150);
+      }
+
+      function renderCombo(query) {
+        const dropdown = document.getElementById('comboDropdown');
+        const assigned = getAssignedIds();
+
+        const available = allUsers.filter(
+          (u) =>
+            !assigned.has(u.id) &&
+            (query === '' ||
+              u.name.toLowerCase().includes(query) ||
+              u.email.toLowerCase().includes(query)),
+        );
+
+        if (available.length === 0) {
+          dropdown.innerHTML =
+            '<div class="combo-empty">' +
+            (query ? 'No matching users found' : 'All team members are assigned') +
+            '</div>';
+          dropdown.classList.add('open');
+          return;
+        }
+
+        dropdown.innerHTML = available
+          .map(
+            (u) => `
+          <div class="combo-item" onclick="addMember(${u.id})">
+            <div class="combo-avatar">${u.initials}</div>
+            <div class="combo-info">
+              <div class="combo-name">${u.name}</div>
+              <div class="combo-email">${u.email}</div>
+            </div>
+            <span class="combo-add-hint">Add</span>
+          </div>
+        `,
+          )
+          .join('');
+
+        dropdown.classList.add('open');
+      }
+
+      function addMember(userId) {
+        if (getAssignedIds().has(userId)) return;
+        members.push({ userId, role: 'user' });
+        const u = getUserById(userId);
+        showToast(`${u.name} added as user`);
+        renderMembers();
+        document.getElementById('comboInput').value = '';
+        document.getElementById('comboDropdown').classList.remove('open');
+      }
+
+      function removeMember(userId) {
+        const u = getUserById(userId);
+        members = members.filter((m) => m.userId !== userId);
+        showToast(`${u.name} removed`);
+        renderMembers();
+      }
+
+      function changeRole(userId, role) {
+        const m = members.find((m) => m.userId === userId);
+        if (m) {
+          m.role = role;
+          const u = getUserById(userId);
+          showToast(`${u.name} is now ${role}`);
+        }
+      }
+
+      // Close combo on outside click
+      document.addEventListener('click', function (e) {
+        const wrap = document.querySelector('.combobox-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+          document.getElementById('comboDropdown').classList.remove('open');
+        }
+      });
+
+      // ── Toast ──
+      let toastTimer;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        document.getElementById('toastMsg').textContent = msg;
+        el.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('visible'), 1800);
+      }
+
+      // ── Theme / Scale ──
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        document.querySelectorAll('.scale-nav button').forEach((b) => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
+
+      // ── Init ──
+      renderMembers();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

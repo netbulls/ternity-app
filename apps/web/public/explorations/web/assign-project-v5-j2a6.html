@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign Project Members — V5 Bulk Matrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: calc(14px * var(--t-scale, 1));
+      }
+
+      /* ── Page header ── */
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      /* ── Switcher row ── */
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* ── App container ── */
+      #app {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: hsl(var(--background));
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        padding: calc(24px * var(--t-scale, 1));
+      }
+
+      /* ── Project header ── */
+      .project-header {
+        display: flex;
+        align-items: center;
+        gap: calc(16px * var(--t-scale, 1));
+        margin-bottom: calc(20px * var(--t-scale, 1));
+        padding-bottom: calc(20px * var(--t-scale, 1));
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .project-color {
+        width: calc(40px * var(--t-scale, 1));
+        height: calc(40px * var(--t-scale, 1));
+        border-radius: 10px;
+        background: #00d4aa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .project-color i {
+        width: 20px;
+        height: 20px;
+        color: hsl(var(--primary-foreground));
+      }
+      .project-meta {
+        flex: 1;
+      }
+      .project-client {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+      }
+      .project-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(12px * var(--t-scale, 1));
+      }
+      .breadcrumb a {
+        color: hsl(var(--primary));
+        text-decoration: none;
+      }
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Toolbar ── */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+        margin-bottom: calc(16px * var(--t-scale, 1));
+        flex-wrap: wrap;
+      }
+      .toolbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: calc(8px * var(--t-scale, 1)) calc(12px * var(--t-scale, 1));
+        flex: 1;
+        min-width: 200px;
+      }
+      .toolbar-search i {
+        width: 16px;
+        height: 16px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .toolbar-search input {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font-family: 'Inter', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1));
+        color: hsl(var(--foreground));
+      }
+      .toolbar-search input::placeholder {
+        color: hsl(var(--muted-foreground));
+      }
+
+      .filter-group {
+        display: flex;
+        gap: 2px;
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .filter-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        padding: calc(8px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        background: none;
+        border: none;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .filter-btn:hover {
+        color: hsl(var(--foreground));
+        background: hsl(var(--muted) / 0.5);
+      }
+      .filter-btn.active {
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.1);
+        font-weight: 500;
+      }
+
+      .bulk-actions {
+        display: flex;
+        gap: calc(6px * var(--t-scale, 1));
+        margin-left: auto;
+      }
+      .bulk-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        padding: calc(8px * var(--t-scale, 1)) calc(14px * var(--t-scale, 1));
+        border-radius: 8px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--t-surface));
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .bulk-btn i {
+        width: 14px;
+        height: 14px;
+      }
+      .bulk-btn:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--foreground));
+      }
+      .bulk-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .bulk-btn--primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+      }
+      .bulk-btn--primary:hover {
+        opacity: 0.9;
+      }
+      .bulk-btn--destructive:hover {
+        border-color: hsl(var(--destructive));
+        color: hsl(var(--destructive));
+      }
+
+      .selected-indicator {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--primary));
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      /* ── Matrix table ── */
+      .matrix-wrap {
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .matrix-table th {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+        text-align: left;
+        padding: calc(12px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-bottom: 1px solid hsl(var(--border));
+        background: hsl(var(--muted) / 0.3);
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+      }
+      .matrix-table th.center {
+        text-align: center;
+      }
+      .matrix-table td {
+        padding: calc(10px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+        vertical-align: middle;
+      }
+      .matrix-table tr:last-child td {
+        border-bottom: none;
+      }
+      .matrix-table tr {
+        transition: background 0.1s;
+      }
+      .matrix-table tbody tr:hover {
+        background: hsl(var(--muted) / 0.2);
+      }
+      .matrix-table tr.selected {
+        background: hsl(var(--primary) / 0.06);
+      }
+      .matrix-table tr.selected:hover {
+        background: hsl(var(--primary) / 0.1);
+      }
+
+      /* ── Checkbox ── */
+      .checkbox-cell {
+        width: 40px;
+        text-align: center;
+      }
+      .custom-checkbox {
+        width: calc(16px * var(--t-scale, 1));
+        height: calc(16px * var(--t-scale, 1));
+        border-radius: 4px;
+        border: 2px solid hsl(var(--border));
+        background: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .custom-checkbox:hover {
+        border-color: hsl(var(--primary));
+      }
+      .custom-checkbox.checked {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .custom-checkbox.checked i {
+        color: hsl(var(--primary-foreground));
+      }
+      .custom-checkbox i {
+        width: 12px;
+        height: 12px;
+        display: none;
+      }
+      .custom-checkbox.checked i {
+        display: block;
+      }
+      .custom-checkbox.partial {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.3);
+      }
+      .custom-checkbox.partial i {
+        display: block;
+        color: hsl(var(--primary-foreground));
+      }
+
+      /* ── User cell ── */
+      .user-cell {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1));
+      }
+      .user-avatar {
+        width: calc(32px * var(--t-scale, 1));
+        height: calc(32px * var(--t-scale, 1));
+        border-radius: 8px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(11px * var(--t-scale, 1));
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-name {
+        font-size: calc(13px * var(--t-scale, 1));
+        font-weight: 500;
+        color: hsl(var(--foreground));
+      }
+      .user-email {
+        font-size: calc(11px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Status badge ── */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: calc(11px * var(--t-scale, 1));
+        padding: 2px 10px;
+        border-radius: 100px;
+        font-weight: 500;
+      }
+      .status-badge--active {
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+      }
+      .status-badge--inactive {
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+      }
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .status-badge--active .status-dot {
+        background: hsl(var(--primary));
+      }
+      .status-badge--inactive .status-dot {
+        background: hsl(var(--muted-foreground));
+      }
+
+      /* ── Toggle switch ── */
+      .toggle-wrap {
+        text-align: center;
+      }
+      .toggle {
+        width: calc(40px * var(--t-scale, 1));
+        height: calc(22px * var(--t-scale, 1));
+        border-radius: 100px;
+        border: none;
+        background: hsl(var(--muted));
+        cursor: pointer;
+        position: relative;
+        transition: background 0.2s;
+      }
+      .toggle.on {
+        background: hsl(var(--primary));
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: calc(16px * var(--t-scale, 1));
+        height: calc(16px * var(--t-scale, 1));
+        border-radius: 50%;
+        background: hsl(var(--foreground));
+        transition: transform 0.2s;
+      }
+      .toggle.on .toggle-knob {
+        transform: translateX(calc(18px * var(--t-scale, 1)));
+      }
+
+      /* ── Role dropdown ── */
+      .role-select {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1));
+        padding: calc(6px * var(--t-scale, 1)) calc(10px * var(--t-scale, 1));
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        color: hsl(var(--foreground));
+        cursor: pointer;
+        transition: border-color 0.15s;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: calc(28px * var(--t-scale, 1));
+      }
+      .role-select:hover {
+        border-color: hsl(var(--primary) / 0.5);
+      }
+      .role-select:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      /* ── Last active ── */
+      .last-active {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Summary row ── */
+      .summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: calc(14px * var(--t-scale, 1)) calc(16px * var(--t-scale, 1));
+        background: hsl(var(--muted) / 0.3);
+        border-top: 1px solid hsl(var(--border));
+        font-size: calc(12px * var(--t-scale, 1));
+      }
+      .summary-text {
+        color: hsl(var(--muted-foreground));
+      }
+      .summary-text strong {
+        color: hsl(var(--foreground));
+        font-weight: 600;
+      }
+      .summary-counts {
+        display: flex;
+        gap: calc(16px * var(--t-scale, 1));
+      }
+      .summary-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(11px * var(--t-scale, 1));
+      }
+      .summary-count .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .dot--manager {
+        background: hsl(var(--chart-3));
+      }
+      .dot--member {
+        background: hsl(var(--primary));
+      }
+      .dot--unassigned {
+        background: hsl(var(--muted-foreground));
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        margin-top: calc(32px * var(--t-scale, 1));
+        padding: calc(20px * var(--t-scale, 1));
+        background: hsl(var(--t-surface));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: calc(12px * var(--t-scale, 1));
+      }
+      .design-notes ul {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: calc(6px * var(--t-scale, 1));
+      }
+      .design-notes li {
+        font-size: calc(12px * var(--t-scale, 1));
+        color: hsl(var(--muted-foreground));
+        padding-left: 16px;
+        position: relative;
+      }
+      .design-notes li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .design-notes .pro::before {
+        background: hsl(var(--primary));
+      }
+      .design-notes .con::before {
+        background: hsl(var(--destructive));
+      }
+      .notes-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: calc(20px * var(--t-scale, 1));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Assign Project Members — V5</h1>
+      <p>The Bulk Matrix — spreadsheet-style power-user assignment</p>
+    </div>
+
+    <!-- Switcher row -->
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group">
+        <nav class="theme-nav">
+          <button class="active" data-theme="ternity-dark">Dark</button>
+          <button data-theme="ternity-light">Light</button>
+          <button data-theme="midnight">Midnight</button>
+          <button data-theme="warm-sand">Sand</button>
+          <button data-theme="carbon">Carbon</button>
+          <button data-theme="high-contrast">Hi-Con</button>
+        </nav>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfort</button>
+      </div>
+    </div>
+
+    <!-- App container -->
+    <div id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="#">Projects</a>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <a href="#">Acme Corp</a>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <span>Brand Refresh</span>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px"></i>
+        <span style="color: hsl(var(--foreground))">Members</span>
+      </div>
+
+      <!-- Project header -->
+      <div class="project-header">
+        <div class="project-color">
+          <i data-lucide="palette"></i>
+        </div>
+        <div class="project-meta">
+          <div class="project-client">Acme Corp</div>
+          <div class="project-name">Brand Refresh</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-search">
+          <i data-lucide="search"></i>
+          <input type="text" id="searchInput" placeholder="Search by name or email..." />
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="assigned">Assigned</button>
+          <button class="filter-btn" data-filter="unassigned">Unassigned</button>
+        </div>
+        <span class="selected-indicator" id="selectedIndicator" style="display: none"
+          >0 selected</span
+        >
+        <div class="bulk-actions">
+          <button class="bulk-btn bulk-btn--primary" id="bulkAssign" disabled>
+            <i data-lucide="user-plus"></i> Assign
+          </button>
+          <button class="bulk-btn bulk-btn--destructive" id="bulkRemove" disabled>
+            <i data-lucide="user-minus"></i> Remove
+          </button>
+          <button class="bulk-btn" id="bulkRole" disabled>
+            <i data-lucide="shield"></i> Set Role
+          </button>
+        </div>
+      </div>
+
+      <!-- Matrix -->
+      <div class="matrix-wrap">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th class="checkbox-cell">
+                <button class="custom-checkbox" id="selectAll">
+                  <i data-lucide="check"></i>
+                </button>
+              </th>
+              <th>User</th>
+              <th>Status</th>
+              <th class="center">Assigned</th>
+              <th>Role</th>
+              <th>Last Active</th>
+            </tr>
+          </thead>
+          <tbody id="matrixBody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+        <div class="summary-row">
+          <span class="summary-text" id="summaryText">
+            <strong>5</strong> of <strong>12</strong> users assigned
+          </span>
+          <div class="summary-counts">
+            <span class="summary-count"
+              ><span class="dot dot--manager"></span>
+              <span id="managerCount">2</span> managers</span
+            >
+            <span class="summary-count"
+              ><span class="dot dot--member"></span> <span id="memberCount">3</span> members</span
+            >
+            <span class="summary-count"
+              ><span class="dot dot--unassigned"></span>
+              <span id="unassignedCount">7</span> unassigned</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <h3>Design Notes — The Bulk Matrix</h3>
+        <div class="notes-columns">
+          <div>
+            <h3 style="font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--primary))">
+              Pros
+            </h3>
+            <ul>
+              <li class="pro">Maximum information density — see everything at once</li>
+              <li class="pro">Bulk operations for large team management</li>
+              <li class="pro">Filter + search for quick targeting in big lists</li>
+              <li class="pro">Inline role editing — no modal interruption</li>
+              <li class="pro">Summary row gives instant team composition overview</li>
+              <li class="pro">Familiar spreadsheet metaphor — low learning curve</li>
+              <li class="pro">Keyboard-navigable and screen-reader friendly</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="font-size: calc(12px * var(--t-scale, 1)); color: hsl(var(--destructive))">
+              Cons
+            </h3>
+            <ul>
+              <li class="con">Dense UI may feel overwhelming for small teams (&lt;5 users)</li>
+              <li class="con">Less visual personality — purely utilitarian</li>
+              <li class="con">Toggle + dropdown can feel like too many controls per row</li>
+              <li class="con">Mobile experience suffers — table needs horizontal scroll</li>
+              <li class="con">No visual hierarchy between important and less important users</li>
+              <li class="con">Bulk role dropdown needs a popover (not shown in static demo)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Data ──
+      const users = [
+        {
+          id: 'elena',
+          name: 'Elena Marsh',
+          initials: 'EM',
+          email: 'elena@acme.com',
+          active: true,
+          assigned: true,
+          role: 'manager',
+          lastActive: '2 hours ago',
+        },
+        {
+          id: 'james',
+          name: 'James Oakley',
+          initials: 'JO',
+          email: 'james@acme.com',
+          active: true,
+          assigned: true,
+          role: 'manager',
+          lastActive: '30 min ago',
+        },
+        {
+          id: 'sofia',
+          name: 'Sofia Chen',
+          initials: 'SC',
+          email: 'sofia@acme.com',
+          active: true,
+          assigned: true,
+          role: 'user',
+          lastActive: '1 hour ago',
+        },
+        {
+          id: 'marcus',
+          name: 'Marcus Rivera',
+          initials: 'MR',
+          email: 'marcus@acme.com',
+          active: true,
+          assigned: true,
+          role: 'user',
+          lastActive: '4 hours ago',
+        },
+        {
+          id: 'alex',
+          name: 'Alex Morgan',
+          initials: 'AM',
+          email: 'alex@acme.com',
+          active: true,
+          assigned: true,
+          role: 'user',
+          lastActive: 'Yesterday',
+        },
+        {
+          id: 'nina',
+          name: 'Nina Petrova',
+          initials: 'NP',
+          email: 'nina@acme.com',
+          active: true,
+          assigned: false,
+          role: 'user',
+          lastActive: '3 hours ago',
+        },
+        {
+          id: 'tom',
+          name: 'Tom Bradley',
+          initials: 'TB',
+          email: 'tom@acme.com',
+          active: true,
+          assigned: false,
+          role: 'user',
+          lastActive: '1 day ago',
+        },
+        {
+          id: 'lena',
+          name: 'Lena Kowalski',
+          initials: 'LK',
+          email: 'lena@acme.com',
+          active: true,
+          assigned: false,
+          role: 'user',
+          lastActive: '5 hours ago',
+        },
+        {
+          id: 'daniel',
+          name: 'Daniel Frost',
+          initials: 'DF',
+          email: 'daniel@acme.com',
+          active: true,
+          assigned: false,
+          role: 'user',
+          lastActive: '2 days ago',
+        },
+        {
+          id: 'iris',
+          name: 'Iris Tanaka',
+          initials: 'IT',
+          email: 'iris@acme.com',
+          active: false,
+          assigned: false,
+          role: 'user',
+          lastActive: '2 weeks ago',
+        },
+        {
+          id: 'oleg',
+          name: 'Oleg Novak',
+          initials: 'ON',
+          email: 'oleg@acme.com',
+          active: true,
+          assigned: false,
+          role: 'user',
+          lastActive: '6 hours ago',
+        },
+        {
+          id: 'marta',
+          name: 'Marta Lindqvist',
+          initials: 'ML',
+          email: 'marta@acme.com',
+          active: false,
+          assigned: false,
+          role: 'user',
+          lastActive: '1 month ago',
+        },
+      ];
+
+      const selected = new Set();
+      let currentFilter = 'all';
+      let searchQuery = '';
+
+      const app = document.getElementById('app');
+      const matrixBody = document.getElementById('matrixBody');
+      const searchInput = document.getElementById('searchInput');
+      const selectAllBtn = document.getElementById('selectAll');
+      const selectedIndicator = document.getElementById('selectedIndicator');
+      const bulkAssign = document.getElementById('bulkAssign');
+      const bulkRemove = document.getElementById('bulkRemove');
+      const bulkRole = document.getElementById('bulkRole');
+
+      // ── Theme & scale switching ──
+      document.querySelectorAll('.theme-nav button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document
+            .querySelectorAll('.theme-nav button')
+            .forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          app.setAttribute('data-theme', btn.dataset.theme);
+        });
+      });
+      document.querySelectorAll('[data-scale]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-scale]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          const scales = { compact: '0.9', default: '1', comfortable: '1.1' };
+          app.style.setProperty('--t-scale', scales[btn.dataset.scale]);
+          app.setAttribute('data-scale', btn.dataset.scale);
+        });
+      });
+
+      // ── Filter buttons ──
+      document.querySelectorAll('.filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter;
+          render();
+        });
+      });
+
+      // ── Search ──
+      searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.toLowerCase().trim();
+        render();
+      });
+
+      // ── Select All ──
+      selectAllBtn.addEventListener('click', () => {
+        const visibleIds = getVisibleUsers().map((u) => u.id);
+        const allSelected = visibleIds.every((id) => selected.has(id));
+        if (allSelected) {
+          visibleIds.forEach((id) => selected.delete(id));
+        } else {
+          visibleIds.forEach((id) => selected.add(id));
+        }
+        render();
+      });
+
+      // ── Bulk actions ──
+      bulkAssign.addEventListener('click', () => {
+        selected.forEach((id) => {
+          const u = users.find((u) => u.id === id);
+          if (u) u.assigned = true;
+        });
+        selected.clear();
+        render();
+      });
+      bulkRemove.addEventListener('click', () => {
+        selected.forEach((id) => {
+          const u = users.find((u) => u.id === id);
+          if (u) {
+            u.assigned = false;
+            u.role = 'user';
+          }
+        });
+        selected.clear();
+        render();
+      });
+      bulkRole.addEventListener('click', () => {
+        // Toggle between user/manager for demo
+        selected.forEach((id) => {
+          const u = users.find((u) => u.id === id);
+          if (u && u.assigned) u.role = u.role === 'manager' ? 'user' : 'manager';
+        });
+        render();
+      });
+
+      function getVisibleUsers() {
+        return users.filter((u) => {
+          if (searchQuery) {
+            const match =
+              u.name.toLowerCase().includes(searchQuery) ||
+              u.email.toLowerCase().includes(searchQuery);
+            if (!match) return false;
+          }
+          if (currentFilter === 'assigned') return u.assigned;
+          if (currentFilter === 'unassigned') return !u.assigned;
+          return true;
+        });
+      }
+
+      function render() {
+        const visible = getVisibleUsers();
+
+        // Build rows
+        matrixBody.innerHTML = visible
+          .map(
+            (u) => `
+          <tr class="${selected.has(u.id) ? 'selected' : ''}" data-id="${u.id}">
+            <td class="checkbox-cell">
+              <button class="custom-checkbox ${selected.has(u.id) ? 'checked' : ''}" data-select="${u.id}">
+                <i data-lucide="check"></i>
+              </button>
+            </td>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">${u.initials}</div>
+                <div>
+                  <div class="user-name">${u.name}</div>
+                  <div class="user-email">${u.email}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge status-badge--${u.active ? 'active' : 'inactive'}">
+                <span class="status-dot"></span>
+                ${u.active ? 'Active' : 'Inactive'}
+              </span>
+            </td>
+            <td class="toggle-wrap">
+              <button class="toggle ${u.assigned ? 'on' : ''}" data-toggle="${u.id}">
+                <div class="toggle-knob"></div>
+              </button>
+            </td>
+            <td>
+              <select class="role-select" data-role="${u.id}" ${!u.assigned ? 'disabled' : ''}>
+                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Member</option>
+                <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>Manager</option>
+              </select>
+            </td>
+            <td class="last-active">${u.lastActive}</td>
+          </tr>
+        `,
+          )
+          .join('');
+
+        // Re-create icons
+        lucide.createIcons({ nodes: [matrixBody] });
+
+        // Bind row events
+        matrixBody.querySelectorAll('[data-select]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.select;
+            if (selected.has(id)) selected.delete(id);
+            else selected.add(id);
+            render();
+          });
+        });
+        matrixBody.querySelectorAll('[data-toggle]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const u = users.find((u) => u.id === btn.dataset.toggle);
+            if (u) {
+              u.assigned = !u.assigned;
+              if (!u.assigned) u.role = 'user';
+            }
+            render();
+          });
+        });
+        matrixBody.querySelectorAll('[data-role]').forEach((sel) => {
+          sel.addEventListener('change', () => {
+            const u = users.find((u) => u.id === sel.dataset.role);
+            if (u) u.role = sel.value;
+            updateSummary();
+          });
+        });
+
+        // Update select-all state
+        const visibleIds = visible.map((u) => u.id);
+        const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+        const someSelected = visibleIds.some((id) => selected.has(id));
+        selectAllBtn.className =
+          'custom-checkbox' + (allSelected ? ' checked' : someSelected ? ' partial' : '');
+        // Re-render the icon inside select-all
+        selectAllBtn.innerHTML = allSelected
+          ? '<i data-lucide="check"></i>'
+          : someSelected
+            ? '<i data-lucide="minus"></i>'
+            : '<i data-lucide="check"></i>';
+        lucide.createIcons({ nodes: [selectAllBtn] });
+
+        // Update bulk buttons
+        const hasSelection = selected.size > 0;
+        bulkAssign.disabled = !hasSelection;
+        bulkRemove.disabled = !hasSelection;
+        bulkRole.disabled = !hasSelection;
+        selectedIndicator.style.display = hasSelection ? '' : 'none';
+        selectedIndicator.textContent = selected.size + ' selected';
+
+        updateSummary();
+      }
+
+      function updateSummary() {
+        const assigned = users.filter((u) => u.assigned);
+        const managers = assigned.filter((u) => u.role === 'manager').length;
+        const members = assigned.filter((u) => u.role === 'user').length;
+        const unassigned = users.length - assigned.length;
+
+        document.getElementById('summaryText').innerHTML =
+          `<strong>${assigned.length}</strong> of <strong>${users.length}</strong> users assigned`;
+        document.getElementById('managerCount').textContent = managers;
+        document.getElementById('memberCount').textContent = members;
+        document.getElementById('unassignedCount').textContent = unassigned;
+      }
+
+      // Initial render
+      render();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

@@ -18,6 +18,9 @@ import {
   Building2,
   FolderKanban,
   Pencil,
+  Users,
+  UserPlus,
+  UserMinus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
@@ -50,9 +53,19 @@ import {
   type AdminProject,
   type AdminClient,
 } from '@/hooks/use-admin-projects';
+import {
+  useProjectMembers,
+  useAssignProjectMember,
+  useRemoveProjectMember,
+  useUpdateProjectMemberRole,
+  useBulkAssignProjectMembers,
+  useBulkRemoveProjectMembers,
+} from '@/hooks/use-admin-project-members';
 import { getProjectColumns, getClientColumns } from '@/pages/project-columns';
+import { getProjectMemberColumns } from '@/pages/project-member-columns';
 import { ProjectDialog } from '@/pages/project-dialog';
 import { Input } from '@/components/ui/input';
+import type { ProjectMemberRow } from '@ternity/shared';
 
 type Scope = 'projects' | 'clients';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -233,6 +246,15 @@ export function ProjectsPage() {
     [allProjects],
   );
 
+  // Navigate to project members view (defined early — used in column defs)
+  const handleProjectMembers = useCallback((project: AdminProject) => {
+    setDrilldownProject(project);
+    setMemberSearch('');
+    setDebouncedMemberSearch('');
+    setMemberFilter('all');
+    setMemberSelection({});
+  }, []);
+
   // ── Column definitions ──────────────────────────────────────────────
   const projectColumns = useMemo(
     () =>
@@ -240,6 +262,7 @@ export function ProjectsPage() {
         onEdit: handleEditProject,
         onActivate: handleActivateProject,
         onDeactivate: handleDeactivateProject,
+        onMembers: handleProjectMembers,
         onClientClick: drilldownClient ? undefined : handleClientClick,
         showClient: !drilldownClient,
       }),
@@ -247,6 +270,7 @@ export function ProjectsPage() {
       handleEditProject,
       handleActivateProject,
       handleDeactivateProject,
+      handleProjectMembers,
       handleClientClick,
       drilldownClient,
     ],
@@ -410,8 +434,258 @@ export function ProjectsPage() {
     );
   }, [renameClientDialog, renameClientName, updateClient, drilldownClient]);
 
+  // ── Project Members (V5 Bulk Matrix — shown in project drill-down) ──
+  const [drilldownProject, setDrilldownProject] = useState<AdminProject | null>(null);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [debouncedMemberSearch, setDebouncedMemberSearch] = useState('');
+  const [memberFilter, setMemberFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  const [memberSorting, setMemberSorting] = useState<SortingState>([
+    { id: 'displayName', desc: false },
+  ]);
+  const [memberSelection, setMemberSelection] = useState<RowSelectionState>({});
+
+  const memberSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleMemberSearchChange = useCallback((value: string) => {
+    setMemberSearch(value);
+    if (memberSearchDebounceRef.current) clearTimeout(memberSearchDebounceRef.current);
+    memberSearchDebounceRef.current = setTimeout(() => setDebouncedMemberSearch(value), 300);
+  }, []);
+
+  // Reset member selection when filter changes
+  useEffect(() => {
+    setMemberSelection({});
+  }, [memberFilter, debouncedMemberSearch]);
+
+  const { data: allMembers, isLoading: membersLoading } = useProjectMembers(
+    drilldownProject?.id ?? null,
+  );
+  const assignMember = useAssignProjectMember();
+  const removeMember = useRemoveProjectMember();
+  const updateMemberRole = useUpdateProjectMemberRole();
+  const bulkAssignMembers = useBulkAssignProjectMembers();
+  const bulkRemoveMembers = useBulkRemoveProjectMembers();
+
+  const memberStats = useMemo(() => {
+    if (!allMembers) return { total: 0, assigned: 0, unassigned: 0 };
+    const active = allMembers.filter((m) => m.active);
+    const assigned = active.filter((m) => m.assigned).length;
+    return { total: active.length, assigned, unassigned: active.length - assigned };
+  }, [allMembers]);
+
+  const filteredMembers = useMemo(() => {
+    if (!allMembers) return [];
+    let items = allMembers.filter((m) => m.active); // Only show active users
+    if (memberFilter === 'assigned') items = items.filter((m) => m.assigned);
+    if (memberFilter === 'unassigned') items = items.filter((m) => !m.assigned);
+    if (debouncedMemberSearch.trim()) {
+      const q = debouncedMemberSearch.toLowerCase();
+      items = items.filter(
+        (m) =>
+          m.displayName.toLowerCase().includes(q) || (m.email && m.email.toLowerCase().includes(q)),
+      );
+    }
+    return items;
+  }, [allMembers, memberFilter, debouncedMemberSearch]);
+
+  const handleToggleMemberAssign = useCallback(
+    (member: ProjectMemberRow) => {
+      if (!drilldownProject) return;
+      if (member.assigned) {
+        removeMember.mutate({ projectId: drilldownProject.id, userId: member.userId });
+      } else {
+        assignMember.mutate({ projectId: drilldownProject.id, userId: member.userId });
+      }
+    },
+    [drilldownProject, assignMember, removeMember],
+  );
+
+  const handleMemberRoleChange = useCallback(
+    (member: ProjectMemberRow, role: string) => {
+      if (!drilldownProject || !member.assigned) return;
+      updateMemberRole.mutate({ projectId: drilldownProject.id, userId: member.userId, role });
+    },
+    [drilldownProject, updateMemberRole],
+  );
+
+  const memberColumns = useMemo(
+    () =>
+      getProjectMemberColumns({
+        onToggleAssign: handleToggleMemberAssign,
+        onRoleChange: handleMemberRoleChange,
+      }),
+    [handleToggleMemberAssign, handleMemberRoleChange],
+  );
+
+  const memberTable = useReactTable({
+    data: filteredMembers,
+    columns: memberColumns,
+    state: { sorting: memberSorting, rowSelection: memberSelection },
+    onSortingChange: setMemberSorting,
+    onRowSelectionChange: setMemberSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getRowId: (row) => row.userId,
+    autoResetPageIndex: true,
+    initialState: { pagination: { pageSize: PAGE_SIZE } },
+  });
+
+  const selectedMemberIds = Object.keys(memberSelection).filter((k) => memberSelection[k]);
+  const clearMemberSelection = useCallback(() => setMemberSelection({}), []);
+
+  const handleBulkAssignMembers = useCallback(() => {
+    if (!drilldownProject) return;
+    bulkAssignMembers.mutate(
+      { projectId: drilldownProject.id, userIds: selectedMemberIds },
+      { onSuccess: () => clearMemberSelection() },
+    );
+  }, [drilldownProject, selectedMemberIds, bulkAssignMembers, clearMemberSelection]);
+
+  const handleBulkRemoveMembers = useCallback(() => {
+    if (!drilldownProject) return;
+    bulkRemoveMembers.mutate(
+      { projectId: drilldownProject.id, userIds: selectedMemberIds },
+      { onSuccess: () => clearMemberSelection() },
+    );
+  }, [drilldownProject, selectedMemberIds, bulkRemoveMembers, clearMemberSelection]);
+
+  const handleBackFromMembers = useCallback(() => {
+    setDrilldownProject(null);
+    setMemberSearch('');
+    setDebouncedMemberSearch('');
+    setMemberFilter('all');
+    setMemberSelection({});
+  }, []);
+
   const isLoading = scope === 'clients' && !drilldownClient ? clientsLoading : projectsLoading;
   const entityName = scope === 'clients' && !drilldownClient ? 'client' : 'project';
+
+  // If we're drilling into a project's members, show that view instead
+  if (drilldownProject) {
+    return (
+      <div>
+        {/* Header */}
+        <div className="mb-5">
+          <button
+            onClick={handleBackFromMembers}
+            className="mb-1 flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+            style={{ fontSize: scaled(12) }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            {drilldownClient ? drilldownClient.name : 'All Projects'}
+          </button>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-4 w-4 shrink-0 rounded"
+              style={{ backgroundColor: drilldownProject.color }}
+            />
+            <h1
+              className="font-brand font-semibold tracking-wide text-foreground"
+              style={{ fontSize: scaled(18) }}
+            >
+              {drilldownProject.name}
+            </h1>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            Manage team members for this project
+          </p>
+        </div>
+
+        {/* Toolbar */}
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex max-w-[280px] flex-1 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-[7px]">
+            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              placeholder="Search by name or email..."
+              value={memberSearch}
+              onChange={(e) => handleMemberSearchChange(e.target.value)}
+              className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+            />
+            {memberSearch && (
+              <button
+                onClick={() => handleMemberSearchChange('')}
+                className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {(['assigned', 'unassigned', 'all'] as const).map((tab) => {
+              const label = tab === 'all' ? 'All' : tab === 'assigned' ? 'Assigned' : 'Unassigned';
+              const count =
+                tab === 'all'
+                  ? memberStats.total
+                  : tab === 'assigned'
+                    ? memberStats.assigned
+                    : memberStats.unassigned;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setMemberFilter(tab)}
+                  className={cn(
+                    'font-brand min-w-[5.5rem] border-r border-border px-3 py-1.5 text-center text-muted-foreground transition-colors last:border-r-0',
+                    memberFilter === tab
+                      ? 'bg-primary/[0.08] font-semibold text-foreground'
+                      : 'hover:bg-muted/30',
+                  )}
+                  style={{
+                    fontSize: scaled(11),
+                    fontWeight: memberFilter === tab ? 600 : 500,
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {label}
+                  <span
+                    className="ml-1 inline-block min-w-[1.25rem] rounded-full bg-muted/50 px-1.5 py-px font-brand text-muted-foreground"
+                    style={{ fontSize: scaled(10) }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Members Table */}
+        <DataTable
+          columns={memberColumns}
+          data={filteredMembers}
+          table={memberTable}
+          isLoading={membersLoading}
+          emptyMessage="No users found"
+          entityName="user"
+          pageSize={PAGE_SIZE}
+          paginationSuffix={memberFilter !== 'all' ? `(${memberFilter})` : undefined}
+          rowClassName={(member) => cn(memberSelection[member.userId] && 'bg-primary/5')}
+        />
+
+        {/* Bulk Action Bar */}
+        <DataTableBulkActions table={memberTable as TanStackTable<unknown>} entityName="user">
+          <button
+            onClick={handleBulkAssignMembers}
+            className="inline-flex items-center gap-1.5 rounded-md bg-[hsl(152_60%_50%/0.12)] px-2.5 py-1.5 font-medium text-[hsl(152,60%,50%)] transition-colors hover:bg-[hsl(152_60%_50%/0.2)]"
+            style={{ fontSize: scaled(12) }}
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Assign
+          </button>
+          <button
+            onClick={handleBulkRemoveMembers}
+            className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 font-medium text-destructive transition-colors hover:bg-destructive/20"
+            style={{ fontSize: scaled(12) }}
+          >
+            <UserMinus className="h-3.5 w-3.5" />
+            Remove
+          </button>
+        </DataTableBulkActions>
+      </div>
+    );
+  }
 
   return (
     <div>

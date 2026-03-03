@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assign User to Projects — V1 Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .theme-nav {
+        display: contents;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #222;
+        background: #161616;
+        color: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button:hover {
+        border-color: #444;
+      }
+      .switcher-group button.active {
+        background: #333;
+        border-color: #555;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── App container ── */
+      .app {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border));
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 600px;
+        padding: calc(28px * var(--t-scale, 1.1));
+      }
+
+      /* ── Breadcrumb ── */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(20px * var(--t-scale, 1.1));
+      }
+      .breadcrumb a {
+        color: hsl(var(--muted-foreground));
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .breadcrumb a:hover {
+        color: hsl(var(--primary));
+      }
+      .breadcrumb .sep {
+        opacity: 0.4;
+      }
+      .breadcrumb .current {
+        color: hsl(var(--foreground));
+        font-weight: 500;
+      }
+      .breadcrumb i {
+        width: 12px;
+        height: 12px;
+      }
+
+      /* ── Main title ── */
+      .page-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(20px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: hsl(var(--foreground));
+        margin-bottom: calc(4px * var(--t-scale, 1.1));
+      }
+      .page-subtitle {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(24px * var(--t-scale, 1.1));
+      }
+
+      /* ── Dual column layout ── */
+      .dual-columns {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: calc(24px * var(--t-scale, 1.1));
+        align-items: start;
+      }
+
+      /* ── User profile card ── */
+      .user-card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: calc(20px * var(--t-scale, 1.1));
+        position: sticky;
+        top: 16px;
+      }
+      .user-card-avatar {
+        width: calc(56px * var(--t-scale, 1.1));
+        height: calc(56px * var(--t-scale, 1.1));
+        border-radius: 12px;
+        background: hsl(var(--t-avatar-bg));
+        color: hsl(var(--t-avatar-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(18px * var(--t-scale, 1.1));
+        font-weight: 600;
+        margin-bottom: calc(14px * var(--t-scale, 1.1));
+      }
+      .user-card-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(16px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+      .user-card-email {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-bottom: calc(12px * var(--t-scale, 1.1));
+      }
+      .user-card-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 6px;
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        margin-bottom: calc(16px * var(--t-scale, 1.1));
+      }
+      .user-card-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: calc(14px * var(--t-scale, 1.1));
+        border-top: 1px solid hsl(var(--border));
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: calc(12px * var(--t-scale, 1.1));
+      }
+      .stat-label {
+        color: hsl(var(--muted-foreground));
+      }
+      .stat-value {
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        font-family: 'Oxanium', sans-serif;
+      }
+      .stat-value.highlight {
+        color: hsl(var(--primary));
+      }
+
+      /* ── Projects panel ── */
+      .projects-panel {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .projects-panel-header {
+        display: flex;
+        align-items: center;
+        gap: calc(12px * var(--t-scale, 1.1));
+        padding: calc(16px * var(--t-scale, 1.1));
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .search-box {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: calc(8px * var(--t-scale, 1.1)) calc(12px * var(--t-scale, 1.1));
+      }
+      .search-box i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        flex-shrink: 0;
+      }
+      .search-box input {
+        flex: 1;
+        border: none;
+        background: none;
+        color: hsl(var(--foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        outline: none;
+      }
+      .search-box input::placeholder {
+        color: hsl(var(--muted-foreground));
+        opacity: 0.6;
+      }
+      .assigned-count {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--primary));
+        white-space: nowrap;
+      }
+
+      /* ── Client group ── */
+      .client-group {
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+      }
+      .client-group:last-child {
+        border-bottom: none;
+      }
+      .client-group-header {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        padding: calc(12px * var(--t-scale, 1.1)) calc(16px * var(--t-scale, 1.1))
+          calc(4px * var(--t-scale, 1.1));
+      }
+
+      /* ── Project row ── */
+      .project-row {
+        display: flex;
+        align-items: center;
+        gap: calc(10px * var(--t-scale, 1.1));
+        padding: calc(10px * var(--t-scale, 1.1)) calc(16px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .project-row:hover {
+        background: hsl(var(--muted) / 0.4);
+      }
+
+      .project-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: calc(16px * var(--t-scale, 1.1));
+        height: calc(16px * var(--t-scale, 1.1));
+        border: 1.5px solid hsl(var(--border));
+        border-radius: 4px;
+        background: hsl(var(--muted));
+        cursor: pointer;
+        position: relative;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .project-checkbox:checked {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+      }
+      .project-checkbox:checked::after {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 4px;
+        width: 5px;
+        height: 9px;
+        border: solid hsl(var(--primary-foreground));
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+
+      .project-color-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .project-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .project-name {
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 500;
+        color: hsl(var(--foreground));
+      }
+
+      /* ── Role toggle ── */
+      .role-toggle {
+        display: flex;
+        gap: 0;
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+      }
+      .project-row.assigned .role-toggle {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .role-btn {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: calc(3px * var(--t-scale, 1.1)) calc(8px * var(--t-scale, 1.1));
+        border: none;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .role-btn:first-child {
+        border-right: 1px solid hsl(var(--border));
+      }
+      .role-btn.active {
+        background: hsl(var(--primary) / 0.15);
+        color: hsl(var(--primary));
+      }
+      .role-btn:hover:not(.active) {
+        background: hsl(var(--muted) / 0.5);
+      }
+
+      /* ── Save bar ── */
+      .save-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: calc(14px * var(--t-scale, 1.1)) calc(16px * var(--t-scale, 1.1));
+        border-top: 1px solid hsl(var(--border));
+      }
+      .btn {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        padding: calc(8px * var(--t-scale, 1.1)) calc(18px * var(--t-scale, 1.1));
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: none;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        border: 1px solid hsl(var(--border));
+      }
+      .btn-ghost:hover {
+        border-color: hsl(var(--foreground) / 0.3);
+        color: hsl(var(--foreground));
+      }
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 4px 20px hsl(var(--primary) / 0.3);
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ── Design notes ── */
+      .design-notes {
+        max-width: 960px;
+        margin: 32px auto 0;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+      }
+      .design-notes h3 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.25);
+        margin-bottom: 10px;
+      }
+      .design-notes ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .design-notes li {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.35);
+        padding-left: 14px;
+        position: relative;
+      }
+      .design-notes li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+      }
+      .design-notes .pro::before {
+        background: hsl(168 100% 42% / 0.5);
+      }
+      .design-notes .con::before {
+        background: hsl(355 100% 64% / 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Ternity</h1>
+      <p>
+        V1 — The Checklist: dual-column layout with user profile card + checkbox list grouped by
+        client
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <span class="switcher-label">Theme</span>
+      <div class="switcher-group theme-nav">
+        <button class="active" onclick="setTheme('ternity-dark')">Dark</button>
+        <button onclick="setTheme('ternity-light')">Light</button>
+        <button onclick="setTheme('midnight')">Midnight</button>
+        <button onclick="setTheme('warm-sand')">Sand</button>
+        <button onclick="setTheme('carbon')">Carbon</button>
+        <button onclick="setTheme('high-contrast')">Hi-Con</button>
+      </div>
+      <span class="switcher-label">Scale</span>
+      <div class="switcher-group">
+        <button onclick="setScale('compact')">Compact</button>
+        <button class="active" onclick="setScale('default')">Default</button>
+        <button onclick="setScale('comfortable')">Comfort</button>
+      </div>
+    </div>
+
+    <div class="app" id="app" data-theme="ternity-dark" data-scale="default">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="#"><i data-lucide="settings"></i></a>
+        <span class="sep">/</span>
+        <a href="#">User Management</a>
+        <span class="sep">/</span>
+        <span class="current">Elena Marsh</span>
+      </div>
+
+      <div class="page-title">Project Assignments</div>
+      <div class="page-subtitle">Choose which projects Elena Marsh can track time against</div>
+
+      <div class="dual-columns">
+        <!-- Left: User Profile Card -->
+        <div class="user-card">
+          <div class="user-card-avatar">EM</div>
+          <div class="user-card-name">Elena Marsh</div>
+          <div class="user-card-email">elena.marsh@acmecorp.com</div>
+          <div class="user-card-role">
+            <i data-lucide="shield" style="width: 12px; height: 12px"></i> Member
+          </div>
+          <div class="user-card-stats">
+            <div class="stat-row">
+              <span class="stat-label">Assigned projects</span>
+              <span class="stat-value highlight" id="assignedCount">4</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Hours this month</span>
+              <span class="stat-value">124.5h</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Active since</span>
+              <span class="stat-value">Jan 2025</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Projects Checklist -->
+        <div class="projects-panel">
+          <div class="projects-panel-header">
+            <div class="search-box">
+              <i data-lucide="search"></i>
+              <input
+                type="text"
+                placeholder="Search projects..."
+                id="searchInput"
+                oninput="filterProjects()"
+              />
+            </div>
+            <span class="assigned-count" id="assignedLabel">4 of 8 assigned</span>
+          </div>
+
+          <div id="projectList">
+            <!-- Acme Corp -->
+            <div class="client-group" data-client="acme">
+              <div class="client-group-header">Acme Corp</div>
+              <label class="project-row assigned" data-name="brand refresh">
+                <input
+                  type="checkbox"
+                  class="project-checkbox"
+                  checked
+                  onchange="toggleProject(this)"
+                />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-1))"></span>
+                <div class="project-info"><span class="project-name">Brand Refresh</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn active" onclick="setRole(event, 'manager')">
+                    Manager
+                  </button>
+                </div>
+              </label>
+              <label class="project-row assigned" data-name="mobile app v3">
+                <input
+                  type="checkbox"
+                  class="project-checkbox"
+                  checked
+                  onchange="toggleProject(this)"
+                />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-2))"></span>
+                <div class="project-info"><span class="project-name">Mobile App v3</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+            </div>
+
+            <!-- Stellar Labs -->
+            <div class="client-group" data-client="stellar">
+              <div class="client-group-header">Stellar Labs</div>
+              <label class="project-row assigned" data-name="cloud migration">
+                <input
+                  type="checkbox"
+                  class="project-checkbox"
+                  checked
+                  onchange="toggleProject(this)"
+                />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-3))"></span>
+                <div class="project-info"><span class="project-name">Cloud Migration</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+              <label class="project-row" data-name="website redesign">
+                <input type="checkbox" class="project-checkbox" onchange="toggleProject(this)" />
+                <span class="project-color-dot" style="background: hsl(355 100% 64%)"></span>
+                <div class="project-info"><span class="project-name">Website Redesign</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+            </div>
+
+            <!-- NovaTech -->
+            <div class="client-group" data-client="novatech">
+              <div class="client-group-header">NovaTech</div>
+              <label class="project-row assigned" data-name="api gateway">
+                <input
+                  type="checkbox"
+                  class="project-checkbox"
+                  checked
+                  onchange="toggleProject(this)"
+                />
+                <span class="project-color-dot" style="background: hsl(280 60% 65%)"></span>
+                <div class="project-info"><span class="project-name">API Gateway</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+              <label class="project-row" data-name="data pipeline">
+                <input type="checkbox" class="project-checkbox" onchange="toggleProject(this)" />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-1))"></span>
+                <div class="project-info"><span class="project-name">Data Pipeline</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+            </div>
+
+            <!-- BluePeak -->
+            <div class="client-group" data-client="bluepeak">
+              <div class="client-group-header">BluePeak</div>
+              <label class="project-row" data-name="marketing portal">
+                <input type="checkbox" class="project-checkbox" onchange="toggleProject(this)" />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-2))"></span>
+                <div class="project-info"><span class="project-name">Marketing Portal</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+              <label class="project-row" data-name="internal tools">
+                <input type="checkbox" class="project-checkbox" onchange="toggleProject(this)" />
+                <span class="project-color-dot" style="background: hsl(var(--t-project-3))"></span>
+                <div class="project-info"><span class="project-name">Internal Tools</span></div>
+                <div class="role-toggle">
+                  <button class="role-btn active" onclick="setRole(event, 'user')">User</button>
+                  <button class="role-btn" onclick="setRole(event, 'manager')">Manager</button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn btn-ghost" onclick="showToast('Changes discarded')">Cancel</button>
+            <button class="btn btn-primary" onclick="showToast('Project assignments saved')">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Design Notes -->
+    <div class="design-notes">
+      <h3>Design Notes — V1 The Checklist</h3>
+      <ul>
+        <li class="pro">
+          Immediately scannable — checked = assigned, unchecked = not. Zero learning curve.
+        </li>
+        <li class="pro">
+          Client groupings provide natural visual hierarchy for large project lists.
+        </li>
+        <li class="pro">
+          Role toggle (manager/user) sits inline — no secondary modal or step needed.
+        </li>
+        <li class="pro">
+          Search filters instantly, hiding non-matching groups. Fast for orgs with many projects.
+        </li>
+        <li class="con">
+          Vertical scrolling grows with project count — 30+ projects would need pagination or
+          virtual scroll.
+        </li>
+        <li class="con">
+          Role toggle can be missed visually — only appears when a project is checked.
+        </li>
+        <li class="con">
+          No drag-and-drop or bulk selection — assigning 10 projects means 10 clicks.
+        </li>
+        <li class="con">
+          Dual-column layout requires wider viewport; narrows poorly on small screens.
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      /* ── Theme & Scale ── */
+      function setTheme(t) {
+        document.getElementById('app').setAttribute('data-theme', t);
+        document.querySelectorAll('.theme-nav button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+      function setScale(s) {
+        document.getElementById('app').setAttribute('data-scale', s);
+        var group = event.target.parentElement;
+        group.querySelectorAll('button').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        event.target.classList.add('active');
+      }
+
+      /* ── Toggle project assignment ── */
+      function toggleProject(cb) {
+        var row = cb.closest('.project-row');
+        if (cb.checked) {
+          row.classList.add('assigned');
+        } else {
+          row.classList.remove('assigned');
+        }
+        updateCount();
+      }
+
+      /* ── Role toggle ── */
+      function setRole(e, role) {
+        e.preventDefault();
+        e.stopPropagation();
+        var toggle = e.target.closest('.role-toggle');
+        toggle.querySelectorAll('.role-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        e.target.classList.add('active');
+      }
+
+      /* ── Update assigned count ── */
+      function updateCount() {
+        var total = document.querySelectorAll('.project-checkbox').length;
+        var assigned = document.querySelectorAll('.project-checkbox:checked').length;
+        document.getElementById('assignedCount').textContent = assigned;
+        document.getElementById('assignedLabel').textContent =
+          assigned + ' of ' + total + ' assigned';
+      }
+
+      /* ── Search filter ── */
+      function filterProjects() {
+        var query = document.getElementById('searchInput').value.toLowerCase().trim();
+        document.querySelectorAll('.project-row').forEach(function (row) {
+          var name = row.getAttribute('data-name');
+          row.style.display = name.includes(query) ? '' : 'none';
+        });
+        // Hide empty client groups
+        document.querySelectorAll('.client-group').forEach(function (group) {
+          var visibleRows = group.querySelectorAll('.project-row:not([style*="display: none"])');
+          group.style.display = visibleRows.length > 0 ? '' : 'none';
+        });
+      }
+
+      /* ── Toast ── */
+      function showToast(message) {
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('visible');
+        setTimeout(function () {
+          toast.classList.remove('visible');
+        }, 2500);
+      }
+
+      /* ── Init ── */
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
