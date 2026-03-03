@@ -231,6 +231,11 @@ export function TimerBar() {
     // Remember which entry we're stopping so Enter can resume it
     if (currentEntry) {
       lastStoppedEntryIdRef.current = currentEntry.id;
+
+      // Carry the Jira link into pendingJira so it stays visible after stop
+      if (currentEntry.jiraIssue) {
+        setPendingJira(currentEntry.jiraIssue);
+      }
     }
 
     // Send pending description with the stop request — saved atomically
