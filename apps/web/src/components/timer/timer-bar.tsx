@@ -204,23 +204,33 @@ export function TimerBar() {
   }, [description, projectId, tagIds, pendingJira, startTimer, resumeTimer]);
 
   const handleStop = useCallback(async () => {
-    // Remember which entry we're stopping so Enter can resume it
-    if (currentEntry) {
-      lastStoppedEntryIdRef.current = currentEntry.id;
-      // Flush any pending description change before stopping — await to avoid race
-      if (descriptionRef.current !== currentEntry.description) {
-        try {
-          await updateEntry.mutateAsync({
-            id: currentEntry.id,
-            description: descriptionRef.current,
-            source: 'timer_bar',
-          });
-        } catch {
-          // Best-effort — stop even if flush fails
-        }
-      }
+    if (!currentEntry) {
+      stopTimer.mutate();
+      return;
     }
-    stopTimer.mutate();
+
+    // Remember which entry we're stopping so Enter can resume it
+    lastStoppedEntryIdRef.current = currentEntry.id;
+    const pendingDescription = descriptionRef.current;
+    const needsFlush = pendingDescription !== currentEntry.description;
+    const entryId = currentEntry.id;
+
+    // Stop the timer first
+    try {
+      await stopTimer.mutateAsync();
+    } catch {
+      return; // stop failed — don't flush
+    }
+
+    // Then flush pending description change (after stop settled, so the
+    // subsequent entries refetch picks up the new description)
+    if (needsFlush) {
+      updateEntry.mutate({
+        id: entryId,
+        description: pendingDescription,
+        source: 'timer_bar',
+      });
+    }
   }, [stopTimer, currentEntry, updateEntry]);
 
   // Register Enter handler for keyboard navigation — toggle start/stop
