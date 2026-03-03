@@ -391,7 +391,7 @@ export function DayTimeline({ date, entries }: Props) {
   const [tooltipX, setTooltipX] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
-  const { setHovered, select } = useTimelineFocus();
+  const { setHovered, select, selectedEntryId } = useTimelineFocus();
 
   const handleBlockHover = (index: number | null) => {
     setHoveredBlock(index);
@@ -447,43 +447,53 @@ export function DayTimeline({ date, entries }: Props) {
           </div>
 
           {/* Work blocks */}
-          {blocks.map((block, i) => (
-            <div
-              key={i}
-              className="absolute top-[3px] flex items-center rounded cursor-pointer"
-              style={{
-                left: `${block.left * 100}%`,
-                width: `${Math.max(block.width * 100, 0.5)}%`,
-                height: 'calc(100% - 6px)',
-                background: block.color,
-                opacity: hoveredBlock === i ? 1 : block.running ? 0.6 : 0.85,
-                borderStyle: block.running ? 'dashed' : 'solid',
-                borderWidth: block.running ? '1px' : '0',
-                borderColor: block.color,
-                transition: 'opacity 0.15s',
-                zIndex: hoveredBlock === i ? 5 : 1,
-              }}
-              onMouseEnter={(e) => {
-                handleBlockHover(i);
-                const rect = wrapperRef.current?.getBoundingClientRect();
-                if (rect) setTooltipX(e.clientX - rect.left);
-              }}
-              onMouseMove={(e) => {
-                const rect = wrapperRef.current?.getBoundingClientRect();
-                if (rect) setTooltipX(e.clientX - rect.left);
-              }}
-              onClick={() => handleBlockClick(i)}
-            >
-              {block.width > 0.06 && (
-                <span
-                  className="block truncate px-1.5 font-semibold text-[hsl(var(--background))]"
-                  style={{ fontSize: scaled(10) }}
-                >
-                  {block.label}
-                </span>
-              )}
-            </div>
-          ))}
+          {blocks.map((block, i) => {
+            const isHovered = hoveredBlock === i;
+            const isSelected = block.entryId === selectedEntryId;
+            const isHighlighted = isHovered || isSelected;
+
+            return (
+              <div
+                key={i}
+                className="absolute top-[3px] flex items-center rounded cursor-pointer"
+                style={{
+                  left: `${block.left * 100}%`,
+                  width: `${Math.max(block.width * 100, 0.5)}%`,
+                  height: 'calc(100% - 6px)',
+                  background: block.color,
+                  opacity: isHighlighted ? 1 : block.running ? 0.6 : 0.85,
+                  borderStyle: block.running ? 'dashed' : 'solid',
+                  borderWidth: block.running ? '1px' : '0',
+                  borderColor: block.color,
+                  boxShadow:
+                    isSelected && !isHovered
+                      ? `0 0 0 2px ${block.color}, 0 0 8px ${block.color}40`
+                      : 'none',
+                  transition: 'opacity 0.15s, box-shadow 0.15s',
+                  zIndex: isHighlighted ? 5 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  handleBlockHover(i);
+                  const rect = wrapperRef.current?.getBoundingClientRect();
+                  if (rect) setTooltipX(e.clientX - rect.left);
+                }}
+                onMouseMove={(e) => {
+                  const rect = wrapperRef.current?.getBoundingClientRect();
+                  if (rect) setTooltipX(e.clientX - rect.left);
+                }}
+                onClick={() => handleBlockClick(i)}
+              >
+                {block.width > 0.06 && (
+                  <span
+                    className="block truncate px-1.5 font-semibold text-[hsl(var(--background))]"
+                    style={{ fontSize: scaled(10) }}
+                  >
+                    {block.label}
+                  </span>
+                )}
+              </div>
+            );
+          })}
 
           {/* NOW marker */}
           {nowPos !== null && (
