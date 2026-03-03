@@ -6,9 +6,11 @@ import {
   ArrowDown,
   CornerDownLeft,
   Hash,
+  AtSign,
   Loader2,
   Play,
   ArrowRight,
+  UserIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { scaled } from '@/lib/scaled';
@@ -45,14 +47,17 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { IssueRow } from '@/components/jira/issue-row';
 import { JiraIcon } from '@/components/jira/jira-icon';
-import type { JiraIssue, Entry, EntrySearchHit } from '@ternity/shared';
+import { useImpersonation } from '@/providers/impersonation-provider';
+import { useUsers } from '@/hooks/use-reference-data';
+import type { JiraIssue, Entry, EntrySearchHit, UserOption } from '@ternity/shared';
 
 // ── Unified palette item ────────────────────────────────────────────
 
 type PaletteItem =
   | { type: 'entry'; entry: EntrySearchHit }
   | { type: 'jira'; issue: JiraIssue; connectionId: string; siteUrl: string }
-  | { type: 'nav'; nav: NavItem };
+  | { type: 'nav'; nav: NavItem }
+  | { type: 'person'; user: UserOption };
 
 // ── Section definition ──────────────────────────────────────────────
 
@@ -74,6 +79,7 @@ export function CommandPalette() {
 
   const { user } = useAuth();
   const isAdmin = user?.globalRole === 'admin';
+  const { setTarget: setImpersonationTarget } = useImpersonation();
 
   const { data: timerState } = useTimer();
   const startOrResume = useStartOrResumeTimer();
@@ -102,7 +108,30 @@ export function CommandPalette() {
   // Detect # prefix for Jira-only search mode
   const isJiraMode = query.startsWith('#');
   const jiraQuery = isJiraMode ? query.substring(1) : query;
-  const showSearch = isJiraMode || query.length >= 2;
+  // Detect @ prefix for people-only search mode (admin only)
+  const isPeopleMode = isAdmin && query.startsWith('@');
+  const peopleQuery = isPeopleMode ? query.substring(1) : query;
+  const showSearch = isJiraMode || isPeopleMode || query.length >= 2;
+
+  // Data sources — users (admin-only, for impersonation)
+  const usersQuery = useUsers();
+  const allUsers = usersQuery.data ?? [];
+
+  // Filter people by query (matches displayName and email), excludes self
+  const matchPeople = useCallback(
+    (q: string): PaletteItem[] => {
+      if (!isAdmin || !q) return [];
+      const lower = q.toLowerCase();
+      return allUsers
+        .filter((u) => u.active && u.id !== user?.userId)
+        .filter((u) => {
+          const haystack = [u.displayName, u.email].filter(Boolean).join(' ').toLowerCase();
+          return haystack.includes(lower);
+        })
+        .map((u) => ({ type: 'person' as const, user: u }));
+    },
+    [isAdmin, allUsers, user?.userId],
+  );
 
   // Data sources
   const recentEntriesQuery = useRecentEntries();
@@ -157,18 +186,24 @@ export function CommandPalette() {
   const { sections, flatItems } = useMemo(() => {
     const secs: PaletteSection[] = [];
 
-    if (showSearch && isJiraMode) {
+    if (showSearch && isPeopleMode) {
+      // @ mode: only people results (admin only, uncapped)
+      const peopleItems = matchPeople(peopleQuery);
+      if (peopleItems.length > 0) secs.push({ label: 'People', items: peopleItems });
+    } else if (showSearch && isJiraMode) {
       // # mode: only Jira results (uncapped — user explicitly asked for Jira)
       const jiraItems = toJiraItems(jiraSearchQuery.data);
       if (jiraItems.length > 0) secs.push({ label: 'Jira results', items: jiraItems });
     } else if (showSearch) {
-      // Text search: nav first, then entries (capped), then Jira (capped)
+      // Text search: nav first, then entries (capped), then Jira (capped), then people (capped)
       const navItems = matchNavItems(query);
       const entryItems = toEntryItems(entrySearchQuery.data ?? []).slice(0, 5);
       const jiraItems = toJiraItems(jiraSearchQuery.data).slice(0, 5);
+      const peopleItems = matchPeople(query).slice(0, 3);
       if (navItems.length > 0) secs.push({ label: 'Go to', items: navItems });
       if (entryItems.length > 0) secs.push({ label: 'Entries', items: entryItems });
       if (jiraItems.length > 0) secs.push({ label: 'Jira', items: jiraItems });
+      if (peopleItems.length > 0) secs.push({ label: 'View as', items: peopleItems });
     } else {
       // Default browse: recent entries (capped) + Jira assigned + Jira recent
       const entryItems = toEntryItems(recentEntriesQuery.data ?? []).slice(0, 5);
@@ -188,9 +223,12 @@ export function CommandPalette() {
   }, [
     showSearch,
     isJiraMode,
+    isPeopleMode,
     hasJira,
     query,
+    peopleQuery,
     matchNavItems,
+    matchPeople,
     entrySearchQuery.data,
     jiraSearchQuery.data,
     recentEntriesQuery.data,
@@ -307,6 +345,10 @@ export function CommandPalette() {
         navigate(item.nav.to);
         return;
       }
+      if (item.type === 'person') {
+        setImpersonationTarget(item.user.id, item.user.displayName, item.user.globalRole);
+        return;
+      }
       if (item.type === 'entry') {
         if (timerState?.running && getPreference('confirmTimerSwitch')) {
           setPendingEntryAction({ type: 'resume', entry: item.entry });
@@ -328,7 +370,7 @@ export function CommandPalette() {
         doJiraStart(item.issue, item.connectionId);
       }
     },
-    [timerState?.running, doEntryResume, doJiraStart, setOpen, navigate],
+    [timerState?.running, doEntryResume, doJiraStart, setImpersonationTarget, setOpen, navigate],
   );
 
   // Cmd+Enter handler
@@ -338,6 +380,12 @@ export function CommandPalette() {
       if (item.type === 'nav') {
         setOpen(false);
         navigate(item.nav.to);
+        return;
+      }
+      // Person items — same as Enter (impersonate)
+      if (item.type === 'person') {
+        setOpen(false);
+        setImpersonationTarget(item.user.id, item.user.displayName, item.user.globalRole);
         return;
       }
       setOpen(false);
@@ -362,7 +410,7 @@ export function CommandPalette() {
         doJiraPrepare(item.issue, item.connectionId, item.siteUrl);
       }
     },
-    [timerState?.running, doEntryPrepare, doJiraPrepare, setOpen, navigate],
+    [timerState?.running, doEntryPrepare, doJiraPrepare, setImpersonationTarget, setOpen, navigate],
   );
 
   // Switch dialog confirm
@@ -459,7 +507,13 @@ export function CommandPalette() {
                   className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                   style={{ fontSize: scaled(14) }}
                   placeholder={
-                    hasJira ? 'Search entries & Jira... (# for Jira only)' : 'Search entries...'
+                    isAdmin && hasJira
+                      ? 'Search entries & Jira... (# Jira, @ people)'
+                      : isAdmin
+                        ? 'Search entries... (@ to view as someone)'
+                        : hasJira
+                          ? 'Search entries & Jira... (# for Jira only)'
+                          : 'Search entries...'
                   }
                   value={query}
                   onChange={(e) => {
@@ -482,6 +536,16 @@ export function CommandPalette() {
                   <Hash className="h-3 w-3 text-primary" />
                   <span className="text-primary" style={{ fontSize: scaled(10) }}>
                     Jira search mode — searching issues across all connections
+                  </span>
+                </div>
+              )}
+
+              {/* People mode indicator */}
+              {isPeopleMode && (
+                <div className="flex items-center gap-2 border-b border-border bg-amber-500/5 px-4 py-1.5">
+                  <AtSign className="h-3 w-3 text-amber-500" />
+                  <span className="text-amber-500" style={{ fontSize: scaled(10) }}>
+                    People mode — select a person to view as them
                   </span>
                 </div>
               )}
@@ -541,6 +605,11 @@ export function CommandPalette() {
                   {hasJira && (
                     <span className="flex items-center gap-1">
                       <Hash className="h-3 w-3" /> Jira only
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <span className="flex items-center gap-1">
+                      <AtSign className="h-3 w-3" /> View as
                     </span>
                   )}
                 </div>
@@ -649,6 +718,12 @@ function PaletteSections({
                     selected={isSelected}
                     onSelect={() => onSelect(item)}
                   />
+                ) : item.type === 'person' ? (
+                  <PersonResultRow
+                    user={item.user}
+                    selected={isSelected}
+                    onSelect={() => onSelect(item)}
+                  />
                 ) : (
                   <IssueRow
                     issue={item.issue}
@@ -668,6 +743,7 @@ function PaletteSections({
 function itemKey(item: PaletteItem): string {
   if (item.type === 'entry') return `entry-${item.entry.id}`;
   if (item.type === 'jira') return `jira-${item.issue.key}`;
+  if (item.type === 'person') return `person-${item.user.id}`;
   return `nav-${item.nav.to}`;
 }
 
@@ -779,6 +855,57 @@ function EntryResultRow({
         style={{ fontSize: scaled(11) }}
       >
         {formatDuration(entry.totalDurationSeconds)}
+      </span>
+    </button>
+  );
+}
+
+// ── Person result row (impersonation) ───────────────────────────────
+
+function PersonResultRow({
+  user,
+  selected,
+  onSelect,
+}: {
+  user: UserOption;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
+        selected ? 'bg-primary/10 text-foreground' : 'text-foreground/80 hover:bg-muted/50',
+      )}
+      onClick={onSelect}
+    >
+      {/* Avatar or fallback icon */}
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+        ) : (
+          <UserIcon className="h-4 w-4 text-muted-foreground" />
+        )}
+      </div>
+
+      {/* Name + email */}
+      <div className="min-w-0 flex-1">
+        <div className="truncate" style={{ fontSize: scaled(13) }}>
+          {user.displayName}
+        </div>
+        {user.email && (
+          <div className="truncate text-muted-foreground" style={{ fontSize: scaled(10) }}>
+            {user.email}
+          </div>
+        )}
+      </div>
+
+      {/* Role badge */}
+      <span
+        className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 font-brand text-amber-500"
+        style={{ fontSize: scaled(9) }}
+      >
+        View as
       </span>
     </button>
   );
