@@ -203,17 +203,21 @@ export function TimerBar() {
     });
   }, [description, projectId, tagIds, pendingJira, startTimer, resumeTimer]);
 
-  const handleStop = useCallback(() => {
+  const handleStop = useCallback(async () => {
     // Remember which entry we're stopping so Enter can resume it
     if (currentEntry) {
       lastStoppedEntryIdRef.current = currentEntry.id;
-      // Flush any pending description change before stopping
+      // Flush any pending description change before stopping — await to avoid race
       if (descriptionRef.current !== currentEntry.description) {
-        updateEntry.mutate({
-          id: currentEntry.id,
-          description: descriptionRef.current,
-          source: 'timer_bar',
-        });
+        try {
+          await updateEntry.mutateAsync({
+            id: currentEntry.id,
+            description: descriptionRef.current,
+            source: 'timer_bar',
+          });
+        } catch {
+          // Best-effort — stop even if flush fails
+        }
       }
     }
     stopTimer.mutate();
