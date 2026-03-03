@@ -251,6 +251,8 @@ function TimelineRow({
   nowHour: number;
 }) {
   const [hoveredEntry, setHoveredEntry] = useState<TimelineEntry | null>(null);
+  const [tooltipX, setTooltipX] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // Convert API entries to timeline entries (fractional hours)
@@ -331,7 +333,7 @@ function TimelineRow({
       {/* Timeline */}
       <div className="relative py-2 pr-3">
         {/* Wrapper — tooltip renders here, outside the strip, so it's never clipped */}
-        <div className="relative">
+        <div ref={wrapperRef} className="relative">
           {/* Tooltip — outside the strip to avoid overflow clipping */}
           <AnimatePresence>
             {hoveredEntry && (
@@ -343,7 +345,7 @@ function TimelineRow({
                 className="absolute z-30 rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
                 style={{
                   bottom: 'calc(100% + 8px)',
-                  left: `${toPercent((hoveredEntry.startHour + (hoveredEntry.endHour ?? nowHour)) / 2)}%`,
+                  left: `${tooltipX}px`,
                   transform: 'translateX(-50%)',
                   whiteSpace: 'nowrap',
                   maxWidth: '280px',
@@ -416,7 +418,15 @@ function TimelineRow({
                     zIndex: isHovered ? 5 : 1,
                     transition: 'opacity 0.15s',
                   }}
-                  onMouseEnter={() => setHoveredEntry(entry)}
+                  onMouseEnter={(e) => {
+                    setHoveredEntry(entry);
+                    const rect = wrapperRef.current?.getBoundingClientRect();
+                    if (rect) setTooltipX(e.clientX - rect.left);
+                  }}
+                  onMouseMove={(e) => {
+                    const rect = wrapperRef.current?.getBoundingClientRect();
+                    if (rect) setTooltipX(e.clientX - rect.left);
+                  }}
                 >
                   {/* Color layer */}
                   <div

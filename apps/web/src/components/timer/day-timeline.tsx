@@ -267,35 +267,17 @@ function getTimelineLabel(date: string): string {
 
 /* ── Tooltip ──────────────────────────────────────────────────────── */
 
-function BlockTooltip({
-  block,
-  stripRef,
-}: {
-  block: TimeBlock;
-  stripRef: React.RefObject<HTMLDivElement | null>;
-}) {
+function BlockTooltip({ block, tooltipX }: { block: TimeBlock; tooltipX: number }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const hasMultiple = block.allDaySegments.length > 1;
-
-  // Position: centered above the block, clamped to strip edges
-  const style = useMemo(() => {
-    if (!stripRef.current) return { left: '0px' };
-    const stripW = stripRef.current.offsetWidth;
-    // Center of the hovered block in px
-    const blockCenterPx = (block.left + block.width / 2) * stripW;
-    // We'll use transform to center; clamp with left/right later via CSS
-    return {
-      left: `${blockCenterPx}px`,
-      transform: 'translateX(-50%)',
-    };
-  }, [block.left, block.width, stripRef]);
 
   return (
     <div
       ref={tooltipRef}
       className="absolute z-30 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
       style={{
-        ...style,
+        left: `${tooltipX}px`,
+        transform: 'translateX(-50%)',
         bottom: `calc(100% + 8px)`,
         maxWidth: '280px',
       }}
@@ -406,6 +388,8 @@ export function DayTimeline({ date, entries }: Props) {
   const hours = Array.from({ length: totalHours + 1 }, (_, i) => hourStart + i);
 
   const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
+  const [tooltipX, setTooltipX] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const { setHovered, select } = useTimelineFocus();
 
@@ -443,10 +427,10 @@ export function DayTimeline({ date, entries }: Props) {
       </div>
 
       {/* Timeline strip wrapper — relative so tooltip can overflow above */}
-      <div className="relative">
+      <div ref={wrapperRef} className="relative">
         {/* Tooltip — rendered outside the strip to avoid clipping */}
         {hoveredBlock !== null && blocks[hoveredBlock] && (
-          <BlockTooltip block={blocks[hoveredBlock]} stripRef={stripRef} />
+          <BlockTooltip block={blocks[hoveredBlock]} tooltipX={tooltipX} />
         )}
 
         <div
@@ -479,7 +463,15 @@ export function DayTimeline({ date, entries }: Props) {
                 transition: 'opacity 0.15s',
                 zIndex: hoveredBlock === i ? 5 : 1,
               }}
-              onMouseEnter={() => handleBlockHover(i)}
+              onMouseEnter={(e) => {
+                handleBlockHover(i);
+                const rect = wrapperRef.current?.getBoundingClientRect();
+                if (rect) setTooltipX(e.clientX - rect.left);
+              }}
+              onMouseMove={(e) => {
+                const rect = wrapperRef.current?.getBoundingClientRect();
+                if (rect) setTooltipX(e.clientX - rect.left);
+              }}
               onClick={() => handleBlockClick(i)}
             >
               {block.width > 0.06 && (
