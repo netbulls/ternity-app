@@ -14,6 +14,7 @@ import {
   type ThemeMeta,
   type UserPreferences,
   type UserPreferencesPatch,
+  type EntrySortOrder,
 } from '@ternity/shared';
 import { apiFetch } from '@/lib/api';
 
@@ -50,6 +51,8 @@ interface PreferencesContextValue {
   setDefaultProject: (id: string | null) => void;
   tagsEnabled: boolean;
   setTagsEnabled: (value: boolean) => void;
+  entrySortOrder: EntrySortOrder;
+  setEntrySortOrder: (value: EntrySortOrder) => void;
   syncFromServer: (prefs: UserPreferences) => void;
   refreshFromServer: () => void;
 }
@@ -73,6 +76,7 @@ function readStoredPreferences(): UserPreferences {
     confirmTimerSwitch: true,
     defaultProjectId: null,
     tagsEnabled: false,
+    entrySortOrder: 'newest',
   };
 
   try {
@@ -142,6 +146,7 @@ export function setPreference<K extends keyof UserPreferences>(key: K, value: Us
           confirmTimerSwitch: true,
           defaultProjectId: null,
           tagsEnabled: false,
+          entrySortOrder: 'newest',
         };
     prefs[key] = value;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
@@ -169,6 +174,7 @@ export function getPreference<K extends keyof UserPreferences>(key: K): UserPref
     confirmTimerSwitch: true,
     defaultProjectId: null,
     tagsEnabled: false,
+    entrySortOrder: 'newest',
   };
   return defaults[key];
 }
@@ -246,6 +252,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     (value: boolean) => updatePref('tagsEnabled', value),
     [updatePref],
   );
+  const setEntrySortOrder = useCallback(
+    (value: EntrySortOrder) => updatePref('entrySortOrder', value),
+    [updatePref],
+  );
 
   const syncFromServer = useCallback((serverPrefs: UserPreferences) => {
     setPrefs(serverPrefs);
@@ -276,6 +286,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setDefaultProject,
         tagsEnabled: prefs.tagsEnabled,
         setTagsEnabled,
+        entrySortOrder: (prefs.entrySortOrder ?? 'newest') as EntrySortOrder,
+        setEntrySortOrder,
         syncFromServer,
         refreshFromServer,
       }}

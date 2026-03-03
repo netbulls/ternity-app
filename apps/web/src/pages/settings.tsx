@@ -57,6 +57,8 @@ function GeneralPanel() {
     setConfirmTimerSwitch,
     tagsEnabled,
     setTagsEnabled,
+    entrySortOrder,
+    setEntrySortOrder,
   } = usePreferences();
 
   return (
@@ -97,6 +99,52 @@ function GeneralPanel() {
         </p>
         <div className="mt-2">
           <ProjectSelector value={defaultProjectId} onChange={setDefaultProject} />
+        </div>
+      </div>
+
+      {/* Entries */}
+      <div className="mt-6">
+        <h2 className="font-semibold text-foreground" style={{ fontSize: scaled(14) }}>
+          Entries
+        </h2>
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(11) }}>
+          How entries are displayed within each day.
+        </p>
+        <div className="mt-2 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+          <div>
+            <div className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
+              Sort order
+            </div>
+            <div className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
+              Order of entries within a day on the timer page.
+            </div>
+          </div>
+          <div className="flex gap-1 rounded-md border border-border bg-background p-0.5">
+            <button
+              className={cn(
+                'rounded px-3 py-1 text-sm font-medium transition-colors',
+                entrySortOrder === 'newest'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              style={{ fontSize: scaled(11) }}
+              onClick={() => setEntrySortOrder('newest')}
+            >
+              Newest first
+            </button>
+            <button
+              className={cn(
+                'rounded px-3 py-1 text-sm font-medium transition-colors',
+                entrySortOrder === 'oldest'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              style={{ fontSize: scaled(11) }}
+              onClick={() => setEntrySortOrder('oldest')}
+            >
+              Oldest first
+            </button>
+          </div>
         </div>
       </div>
 

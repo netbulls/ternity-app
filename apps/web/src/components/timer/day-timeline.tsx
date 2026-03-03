@@ -541,32 +541,43 @@ export function DayTimeline({ date, entries }: Props) {
 }
 
 /**
- * Utility: calculate today-only seconds for a set of entries.
- * Exported so the My Day page can use the same logic for its day group total.
+ * Utility: calculate day-only seconds for a single entry.
+ * Segments are clamped to the day boundaries so only time within the given day counts.
+ * Running segments use Date.now() as the end time.
  */
-export function calcTodaySeconds(entries: Entry[], date: string): number {
+export function calcEntryDaySeconds(entry: Entry, date: string): number {
   const { dayStartMs, dayEndMs } = getDayBounds(date);
   let total = 0;
 
-  for (const entry of entries) {
-    for (const seg of entry.segments) {
-      if (seg.startedAt) {
-        const segStartMs = new Date(seg.startedAt).getTime();
-        const segEndMs = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
-        const clampedStart = Math.max(segStartMs, dayStartMs);
-        const clampedEnd = Math.min(segEndMs, dayEndMs);
-        if (clampedEnd > clampedStart) {
-          total += Math.round((clampedEnd - clampedStart) / 1000);
-        }
-      } else if (seg.durationSeconds != null) {
-        // Adjustment segments — check createdAt
-        const createdMs = new Date(seg.createdAt).getTime();
-        if (createdMs >= dayStartMs && createdMs < dayEndMs) {
-          total += seg.durationSeconds;
-        }
+  for (const seg of entry.segments) {
+    if (seg.startedAt) {
+      const segStartMs = new Date(seg.startedAt).getTime();
+      const segEndMs = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
+      const clampedStart = Math.max(segStartMs, dayStartMs);
+      const clampedEnd = Math.min(segEndMs, dayEndMs);
+      if (clampedEnd > clampedStart) {
+        total += Math.round((clampedEnd - clampedStart) / 1000);
+      }
+    } else if (seg.durationSeconds != null) {
+      // Adjustment segments — check createdAt
+      const createdMs = new Date(seg.createdAt).getTime();
+      if (createdMs >= dayStartMs && createdMs < dayEndMs) {
+        total += seg.durationSeconds;
       }
     }
   }
 
+  return total;
+}
+
+/**
+ * Utility: calculate today-only seconds for a set of entries.
+ * Exported so the My Day page can use the same logic for its day group total.
+ */
+export function calcTodaySeconds(entries: Entry[], date: string): number {
+  let total = 0;
+  for (const entry of entries) {
+    total += calcEntryDaySeconds(entry, date);
+  }
   return total;
 }

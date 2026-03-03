@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Timer, Pencil, Plus, Minus, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
-import { formatTime, formatDuration } from '@/lib/format';
+import { formatTime, formatDuration, formatDateLabel } from '@/lib/format';
 import { useElapsedSeconds } from '@/hooks/use-timer';
+import { ORG_TIMEZONE } from '@ternity/shared';
 import type { Entry, Segment } from '@ternity/shared';
 
 /** Like formatDuration but shows seconds when under 1 minute */
@@ -36,7 +38,57 @@ function parseMoveNote(note: string | null): { segmentId: string; targetName: st
   return { segmentId: match[1]!, targetName: match[2] ?? '' };
 }
 
-function BlockRow({ segment, isLast, canMove, isMoved, movedToName, onMove }: {
+/** Get the YYYY-MM-DD date of an ISO timestamp in the org timezone */
+function getOrgDate(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ORG_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(iso));
+  const y = parts.find((p) => p.type === 'year')!.value;
+  const m = parts.find((p) => p.type === 'month')!.value;
+  const d = parts.find((p) => p.type === 'day')!.value;
+  return `${y}-${m}-${d}`;
+}
+
+interface SegmentDayGroup {
+  date: string;
+  totalSeconds: number;
+  segments: Segment[];
+}
+
+/** Group segments by day (org timezone), newest day first, segments chronological within day */
+function buildSegmentDayGroups(segments: Segment[]): SegmentDayGroup[] {
+  const dayMap = new Map<string, { totalSeconds: number; segments: Segment[] }>();
+
+  for (const seg of segments) {
+    const date = getOrgDate(seg.startedAt ?? seg.createdAt);
+    if (!dayMap.has(date)) {
+      dayMap.set(date, { totalSeconds: 0, segments: [] });
+    }
+    const group = dayMap.get(date)!;
+    group.segments.push(seg);
+    group.totalSeconds += seg.durationSeconds ?? 0;
+  }
+
+  // Sort days newest first
+  const sortedDates = Array.from(dayMap.keys()).sort((a, b) => b.localeCompare(a));
+
+  return sortedDates.map((date) => {
+    const group = dayMap.get(date)!;
+    return { date, totalSeconds: group.totalSeconds, segments: group.segments };
+  });
+}
+
+function BlockRow({
+  segment,
+  isLast,
+  canMove,
+  isMoved,
+  movedToName,
+  onMove,
+}: {
   segment: Segment;
   isLast: boolean;
   canMove: boolean;
@@ -52,19 +104,15 @@ function BlockRow({ segment, isLast, canMove, isMoved, movedToName, onMove }: {
   const isClocked = segment.type === 'clocked';
 
   return (
-    <div className={cn(
-      'group/block relative grid items-center gap-2',
-      isMoved && 'opacity-50',
-    )} style={{
-      gridTemplateColumns: '16px 1fr auto auto',
-      padding: '7px 0',
-    }}>
+    <div
+      className={cn('group/block relative grid items-center gap-2', isMoved && 'opacity-50')}
+      style={{
+        gridTemplateColumns: '16px 1fr auto auto',
+        padding: '7px 0',
+      }}
+    >
       {/* Timeline connector line */}
-      {!isLast && (
-        <div
-          className="absolute left-[7px] top-[26px] bottom-[-7px] w-px bg-border"
-        />
-      )}
+      {!isLast && <div className="absolute left-[7px] top-[26px] bottom-[-7px] w-px bg-border" />}
 
       {/* Timeline dot */}
       <div className="flex justify-center">
@@ -93,20 +141,31 @@ function BlockRow({ segment, isLast, canMove, isMoved, movedToName, onMove }: {
       {/* Time info */}
       <div style={{ fontSize: scaled(11) }}>
         {isAdjustment ? (
-          <span className="text-muted-foreground">
-            {segment.note || 'Adjustment'}
-          </span>
+          <span className="text-muted-foreground">{segment.note || 'Adjustment'}</span>
         ) : (
           <span className="text-muted-foreground">
-            <span className={cn('font-medium', isMoved ? 'text-muted-foreground line-through' : 'text-foreground')}>
+            <span
+              className={cn(
+                'font-medium',
+                isMoved ? 'text-muted-foreground line-through' : 'text-foreground',
+              )}
+            >
               {formatTime(segment.startedAt!)}
             </span>
             <span className="mx-1 opacity-40">–</span>
-            <span className={cn('font-medium', isMoved ? 'text-muted-foreground line-through' : 'text-foreground')}>
+            <span
+              className={cn(
+                'font-medium',
+                isMoved ? 'text-muted-foreground line-through' : 'text-foreground',
+              )}
+            >
               {segment.stoppedAt ? formatTime(segment.stoppedAt) : 'now'}
             </span>
             {isMoved ? (
-              <span className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border/50 px-1 py-px text-muted-foreground/60" style={{ fontSize: scaled(9) }}>
+              <span
+                className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border/50 px-1 py-px text-muted-foreground/60"
+                style={{ fontSize: scaled(9) }}
+              >
                 <ArrowUpRight className="h-2 w-2" />
                 {movedToName || 'Moved'}
               </span>
@@ -123,12 +182,17 @@ function BlockRow({ segment, isLast, canMove, isMoved, movedToName, onMove }: {
       <span
         className={cn(
           'font-brand text-right font-semibold tabular-nums',
-          isMoved ? 'text-muted-foreground/40 line-through' : isNegative ? 'text-destructive/70' : 'text-foreground',
+          isMoved
+            ? 'text-muted-foreground/40 line-through'
+            : isNegative
+              ? 'text-destructive/70'
+              : 'text-foreground',
         )}
         style={{ fontSize: scaled(11), minWidth: '44px' }}
       >
         {displayDuration != null
-          ? (isNegative ? '−' : '') + (isRunning ? formatLiveDuration(displayDuration) : formatBlockDuration(displayDuration))
+          ? (isNegative ? '−' : '') +
+            (isRunning ? formatLiveDuration(displayDuration) : formatBlockDuration(displayDuration))
           : '—'}
       </span>
 
@@ -150,14 +214,33 @@ function BlockRow({ segment, isLast, canMove, isMoved, movedToName, onMove }: {
   );
 }
 
-function DrawerFooter({ entry, blockCount }: { entry: Entry; blockCount: number }) {
-  const runningSegment = entry.segments.find(
-    (s) => s.type === 'clocked' && !s.stoppedAt,
+function DayGroupHeader({ date, totalSeconds }: { date: string; totalSeconds: number }) {
+  return (
+    <div
+      className="mb-0.5 flex items-center justify-between rounded px-2 py-1"
+      style={{ background: 'hsl(var(--muted) / 0.4)', fontSize: scaled(10) }}
+    >
+      <span className="font-brand font-semibold uppercase tracking-wider text-muted-foreground">
+        {formatDateLabel(date)}
+      </span>
+      <span className="font-brand font-semibold tabular-nums text-foreground/50">
+        {formatDuration(totalSeconds)}
+      </span>
+    </div>
   );
-  const liveElapsed = useElapsedSeconds(
-    runningSegment?.startedAt ?? null,
-    !!runningSegment,
-  );
+}
+
+function DrawerFooter({
+  entry,
+  blockCount,
+  dayCount,
+}: {
+  entry: Entry;
+  blockCount: number;
+  dayCount: number;
+}) {
+  const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
+  const liveElapsed = useElapsedSeconds(runningSegment?.startedAt ?? null, !!runningSegment);
 
   // Sum completed durations + live elapsed for running segment
   const completedTotal = entry.segments
@@ -173,10 +256,16 @@ function DrawerFooter({ entry, blockCount }: { entry: Entry; blockCount: number 
       <span className="font-brand">
         {blockCount} {blockCount === 1 ? 'block' : 'blocks'}
       </span>
+      {dayCount > 1 && (
+        <>
+          <span className="opacity-30">·</span>
+          <span className="font-brand">
+            {dayCount} {dayCount === 1 ? 'day' : 'days'}
+          </span>
+        </>
+      )}
       <span className="opacity-30">·</span>
-      <span className="font-brand font-semibold text-foreground/50">
-        {formatDuration(total)}
-      </span>
+      <span className="font-brand font-semibold text-foreground/50">{formatDuration(total)}</span>
     </div>
   );
 }
@@ -196,14 +285,15 @@ export function TimeBlockDrawer({ entry, onMoveBlock }: TimeBlockDrawerProps) {
   }
 
   // Filter out move-adjustment segments (note starts with "moved:")
-  const visibleSegments = entry.segments.filter(
-    (s) => !parseMoveNote(s.note),
-  );
+  const visibleSegments = entry.segments.filter((s) => !parseMoveNote(s.note));
+
+  // Group visible segments by day
+  const dayGroups = useMemo(() => buildSegmentDayGroups(visibleSegments), [visibleSegments]);
+
+  const hasMultipleDays = dayGroups.length > 1;
 
   // Only allow move on entries with 2+ non-moved segments (completed or running)
-  const movableSegments = visibleSegments.filter(
-    (s) => s.startedAt && !movedSegmentIds.has(s.id),
-  );
+  const movableSegments = visibleSegments.filter((s) => s.startedAt && !movedSegmentIds.has(s.id));
   const canMoveBlocks = !isDeleted && movableSegments.length > 1;
 
   return (
@@ -215,21 +305,32 @@ export function TimeBlockDrawer({ entry, onMoveBlock }: TimeBlockDrawerProps) {
       className="overflow-hidden"
     >
       <div className="px-4 pb-3" style={{ paddingLeft: '34px' }}>
-        <div className="flex flex-col">
-          {visibleSegments.map((segment, i) => (
-            <BlockRow
-              key={segment.id}
-              segment={segment}
-              isLast={i === visibleSegments.length - 1}
-              canMove={canMoveBlocks}
-              isMoved={movedSegmentIds.has(segment.id)}
-              movedToName={movedToNames.get(segment.id)}
-              onMove={() => onMoveBlock(segment.id)}
-            />
-          ))}
-        </div>
+        {dayGroups.map((group) => (
+          <div key={group.date} className="flex flex-col">
+            {/* Day header — only show when segments span multiple days */}
+            {hasMultipleDays && (
+              <DayGroupHeader date={group.date} totalSeconds={group.totalSeconds} />
+            )}
 
-        <DrawerFooter entry={entry} blockCount={visibleSegments.length} />
+            {group.segments.map((segment, i) => (
+              <BlockRow
+                key={segment.id}
+                segment={segment}
+                isLast={i === group.segments.length - 1}
+                canMove={canMoveBlocks}
+                isMoved={movedSegmentIds.has(segment.id)}
+                movedToName={movedToNames.get(segment.id)}
+                onMove={() => onMoveBlock(segment.id)}
+              />
+            ))}
+          </div>
+        ))}
+
+        <DrawerFooter
+          entry={entry}
+          blockCount={visibleSegments.length}
+          dayCount={dayGroups.length}
+        />
       </div>
     </motion.div>
   );

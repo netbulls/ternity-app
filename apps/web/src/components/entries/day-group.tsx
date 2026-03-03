@@ -7,6 +7,7 @@ import { EntryRow } from './entry-row';
 import { DraftEntryRow } from './draft-entry-row';
 import { useDraftEntry } from './draft-entry-context';
 import { useTimelineFocus, TIMER_BAR_ID } from '@/components/timer/timeline-focus-context';
+import { usePreferences } from '@/providers/preferences-provider';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 export function DayGroup({ group }: Props) {
   const { draft, openDraft, savedEntryId } = useDraftEntry();
   const { setEntryIds } = useTimelineFocus();
+  const { entrySortOrder } = usePreferences();
 
   const handleAdd = useCallback(() => {
     openDraft(group.date);
@@ -23,12 +25,17 @@ export function DayGroup({ group }: Props) {
 
   // While the draft is transitioning to a saved entry, filter out the new entry
   // from the entries list to prevent a double-row (draft + entry simultaneously)
+  // Backend returns newest-first; reverse for oldest-first preference.
   const visibleEntries = useMemo(() => {
+    let entries = group.entries;
     if (savedEntryId && draft) {
-      return group.entries.filter((e) => e.id !== savedEntryId);
+      entries = entries.filter((e) => e.id !== savedEntryId);
     }
-    return group.entries;
-  }, [group.entries, savedEntryId, draft]);
+    if (entrySortOrder === 'oldest') {
+      return [...entries].reverse();
+    }
+    return entries;
+  }, [group.entries, savedEntryId, draft, entrySortOrder]);
 
   // Register entry IDs for keyboard navigation (timer bar is always first)
   useEffect(() => {
@@ -73,7 +80,7 @@ export function DayGroup({ group }: Props) {
 
         {/* Entries */}
         {visibleEntries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} />
+          <EntryRow key={entry.id} entry={entry} date={group.date} />
         ))}
       </div>
     </div>

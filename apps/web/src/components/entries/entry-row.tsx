@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Play,
   Square,
@@ -72,9 +72,11 @@ type EditingField = 'description' | 'project' | null;
 
 interface Props {
   entry: Entry;
+  /** YYYY-MM-DD — the day this entry is displayed in (for day-clamped durations) */
+  date: string;
 }
 
-export function EntryRow({ entry }: Props) {
+export function EntryRow({ entry, date }: Props) {
   const { data: timerState } = useTimer();
   const updateEntry = useUpdateEntry();
   const patchEntry = useOptimisticEntryPatch();
@@ -157,34 +159,80 @@ export function EntryRow({ entry }: Props) {
   // Derive running state from timer query (single source of truth)
   const isRunning = timerState?.running === true && timerState.entry?.id === entry.id;
 
-  // Compute elapsed from segments
-  const completedDuration = entry.segments
-    .filter((s) => s.durationSeconds != null)
-    .reduce((sum, s) => sum + s.durationSeconds!, 0);
+  // Compute day-clamped duration for completed segments only
+  const dayBoundsStartMs = new Date(date + 'T00:00:00').getTime();
+  const dayBoundsEndMs = dayBoundsStartMs + 24 * 60 * 60 * 1000;
   const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
-  const elapsed = useElapsedSeconds(
-    runningSegment?.startedAt ?? null,
-    isRunning,
-    completedDuration,
-  );
+
+  // Day-clamped offset: sum of completed segments within this day
+  const dayCompletedOffset = useMemo(() => {
+    let total = 0;
+    for (const seg of entry.segments) {
+      if (seg === runningSegment) continue; // skip running segment — handled by useElapsedSeconds
+      if (seg.startedAt) {
+        const segStartMs = new Date(seg.startedAt).getTime();
+        const segEndMs = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
+        const clampedStart = Math.max(segStartMs, dayBoundsStartMs);
+        const clampedEnd = Math.min(segEndMs, dayBoundsEndMs);
+        if (clampedEnd > clampedStart) {
+          total += Math.round((clampedEnd - clampedStart) / 1000);
+        }
+      } else if (seg.durationSeconds != null) {
+        const createdMs = new Date(seg.createdAt).getTime();
+        if (createdMs >= dayBoundsStartMs && createdMs < dayBoundsEndMs) {
+          total += seg.durationSeconds;
+        }
+      }
+    }
+    return total;
+  }, [entry.segments, dayBoundsStartMs, dayBoundsEndMs, runningSegment]);
+
+  // For running entries: clamp the running segment's start to day start
+  // so the ticking only counts time within this day
+  const isRunningToday = isRunning && runningSegment != null;
+  const runningStartClamped = isRunningToday
+    ? new Date(
+        Math.max(new Date(runningSegment!.startedAt!).getTime(), dayBoundsStartMs),
+      ).toISOString()
+    : null;
+  const elapsed = useElapsedSeconds(runningStartClamped, isRunningToday, dayCompletedOffset);
+
+  const displayDuration = isRunningToday ? elapsed : dayCompletedOffset;
 
   const isDeleted = !entry.isActive;
   const noProject = !entry.projectId;
   const noDesc = !entry.description;
 
-  // Timed segments for time range display (clocked + manual entries with startedAt)
-  const timedSegments = entry.segments.filter((s) => s.startedAt != null);
-  const firstTimed = timedSegments[0];
-  const lastTimed = timedSegments[timedSegments.length - 1];
+  // Day-clamped timed segments for time range display
+  const dayTimedSegments = useMemo(() => {
+    return entry.segments
+      .filter((s) => s.startedAt != null)
+      .filter((s) => {
+        const segStart = new Date(s.startedAt!).getTime();
+        const segEnd = s.stoppedAt ? new Date(s.stoppedAt).getTime() : Date.now();
+        // Segment overlaps with this day
+        return segStart < dayBoundsEndMs && segEnd > dayBoundsStartMs;
+      })
+      .map((s) => ({
+        ...s,
+        // Clamp start/stop to day boundaries for display
+        clampedStart: new Date(
+          Math.max(new Date(s.startedAt!).getTime(), dayBoundsStartMs),
+        ).toISOString(),
+        clampedStop: s.stoppedAt
+          ? new Date(Math.min(new Date(s.stoppedAt).getTime(), dayBoundsEndMs)).toISOString()
+          : null, // still running
+      }));
+  }, [entry.segments, dayBoundsStartMs, dayBoundsEndMs]);
+  const firstTimed = dayTimedSegments[0];
+  const lastTimed = dayTimedSegments[dayTimedSegments.length - 1];
 
-  const durationStr = isRunning
-    ? formatDuration(elapsed)
-    : formatDuration(entry.totalDurationSeconds);
+  const durationStr = formatDuration(displayDuration);
 
   const timeRange = firstTimed
-    ? isRunning
-      ? `${formatTime(firstTimed.startedAt!)} – now`
-      : `${formatTime(firstTimed.startedAt!)} – ${formatTime(lastTimed?.stoppedAt ?? firstTimed.startedAt!)}`
+    ? isRunning && !lastTimed?.clampedStop
+      ? `${formatTime(firstTimed.clampedStart)} – now`
+      : `${formatTime(firstTimed.clampedStart)} – ${formatTime(lastTimed?.clampedStop ?? firstTimed.clampedStart)}`
     : '';
 
   // --- Handlers ---

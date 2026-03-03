@@ -303,24 +303,84 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       };
     });
 
-    // 6. Group by lastSegmentAt date (entries appear in the day of their most recent segment)
+    // 6. Group entries by every day they have segments in.
+    //    An entry can appear in multiple day groups if it has segments spanning different days.
+    //    For running segments, treat "now" as the end time so the entry also appears in today's group.
     const groups = new Map<string, { totalSeconds: number; entries: Entry[] }>();
     for (const entry of entries) {
-      const date = entry.lastSegmentAt.slice(0, 10);
-      if (!groups.has(date)) {
-        groups.set(date, { totalSeconds: 0, entries: [] });
+      const segmentDates = new Set<string>();
+      for (const seg of entry.segments) {
+        if (seg.startedAt) {
+          // Timed segment — add every day between start and stop (or now if running)
+          const startDate = seg.startedAt.slice(0, 10);
+          const endDate = seg.stoppedAt
+            ? seg.stoppedAt.slice(0, 10)
+            : new Date().toISOString().slice(0, 10);
+          // Add all dates from start to end (handles multi-day segments)
+          let cur = startDate;
+          while (cur <= endDate) {
+            segmentDates.add(cur);
+            // Advance to next day
+            const d = new Date(cur + 'T12:00:00Z');
+            d.setUTCDate(d.getUTCDate() + 1);
+            cur = d.toISOString().slice(0, 10);
+          }
+        } else {
+          // Adjustment segment — use createdAt date
+          segmentDates.add(seg.createdAt.slice(0, 10));
+        }
       }
-      const group = groups.get(date)!;
-      group.entries.push(entry);
-      group.totalSeconds += entry.totalDurationSeconds;
+      // Fallback: if entry has no segments, use lastSegmentAt (which falls back to createdAt)
+      if (segmentDates.size === 0) {
+        segmentDates.add(entry.lastSegmentAt.slice(0, 10));
+      }
+      for (const date of segmentDates) {
+        if (!groups.has(date)) {
+          groups.set(date, { totalSeconds: 0, entries: [] });
+        }
+        const group = groups.get(date)!;
+        group.entries.push(entry);
+        group.totalSeconds += entry.totalDurationSeconds;
+      }
     }
 
+    // 7. Sort entries within each day group by their most recent segment start time
+    //    within THAT day (not globally). Most recent first.
     const dayGroups: DayGroup[] = Array.from(groups.entries()).map(
-      ([date, { totalSeconds, entries: groupEntries }]) => ({
-        date,
-        totalSeconds,
-        entries: groupEntries,
-      }),
+      ([date, { totalSeconds, entries: groupEntries }]) => {
+        const dayStart = `${date}T00:00:00.000Z`;
+        const dayEnd = `${date}T23:59:59.999Z`;
+
+        // Compute per-entry "last segment within this day" for sorting
+        const withDayOrder = groupEntries.map((entry) => {
+          let latestInDay: string | null = null;
+          for (const seg of entry.segments) {
+            const segTime = seg.startedAt ?? seg.createdAt;
+            if (segTime >= dayStart && segTime <= dayEnd) {
+              if (!latestInDay || segTime > latestInDay) {
+                latestInDay = segTime;
+              }
+            }
+          }
+          // For running segments that started before today but are still running,
+          // they should sort near the top of today
+          if (!latestInDay) {
+            const runningSeg = entry.segments.find(
+              (s) => s.type === 'clocked' && !s.stoppedAt && s.startedAt,
+            );
+            if (runningSeg) latestInDay = dayEnd;
+          }
+          return { entry, sortKey: latestInDay ?? entry.lastSegmentAt };
+        });
+
+        withDayOrder.sort((a, b) => (a.sortKey > b.sortKey ? -1 : a.sortKey < b.sortKey ? 1 : 0));
+
+        return {
+          date,
+          totalSeconds,
+          entries: withDayOrder.map((w) => w.entry),
+        };
+      },
     );
 
     return dayGroups;

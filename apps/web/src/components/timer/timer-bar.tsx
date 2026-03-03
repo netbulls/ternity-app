@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Play, Square, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,8 @@ export function TimerBar() {
       setPendingJira(null);
     }
     setSyncedFingerprint(currentFingerprint);
+    // Timer is confirmed running — clear the stopped ref
+    lastStoppedEntryIdRef.current = null;
   }
   if (!running && syncedFingerprint !== null) {
     setSyncedFingerprint(null);
@@ -116,15 +118,61 @@ export function TimerBar() {
     return () => clearTimeout(timer);
   }, [description, running, currentEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Compute elapsed from segments
-  const completedDuration =
-    currentEntry?.segments
-      .filter((s) => s.durationSeconds != null)
-      .reduce((sum, s) => sum + s.durationSeconds!, 0) ?? 0;
+  // Compute today-only elapsed from segments (clamp to today's boundaries)
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayStartMs = useMemo(() => new Date(todayStr + 'T00:00:00').getTime(), [todayStr]);
+  const todayEndMs = useMemo(() => todayStartMs + 24 * 60 * 60 * 1000, [todayStartMs]);
   const runningSegment = currentEntry?.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
-  const elapsed = useElapsedSeconds(runningSegment?.startedAt ?? null, running, completedDuration);
 
-  const display = formatTimer(running ? elapsed : 0);
+  // Sum completed segments clamped to today
+  const todayCompletedOffset = useMemo(() => {
+    if (!currentEntry) return 0;
+    let total = 0;
+    for (const seg of currentEntry.segments) {
+      if (seg === runningSegment) continue; // skip running — handled by useElapsedSeconds
+      if (seg.startedAt) {
+        const segStartMs = new Date(seg.startedAt).getTime();
+        const segEndMs = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
+        const clampedStart = Math.max(segStartMs, todayStartMs);
+        const clampedEnd = Math.min(segEndMs, todayEndMs);
+        if (clampedEnd > clampedStart) {
+          total += Math.round((clampedEnd - clampedStart) / 1000);
+        }
+      } else if (seg.durationSeconds != null) {
+        const createdMs = new Date(seg.createdAt).getTime();
+        if (createdMs >= todayStartMs && createdMs < todayEndMs) {
+          total += seg.durationSeconds;
+        }
+      }
+    }
+    return total;
+  }, [currentEntry, runningSegment, todayStartMs, todayEndMs]);
+
+  // Clamp running segment's start to today's start
+  const runningStartClamped =
+    running && runningSegment?.startedAt
+      ? new Date(Math.max(new Date(runningSegment.startedAt).getTime(), todayStartMs)).toISOString()
+      : null;
+
+  // While resuming, the server hasn't returned segments yet — use the last known
+  // elapsed value as offset so the timer doesn't briefly flash 0:00:00.
+  const lastElapsedRef = useRef(0);
+  const isResumingWithoutData = running && !runningSegment;
+  const effectiveOffset = isResumingWithoutData ? lastElapsedRef.current : todayCompletedOffset;
+  const elapsed = useElapsedSeconds(runningStartClamped, running, effectiveOffset);
+
+  // Track last elapsed for continuity across stop/resume
+  if (running && runningSegment) {
+    lastElapsedRef.current = elapsed;
+  }
+
+  // Show ticking elapsed when running, remembered total when just stopped, 0 otherwise
+  const displayElapsed = running
+    ? elapsed
+    : lastStoppedEntryIdRef.current
+      ? lastElapsedRef.current
+      : 0;
+  const display = formatTimer(displayElapsed);
   const digits = display.split('');
 
   // Jira issue linked to current entry (from server) or pending (local, not yet started)
@@ -136,7 +184,9 @@ export function TimerBar() {
     // If we just stopped an entry and nothing was changed, resume it (new segment)
     if (lastStoppedEntryIdRef.current) {
       resumeTimer.mutate(lastStoppedEntryIdRef.current);
-      lastStoppedEntryIdRef.current = null;
+      // Don't clear lastStoppedEntryIdRef here — keep it so the display shows the
+      // accumulated time until the server confirms the resume. It gets cleared once
+      // the timer query returns running=true and the sync fingerprint updates.
       return;
     }
     startTimer.mutate({
@@ -157,9 +207,17 @@ export function TimerBar() {
     // Remember which entry we're stopping so Enter can resume it
     if (currentEntry) {
       lastStoppedEntryIdRef.current = currentEntry.id;
+      // Flush any pending description change before stopping
+      if (descriptionRef.current !== currentEntry.description) {
+        updateEntry.mutate({
+          id: currentEntry.id,
+          description: descriptionRef.current,
+          source: 'timer_bar',
+        });
+      }
     }
     stopTimer.mutate();
-  }, [stopTimer, currentEntry]);
+  }, [stopTimer, currentEntry, updateEntry]);
 
   // Register Enter handler for keyboard navigation — toggle start/stop
   const handleToggleRef = useRef<() => void>(() => {});
@@ -218,23 +276,14 @@ export function TimerBar() {
     setSuggestOpen(!running && effectiveLen >= 2);
   };
 
-  // Handle suggestion selection — fill description, project, and Jira link
-  const handleSuggestSelect = useCallback((entry: EntrySearchHit) => {
-    setDescription(entry.description);
-    if (entry.projectId) setProjectId(entry.projectId);
-    if (entry.jiraIssueKey && entry.jiraConnectionId) {
-      setPendingJira({
-        key: entry.jiraIssueKey,
-        summary: entry.jiraIssueSummary ?? '',
-        connectionId: entry.jiraConnectionId,
-        siteUrl: '', // not available from search hit, will be resolved on start
-      });
-    } else {
-      setPendingJira(null);
-    }
-    setSuggestOpen(false);
-    lastStoppedEntryIdRef.current = null; // selected a different entry, don't resume old one
-  }, []);
+  // Handle suggestion selection — resume the existing entry (add new segment)
+  const handleSuggestSelect = useCallback(
+    (entry: EntrySearchHit) => {
+      setSuggestOpen(false);
+      resumeTimer.mutate(entry.id);
+    },
+    [resumeTimer],
+  );
 
   // Issue select handler — used by Jira dropdown and suggest
   const handleIssueSelect = useCallback(
@@ -428,7 +477,7 @@ export function TimerBar() {
           {/* Clear button — resets to empty state */}
           {!running && description && (
             <button
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/30 hover:text-muted-foreground"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/50 bg-muted/40 text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/15 hover:text-destructive"
               onClick={() => {
                 setDescription('');
                 setProjectId(getPreference('defaultProjectId'));
@@ -439,7 +488,7 @@ export function TimerBar() {
               }}
               title="Clear"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -457,7 +506,7 @@ export function TimerBar() {
           />
         </div>
 
-        {/* Animated digits when running, static when idle */}
+        {/* Animated digits when running, accumulated when paused, dim when idle */}
         <div className="relative z-10 flex flex-col items-end font-brand tabular-nums">
           <div
             className="font-semibold tracking-wider text-primary"
@@ -469,6 +518,8 @@ export function TimerBar() {
                   <AnimatedDigit key={i} char={d} />
                 ))}
               </span>
+            ) : displayElapsed > 0 ? (
+              <span style={{ opacity: 0.6 }}>{display}</span>
             ) : (
               <span style={{ opacity: 0.4 }}>0:00:00</span>
             )}
