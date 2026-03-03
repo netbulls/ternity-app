@@ -10,6 +10,7 @@ import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
 import { JiraCallbackPage } from '@/pages/jira-callback';
 import { DashboardPage } from '@/pages/dashboard';
+import { TeamPage } from '@/pages/team';
 
 export const router = createBrowserRouter([
   {
@@ -69,6 +70,34 @@ export const router = createBrowserRouter([
           lazy: async () => {
             const { DevPresencePage } = await import('@/pages/dev-presence');
             return { Component: DevPresencePage };
+          },
+        },
+        {
+          path: '/dev/presence-v2',
+          lazy: async () => {
+            const { DevPresenceV2Page } = await import('@/pages/dev-presence-v2');
+            return { Component: DevPresenceV2Page };
+          },
+        },
+        {
+          path: '/dev/presence-v3',
+          lazy: async () => {
+            const { DevPresenceV3Page } = await import('@/pages/dev-presence-v3');
+            return { Component: DevPresenceV3Page };
+          },
+        },
+        {
+          path: '/dev/presence-v4',
+          lazy: async () => {
+            const { DevPresenceV4Page } = await import('@/pages/dev-presence-v4');
+            return { Component: DevPresenceV4Page };
+          },
+        },
+        {
+          path: '/dev/presence-v5',
+          lazy: async () => {
+            const { DevPresenceV5Page } = await import('@/pages/dev-presence-v5');
+            return { Component: DevPresenceV5Page };
           },
         },
         {
@@ -182,6 +211,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: '/', element: <TimerPage /> },
+      { path: '/team', element: <TeamPage /> },
       { path: '/entries', element: <EntriesPage /> },
       { path: '/dashboard', element: <Navigate to="/reports" replace /> },
       { path: '/reports', element: <DashboardPage /> },

@@ -33,6 +33,7 @@ export interface NavItem {
 
 export const trackingNav: NavItem[] = [
   { to: '/', label: 'My Day', icon: Timer, keywords: ['home', 'timer', 'today'] },
+  { to: '/team', label: 'Team', icon: Users, keywords: ['presence', 'board', 'people', 'who'] },
   { to: '/entries', label: 'Entries', icon: List, keywords: ['time', 'history', 'log'] },
   { to: '/calendar', label: 'Calendar', icon: Calendar, keywords: ['schedule', 'dates'] },
   { to: '/leave', label: 'Leave', icon: Palmtree, keywords: ['holiday', 'vacation', 'absence'] },
