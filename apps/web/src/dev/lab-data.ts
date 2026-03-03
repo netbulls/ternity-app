@@ -153,6 +153,38 @@ export const LAB_SECTIONS: LabProductSection[] = [
               'Interactive prototype: team board with live status, my day reconciliation, schedule editor, leave request, admin views, quarterly balance, attendance record',
             date: '2026-02-17T22:00:00',
           },
+          {
+            kind: 'prototype',
+            title: 'V2 — Timeline Roster',
+            route: '/dev/presence-v2',
+            description:
+              'Team board with full-width per-person timeline bars (7-20h). Logged entry blocks, running timer pulse, idle gaps, now line. Filter + search. 14 mock users.',
+            date: '2026-03-02T19:00:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V3 — Live Feed',
+            route: '/dev/presence-v3',
+            description:
+              'Split layout: compact status list (55%) + live activity feed (45%). Click person to filter feed. Simulated live updates. ~40 events across the day.',
+            date: '2026-03-02T19:10:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V4 — Heat Map Matrix',
+            route: '/dev/presence-v4',
+            description:
+              'Hours × people grid with half-hour cells. Color-coded: active (green), logged (teal), idle (amber), leave (indigo). Summary row with hourly aggregates.',
+            date: '2026-03-02T19:20:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V5 — Status Roster',
+            route: '/dev/presence-v5',
+            description:
+              'V2 evolved: explicit status column with presence badges, project filter dropdown (defaults to user default), no hour totals between people, project-aware timeline highlighting.',
+            date: '2026-03-03T10:00:00',
+          },
         ],
       },
       {
