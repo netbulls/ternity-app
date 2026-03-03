@@ -251,7 +251,6 @@ function TimelineRow({
   nowHour: number;
 }) {
   const [hoveredEntry, setHoveredEntry] = useState<TimelineEntry | null>(null);
-  const [tooltipX, setTooltipX] = useState(0);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // Convert API entries to timeline entries (fractional hours)
@@ -331,100 +330,9 @@ function TimelineRow({
 
       {/* Timeline */}
       <div className="relative py-2 pr-3">
-        <div ref={stripRef} className="relative h-8 overflow-hidden rounded bg-muted/30">
-          {/* Scheduled block background — skip for off-hours */}
-          {hasSchedule && member.status !== 'off-schedule' && (
-            <div
-              className="absolute top-0 h-full rounded border-l border-r bg-primary/5 border-primary/10"
-              style={{ left: `${schedLeft}%`, width: `${schedWidth}%` }}
-            />
-          )}
-
-          {/* Entry blocks */}
-          {entries.map((entry) => {
-            const endH = entry.endHour ?? nowHour;
-            const left = toPercent(entry.startHour);
-            const width = toPercent(endH) - left;
-            const isHighlightedProject =
-              highlightProject !== null && entry.projectName === highlightProject;
-            const isDimmed = highlightProject !== null && entry.projectName !== highlightProject;
-
-            return (
-              <motion.div
-                key={entry.id}
-                className="absolute top-1.5 h-5 cursor-pointer overflow-hidden rounded-sm transition-all"
-                style={{
-                  left: `${left}%`,
-                  width: `${Math.max(width, 0.5)}%`,
-                }}
-                onMouseEnter={(e) => {
-                  setHoveredEntry(entry);
-                  const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                  if (rect) setTooltipX(e.clientX - rect.left);
-                }}
-                onMouseLeave={() => setHoveredEntry(null)}
-              >
-                {/* Color layer */}
-                <div
-                  className="absolute inset-0 rounded-sm"
-                  style={{
-                    backgroundColor: entry.projectColor,
-                    opacity: isDimmed
-                      ? 0.15
-                      : isHighlightedProject
-                        ? 0.95
-                        : entry.running
-                          ? 0.95
-                          : 0.8,
-                  }}
-                />
-                {/* Text layer — no opacity inheritance */}
-                {!isDimmed && (
-                  <span
-                    className="relative block truncate px-1 leading-5 font-semibold"
-                    style={{
-                      fontSize: scaled(8),
-                      color: textForColor(entry.projectColor),
-                    }}
-                  >
-                    {entry.projectName}
-                  </span>
-                )}
-                {entry.running && (
-                  <motion.div
-                    className="absolute right-0 top-0 h-full w-1 rounded-r-sm"
-                    style={{ backgroundColor: entry.projectColor }}
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                )}
-              </motion.div>
-            );
-          })}
-
-          {/* Now line */}
-          <div
-            className="absolute top-0 bottom-0 z-10 w-0.5 bg-destructive/80"
-            style={{ left: `${nowPos}%` }}
-          >
-            <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-destructive" />
-          </div>
-
-          {/* Hour ticks */}
-          {Array.from(
-            { length: TIMELINE_END - TIMELINE_START + 1 },
-            (_, i) => TIMELINE_START + i,
-          ).map((h) => (
-            <span
-              key={h}
-              className="absolute bottom-0 text-muted-foreground/30"
-              style={{ left: `${toPercent(h)}%`, fontSize: 7, transform: 'translateX(-50%)' }}
-            >
-              {h}
-            </span>
-          ))}
-
-          {/* Tooltip */}
+        {/* Wrapper — tooltip renders here, outside the strip, so it's never clipped */}
+        <div className="relative">
+          {/* Tooltip — outside the strip to avoid overflow clipping */}
           <AnimatePresence>
             {hoveredEntry && (
               <motion.div
@@ -435,7 +343,8 @@ function TimelineRow({
                 className="absolute z-30 rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
                 style={{
                   bottom: 'calc(100% + 8px)',
-                  left: `clamp(0px, ${tooltipX}px - 100px, calc(100% - 220px))`,
+                  left: `${toPercent((hoveredEntry.startHour + (hoveredEntry.endHour ?? nowHour)) / 2)}%`,
+                  transform: 'translateX(-50%)',
                   whiteSpace: 'nowrap',
                   maxWidth: '280px',
                 }}
@@ -471,6 +380,104 @@ function TimelineRow({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Strip */}
+          <div
+            ref={stripRef}
+            className="relative h-8 rounded bg-muted/30"
+            onMouseLeave={() => setHoveredEntry(null)}
+          >
+            {/* Scheduled block background — skip for off-hours */}
+            {hasSchedule && member.status !== 'off-schedule' && (
+              <div
+                className="absolute top-0 h-full rounded border-l border-r bg-primary/5 border-primary/10"
+                style={{ left: `${schedLeft}%`, width: `${schedWidth}%` }}
+              />
+            )}
+
+            {/* Entry blocks */}
+            {entries.map((entry) => {
+              const endH = entry.endHour ?? nowHour;
+              const left = toPercent(entry.startHour);
+              const width = toPercent(endH) - left;
+              const isHighlightedProject =
+                highlightProject !== null && entry.projectName === highlightProject;
+              const isDimmed = highlightProject !== null && entry.projectName !== highlightProject;
+              const isHovered = hoveredEntry?.id === entry.id;
+
+              return (
+                <div
+                  key={entry.id}
+                  className="absolute top-1.5 h-5 cursor-pointer overflow-hidden rounded-sm"
+                  style={{
+                    left: `${left}%`,
+                    width: `${Math.max(width, 0.5)}%`,
+                    opacity: isHovered ? 1 : isDimmed ? 0.15 : 1,
+                    zIndex: isHovered ? 5 : 1,
+                    transition: 'opacity 0.15s',
+                  }}
+                  onMouseEnter={() => setHoveredEntry(entry)}
+                >
+                  {/* Color layer */}
+                  <div
+                    className="absolute inset-0 rounded-sm"
+                    style={{
+                      backgroundColor: entry.projectColor,
+                      opacity: isDimmed
+                        ? 1
+                        : isHighlightedProject || isHovered
+                          ? 0.95
+                          : entry.running
+                            ? 0.95
+                            : 0.8,
+                    }}
+                  />
+                  {/* Text layer — no opacity inheritance */}
+                  {!isDimmed && (
+                    <span
+                      className="relative block truncate px-1 leading-5 font-semibold"
+                      style={{
+                        fontSize: scaled(8),
+                        color: textForColor(entry.projectColor),
+                      }}
+                    >
+                      {entry.projectName}
+                    </span>
+                  )}
+                  {entry.running && (
+                    <motion.div
+                      className="absolute right-0 top-0 h-full w-1 rounded-r-sm"
+                      style={{ backgroundColor: entry.projectColor }}
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Now line */}
+            <div
+              className="absolute top-0 bottom-0 z-10 w-0.5 bg-destructive/80"
+              style={{ left: `${nowPos}%` }}
+            >
+              <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-destructive" />
+            </div>
+
+            {/* Hour ticks */}
+            {Array.from(
+              { length: TIMELINE_END - TIMELINE_START + 1 },
+              (_, i) => TIMELINE_START + i,
+            ).map((h) => (
+              <span
+                key={h}
+                className="absolute bottom-0 text-muted-foreground/30"
+                style={{ left: `${toPercent(h)}%`, fontSize: 7, transform: 'translateX(-50%)' }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </motion.div>
