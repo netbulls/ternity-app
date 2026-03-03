@@ -326,7 +326,7 @@ export function EntryRow({ entry, date }: Props) {
   };
 
   const handleStop = () => {
-    stopTimer.mutate();
+    stopTimer.mutate(undefined);
   };
 
   const handleMoveBlock = (segmentId: string) => {

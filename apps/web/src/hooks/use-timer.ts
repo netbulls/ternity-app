@@ -127,7 +127,11 @@ export function useStopTimer() {
   const { effectiveUserId } = useImpersonation();
 
   const mutation = useMutation({
-    mutationFn: () => apiFetch<TimerState>('/timer/stop', { method: 'POST' }),
+    mutationFn: (data: { description?: string } | void) =>
+      apiFetch<TimerState>('/timer/stop', {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timer', effectiveUserId] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });
@@ -136,7 +140,7 @@ export function useStopTimer() {
     },
     onError: () => {
       toast.error('Failed to stop timer', {
-        action: { label: 'Retry', onClick: () => mutation.mutate() },
+        action: { label: 'Retry', onClick: () => mutation.mutate(undefined) },
       });
     },
   });

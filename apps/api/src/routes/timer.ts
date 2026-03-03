@@ -466,6 +466,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   fastify.post('/api/timer/stop', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
+    const body = (request.body ?? {}) as { description?: string };
 
     // Find running segment via join
     const [runningRow] = await db
@@ -499,6 +500,34 @@ export async function timerRoutes(fastify: FastifyInstance) {
         .update(entrySegments)
         .set({ stoppedAt: now, durationSeconds: duration })
         .where(eq(entrySegments.id, runningRow.segmentId));
+
+      // If a pending description was sent, save it atomically with the stop
+      if (body.description !== undefined) {
+        const [existing] = await tx
+          .select({ description: timeEntries.description })
+          .from(timeEntries)
+          .where(eq(timeEntries.id, runningRow.entryId))
+          .limit(1);
+
+        if (existing && existing.description !== body.description) {
+          await tx
+            .update(timeEntries)
+            .set({ description: body.description })
+            .where(eq(timeEntries.id, runningRow.entryId));
+
+          await recordAudit({
+            entryId: runningRow.entryId,
+            userId,
+            actorId,
+            action: 'updated',
+            changes: {
+              description: { old: existing.description, new: body.description },
+            },
+            metadata: { source: 'timer_bar' },
+            tx,
+          });
+        }
+      }
 
       // Audit: timer stopped
       await recordAudit({

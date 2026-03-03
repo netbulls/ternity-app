@@ -77,18 +77,26 @@ export function TimerBar() {
     siteUrl: string;
   } | null>(null);
 
+  // Track the last description value confirmed saved to the server.
+  // We compare against this — NOT currentEntry.description which gets
+  // optimistically patched and would make the debounce think "already saved".
+  const savedDescriptionRef = useRef<string | null>(null);
+  const descriptionRef = useRef(description);
+  descriptionRef.current = description;
+
   // When timer data loads or entry changes, sync local state from running entry.
-  // We track a fingerprint (id + description + projectId) so that edits made
-  // from the entries list (which refetch the timer query) are picked up here.
+  // We track a fingerprint (id + projectId) so that edits made from the entries
+  // list (which refetch the timer query) are picked up here.
+  // NOTE: description is NOT in the fingerprint — it's tracked separately via
+  // savedDescriptionRef to avoid the optimistic cache patch creating false syncs.
   const [syncedFingerprint, setSyncedFingerprint] = useState<string | null>(null);
   const currentFingerprint =
-    running && currentEntry
-      ? `${currentEntry.id}::${currentEntry.description}::${currentEntry.projectId ?? ''}`
-      : null;
+    running && currentEntry ? `${currentEntry.id}::${currentEntry.projectId ?? ''}` : null;
   if (currentFingerprint && syncedFingerprint !== currentFingerprint) {
     setDescription(currentEntry!.description);
     setProjectId(currentEntry!.projectId);
     setTagIds(currentEntry!.tags.map((t) => t.id));
+    savedDescriptionRef.current = currentEntry!.description;
     if (syncedFingerprint === null) {
       // First sync for this entry — clear pending Jira (linked issue comes from entry)
       setPendingJira(null);
@@ -101,18 +109,34 @@ export function TimerBar() {
     setSyncedFingerprint(null);
   }
 
+  // Reset savedDescriptionRef when entry changes (new timer started / resumed)
+  const currentEntryId = currentEntry?.id ?? null;
+  useEffect(() => {
+    if (currentEntryId && currentEntry) {
+      savedDescriptionRef.current = currentEntry.description;
+    } else {
+      savedDescriptionRef.current = null;
+    }
+  }, [currentEntryId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Debounced description save while running (800ms after typing stops)
-  const descriptionRef = useRef(description);
-  descriptionRef.current = description;
   useEffect(() => {
     if (!running || !currentEntry) return;
     const timer = setTimeout(() => {
-      if (descriptionRef.current !== currentEntry.description) {
-        updateEntry.mutate({
-          id: currentEntry.id,
-          description: descriptionRef.current,
-          source: 'timer_bar',
-        });
+      if (descriptionRef.current !== savedDescriptionRef.current) {
+        const valueToSave = descriptionRef.current;
+        updateEntry.mutate(
+          {
+            id: currentEntry.id,
+            description: valueToSave,
+            source: 'timer_bar',
+          },
+          {
+            onSuccess: () => {
+              savedDescriptionRef.current = valueToSave;
+            },
+          },
+        );
       }
     }, 800);
     return () => clearTimeout(timer);
@@ -203,35 +227,19 @@ export function TimerBar() {
     });
   }, [description, projectId, tagIds, pendingJira, startTimer, resumeTimer]);
 
-  const handleStop = useCallback(async () => {
-    if (!currentEntry) {
-      stopTimer.mutate();
-      return;
-    }
-
+  const handleStop = useCallback(() => {
     // Remember which entry we're stopping so Enter can resume it
-    lastStoppedEntryIdRef.current = currentEntry.id;
+    if (currentEntry) {
+      lastStoppedEntryIdRef.current = currentEntry.id;
+    }
+
+    // Send pending description with the stop request — saved atomically
+    // in the same transaction, so the entries refetch always gets the right value.
     const pendingDescription = descriptionRef.current;
-    const needsFlush = pendingDescription !== currentEntry.description;
-    const entryId = currentEntry.id;
+    const needsFlush = currentEntry && pendingDescription !== currentEntry.description;
 
-    // Stop the timer first
-    try {
-      await stopTimer.mutateAsync();
-    } catch {
-      return; // stop failed — don't flush
-    }
-
-    // Then flush pending description change (after stop settled, so the
-    // subsequent entries refetch picks up the new description)
-    if (needsFlush) {
-      updateEntry.mutate({
-        id: entryId,
-        description: pendingDescription,
-        source: 'timer_bar',
-      });
-    }
-  }, [stopTimer, currentEntry, updateEntry]);
+    stopTimer.mutate(needsFlush ? { description: pendingDescription } : undefined);
+  }, [stopTimer, currentEntry]);
 
   // Register Enter handler for keyboard navigation — toggle start/stop
   const handleToggleRef = useRef<() => void>(() => {});
