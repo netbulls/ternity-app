@@ -1,11 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Search, Users, Clock, Moon, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { useTeamBoard, type TeamBoardMember, type PresenceStatus } from '@/hooks/use-team-board';
-import { useProjects } from '@/hooks/use-reference-data';
-import { usePreferences } from '@/providers/preferences-provider';
 
 // ============================================================
 // Constants
@@ -547,31 +545,9 @@ function StatusFilterBar({
 
 export function TeamPage() {
   const { data: members, isLoading, error } = useTeamBoard();
-  const { data: projectOptions } = useProjects();
-  const { defaultProjectId } = usePreferences();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const initializedRef = useRef(false);
-
-  // Set initial project filter once data is available
-  useEffect(() => {
-    if (initializedRef.current || !members?.length || !projectOptions?.length) return;
-    initializedRef.current = true;
-
-    // 1. Try user's default project
-    if (defaultProjectId) {
-      const defaultProject = projectOptions.find((p) => p.id === defaultProjectId);
-      if (defaultProject) {
-        setProjectFilter(defaultProject.name);
-        return;
-      }
-    }
-
-    // 2. Fall back to user's most recent entry project (from current user's running timer or latest entry)
-    // The current user's ID isn't directly available here, but we can check the members data
-    // for the running entry — the first available project in the data works as a fallback
-  }, [members, projectOptions, defaultProjectId]);
 
   const now = new Date();
   const nowHour = now.getHours() + now.getMinutes() / 60;
