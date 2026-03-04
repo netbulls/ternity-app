@@ -6,20 +6,24 @@ import { projects, clients, tags, entryTags, users, projectMembers } from '../db
 
 export async function referenceRoutes(fastify: FastifyInstance) {
   /** GET /api/projects — active projects with active clients (for pickers)
-   *  Admins see all active projects. Regular users see only assigned projects. */
+   *  Admins see all active projects by default. Regular users see only assigned projects.
+   *  Pass ?assigned=true to force assignment filtering even for admins. */
   fastify.get('/api/projects', async (request) => {
     const isAdmin = request.auth.globalRole === GlobalRole.Admin;
+    const query = request.query as Record<string, string | undefined>;
+    const forceAssigned = query.assigned === 'true';
 
-    // For non-admin users, restrict to assigned projects
+    // Apply assignment filter for non-admins, or when explicitly requested
+    const filterByAssignment = !isAdmin || forceAssigned;
     const assignedProjectIds = Object.keys(request.auth.orgRoles);
 
-    // If non-admin has no assignments, return empty list immediately
-    if (!isAdmin && assignedProjectIds.length === 0) {
+    // If filtering by assignment and user has none, return empty list
+    if (filterByAssignment && assignedProjectIds.length === 0) {
       return [];
     }
 
     const conditions = [eq(projects.isActive, true), eq(clients.isActive, true)];
-    if (!isAdmin) {
+    if (filterByAssignment) {
       conditions.push(inArray(projects.id, assignedProjectIds));
     }
 

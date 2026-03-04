@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type PresenceStatus = 'available' | 'working-off-hours' | 'idle' | 'off-schedule';
+export type PresenceStatus = 'active' | 'overtime' | 'idle' | 'off';
 
 export interface TeamBoardEntry {
   id: string;
@@ -32,10 +32,31 @@ export interface TeamBoardMember {
 
 // ── Hook ───────────────────────────────────────────────────────────────────
 
-export function useTeamBoard() {
+/** Format date as YYYY-MM-DD */
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function isToday(date: Date): boolean {
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+export function useTeamBoard(date?: Date) {
+  const dateStr = date ? toDateString(date) : undefined;
+  const today = !date || isToday(date);
+
   return useQuery({
-    queryKey: ['team-board'],
-    queryFn: () => apiFetch<TeamBoardMember[]>('/team/board'),
-    refetchInterval: 30_000, // Poll every 30s until SSE is built
+    queryKey: dateStr ? ['team-board', dateStr] : ['team-board'],
+    queryFn: () =>
+      apiFetch<TeamBoardMember[]>(dateStr ? `/team/board?date=${dateStr}` : '/team/board'),
+    refetchInterval: today ? 30_000 : false, // Only poll for today
   });
 }

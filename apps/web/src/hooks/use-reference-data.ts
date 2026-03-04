@@ -11,6 +11,15 @@ export function useProjects() {
   });
 }
 
+/** Projects the current user is assigned to (even for admins). Used by team filter. */
+export function useAssignedProjects() {
+  return useQuery({
+    queryKey: ['projects', 'assigned'],
+    queryFn: () => apiFetch<ProjectOption[]>('/projects?assigned=true'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useTags() {
   return useQuery({
     queryKey: ['tags'],

@@ -1,9 +1,22 @@
-import { useState, useMemo, useRef } from 'react';
-import { Search, Users, Clock, Moon, Zap } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import {
+  Search,
+  Users,
+  Clock,
+  Moon,
+  Zap,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { useTeamBoard, type TeamBoardMember, type PresenceStatus } from '@/hooks/use-team-board';
+import { useAssignedProjects } from '@/hooks/use-reference-data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { ProjectOption } from '@ternity/shared';
 
 // ============================================================
 // Constants
@@ -21,18 +34,18 @@ const STATUS_META: Record<
   PresenceStatus,
   { dot: string; bg: string; text: string; label: string; sortOrder: number }
 > = {
-  available: {
+  active: {
     dot: 'bg-emerald-500',
     bg: 'bg-emerald-500/10',
     text: 'text-emerald-500',
-    label: 'Available',
+    label: 'Active',
     sortOrder: 0,
   },
-  'working-off-hours': {
+  overtime: {
     dot: 'bg-teal-400/60',
     bg: 'bg-teal-400/8',
     text: 'text-teal-400/70',
-    label: 'Off-hours',
+    label: 'Overtime',
     sortOrder: 1,
   },
   idle: {
@@ -42,11 +55,11 @@ const STATUS_META: Record<
     label: 'Idle',
     sortOrder: 2,
   },
-  'off-schedule': {
+  off: {
     dot: 'bg-muted-foreground/40',
     bg: 'bg-muted-foreground/6',
     text: 'text-muted-foreground/60',
-    label: 'Off Hours',
+    label: 'Off',
     sortOrder: 3,
   },
 };
@@ -109,13 +122,6 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-/** Collect all unique project names across all members */
-function getAllProjects(members: TeamBoardMember[]): string[] {
-  const set = new Set<string>();
-  members.forEach((m) => m.entries.forEach((e) => set.add(e.projectName)));
-  return Array.from(set).sort();
-}
-
 /** Check if a member has any entries for a given project */
 function memberHasProject(member: TeamBoardMember, project: string): boolean {
   return member.entries.some((e) => e.projectName === project);
@@ -146,6 +152,19 @@ function PresenceBadge({ status }: { status: PresenceStatus }) {
 // Project Filter Dropdown
 // ============================================================
 
+function groupProjectsByClient(projects: ProjectOption[]) {
+  const map = new Map<string, ProjectOption[]>();
+  for (const p of projects) {
+    const client = p.clientName ?? 'No Client';
+    if (!map.has(client)) map.set(client, []);
+    map.get(client)!.push(p);
+  }
+  return Array.from(map.entries()).map(([client, projectList]) => ({
+    client,
+    projects: projectList,
+  }));
+}
+
 function ProjectFilter({
   value,
   onChange,
@@ -153,74 +172,155 @@ function ProjectFilter({
 }: {
   value: string | null;
   onChange: (project: string | null) => void;
-  projects: string[];
+  projects: ProjectOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const selectedLabel = value ?? 'All Projects';
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const selected = projects.find((p) => p.name === value) ?? null;
+  const grouped = groupProjectsByClient(projects);
+
+  const filtered = search
+    ? grouped
+        .map((g) => ({
+          ...g,
+          projects: g.projects.filter(
+            (p) =>
+              p.name.toLowerCase().includes(search.toLowerCase()) ||
+              g.client.toLowerCase().includes(search.toLowerCase()),
+          ),
+        }))
+        .filter((g) => g.projects.length > 0)
+    : grouped;
+
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => searchRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+    setSearch('');
+  }, [open]);
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className={cn(
-          'flex items-center gap-2 rounded-lg border px-3 py-1.5 font-medium transition-colors',
-          value
-            ? 'border-primary/30 bg-primary/5 text-foreground'
-            : 'border-border bg-muted/30 text-muted-foreground hover:text-foreground',
-        )}
-        style={{ fontSize: scaled(11) }}
-      >
-        {selectedLabel}
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }}>
-          <Search className="h-3 w-3 opacity-50" />
-        </motion.span>
-      </button>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 transition-colors hover:bg-accent',
+            selected ? 'text-foreground' : 'text-muted-foreground',
+          )}
+          style={{ fontSize: scaled(11) }}
+        >
+          {selected ? (
+            <>
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: selected.color ?? '#00D4AA' }}
+              />
+              <span className="max-w-[140px] truncate">{selected.name}</span>
+            </>
+          ) : (
+            <>
+              <FolderKanban className="h-3.5 w-3.5" />
+              <span>All Projects</span>
+            </>
+          )}
+          <ChevronDown className="h-3 w-3 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[260px] overflow-hidden p-0" align="end" sideOffset={6}>
+        {/* Search */}
+        <div className="border-b border-border p-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <motion.input
+              ref={searchRef}
+              className="h-8 w-full rounded-md bg-muted/40 pl-8 pr-3 text-foreground outline-none"
+              style={{ border: '1px solid hsl(var(--border))', fontSize: scaled(12) }}
+              whileFocus={{ borderColor: 'hsl(var(--primary) / 0.5)' }}
+              transition={{ duration: 0.2 }}
+              placeholder="Search projects..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.12 }}
-              className="absolute left-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-border bg-popover py-1 shadow-lg"
+        {/* All Projects option */}
+        <div className="border-b border-border p-1">
+          <motion.button
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
+              !value
+                ? 'bg-primary/8 text-foreground'
+                : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
+            )}
+            style={{ fontSize: scaled(12) }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+          >
+            <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="flex-1">All Projects</span>
+          </motion.button>
+        </div>
+
+        {/* Project list grouped by client */}
+        <div className="max-h-[260px] overflow-y-auto p-1" onWheel={(e) => e.stopPropagation()}>
+          {filtered.length === 0 ? (
+            <div
+              className="px-3 py-4 text-center text-muted-foreground"
+              style={{ fontSize: scaled(11) }}
             >
-              <button
-                onClick={() => {
-                  onChange(null);
-                  setOpen(false);
-                }}
-                className={cn(
-                  'flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-muted/50',
-                  !value && 'text-primary',
-                )}
-                style={{ fontSize: scaled(11) }}
-              >
-                All Projects
-              </button>
-              {projects.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    onChange(p);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-muted/50',
-                    value === p && 'text-primary',
-                  )}
-                  style={{ fontSize: scaled(11) }}
+              No projects match &ldquo;{search}&rdquo;
+            </div>
+          ) : (
+            filtered.map((group, gi) => (
+              <div key={group.client}>
+                <div
+                  className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand font-semibold uppercase tracking-widest text-muted-foreground"
+                  style={{ letterSpacing: '1.5px', opacity: 0.6, fontSize: scaled(9) }}
                 >
-                  {p}
-                </button>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+                  {group.client}
+                </div>
+                {group.projects.map((p, pi) => {
+                  const isSelected = value === p.name;
+                  return (
+                    <motion.button
+                      key={p.id}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
+                        isSelected
+                          ? 'bg-primary/8 text-foreground'
+                          : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
+                      )}
+                      style={{ fontSize: scaled(12) }}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: gi * 0.05 + pi * 0.03, duration: 0.15 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        onChange(p.name);
+                        setOpen(false);
+                      }}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: p.color ?? '#00D4AA' }}
+                      />
+                      <span className="flex-1 truncate">{p.name}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -243,10 +343,12 @@ function TimelineRow({
   member,
   highlightProject,
   nowHour,
+  showNowLine = true,
 }: {
   member: TeamBoardMember;
   highlightProject: string | null;
   nowHour: number;
+  showNowLine?: boolean;
 }) {
   const [hoveredEntry, setHoveredEntry] = useState<TimelineEntry | null>(null);
   const [tooltipX, setTooltipX] = useState(0);
@@ -288,7 +390,7 @@ function TimelineRow({
       transition={{ duration: 0.2 }}
       className={cn(
         'grid items-center gap-0 rounded-lg border border-border bg-[hsl(var(--t-surface))] transition-colors hover:border-primary/20',
-        member.status === 'off-schedule' && 'opacity-50',
+        member.status === 'off' && 'opacity-50',
       )}
       style={{ gridTemplateColumns: '200px 120px 1fr' }}
     >
@@ -388,7 +490,7 @@ function TimelineRow({
             onMouseLeave={() => setHoveredEntry(null)}
           >
             {/* Scheduled block background — skip for off-hours */}
-            {hasSchedule && member.status !== 'off-schedule' && (
+            {hasSchedule && member.status !== 'off' && (
               <div
                 className="absolute top-0 h-full rounded border-l border-r bg-primary/5 border-primary/10"
                 style={{ left: `${schedLeft}%`, width: `${schedWidth}%` }}
@@ -464,13 +566,15 @@ function TimelineRow({
               );
             })}
 
-            {/* Now line */}
-            <div
-              className="absolute top-0 bottom-0 z-10 w-0.5 bg-destructive/80"
-              style={{ left: `${nowPos}%` }}
-            >
-              <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-destructive" />
-            </div>
+            {/* Now line — only shown for today */}
+            {showNowLine && (
+              <div
+                className="absolute top-0 bottom-0 z-10 w-0.5 bg-destructive/80"
+                style={{ left: `${nowPos}%` }}
+              >
+                <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-destructive" />
+              </div>
+            )}
 
             {/* Hour ticks */}
             {Array.from(
@@ -507,9 +611,9 @@ function StatusFilterBar({
 }) {
   const pills: { key: StatusFilter; label: string; icon: React.ElementType }[] = [
     { key: 'all', label: 'All', icon: Users },
-    { key: 'available', label: 'Available', icon: Clock },
+    { key: 'active', label: 'Active', icon: Clock },
     { key: 'idle', label: 'Idle', icon: Zap },
-    { key: 'off-schedule', label: 'Off Hours', icon: Moon },
+    { key: 'off', label: 'Off', icon: Moon },
   ];
 
   return (
@@ -543,24 +647,69 @@ function StatusFilterBar({
 // Main Page
 // ============================================================
 
+/** Check if date is today */
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** Format date for display: "Today", "Yesterday", or "Wed, Mar 4" */
+function formatDateLabel(date: Date): string {
+  const now = new Date();
+  if (isSameDay(date, now)) return 'Today';
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export function TeamPage() {
-  const { data: members, isLoading, error } = useTeamBoard();
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const { data: members, isLoading, error } = useTeamBoard(selectedDate);
+  const { data: projectOptions } = useAssignedProjects();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const now = new Date();
+  const isToday = isSameDay(selectedDate, now);
   const nowHour = now.getHours() + now.getMinutes() / 60;
 
-  const allProjects = useMemo(() => getAllProjects(members ?? []), [members]);
+  const goBack = useCallback(() => {
+    setSelectedDate((prev) => {
+      const d = new Date(prev);
+      d.setDate(d.getDate() - 1);
+      return d;
+    });
+  }, []);
+
+  const goForward = useCallback(() => {
+    if (isToday) return; // Can't go to the future
+    setSelectedDate((prev) => {
+      const d = new Date(prev);
+      d.setDate(d.getDate() + 1);
+      return d;
+    });
+  }, [isToday]);
+
+  const goToday = useCallback(() => setSelectedDate(new Date()), []);
+
+  // Project dropdown shows all projects the current user can access (assigned for users, all for admins)
+  const allProjects = useMemo(
+    () => [...(projectOptions ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [projectOptions],
+  );
 
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = {
       all: members?.length ?? 0,
-      available: 0,
-      'working-off-hours': 0,
+      active: 0,
+      overtime: 0,
       idle: 0,
-      'off-schedule': 0,
+      off: 0,
     };
     members?.forEach((m) => {
       c[m.status]++;
@@ -588,7 +737,7 @@ export function TeamPage() {
       );
     }
 
-    // Sort: available first, then working-off-hours, idle, off-schedule
+    // Sort: active first, then overtime, idle, off
     return [...list].sort(
       (a, b) => STATUS_META[a.status].sortOrder - STATUS_META[b.status].sortOrder,
     );
@@ -621,9 +770,49 @@ export function TeamPage() {
           >
             Team
           </h1>
-          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
-            {members?.length ?? 0} members · {counts.available} available
-          </p>
+          <div
+            className="mt-0.5 flex items-center gap-2 text-muted-foreground"
+            style={{ fontSize: scaled(12) }}
+          >
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={goBack}
+                className="rounded p-0.5 transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={goToday}
+                className={cn(
+                  'rounded px-1.5 py-0.5 font-medium transition-colors',
+                  isToday ? 'text-foreground' : 'text-primary hover:bg-primary/10',
+                )}
+                style={{ fontSize: scaled(11) }}
+              >
+                {formatDateLabel(selectedDate)}
+              </button>
+              <button
+                onClick={goForward}
+                disabled={isToday}
+                className={cn(
+                  'rounded p-0.5 transition-colors',
+                  isToday
+                    ? 'cursor-default text-muted-foreground/30'
+                    : 'hover:bg-muted/50 hover:text-foreground',
+                )}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <span className="text-muted-foreground/40">·</span>
+            <span>{members?.length ?? 0} members</span>
+            {isToday && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span>{counts.active} active</span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <ProjectFilter value={projectFilter} onChange={setProjectFilter} projects={allProjects} />
@@ -694,6 +883,7 @@ export function TeamPage() {
               member={member}
               highlightProject={projectFilter}
               nowHour={nowHour}
+              showNowLine={isToday}
             />
           ))}
         </AnimatePresence>
@@ -719,10 +909,12 @@ export function TeamPage() {
           <span className="inline-block h-3 w-6 rounded-sm border border-primary/10 bg-primary/5" />
           Scheduled hours
         </span>
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          <span className="inline-block h-3 w-0.5 bg-destructive" />
-          Now
-        </span>
+        {isToday && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="inline-block h-3 w-0.5 bg-destructive" />
+            Now
+          </span>
+        )}
       </div>
     </div>
   );
