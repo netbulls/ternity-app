@@ -5,6 +5,7 @@ import {
   Clock,
   Moon,
   Zap,
+  Timer,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -23,7 +24,7 @@ import type { ProjectOption } from '@ternity/shared';
 // ============================================================
 
 const TIMELINE_START = 7;
-const TIMELINE_END = 20;
+const TIMELINE_END = 19;
 const TIMELINE_SPAN = TIMELINE_END - TIMELINE_START;
 
 // ============================================================
@@ -42,9 +43,9 @@ const STATUS_META: Record<
     sortOrder: 0,
   },
   overtime: {
-    dot: 'bg-teal-400/60',
-    bg: 'bg-teal-400/8',
-    text: 'text-teal-400/70',
+    dot: 'bg-teal-400',
+    bg: 'bg-teal-400/10',
+    text: 'text-teal-400',
     label: 'Overtime',
     sortOrder: 1,
   },
@@ -56,9 +57,9 @@ const STATUS_META: Record<
     sortOrder: 2,
   },
   off: {
-    dot: 'bg-muted-foreground/40',
-    bg: 'bg-muted-foreground/6',
-    text: 'text-muted-foreground/60',
+    dot: 'bg-muted-foreground',
+    bg: 'bg-muted-foreground/10',
+    text: 'text-muted-foreground',
     label: 'Off',
     sortOrder: 3,
   },
@@ -569,26 +570,10 @@ function TimelineRow({
             {/* Now line — only shown for today */}
             {showNowLine && (
               <div
-                className="absolute top-0 bottom-0 z-10 w-0.5 bg-destructive/80"
+                className="absolute top-0 bottom-0 z-10 w-[1.5px] rounded-full bg-destructive/80"
                 style={{ left: `${nowPos}%` }}
-              >
-                <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-destructive" />
-              </div>
+              />
             )}
-
-            {/* Hour ticks */}
-            {Array.from(
-              { length: TIMELINE_END - TIMELINE_START + 1 },
-              (_, i) => TIMELINE_START + i,
-            ).map((h) => (
-              <span
-                key={h}
-                className="absolute bottom-0 text-muted-foreground/30"
-                style={{ left: `${toPercent(h)}%`, fontSize: 7, transform: 'translateX(-50%)' }}
-              >
-                {h}
-              </span>
-            ))}
           </div>
         </div>
       </div>
@@ -612,6 +597,7 @@ function StatusFilterBar({
   const pills: { key: StatusFilter; label: string; icon: React.ElementType }[] = [
     { key: 'all', label: 'All', icon: Users },
     { key: 'active', label: 'Active', icon: Clock },
+    { key: 'overtime', label: 'Overtime', icon: Timer },
     { key: 'idle', label: 'Idle', icon: Zap },
     { key: 'off', label: 'Off', icon: Moon },
   ];
@@ -835,10 +821,10 @@ export function TeamPage() {
         <StatusFilterBar active={statusFilter} onChange={setStatusFilter} counts={counts} />
       </div>
 
-      {/* Column headers */}
+      {/* Column headers — 1px horizontal inset to align with bordered rows */}
       <div
-        className="mb-1 grid items-center gap-0 px-0"
-        style={{ gridTemplateColumns: '200px 120px 1fr' }}
+        className="mb-1 grid items-center gap-0"
+        style={{ gridTemplateColumns: '200px 120px 1fr', paddingLeft: '1px', paddingRight: '1px' }}
       >
         <span
           className="px-3 font-brand uppercase tracking-wider text-muted-foreground/50"
@@ -853,18 +839,18 @@ export function TeamPage() {
           Status
         </span>
         <div className="relative pr-3">
-          <div className="flex justify-between">
+          <div className="relative h-4">
             {Array.from(
               { length: TIMELINE_END - TIMELINE_START + 1 },
               (_, i) => TIMELINE_START + i,
             ).map((h) => (
               <span
                 key={h}
-                className="font-brand text-muted-foreground/40"
+                className="absolute font-brand text-muted-foreground/40"
                 style={{
                   fontSize: scaled(8),
-                  width: `${100 / (TIMELINE_END - TIMELINE_START)}%`,
-                  textAlign: 'left',
+                  left: `${toPercent(h)}%`,
+                  transform: 'translateX(-50%)',
                 }}
               >
                 {h}:00

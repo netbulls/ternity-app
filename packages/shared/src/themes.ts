@@ -5,6 +5,7 @@ export const THEME_IDS = [
   'warm-sand',
   'carbon',
   'high-contrast',
+  'sandstone',
 ] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
@@ -25,4 +26,5 @@ export const THEMES: ThemeMeta[] = [
   { id: 'warm-sand', name: 'Warm Sand', type: 'light', badge: null },
   { id: 'carbon', name: 'Carbon', type: 'dark', badge: null },
   { id: 'high-contrast', name: 'High Contrast', type: 'dark', badge: 'a11y' },
+  { id: 'sandstone', name: 'Sandstone', type: 'dark', badge: null },
 ];

@@ -376,3 +376,70 @@
   --t-project-2: 234 100% 85%;
   --t-project-3: 42 100% 69%;
 }
+
+/* ================================================================
+   7. SANDSTONE
+   Dark theme with warm undertones — deep charcoal with earthy warmth.
+   Inspired by minimal dark reading interfaces. Calm and focused.
+   ================================================================ */
+[data-theme='sandstone'] {
+  color-scheme: dark;
+
+  /* shadcn core */
+  --background: 30 8% 8%;
+  --foreground: 35 20% 88%;
+  --card: 30 7% 11%;
+  --card-foreground: 35 20% 88%;
+  --popover: 30 7% 11%;
+  --popover-foreground: 35 20% 88%;
+  --primary: 168 100% 42%;
+  --primary-foreground: 30 8% 8%;
+  --secondary: 30 6% 14%;
+  --secondary-foreground: 35 20% 88%;
+  --muted: 30 6% 13%;
+  --muted-foreground: 30 10% 50%;
+  --accent: 30 6% 14%;
+  --accent-foreground: 35 20% 88%;
+  --destructive: 10 55% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 6% 17%;
+  --input: 30 6% 17%;
+  --ring: 168 100% 42%;
+  --radius: 0.5rem;
+
+  /* shadcn sidebar */
+  --sidebar-background: 30 8% 9%;
+  --sidebar-foreground: 35 20% 88%;
+  --sidebar-primary: 168 100% 42%;
+  --sidebar-primary-foreground: 30 8% 8%;
+  --sidebar-accent: 168 100% 42% / 0.1;
+  --sidebar-accent-foreground: 168 100% 42%;
+  --sidebar-border: 30 6% 14%;
+  --sidebar-ring: 168 100% 42%;
+
+  /* shadcn chart colors */
+  --chart-1: 168 100% 42%;
+  --chart-2: 22 55% 60%;
+  --chart-3: 42 65% 65%;
+  --chart-4: 10 55% 55%;
+  --chart-5: 260 35% 62%;
+
+  /* ternity custom tokens */
+  --t-surface: 30 7% 11%;
+  --t-elevated: 30 6% 14%;
+  --t-border-subtle: 30 6% 13%;
+  --t-text-muted: 30 10% 32%;
+  --t-timer-bg: 168 100% 42% / 0.07;
+  --t-timer-border: 168 100% 42% / 0.18;
+  --t-stop: 10 55% 55%;
+  --t-label-1-bg: 168 100% 42% / 0.1;
+  --t-label-1-text: 168 100% 42%;
+  --t-label-2-bg: 22 55% 60% / 0.1;
+  --t-label-2-text: 22 55% 60%;
+  --t-stat-bg: 30 7% 12%;
+  --t-avatar-bg: 168 100% 42%;
+  --t-avatar-text: 30 8% 8%;
+  --t-project-1: 168 100% 42%;
+  --t-project-2: 22 55% 60%;
+  --t-project-3: 42 65% 65%;
+}

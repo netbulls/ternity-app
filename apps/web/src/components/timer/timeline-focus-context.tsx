@@ -93,20 +93,25 @@ export function TimelineFocusProvider({ children }: { children: ReactNode }) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
-        // Nothing selected yet — pick first (ArrowDown) or last (ArrowUp)
+        // Nothing selected (day level) — only ArrowDown enters the list
         if (!selectedEntryId) {
-          const initial = e.key === 'ArrowDown' ? ids[0] : ids[ids.length - 1];
-          if (initial) setSelectedEntryId(initial);
+          if (e.key === 'ArrowDown' && ids[0]) {
+            setSelectedEntryId(ids[0]);
+          }
           return;
         }
 
         const currentIdx = ids.indexOf(selectedEntryId);
         if (currentIdx === -1) return;
 
+        if (e.key === 'ArrowUp' && currentIdx === 0) {
+          // At the top item — go back to day level
+          setSelectedEntryId(null);
+          return;
+        }
+
         const nextIdx =
-          e.key === 'ArrowUp'
-            ? Math.max(0, currentIdx - 1)
-            : Math.min(ids.length - 1, currentIdx + 1);
+          e.key === 'ArrowUp' ? currentIdx - 1 : Math.min(ids.length - 1, currentIdx + 1);
 
         if (nextIdx !== currentIdx) {
           setSelectedEntryId(ids[nextIdx]!);

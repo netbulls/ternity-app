@@ -26,7 +26,7 @@ function DayKeyboardNav({
 }: {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
 }) {
-  const { selectFirst } = useTimelineFocus();
+  const { clearSelection } = useTimelineFocus();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -39,23 +39,40 @@ function DayKeyboardNav({
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setSelectedDate((d) => shiftDays(d, -1));
-        selectFirst();
+        clearSelection();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setSelectedDate((d) => shiftDays(d, 1));
-        selectFirst();
+        setSelectedDate((d) => {
+          const next = shiftDays(d, 1);
+          return next > getToday() ? d : next;
+        });
+        clearSelection();
       } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         setSelectedDate(getToday());
-        selectFirst();
+        clearSelection();
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedDate, selectFirst]);
+  }, [setSelectedDate, clearSelection]);
 
   return null;
+}
+
+/** Wraps WeekStrip — dims it when keyboard focus moves into entries/timer */
+function WeekStripWrapper(props: React.ComponentProps<typeof WeekStrip>) {
+  const { selectedEntryId } = useTimelineFocus();
+  const hasFocusBelow = selectedEntryId !== null;
+
+  return (
+    <div
+      className={`mb-5 transition-opacity duration-150 ${hasFocusBelow ? 'opacity-50' : 'opacity-100'}`}
+    >
+      <WeekStrip {...props} />
+    </div>
+  );
 }
 
 function formatLongDate(dateStr: string): string {
@@ -148,9 +165,11 @@ export function TimerPage() {
         </Button>
       </div>
 
-      {/* Week Strip */}
-      <div className="mb-5">
-        <WeekStrip
+      <TimelineFocusProvider>
+        <DayKeyboardNav setSelectedDate={setSelectedDate} />
+
+        {/* Week Strip — dims when focus moves into entries */}
+        <WeekStripWrapper
           selectedDate={selectedDate}
           weekGroups={weekGroups ?? []}
           isLoading={weekLoading}
@@ -159,10 +178,6 @@ export function TimerPage() {
           onNextWeek={goToNextWeek}
           onToday={goToToday}
         />
-      </div>
-
-      <TimelineFocusProvider>
-        <DayKeyboardNav setSelectedDate={setSelectedDate} />
 
         {/* Day Timeline */}
         <div className="mb-5">
