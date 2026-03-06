@@ -12,9 +12,10 @@ import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 interface Props {
   group: DayGroupType;
+  showUser?: boolean;
 }
 
-export function DayGroup({ group }: Props) {
+export function DayGroup({ group, showUser }: Props) {
   const { draft, openDraft, savedEntryId } = useDraftEntry();
   const { setEntryIds } = useTimelineFocus();
   const { entrySortOrder } = usePreferences();
@@ -80,7 +81,7 @@ export function DayGroup({ group }: Props) {
 
         {/* Entries */}
         {visibleEntries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} date={group.date} />
+          <EntryRow key={entry.id} entry={entry} date={group.date} showUser={showUser} />
         ))}
       </div>
     </div>

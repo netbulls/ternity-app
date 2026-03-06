@@ -51,13 +51,17 @@ export function useOptimisticEntryPatch() {
   );
 }
 
-export function useEntries(from: string, to: string, deleted = false) {
+export function useEntries(from: string, to: string, deleted = false, userId?: string | null) {
   const { effectiveUserId } = useImpersonation();
 
   return useQuery({
-    queryKey: ['entries', effectiveUserId, from, to, deleted],
-    queryFn: () =>
-      apiFetch<DayGroup[]>(`/entries?from=${from}&to=${to}${deleted ? '&deleted=true' : ''}`),
+    queryKey: ['entries', userId ?? effectiveUserId, from, to, deleted],
+    queryFn: () => {
+      const params = new URLSearchParams({ from, to });
+      if (deleted) params.set('deleted', 'true');
+      if (userId) params.set('userId', userId);
+      return apiFetch<DayGroup[]>(`/entries?${params}`);
+    },
   });
 }
 

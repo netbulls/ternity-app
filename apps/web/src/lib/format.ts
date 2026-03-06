@@ -96,6 +96,11 @@ export function formatDateRange(from: string, to: string): string {
     return formatDateLabel(from);
   }
 
+  // Full year range (Jan 1 – Dec 31) → just show the year
+  if (from.endsWith('-01-01') && to.endsWith('-12-31') && from.slice(0, 4) === to.slice(0, 4)) {
+    return from.slice(0, 4);
+  }
+
   const fromStr = fromDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const toStr = toDate.toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -173,6 +178,23 @@ export function getMonthEnd(dateStr: string): string {
 export function shiftMonths(dateStr: string, months: number): string {
   const d = new Date(dateStr + 'T12:00:00');
   d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Get the first day of the year containing the given date */
+export function getYearStart(dateStr: string): string {
+  return dateStr.slice(0, 4) + '-01-01';
+}
+
+/** Get the last day of the year containing the given date */
+export function getYearEnd(dateStr: string): string {
+  return dateStr.slice(0, 4) + '-12-31';
+}
+
+/** Shift a date string by N years */
+export function shiftYears(dateStr: string, years: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setFullYear(d.getFullYear() + years);
   return d.toISOString().slice(0, 10);
 }
 

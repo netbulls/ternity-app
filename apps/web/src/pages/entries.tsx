@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useEntries } from '@/hooks/use-entries';
+import { useAuth } from '@/providers/auth-provider';
 import { useImpersonation } from '@/providers/impersonation-provider';
 import { DayGroup } from '@/components/entries/day-group';
 import { ActiveEditProvider } from '@/components/entries/active-edit-context';
@@ -11,6 +12,7 @@ import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { Button } from '@/components/ui/button';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { TagSelector } from '@/components/timer/tag-selector';
+import { UserSelector } from '@/components/ui/user-selector';
 import {
   formatDuration,
   formatDateRange,
@@ -18,8 +20,11 @@ import {
   getWeekEnd,
   getMonthStart,
   getMonthEnd,
+  getYearStart,
+  getYearEnd,
   shiftDays,
   shiftMonths,
+  shiftYears,
   getOrgToday,
 } from '@/lib/format';
 import { usePreferences } from '@/providers/preferences-provider';
@@ -27,13 +32,17 @@ import { scaled } from '@/lib/scaled';
 import { useSearchParams } from 'react-router-dom';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
 
-type ViewMode = 'day' | 'week' | 'month';
+type ViewMode = 'day' | 'week' | 'month' | 'year';
 
 export function EntriesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const hasProjectParam = searchParams.has('projectId');
+  const [viewMode, setViewMode] = useState<ViewMode>(hasProjectParam ? 'year' : 'week');
   const [anchorDate, setAnchorDate] = useState(getOrgToday);
-  const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
+  const [filterProjectId, setFilterProjectId] = useState<string | null>(() =>
+    searchParams.get('projectId'),
+  );
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [onlyIncomplete, setOnlyIncomplete] = useState(
     () => searchParams.get('filter') === 'incomplete',
@@ -41,20 +50,26 @@ export function EntriesPage() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Clear the URL param after reading it so it doesn't stick around
+  // Clear consumed URL params after reading them so they don't stick around
   useEffect(() => {
-    if (searchParams.has('filter')) {
+    if (searchParams.has('filter') || searchParams.has('projectId')) {
       setSearchParams({}, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { user } = useAuth();
   const { tagsEnabled } = usePreferences();
-  const { targetDisplayName } = useImpersonation();
+  const { targetDisplayName, targetUserId } = useImpersonation();
+  // Show person filter for admins, but not during impersonation (impersonation already controls the user)
+  const showUserFilter = user?.globalRole === 'admin' && !targetUserId;
 
   // Compute date range from view mode + anchor
   const { from, to } = useMemo(() => {
     if (viewMode === 'day') {
       return { from: anchorDate, to: anchorDate };
+    }
+    if (viewMode === 'year') {
+      return { from: getYearStart(anchorDate), to: getYearEnd(anchorDate) };
     }
     if (viewMode === 'month') {
       return { from: getMonthStart(anchorDate), to: getMonthEnd(anchorDate) };
@@ -62,7 +77,7 @@ export function EntriesPage() {
     return { from: getWeekStart(anchorDate), to: getWeekEnd(anchorDate) };
   }, [viewMode, anchorDate]);
 
-  const { data: dayGroups, isLoading } = useEntries(from, to, showDeleted);
+  const { data: dayGroups, isLoading } = useEntries(from, to, showDeleted, filterUserId);
 
   // Client-side filtering by project, label, and incomplete
   const filteredGroups = useMemo(() => {
@@ -97,7 +112,9 @@ export function EntriesPage() {
 
   // Navigation
   const goBack = useCallback(() => {
-    if (viewMode === 'month') {
+    if (viewMode === 'year') {
+      setAnchorDate((d) => shiftYears(d, -1));
+    } else if (viewMode === 'month') {
       setAnchorDate((d) => shiftMonths(d, -1));
     } else {
       setAnchorDate((d) => shiftDays(d, viewMode === 'day' ? -1 : -7));
@@ -105,7 +122,9 @@ export function EntriesPage() {
   }, [viewMode]);
 
   const goForward = useCallback(() => {
-    if (viewMode === 'month') {
+    if (viewMode === 'year') {
+      setAnchorDate((d) => shiftYears(d, 1));
+    } else if (viewMode === 'month') {
       setAnchorDate((d) => shiftMonths(d, 1));
     } else {
       setAnchorDate((d) => shiftDays(d, viewMode === 'day' ? 1 : 7));
@@ -121,8 +140,24 @@ export function EntriesPage() {
     setAnchorDate(getOrgToday());
   }, []);
 
+  const handleProjectFilter = useCallback(
+    (id: string | null) => {
+      setFilterProjectId(id);
+      // Snap back from year view when project filter is cleared
+      if (!id && viewMode === 'year') {
+        setViewMode('week');
+        setAnchorDate(getOrgToday());
+      }
+    },
+    [viewMode],
+  );
+
   const hasFilters =
-    filterProjectId !== null || filterTagIds.length > 0 || showDeleted || onlyIncomplete;
+    filterProjectId !== null ||
+    filterUserId !== null ||
+    filterTagIds.length > 0 ||
+    showDeleted ||
+    onlyIncomplete;
 
   return (
     <div>
@@ -160,9 +195,13 @@ export function EntriesPage() {
 
       {/* Controls row */}
       <div className="mb-4 flex items-center gap-3">
-        {/* Day / Week / Month toggle */}
+        {/* Day / Week / Month / Year toggle */}
         <div className="flex overflow-hidden rounded-md border border-border">
-          {(['day', 'week', 'month'] as const).map((v) => (
+          {(
+            (filterProjectId
+              ? ['day', 'week', 'month', 'year']
+              : ['day', 'week', 'month']) as ViewMode[]
+          ).map((v) => (
             <button
               key={v}
               className={cn(
@@ -211,9 +250,16 @@ export function EntriesPage() {
         </div>
 
         {/* Filters */}
+        {showUserFilter && (
+          <UserSelector
+            value={filterUserId}
+            onChange={setFilterUserId}
+            triggerClassName="font-brand font-semibold tracking-wide"
+          />
+        )}
         <ProjectSelector
           value={filterProjectId}
-          onChange={(id) => setFilterProjectId(id)}
+          onChange={handleProjectFilter}
           triggerClassName="font-brand font-semibold tracking-wide"
         />
         {tagsEnabled && (
@@ -260,7 +306,8 @@ export function EntriesPage() {
         {hasFilters && (
           <button
             onClick={() => {
-              setFilterProjectId(null);
+              handleProjectFilter(null);
+              setFilterUserId(null);
               setFilterTagIds([]);
               setShowDeleted(false);
               setOnlyIncomplete(false);
@@ -316,7 +363,7 @@ export function EntriesPage() {
           <DraftEntryProvider>
             <div>
               {filteredGroups.map((group) => (
-                <DayGroup key={group.date} group={group} />
+                <DayGroup key={group.date} group={group} showUser={!!filterUserId} />
               ))}
             </div>
           </DraftEntryProvider>

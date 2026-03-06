@@ -1,5 +1,13 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Pencil, CheckCircle2, XCircle, Building2, Users } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Pencil,
+  CheckCircle2,
+  XCircle,
+  Building2,
+  Users,
+  List,
+} from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -21,6 +29,7 @@ export function getProjectColumns(opts: {
   onActivate: (project: AdminProject) => void;
   onDeactivate: (project: AdminProject) => void;
   onMembers?: (project: AdminProject) => void;
+  onViewEntries?: (project: AdminProject) => void;
   onClientClick?: (clientId: string, clientName: string) => void;
   showClient?: boolean;
 }): ColumnDef<AdminProject>[] {
@@ -160,6 +169,12 @@ export function getProjectColumns(opts: {
                   <DropdownMenuItem onClick={() => opts.onMembers!(project)}>
                     <Users className="mr-2 h-3.5 w-3.5" />
                     Members
+                  </DropdownMenuItem>
+                )}
+                {opts.onViewEntries && (
+                  <DropdownMenuItem onClick={() => opts.onViewEntries!(project)}>
+                    <List className="mr-2 h-3.5 w-3.5" />
+                    View Entries
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

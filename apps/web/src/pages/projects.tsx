@@ -66,6 +66,7 @@ import { getProjectMemberColumns } from '@/pages/project-member-columns';
 import { ProjectDialog } from '@/pages/project-dialog';
 import { Input } from '@/components/ui/input';
 import type { ProjectMemberRow } from '@ternity/shared';
+import { useNavigate } from 'react-router-dom';
 
 type Scope = 'projects' | 'clients';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -73,6 +74,8 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 const PAGE_SIZE = 15;
 
 export function ProjectsPage() {
+  const navigate = useNavigate();
+
   // ── Top-level state ─────────────────────────────────────────────────
   const [scope, setScope] = useState<Scope>('projects');
   const [drilldownClient, setDrilldownClient] = useState<AdminClient | null>(null);
@@ -255,6 +258,13 @@ export function ProjectsPage() {
     setMemberSelection({});
   }, []);
 
+  const handleViewEntries = useCallback(
+    (project: AdminProject) => {
+      navigate(`/entries?projectId=${project.id}`);
+    },
+    [navigate],
+  );
+
   // ── Column definitions ──────────────────────────────────────────────
   const projectColumns = useMemo(
     () =>
@@ -263,6 +273,7 @@ export function ProjectsPage() {
         onActivate: handleActivateProject,
         onDeactivate: handleDeactivateProject,
         onMembers: handleProjectMembers,
+        onViewEntries: handleViewEntries,
         onClientClick: drilldownClient ? undefined : handleClientClick,
         showClient: !drilldownClient,
       }),
@@ -271,6 +282,7 @@ export function ProjectsPage() {
       handleActivateProject,
       handleDeactivateProject,
       handleProjectMembers,
+      handleViewEntries,
       handleClientClick,
       drilldownClient,
     ],

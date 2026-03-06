@@ -148,9 +148,22 @@ async function nextCopyName(
 
 export async function entriesRoutes(fastify: FastifyInstance) {
   /** GET /api/entries — list entries grouped by day (batch-loaded) */
-  fastify.get('/api/entries', async (request) => {
-    const userId = request.auth.userId;
-    const query = request.query as { from?: string; to?: string; deleted?: string };
+  fastify.get('/api/entries', async (request, reply) => {
+    const query = request.query as {
+      from?: string;
+      to?: string;
+      deleted?: string;
+      userId?: string;
+    };
+
+    // Admin can view any user's entries via ?userId= (or ?userId=all for everyone)
+    let userId: string | null = request.auth.userId;
+    if (query.userId) {
+      if (request.auth.globalRole !== GlobalRole.Admin) {
+        return reply.code(403).send({ error: "Only admins can view other users' entries" });
+      }
+      userId = query.userId === 'all' ? null : query.userId;
+    }
 
     // Default: last 7 days
     const now = new Date();
@@ -183,7 +196,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       .leftJoin(entrySegments, eq(entrySegments.entryId, timeEntries.id))
       .where(
         and(
-          eq(timeEntries.userId, userId),
+          userId ? eq(timeEntries.userId, userId) : undefined,
           eq(timeEntries.isActive, !showDeleted),
           // Entry qualifies if any segment falls in range OR entry created in range
           or(
@@ -230,48 +243,62 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     // Index rows by id for lookup
     const rowMap = new Map(rows.map((r) => [r.id, r]));
 
-    // 3. Batch-load segments, tags, projects, and jira connections in parallel
-    const [allSegments, allTagRows, allProjectRows, allJiraConnRows] = await Promise.all([
-      db
-        .select()
-        .from(entrySegments)
-        .where(inArray(entrySegments.entryId, entryIds))
-        .orderBy(entrySegments.createdAt),
-      db
-        .select({
-          entryId: entryTags.entryId,
-          id: tags.id,
-          name: tags.name,
-          color: tags.color,
-        })
-        .from(entryTags)
-        .innerJoin(tags, eq(entryTags.tagId, tags.id))
-        .where(inArray(entryTags.entryId, entryIds)),
-      (() => {
-        const projectIds = [...new Set(rows.map((r) => r.projectId).filter(Boolean))] as string[];
-        if (projectIds.length === 0) return Promise.resolve([]);
-        return db
+    // 3. Batch-load segments, tags, projects, jira connections, and user info in parallel
+    const [allSegments, allTagRows, allProjectRows, allJiraConnRows, allUserRows] =
+      await Promise.all([
+        db
+          .select()
+          .from(entrySegments)
+          .where(inArray(entrySegments.entryId, entryIds))
+          .orderBy(entrySegments.createdAt),
+        db
           .select({
-            id: projects.id,
-            name: projects.name,
-            color: projects.color,
-            clientName: clients.name,
+            entryId: entryTags.entryId,
+            id: tags.id,
+            name: tags.name,
+            color: tags.color,
           })
-          .from(projects)
-          .leftJoin(clients, eq(projects.clientId, clients.id))
-          .where(inArray(projects.id, projectIds));
-      })(),
-      (() => {
-        const jiraConnIds = [
-          ...new Set(rows.map((r) => r.jiraConnectionId).filter(Boolean)),
-        ] as string[];
-        if (jiraConnIds.length === 0) return Promise.resolve([]);
-        return db
-          .select({ id: jiraConnections.id, siteUrl: jiraConnections.siteUrl })
-          .from(jiraConnections)
-          .where(inArray(jiraConnections.id, jiraConnIds));
-      })(),
-    ]);
+          .from(entryTags)
+          .innerJoin(tags, eq(entryTags.tagId, tags.id))
+          .where(inArray(entryTags.entryId, entryIds)),
+        (() => {
+          const projectIds = [...new Set(rows.map((r) => r.projectId).filter(Boolean))] as string[];
+          if (projectIds.length === 0) return Promise.resolve([]);
+          return db
+            .select({
+              id: projects.id,
+              name: projects.name,
+              color: projects.color,
+              clientName: clients.name,
+            })
+            .from(projects)
+            .leftJoin(clients, eq(projects.clientId, clients.id))
+            .where(inArray(projects.id, projectIds));
+        })(),
+        (() => {
+          const jiraConnIds = [
+            ...new Set(rows.map((r) => r.jiraConnectionId).filter(Boolean)),
+          ] as string[];
+          if (jiraConnIds.length === 0) return Promise.resolve([]);
+          return db
+            .select({ id: jiraConnections.id, siteUrl: jiraConnections.siteUrl })
+            .from(jiraConnections)
+            .where(inArray(jiraConnections.id, jiraConnIds));
+        })(),
+        // User info (for admin multi-user view)
+        (() => {
+          const userIds = [...new Set(rows.map((r) => r.userId))];
+          if (userIds.length <= 1) return Promise.resolve([]);
+          return db
+            .select({
+              id: users.id,
+              displayName: users.displayName,
+              avatarUrl: users.avatarUrl,
+            })
+            .from(users)
+            .where(inArray(users.id, userIds));
+        })(),
+      ]);
 
     // 4. Index by entryId / projectId for O(1) lookup
     const segmentsByEntry = new Map<string, typeof allSegments>();
@@ -307,23 +334,30 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       jiraConnMap.set(jc.id, jc.siteUrl);
     }
 
+    const userMap = new Map<string, { displayName: string; avatarUrl: string | null }>();
+    for (const u of allUserRows) {
+      userMap.set(u.id, { displayName: u.displayName, avatarUrl: u.avatarUrl });
+    }
+
     // 5. Find the single truly-running entry (most recent unstopped clocked segment).
     //    Only this entry should have isRunning=true — orphaned unstopped segments on
     //    other entries are stale and should not be treated as running.
-    const [activeTimerRow] = await db
-      .select({ entryId: entrySegments.entryId })
-      .from(entrySegments)
-      .innerJoin(timeEntries, eq(entrySegments.entryId, timeEntries.id))
-      .where(
-        and(
-          eq(timeEntries.userId, userId),
-          eq(timeEntries.isActive, true),
-          eq(entrySegments.type, 'clocked'),
-          isNull(entrySegments.stoppedAt),
-        ),
-      )
-      .orderBy(desc(entrySegments.startedAt))
-      .limit(1);
+    const [activeTimerRow] = userId
+      ? await db
+          .select({ entryId: entrySegments.entryId })
+          .from(entrySegments)
+          .innerJoin(timeEntries, eq(entrySegments.entryId, timeEntries.id))
+          .where(
+            and(
+              eq(timeEntries.userId, userId),
+              eq(timeEntries.isActive, true),
+              eq(entrySegments.type, 'clocked'),
+              isNull(entrySegments.stoppedAt),
+            ),
+          )
+          .orderBy(desc(entrySegments.startedAt))
+          .limit(1)
+      : [];
     const activeTimerEntryId = activeTimerRow?.entryId ?? null;
 
     // 6. Assemble entries in lastSegmentAt DESC order (preserved from entryHits)
@@ -370,6 +404,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
             ? hit.lastSegmentAt.toISOString()
             : String(hit.lastSegmentAt),
         userId: row.userId,
+        userName: userMap.get(row.userId)?.displayName ?? null,
+        userAvatarUrl: userMap.get(row.userId)?.avatarUrl ?? null,
       };
     });
 

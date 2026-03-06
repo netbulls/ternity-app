@@ -49,6 +49,8 @@ export const EntrySchema = z.object({
   createdAt: z.string(), // ISO 8601
   lastSegmentAt: z.string(), // ISO 8601 — most recent segment startedAt (or createdAt for adjustments)
   userId: z.string(),
+  userName: z.string().nullable().optional(),
+  userAvatarUrl: z.string().nullable().optional(),
 });
 
 export type Entry = z.infer<typeof EntrySchema>;

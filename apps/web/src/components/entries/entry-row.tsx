@@ -60,6 +60,7 @@ import { JiraIcon } from '@/components/jira/jira-icon';
 import { JiraSearchDropdown } from '@/components/jira/jira-search-dropdown';
 import { HashAutocomplete } from '@/components/jira/hash-autocomplete';
 import { getPreference, setPreference } from '@/providers/preferences-provider';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Entry, JiraIssue } from '@ternity/shared';
 import { useActiveEdit } from './active-edit-context';
 import { useDraftEntry } from './draft-entry-context';
@@ -74,9 +75,11 @@ interface Props {
   entry: Entry;
   /** YYYY-MM-DD — the day this entry is displayed in (for day-clamped durations) */
   date: string;
+  /** Show user avatar + name (for admin multi-user view) */
+  showUser?: boolean;
 }
 
-export function EntryRow({ entry, date }: Props) {
+export function EntryRow({ entry, date, showUser }: Props) {
   const { data: timerState } = useTimer();
   const updateEntry = useUpdateEntry();
   const patchEntry = useOptimisticEntryPatch();
@@ -479,6 +482,19 @@ export function EntryRow({ entry, date }: Props) {
         <AnimatePresence>
           {(savedFlash || entry.id === justCreatedId) && <SaveFlash />}
         </AnimatePresence>
+
+        {/* User avatar + name (admin multi-user view) */}
+        {showUser && entry.userName && (
+          <div className="flex shrink-0 items-center gap-2" style={{ width: scaled(130) }}>
+            <UserAvatar
+              user={{ displayName: entry.userName, avatarUrl: entry.userAvatarUrl }}
+              size="sm"
+            />
+            <span className="truncate text-muted-foreground" style={{ fontSize: scaled(11) }}>
+              {entry.userName}
+            </span>
+          </div>
+        )}
 
         {/* Description + project */}
         <div ref={jiraWrapperRef} className="relative z-10 flex-1 min-w-0">
