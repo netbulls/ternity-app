@@ -30,6 +30,7 @@ import { useWorkingHours } from '@/hooks/use-working-hours';
 import { scaled } from '@/lib/scaled';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { SelectPopover } from '@/components/ui/select-popover';
 
 type GroupKey = 'timer' | 'leave' | 'weekly';
 
@@ -372,32 +373,27 @@ export function NotificationsPanel() {
           <span className="ml-2 text-muted-foreground" style={{ fontSize: scaled(11) }}>
             Theme
           </span>
-          <select
+          <SelectPopover
             value={settings.emailThemeMode}
-            onChange={(e) => setEmailThemeMode(e.target.value as NotificationEmailThemeMode)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-foreground focus:border-primary focus:outline-none"
-            style={{ fontSize: scaled(11) }}
-          >
-            <option value="auto">Auto</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+            onChange={(v) => setEmailThemeMode(v as NotificationEmailThemeMode)}
+            items={[
+              { value: 'auto', label: 'Auto' },
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+            ]}
+            compact
+          />
 
           <span className="ml-2 text-muted-foreground" style={{ fontSize: scaled(11) }}>
             Test type
           </span>
-          <select
+          <SelectPopover
             value={testType}
-            onChange={(e) => setTestType(e.target.value as NotificationType)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-foreground focus:border-primary focus:outline-none"
-            style={{ fontSize: scaled(11) }}
-          >
-            {TEST_NOTIFICATION_TYPES.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setTestType(v as NotificationType)}
+            items={TEST_NOTIFICATION_TYPES.map((o) => ({ value: o.value, label: o.label }))}
+            compact
+            width={200}
+          />
 
           <button
             type="button"

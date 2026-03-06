@@ -2,17 +2,10 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header';
+import { SelectPopover } from '@/components/ui/select-popover';
 import { scaled } from '@/lib/scaled';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { ProjectMemberRow } from '@ternity/shared';
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 export function getProjectMemberColumns(opts: {
   onToggleAssign: (row: ProjectMemberRow) => void;
@@ -52,23 +45,9 @@ export function getProjectMemberColumns(opts: {
         const member = row.original;
         return (
           <div className="flex items-center gap-2.5">
-            {member.avatarUrl ? (
-              <img
-                src={member.avatarUrl}
-                alt={member.displayName}
-                className="h-8 w-8 shrink-0 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-                style={{ fontSize: '11px' }}
-              >
-                {getInitials(member.displayName)}
-              </div>
-            )}
+            <UserAvatar user={member} size="md" />
             <div className="flex flex-col">
-              <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
+              <span className="font-medium text-foreground" style={{ fontSize: scaled(12) }}>
                 {member.displayName}
               </span>
               <span className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
@@ -111,16 +90,16 @@ export function getProjectMemberColumns(opts: {
       cell: ({ row }) => {
         const member = row.original;
         return (
-          <select
+          <SelectPopover
             value={member.assigned ? member.role : 'user'}
+            onChange={(v) => opts.onRoleChange(member, v)}
+            items={[
+              { value: 'user', label: 'Member' },
+              { value: 'manager', label: 'Manager' },
+            ]}
             disabled={!member.assigned}
-            onChange={(e) => opts.onRoleChange(member, e.target.value)}
-            className="rounded-md border border-border bg-transparent px-2 py-1 text-foreground outline-none transition-colors hover:border-primary/50 focus:border-primary disabled:cursor-not-allowed disabled:opacity-30"
-            style={{ fontSize: scaled(11) }}
-          >
-            <option value="user">Member</option>
-            <option value="manager">Manager</option>
-          </select>
+            compact
+          />
         );
       },
     },

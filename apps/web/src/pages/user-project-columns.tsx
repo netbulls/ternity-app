@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header';
+import { SelectPopover } from '@/components/ui/select-popover';
 import { scaled } from '@/lib/scaled';
 import type { UserProjectRow } from '@ternity/shared';
 
@@ -73,16 +74,16 @@ export function getUserProjectColumns(opts: {
       cell: ({ row }) => {
         const project = row.original;
         return (
-          <select
+          <SelectPopover
             value={project.assigned ? project.role : 'user'}
+            onChange={(v) => opts.onRoleChange(project, v)}
+            items={[
+              { value: 'user', label: 'Member' },
+              { value: 'manager', label: 'Manager' },
+            ]}
             disabled={!project.assigned}
-            onChange={(e) => opts.onRoleChange(project, e.target.value)}
-            className="rounded-md border border-border bg-transparent px-2 py-1 text-foreground outline-none transition-colors hover:border-primary/50 focus:border-primary disabled:cursor-not-allowed disabled:opacity-30"
-            style={{ fontSize: scaled(11) }}
-          >
-            <option value="user">Member</option>
-            <option value="manager">Manager</option>
-          </select>
+            compact
+          />
         );
       },
     },

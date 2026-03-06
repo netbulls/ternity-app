@@ -10,6 +10,7 @@ import {
   type Table as TanStackTable,
 } from '@tanstack/react-table';
 import { Search, X, UserCheck, UserX, ArrowLeft, FolderKanban, Plus, Minus } from 'lucide-react';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { StatCard } from '@/components/ui/stat-card';
@@ -19,7 +20,10 @@ import {
   useDeactivateUser,
   useBulkActivate,
   useBulkDeactivate,
+  useUpdateEmploymentType,
+  useUpdateTeam,
   type AdminUser,
+  type EmploymentType,
 } from '@/hooks/use-admin-users';
 import {
   useUserProjects,
@@ -108,6 +112,8 @@ export function UserManagementPage() {
   const deactivateUser = useDeactivateUser();
   const bulkActivate = useBulkActivate();
   const bulkDeactivate = useBulkDeactivate();
+  const updateEmploymentType = useUpdateEmploymentType();
+  const updateTeam = useUpdateTeam();
 
   // ── Project drill-down data & mutations ─────────────────────────────
   const { data: allUserProjects, isLoading: projectsLoading } = useUserProjects(
@@ -273,6 +279,20 @@ export function UserManagementPage() {
     [setTarget, navigate],
   );
 
+  const handleToggleEmploymentType = useCallback(
+    (user: AdminUser, newType: EmploymentType) => {
+      updateEmploymentType.mutate({ userId: user.id, employmentType: newType });
+    },
+    [updateEmploymentType],
+  );
+
+  const handleTeamChange = useCallback(
+    (user: AdminUser, projectId: string | null) => {
+      updateTeam.mutate({ userId: user.id, projectId });
+    },
+    [updateTeam],
+  );
+
   // Column definitions (stable unless callbacks change)
   const columns = useMemo(
     () =>
@@ -281,6 +301,8 @@ export function UserManagementPage() {
         onDeactivate: handleSingleDeactivate,
         onImpersonate: canImpersonate ? handleImpersonate : undefined,
         onProjects: handleUserProjects,
+        onToggleEmploymentType: handleToggleEmploymentType,
+        onTeamChange: handleTeamChange,
       }),
     [
       handleSingleActivate,
@@ -288,6 +310,8 @@ export function UserManagementPage() {
       canImpersonate,
       handleImpersonate,
       handleUserProjects,
+      handleToggleEmploymentType,
+      handleTeamChange,
     ],
   );
 
@@ -357,26 +381,7 @@ export function UserManagementPage() {
             All Users
           </button>
           <div className="flex items-center gap-2.5">
-            {drilldownUser.avatarUrl ? (
-              <img
-                src={drilldownUser.avatarUrl}
-                alt={drilldownUser.displayName}
-                className="h-6 w-6 shrink-0 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-                style={{ fontSize: '9px' }}
-              >
-                {drilldownUser.displayName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2)}
-              </div>
-            )}
+            <UserAvatar user={drilldownUser} size="lg" />
             <h1
               className="font-brand font-semibold tracking-wide text-foreground"
               style={{ fontSize: scaled(18) }}
@@ -399,7 +404,7 @@ export function UserManagementPage() {
               value={projectSearch}
               onChange={(e) => handleProjectSearchChange(e.target.value)}
               className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+              style={{ fontSize: scaled(12), border: 'none' }}
             />
             {projectSearch && (
               <button
@@ -535,7 +540,7 @@ export function UserManagementPage() {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+            style={{ fontSize: scaled(12), border: 'none' }}
           />
           {searchQuery && (
             <button

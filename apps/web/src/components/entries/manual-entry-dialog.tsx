@@ -13,7 +13,7 @@ import { ProjectSelector } from '@/components/timer/project-selector';
 import { TagSelector } from '@/components/timer/tag-selector';
 import { useCreateEntry } from '@/hooks/use-entries';
 import { getPreference, usePreferences } from '@/providers/preferences-provider';
-import { formatDuration, orgTimeToISO } from '@/lib/format';
+import { formatDuration, orgTimeToISO, getOrgToday } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 
 interface Props {
@@ -25,7 +25,7 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
   const createEntry = useCreateEntry();
   const { tagsEnabled } = usePreferences();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getOrgToday();
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string | null>(() =>
     getPreference('defaultProjectId'),

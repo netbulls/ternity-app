@@ -2,11 +2,11 @@ import {
   Timer,
   List,
   BarChart3,
-  Calendar,
   Palmtree,
   Settings,
   Users,
   FolderKanban,
+  TreePalm,
   Download,
   Settings2,
   Palette,
@@ -35,7 +35,6 @@ export const trackingNav: NavItem[] = [
   { to: '/', label: 'My Day', icon: Timer, keywords: ['home', 'timer', 'today'] },
   { to: '/team', label: 'Team', icon: Users, keywords: ['presence', 'board', 'people', 'who'] },
   { to: '/entries', label: 'Entries', icon: List, keywords: ['time', 'history', 'log'] },
-  { to: '/calendar', label: 'Calendar', icon: Calendar, keywords: ['schedule', 'dates'] },
   { to: '/leave', label: 'Leave', icon: Palmtree, keywords: ['holiday', 'vacation', 'absence'] },
   {
     to: '/reports',
@@ -45,7 +44,7 @@ export const trackingNav: NavItem[] = [
   },
 ];
 
-// ── Admin pages (shown in user menu, not sidebar) ───────────────────
+// ── Admin pages (sidebar Admin section, visible to admins only) ─────
 
 export const adminNav: NavItem[] = [
   {
@@ -56,6 +55,13 @@ export const adminNav: NavItem[] = [
     keywords: ['team', 'members', 'users'],
   },
   { to: '/projects', label: 'Projects', icon: FolderKanban, admin: true, keywords: ['clients'] },
+  {
+    to: '/leave-types',
+    label: 'Leave Types',
+    icon: TreePalm,
+    admin: true,
+    keywords: ['holiday', 'absence', 'groups', 'categories'],
+  },
 ];
 
 // ── Settings sub-navigation ─────────────────────────────────────────

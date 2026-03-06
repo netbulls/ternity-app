@@ -601,7 +601,7 @@ export function ProjectsPage() {
               value={memberSearch}
               onChange={(e) => handleMemberSearchChange(e.target.value)}
               className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+              style={{ fontSize: scaled(12), border: 'none' }}
             />
             {memberSearch && (
               <button
@@ -690,7 +690,7 @@ export function ProjectsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex items-start justify-between">
         <div>
           {drilldownClient ? (
             <>
@@ -750,13 +750,15 @@ export function ProjectsPage() {
         {/* Create button */}
         {(scope === 'projects' || drilldownClient) && (
           <Button
-            size="sm"
+            variant="subtle"
+            size="compact"
             onClick={() => {
               setEditingProject(null);
               setProjectDialogOpen(true);
             }}
+            style={{ fontSize: scaled(11) }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus />
             New Project
           </Button>
         )}
@@ -827,7 +829,7 @@ export function ProjectsPage() {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: scaled(12), border: 'none' }}
+            style={{ fontSize: scaled(12), border: 'none' }}
           />
           {searchQuery && (
             <button

@@ -9,25 +9,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header';
+import { ProjectSelector } from '@/components/timer/project-selector';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { formatRelativeTime, formatNumber } from '@/lib/format';
-import type { AdminUser } from '@/hooks/use-admin-users';
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { UserAvatar } from '@/components/ui/user-avatar';
+import type { AdminUser, EmploymentType } from '@/hooks/use-admin-users';
 
 export function getUserColumns(opts: {
   onActivate: (user: AdminUser) => void;
   onDeactivate: (user: AdminUser) => void;
   onImpersonate?: (user: AdminUser) => void;
   onProjects?: (user: AdminUser) => void;
+  onToggleEmploymentType?: (user: AdminUser, newType: EmploymentType) => void;
+  onTeamChange?: (user: AdminUser, projectId: string | null) => void;
 }): ColumnDef<AdminUser>[] {
   return [
     // Select
@@ -63,23 +58,9 @@ export function getUserColumns(opts: {
         const user = row.original;
         return (
           <div className="flex items-center gap-2.5">
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.displayName}
-                className="h-8 w-8 shrink-0 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-                style={{ fontSize: '11px' }}
-              >
-                {getInitials(user.displayName)}
-              </div>
-            )}
+            <UserAvatar user={user} size="md" />
             <div className="flex flex-col">
-              <span className="font-medium text-foreground" style={{ fontSize: scaled(13) }}>
+              <span className="font-medium text-foreground" style={{ fontSize: scaled(12) }}>
                 {user.displayName}
               </span>
               <span className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
@@ -127,6 +108,79 @@ export function getUserColumns(opts: {
           {row.original.globalRole === 'admin' ? 'Admin' : 'User'}
         </span>
       ),
+    },
+
+    // Employment Type
+    {
+      accessorKey: 'employmentType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Employment" />,
+      cell: ({ row }) => {
+        const user = row.original;
+        const isContractor = user.employmentType === 'contractor';
+        return (
+          <button
+            onClick={() => {
+              if (opts.onToggleEmploymentType) {
+                opts.onToggleEmploymentType(user, isContractor ? 'employee' : 'contractor');
+              }
+            }}
+            disabled={!opts.onToggleEmploymentType}
+            className={cn(
+              'rounded-full border px-2 py-0.5 font-medium transition-colors',
+              isContractor
+                ? 'border-sky-500/30 bg-sky-500/10 text-sky-500 hover:bg-sky-500/20'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20',
+              !opts.onToggleEmploymentType && 'cursor-default',
+            )}
+            style={{ fontSize: scaled(10) }}
+            title={
+              opts.onToggleEmploymentType
+                ? `Click to switch to ${isContractor ? 'employee' : 'contractor'}`
+                : undefined
+            }
+          >
+            {isContractor ? 'B2B' : 'Employee'}
+          </button>
+        );
+      },
+    },
+
+    // Team
+    {
+      accessorKey: 'teamId',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Team" />,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const user = row.original;
+        if (!opts.onTeamChange) {
+          // Read-only: just show team name
+          return user.teamName ? (
+            <div className="flex items-center gap-1.5">
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: user.teamColor ?? '#00D4AA' }}
+              />
+              <span className="truncate text-foreground" style={{ fontSize: scaled(11) }}>
+                {user.teamName}
+              </span>
+            </div>
+          ) : (
+            <span
+              className="italic text-muted-foreground opacity-40"
+              style={{ fontSize: scaled(11) }}
+            >
+              None
+            </span>
+          );
+        }
+        return (
+          <ProjectSelector
+            value={user.teamId}
+            onChange={(projectId) => opts.onTeamChange!(user, projectId)}
+            triggerClassName="border-0 px-1.5 py-1"
+          />
+        );
+      },
     },
 
     // Last Active

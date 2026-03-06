@@ -58,6 +58,55 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'web',
     groups: [
       {
+        name: 'leave-management',
+        id: 'leave-management-lab',
+        description:
+          'Leave Management — wallchart, booking, my-leave views for contractor-first time-off booking with autoconfirm flow.',
+        date: '2026-03-05T10:00:00',
+        items: [
+          {
+            kind: 'prototype',
+            title: 'V1 — Dense Grid',
+            route: '/dev/leave-v1',
+            description:
+              'Timetastic-style: people on rows, days as columns. Color-coded cells. Dashed borders for partial-day bookings. My Leave tab with booking list.',
+            date: '2026-03-05T10:00:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V2 — Gantt Bars',
+            route: '/dev/leave-v2',
+            description:
+              'Horizontal bars spanning leave dates. Visual duration at a glance. Summary stat cards (people out, total days). Animated bar entrances.',
+            date: '2026-03-05T10:10:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V3 — Card-per-Person',
+            route: '/dev/leave-v3',
+            description:
+              'Each person with leave gets a card with mini month-bar visualization + booking detail list. Feed-style, narrower layout. Show/hide people without leave.',
+            date: '2026-03-05T10:20:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V4 — Hybrid Grid + Hover',
+            route: '/dev/leave-v4',
+            description:
+              'Compact grid with connected range fills, week separators, per-person day counts, people-out-per-day footer row, and floating hover tooltips for detail.',
+            date: '2026-03-05T10:30:00',
+          },
+          {
+            kind: 'prototype',
+            title: 'V5 — Split View',
+            route: '/dev/leave-v5',
+            description:
+              'My Leave sidebar (personal bookings, stats, book button) always visible alongside wallchart grid. No tabs — everything on one screen.',
+            date: '2026-03-05T10:40:00',
+          },
+        ],
+      },
+      {
         name: 'project-assignment',
         id: 'project-assignment-lab',
         description:

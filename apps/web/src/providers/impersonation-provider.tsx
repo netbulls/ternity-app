@@ -18,18 +18,27 @@ interface ImpersonationContextValue {
   /** The user being viewed (null = viewing as yourself) */
   targetUserId: string | null;
   targetDisplayName: string | null;
+  /** The impersonated user's avatar URL */
+  targetAvatarUrl: string | null;
   /** The impersonated user's role (for banner display) */
   targetRole: string | null;
   /** True during the identity shift animation */
   isTransitioning: boolean;
   /** Set impersonation target */
-  setTarget: (userId: string, displayName: string, role?: string) => void;
+  setTarget: (
+    userId: string,
+    displayName: string,
+    role?: string,
+    avatarUrl?: string | null,
+  ) => void;
   /** Clear impersonation (back to real user) */
   clearImpersonation: () => void;
   /** Whether current user can impersonate */
   canImpersonate: boolean;
   /** The effective user ID (impersonated or real) */
   effectiveUserId: string | null;
+  /** Whether currently impersonating someone */
+  isImpersonating: boolean;
 }
 
 const ImpersonationContext = createContext<ImpersonationContextValue | null>(null);
@@ -39,11 +48,13 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [targetDisplayName, setTargetDisplayName] = useState<string | null>(null);
+  const [targetAvatarUrl, setTargetAvatarUrl] = useState<string | null>(null);
   const [targetRole, setTargetRole] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canImpersonate = user?.globalRole === GlobalRole.Admin;
+  const isImpersonating = targetUserId !== null;
 
   // Sync module-level impersonation state
   useEffect(() => {
@@ -55,6 +66,7 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     if (!canImpersonate && targetUserId) {
       setTargetUserId(null);
       setTargetDisplayName(null);
+      setTargetAvatarUrl(null);
       setTargetRole(null);
       setImpersonateUserId(null);
     }
@@ -68,13 +80,14 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setTarget = useCallback(
-    (userId: string, displayName: string, role?: string) => {
+    (userId: string, displayName: string, role?: string, avatarUrl?: string | null) => {
       if (!canImpersonate) return;
 
       // Start transition animation
       setIsTransitioning(true);
       setTargetUserId(userId);
       setTargetDisplayName(displayName);
+      setTargetAvatarUrl(avatarUrl ?? null);
       setTargetRole(role ?? null);
       // Set module-level header synchronously BEFORE invalidating queries
       setImpersonateUserId(userId);
@@ -92,6 +105,7 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const clearImpersonation = useCallback(() => {
     setTargetUserId(null);
     setTargetDisplayName(null);
+    setTargetAvatarUrl(null);
     setTargetRole(null);
     setIsTransitioning(false);
     if (transitionTimer.current) clearTimeout(transitionTimer.current);
@@ -107,12 +121,14 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
       value={{
         targetUserId,
         targetDisplayName,
+        targetAvatarUrl,
         targetRole,
         isTransitioning,
         setTarget,
         clearImpersonation,
         canImpersonate,
         effectiveUserId,
+        isImpersonating,
       }}
     >
       {children}

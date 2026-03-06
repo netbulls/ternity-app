@@ -78,8 +78,9 @@ export function CommandPalette() {
   const location = useLocation();
 
   const { user } = useAuth();
-  const isAdmin = user?.globalRole === 'admin';
-  const { setTarget: setImpersonationTarget } = useImpersonation();
+  const { setTarget: setImpersonationTarget, isImpersonating, targetRole } = useImpersonation();
+  // When impersonating, use the target's role for nav/palette visibility
+  const isAdmin = isImpersonating ? targetRole === 'admin' : user?.globalRole === 'admin';
 
   const { data: timerState } = useTimer();
   const startOrResume = useStartOrResumeTimer();
@@ -89,7 +90,12 @@ export function CommandPalette() {
   const hasJira = (jiraConnections?.length ?? 0) > 0;
 
   // Navigation items — derived from shared nav definition
-  const allNavItems = useMemo(() => getAllNavItems(isAdmin), [isAdmin]);
+  // Hide settings pages during impersonation to prevent accidental edits
+  const allNavItems = useMemo(() => {
+    const items = getAllNavItems(isAdmin);
+    if (isImpersonating) return items.filter((item) => !item.to.startsWith('/settings'));
+    return items;
+  }, [isAdmin, isImpersonating]);
 
   // Pending action for confirmation dialogs
   const [pendingAction, setPendingAction] = useState<{
@@ -346,7 +352,12 @@ export function CommandPalette() {
         return;
       }
       if (item.type === 'person') {
-        setImpersonationTarget(item.user.id, item.user.displayName, item.user.globalRole);
+        setImpersonationTarget(
+          item.user.id,
+          item.user.displayName,
+          item.user.globalRole,
+          item.user.avatarUrl,
+        );
         return;
       }
       if (item.type === 'entry') {
@@ -385,7 +396,12 @@ export function CommandPalette() {
       // Person items — same as Enter (impersonate)
       if (item.type === 'person') {
         setOpen(false);
-        setImpersonationTarget(item.user.id, item.user.displayName, item.user.globalRole);
+        setImpersonationTarget(
+          item.user.id,
+          item.user.displayName,
+          item.user.globalRole,
+          item.user.avatarUrl,
+        );
         return;
       }
       setOpen(false);

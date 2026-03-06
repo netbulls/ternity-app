@@ -131,15 +131,15 @@ function isProjectAllowed(
   return projectId in request.auth.orgRoles;
 }
 
-/** Stop a running segment (if any) for a given user. Returns the entry ID that was stopped, or null. */
+/** Stop ALL running segments for a given user. Returns the entry ID of the most recent one stopped, or null. */
 async function stopRunningSegment(
   tx: Database,
   userId: string,
   actorId: string,
   reason: string,
 ): Promise<string | null> {
-  // Find running clocked segment via join
-  const [runningRow] = await tx
+  // Find ALL running clocked segments (there should be at most 1, but orphans can exist)
+  const runningRows = await tx
     .select({
       segmentId: entrySegments.id,
       segmentStartedAt: entrySegments.startedAt,
@@ -154,35 +154,40 @@ async function stopRunningSegment(
         eq(entrySegments.type, 'clocked'),
         isNull(entrySegments.stoppedAt),
       ),
-    )
-    .limit(1);
+    );
 
-  if (!runningRow) return null;
+  if (runningRows.length === 0) return null;
 
   const now = new Date();
-  const duration = Math.round(
-    (now.getTime() - (runningRow.segmentStartedAt?.getTime() ?? now.getTime())) / 1000,
-  );
+  let lastEntryId: string | null = null;
 
-  await tx
-    .update(entrySegments)
-    .set({ stoppedAt: now, durationSeconds: duration })
-    .where(eq(entrySegments.id, runningRow.segmentId));
+  for (const row of runningRows) {
+    const duration = Math.round(
+      (now.getTime() - (row.segmentStartedAt?.getTime() ?? now.getTime())) / 1000,
+    );
 
-  await recordAudit({
-    entryId: runningRow.entryId,
-    userId: runningRow.entryUserId,
-    actorId,
-    action: 'timer_stopped',
-    changes: {
-      stoppedAt: { old: null, new: now.toISOString() },
-      durationSeconds: { old: null, new: duration },
-    },
-    metadata: { source: 'timer_bar', reason },
-    tx,
-  });
+    await tx
+      .update(entrySegments)
+      .set({ stoppedAt: now, durationSeconds: duration })
+      .where(eq(entrySegments.id, row.segmentId));
 
-  return runningRow.entryId;
+    await recordAudit({
+      entryId: row.entryId,
+      userId: row.entryUserId,
+      actorId,
+      action: 'timer_stopped',
+      changes: {
+        stoppedAt: { old: null, new: now.toISOString() },
+        durationSeconds: { old: null, new: duration },
+      },
+      metadata: { source: 'timer_bar', reason },
+      tx,
+    });
+
+    lastEntryId = row.entryId;
+  }
+
+  return lastEntryId;
 }
 
 export async function timerRoutes(fastify: FastifyInstance) {

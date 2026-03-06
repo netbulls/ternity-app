@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ColorPicker } from '@/components/ui/color-picker';
+import { SelectPopover } from '@/components/ui/select-popover';
 import { scaled } from '@/lib/scaled';
 import {
   useCreateProject,
@@ -150,20 +151,17 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <select
-                  id="project-client"
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  style={{ fontSize: scaled(13) }}
-                >
-                  <option value="">Select client...</option>
-                  {allClients?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1">
+                  <SelectPopover
+                    value={clientId}
+                    onChange={setClientId}
+                    items={allClients?.map((c) => ({ value: c.id, label: c.name })) ?? []}
+                    placeholder="Select client..."
+                    searchable
+                    searchPlaceholder="Search clients..."
+                    width={260}
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="ghost"

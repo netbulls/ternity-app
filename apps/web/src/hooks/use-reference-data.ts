@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
 import type { ProjectOption, TagOption, UserOption, CreateTag, UpdateTag } from '@ternity/shared';
+import { useImpersonation } from '@/providers/impersonation-provider';
 
 export function useProjects() {
   return useQuery({
@@ -21,8 +22,9 @@ export function useAssignedProjects() {
 }
 
 export function useTags() {
+  const { effectiveUserId } = useImpersonation();
   return useQuery({
-    queryKey: ['tags'],
+    queryKey: ['tags', effectiveUserId],
     queryFn: () => apiFetch<TagOption[]>('/tags'),
     staleTime: 5 * 60 * 1000,
   });

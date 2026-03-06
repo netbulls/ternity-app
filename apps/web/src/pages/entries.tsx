@@ -20,6 +20,7 @@ import {
   getMonthEnd,
   shiftDays,
   shiftMonths,
+  getOrgToday,
 } from '@/lib/format';
 import { usePreferences } from '@/providers/preferences-provider';
 import { scaled } from '@/lib/scaled';
@@ -28,14 +29,10 @@ import type { DayGroup as DayGroupType } from '@ternity/shared';
 
 type ViewMode = 'day' | 'week' | 'month';
 
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function EntriesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [anchorDate, setAnchorDate] = useState(getToday);
+  const [anchorDate, setAnchorDate] = useState(getOrgToday);
   const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [onlyIncomplete, setOnlyIncomplete] = useState(
@@ -116,12 +113,12 @@ export function EntriesPage() {
   }, [viewMode]);
 
   const goToday = useCallback(() => {
-    setAnchorDate(getToday());
+    setAnchorDate(getOrgToday());
   }, []);
 
   const handleViewChange = useCallback((v: ViewMode) => {
     setViewMode(v);
-    setAnchorDate(getToday());
+    setAnchorDate(getOrgToday());
   }, []);
 
   const hasFilters =
@@ -150,12 +147,12 @@ export function EntriesPage() {
         </div>
         {!showDeleted && (
           <Button
-            variant="outline"
-            size="sm"
-            style={{ fontSize: scaled(12) }}
+            variant="subtle"
+            size="compact"
+            style={{ fontSize: scaled(11) }}
             onClick={() => setManualOpen(true)}
           >
-            <Plus className="mr-1 h-3.5 w-3.5" />
+            <Plus />
             Manual Entry
           </Button>
         )}

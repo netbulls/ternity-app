@@ -19,6 +19,9 @@ export interface TeamBoardMember {
   id: string;
   displayName: string;
   avatarUrl: string | null;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
   status: PresenceStatus;
   schedule: { start: string; end: string } | null;
   runningEntry: {

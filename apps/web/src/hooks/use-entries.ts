@@ -252,16 +252,18 @@ export function useSplitEntry() {
 }
 
 export function useRecentEntries() {
+  const { effectiveUserId } = useImpersonation();
   return useQuery({
-    queryKey: ['entries-recent'],
+    queryKey: ['entries-recent', effectiveUserId],
     queryFn: () => apiFetch<EntrySearchHit[]>('/entries/recent?limit=10'),
     staleTime: 30 * 1000,
   });
 }
 
 export function useEntrySearch(query: string) {
+  const { effectiveUserId } = useImpersonation();
   return useQuery({
-    queryKey: ['entries-search', query],
+    queryKey: ['entries-search', effectiveUserId, query],
     queryFn: () =>
       apiFetch<EntrySearchHit[]>(`/entries/search?q=${encodeURIComponent(query)}&limit=20`),
     enabled: query.length >= 2,

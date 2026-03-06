@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, getOrgToday } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { useTimelineFocus } from './timeline-focus-context';
 import type { Entry } from '@ternity/shared';
@@ -258,7 +258,7 @@ function getNowPosition(hourStart: number, hourEnd: number): number | null {
 }
 
 function getTimelineLabel(date: string): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getOrgToday();
   if (date === today) return 'Today\u2019s Timeline';
   const d = new Date(date + 'T12:00:00');
   const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' });
@@ -380,7 +380,7 @@ export function DayTimeline({ date, entries }: Props) {
     [entries, date, hourStart, hourEnd],
   );
 
-  const isToday = date === new Date().toISOString().slice(0, 10);
+  const isToday = date === getOrgToday();
   const nowPos = isToday ? getNowPosition(hourStart, hourEnd) : null;
 
   const timelineLabel = getTimelineLabel(date);

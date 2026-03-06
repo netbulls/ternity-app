@@ -257,7 +257,11 @@ Two tabs:
 
 1. **Booking duration** — bookings are in 1-hour increments up to 4 hours. Anything beyond 4 hours is a full-day booking. This aligns with the 4-hour rule from presence: under 4h is a short absence, 4h+ is leave territory. So partial-day bookings are 1h, 2h, 3h, or 4h. Beyond that, it's a full day.
 2. **Weekend/holiday exclusion** — the system auto-excludes weekends and Polish public holidays when calculating a booking. If you book Mon–Fri, only the 5 weekdays count. If Wednesday is a public holiday, only 4 days count. Requires a Polish public holiday calendar in the system.
-3. **Overlapping bookings** — prevented. The system rejects a booking if it overlaps with an existing active booking (`autoconfirmed` or `approved`) for the same user. Cancelled bookings don't block.
+3. **Overlapping bookings** — rules:
+   - **Full-day booking**: blocks the entire date. No other booking allowed on that date.
+   - **Partial-day bookings**: multiple allowed on the same date as long as total hours don't exceed 4h.
+   - **Over 4h**: if a new partial-day booking would push the total past 4h, the system **blocks it** with an explanation: "You already have Xh booked on this date. Total would exceed 4h — cancel existing bookings and book a full day instead." No auto-conversion.
+   - Only active bookings (`autoconfirmed` or `approved`) count. Cancelled bookings don't block.
 
 ## Booking Duration Model
 

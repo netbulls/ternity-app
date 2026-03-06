@@ -5,6 +5,7 @@ import {
   timestamp,
   pgEnum,
   integer,
+  real,
   boolean,
   date,
   jsonb,
@@ -22,6 +23,7 @@ export const leaveStatusEnum = pgEnum('leave_status', [
   'approved',
   'rejected',
   'cancelled',
+  'autoconfirmed',
 ]);
 export const entryAuditActionEnum = pgEnum('entry_audit_action', [
   'created',
@@ -52,8 +54,12 @@ export const users = pgTable(
     phone: text('phone'),
     avatarUrl: text('avatar_url'),
     globalRole: globalRoleEnum('global_role').notNull().default('user'),
+    employmentType: text('employment_type').notNull().default('contractor'),
     active: boolean('active').notNull().default(true),
     preferences: jsonb('preferences').default({}).$type<Record<string, unknown>>(),
+    defaultProjectId: uuid('default_project_id').references(() => projects.id, {
+      onDelete: 'set null',
+    }),
     togglId: text('toggl_id'),
     timetasticId: text('timetastic_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -254,6 +260,16 @@ export const entryAuditLog = pgTable(
   ],
 );
 
+// ── Leave Type Groups ──────────────────────────────────────────────────────
+
+export const leaveTypeGroups = pgTable('leave_type_groups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ── Leave Types ────────────────────────────────────────────────────────────
 
 export const leaveTypes = pgTable('leave_types', {
@@ -262,6 +278,9 @@ export const leaveTypes = pgTable('leave_types', {
   daysPerYear: integer('days_per_year').notNull(),
   color: text('color'),
   deducted: boolean('deducted').notNull().default(true),
+  groupId: uuid('group_id').references(() => leaveTypeGroups.id),
+  active: boolean('active').notNull().default(true),
+  visibility: text('visibility').notNull().default('all'), // 'all' | 'contractor' | 'employee'
 });
 
 // ── Leave Allowances ───────────────────────────────────────────────────────
@@ -286,15 +305,15 @@ export const leaveRequests = pgTable('leave_requests', {
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id),
-  projectId: uuid('project_id')
-    .notNull()
-    .references(() => projects.id),
+  projectId: uuid('project_id').references(() => projects.id),
   leaveTypeId: uuid('leave_type_id')
     .notNull()
     .references(() => leaveTypes.id),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   daysCount: integer('days_count').notNull(),
+  hours: real('hours'),
+  startHour: text('start_hour'),
   note: text('note'),
   status: leaveStatusEnum('status').notNull().default('pending'),
   reviewedBy: uuid('reviewed_by').references(() => users.id),

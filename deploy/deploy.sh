@@ -73,7 +73,7 @@ update_caddy() {
 # ── Post-deploy smoke checks ────────────────────────────────────────
 DOMAINS_dev="dev.app.ternity.xyz"
 DOMAINS_prod="app.ternity.xyz"
-SPA_ROUTES="/ /entries /reports /calendar /leave /projects /users /downloads /settings"
+SPA_ROUTES="/ /entries /reports /leave /leave-types /projects /users /downloads /settings"
 
 verify_env() {
   local env="$1"

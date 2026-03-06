@@ -157,11 +157,16 @@ export function EntryRow({ entry, date }: Props) {
   }, [entry.projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive running state from timer query (single source of truth)
-  const isRunning = timerState?.running === true && timerState.entry?.id === entry.id;
-
-  // Compute day-clamped duration for completed segments only
+  // Only show as running in the day group where "now" falls — not in past day groups
+  // that the same entry spans.
   const dayBoundsStartMs = new Date(date + 'T00:00:00').getTime();
   const dayBoundsEndMs = dayBoundsStartMs + 24 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const isCurrentDay = nowMs >= dayBoundsStartMs && nowMs < dayBoundsEndMs;
+  const isRunning =
+    timerState?.running === true && timerState.entry?.id === entry.id && isCurrentDay;
+
+  // Compute day-clamped duration for completed segments only
   const runningSegment = entry.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);
 
   // Day-clamped offset: sum of completed segments within this day

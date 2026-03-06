@@ -127,6 +127,34 @@
       "when": 1772784000000,
       "tag": "0020_notification_test_sms_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772870400000,
+      "tag": "0021_leave_management_v1",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1772956800000,
+      "tag": "0022_leave_type_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1773043200000,
+      "tag": "0023_user_default_project",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1773129600000,
+      "tag": "0024_partial_leave_start_hour",
+      "breakpoints": true
     }
   ]
 }

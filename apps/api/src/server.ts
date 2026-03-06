@@ -12,6 +12,7 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { adminUsersRoutes } from './routes/admin-users.js';
 import { adminProjectsRoutes } from './routes/admin-projects.js';
 import { adminProjectMembersRoutes } from './routes/admin-project-members.js';
+import { adminLeaveTypesRoutes } from './routes/admin-leave-types.js';
 import { syncStatusRoutes } from './routes/sync-status.js';
 import { downloadsRoutes } from './routes/downloads.js';
 import { userPreferencesRoutes } from './routes/user-preferences.js';
@@ -19,6 +20,7 @@ import { jiraRoutes } from './routes/jira.js';
 import { workingHoursRoutes } from './routes/working-hours.js';
 import { notificationSettingsRoutes } from './routes/notification-settings.js';
 import { teamRoutes } from './routes/team.js';
+import { leaveRoutes } from './routes/leave.js';
 
 const fastify = Fastify({
   logger: {
@@ -62,6 +64,7 @@ await fastify.register(dashboardRoutes);
 await fastify.register(adminUsersRoutes);
 await fastify.register(adminProjectsRoutes);
 await fastify.register(adminProjectMembersRoutes);
+await fastify.register(adminLeaveTypesRoutes);
 await fastify.register(syncStatusRoutes);
 await fastify.register(downloadsRoutes);
 await fastify.register(userPreferencesRoutes);
@@ -69,6 +72,7 @@ await fastify.register(jiraRoutes);
 await fastify.register(workingHoursRoutes);
 await fastify.register(notificationSettingsRoutes);
 await fastify.register(teamRoutes);
+await fastify.register(leaveRoutes);
 
 // Start
 const port = Number(process.env.PORT ?? 3010);

@@ -14,6 +14,7 @@ import {
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
+import { ORG_TIMEZONE } from '@ternity/shared';
 import type {
   CreateEntry,
   UpdateEntry,
@@ -24,6 +25,43 @@ import type {
   Entry,
 } from '@ternity/shared';
 import { GlobalRole } from '@ternity/shared';
+
+// ── Timezone helpers ──────────────────────────────────────────────────────
+
+/**
+ * Convert a YYYY-MM-DD midnight in org timezone to a UTC Date.
+ * Used to create DB query boundaries that represent org-timezone day boundaries.
+ */
+function orgMidnightToUTC(dateStr: string): Date {
+  // Find the UTC offset for the org timezone on the given date
+  const noon = new Date(dateStr + 'T12:00:00Z');
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: ORG_TIMEZONE,
+    hour12: false,
+    timeZoneName: 'longOffset',
+  }).formatToParts(noon);
+  const tzPart = parts.find((p) => p.type === 'timeZoneName');
+  const match = tzPart?.value.match(/GMT([+-])(\d{2}):(\d{2})/);
+  if (!match) throw new Error('Cannot parse timezone offset for ' + ORG_TIMEZONE);
+  const sign = match[1] === '+' ? 1 : -1;
+  const offsetMs = sign * (parseInt(match[2]!, 10) * 3600000 + parseInt(match[3]!, 10) * 60000);
+  // Midnight in org timezone = midnight UTC minus the UTC offset
+  return new Date(new Date(dateStr + 'T00:00:00Z').getTime() - offsetMs);
+}
+
+/** Advance a YYYY-MM-DD string by n days */
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Convert an ISO timestamp string to YYYY-MM-DD in the org timezone */
+function isoToOrgDate(isoStr: string): string {
+  return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE });
+}
+
+// ── Other helpers ────────────────────────────────────────────────────────
 
 /** Format seconds into h:mm or h:mm:ss */
 function formatDuration(seconds: number): string {
@@ -116,13 +154,15 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
     // Default: last 7 days
     const now = new Date();
-    const defaultFrom = new Date(now);
-    defaultFrom.setDate(defaultFrom.getDate() - 6);
-    const fromDate = query.from ?? defaultFrom.toISOString().slice(0, 10);
-    const toDate = query.to ?? now.toISOString().slice(0, 10);
+    const todayStr = now.toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE }); // YYYY-MM-DD
+    const defaultFromDate = new Date(todayStr + 'T12:00:00Z');
+    defaultFromDate.setUTCDate(defaultFromDate.getUTCDate() - 6);
+    const fromDate = query.from ?? defaultFromDate.toISOString().slice(0, 10);
+    const toDate = query.to ?? todayStr;
 
-    const fromTimestamp = new Date(`${fromDate}T00:00:00.000Z`);
-    const toTimestamp = new Date(`${toDate}T23:59:59.999Z`);
+    // Convert YYYY-MM-DD boundaries to UTC timestamps representing org timezone midnight
+    const fromTimestamp = orgMidnightToUTC(fromDate);
+    const toTimestamp = new Date(orgMidnightToUTC(addDays(toDate, 1)).getTime() - 1);
 
     // deleted=true shows soft-deleted entries, default shows active only
     const showDeleted = query.deleted === 'true';
@@ -267,14 +307,33 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       jiraConnMap.set(jc.id, jc.siteUrl);
     }
 
-    // 5. Assemble entries in lastSegmentAt DESC order (preserved from entryHits)
+    // 5. Find the single truly-running entry (most recent unstopped clocked segment).
+    //    Only this entry should have isRunning=true — orphaned unstopped segments on
+    //    other entries are stale and should not be treated as running.
+    const [activeTimerRow] = await db
+      .select({ entryId: entrySegments.entryId })
+      .from(entrySegments)
+      .innerJoin(timeEntries, eq(entrySegments.entryId, timeEntries.id))
+      .where(
+        and(
+          eq(timeEntries.userId, userId),
+          eq(timeEntries.isActive, true),
+          eq(entrySegments.type, 'clocked'),
+          isNull(entrySegments.stoppedAt),
+        ),
+      )
+      .orderBy(desc(entrySegments.startedAt))
+      .limit(1);
+    const activeTimerEntryId = activeTimerRow?.entryId ?? null;
+
+    // 6. Assemble entries in lastSegmentAt DESC order (preserved from entryHits)
     const entries: Entry[] = entryHits.map((hit) => {
       const row = rowMap.get(hit.entryId)!;
       const segments = segmentsByEntry.get(row.id) ?? [];
       const proj = row.projectId ? (projectMap.get(row.projectId) ?? null) : null;
 
       const totalDurationSeconds = segments.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
-      const isRunning = segments.some((s) => s.type === 'clocked' && s.stoppedAt === null);
+      const isRunning = row.id === activeTimerEntryId;
 
       return {
         id: row.id,
@@ -314,48 +373,68 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       };
     });
 
-    // 6. Group entries by every day they have segments in.
+    // 7. Group entries by every day they have segments in (using org timezone for date extraction).
     //    An entry can appear in multiple day groups if it has segments spanning different days.
     //    For running segments, treat "now" as the end time so the entry also appears in today's group.
+    const orgTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE });
     const groups = new Map<string, { totalSeconds: number; entries: Entry[] }>();
     for (const entry of entries) {
       const segmentDates = new Set<string>();
       for (const seg of entry.segments) {
         if (seg.startedAt) {
           // Timed segment — add every day between start and stop (or now if running)
-          const startDate = seg.startedAt.slice(0, 10);
-          const endDate = seg.stoppedAt
-            ? seg.stoppedAt.slice(0, 10)
-            : new Date().toISOString().slice(0, 10);
+          // Convert ISO timestamps to org timezone dates
+          const startDate = isoToOrgDate(seg.startedAt);
+          const endDate = seg.stoppedAt ? isoToOrgDate(seg.stoppedAt) : orgTodayStr;
           // Add all dates from start to end (handles multi-day segments)
           let cur = startDate;
           while (cur <= endDate) {
             segmentDates.add(cur);
-            // Advance to next day
-            const d = new Date(cur + 'T12:00:00Z');
-            d.setUTCDate(d.getUTCDate() + 1);
-            cur = d.toISOString().slice(0, 10);
+            cur = addDays(cur, 1);
           }
         } else {
-          // Adjustment segment — use createdAt date
-          segmentDates.add(seg.createdAt.slice(0, 10));
+          // Adjustment segment — use createdAt date in org timezone
+          segmentDates.add(isoToOrgDate(seg.createdAt));
         }
       }
       // Fallback: if entry has no segments, use lastSegmentAt (which falls back to createdAt)
       if (segmentDates.size === 0) {
-        segmentDates.add(entry.lastSegmentAt.slice(0, 10));
+        segmentDates.add(isoToOrgDate(entry.lastSegmentAt));
       }
       for (const date of segmentDates) {
+        // Only create groups for dates within the requested range
+        if (date < fromDate || date > toDate) continue;
         if (!groups.has(date)) {
           groups.set(date, { totalSeconds: 0, entries: [] });
         }
         const group = groups.get(date)!;
         group.entries.push(entry);
-        group.totalSeconds += entry.totalDurationSeconds;
+        // Add only the portion of this entry that falls within this specific day
+        const dayStartMs = orgMidnightToUTC(date).getTime();
+        const dayEndMs = orgMidnightToUTC(addDays(date, 1)).getTime();
+        let daySeconds = 0;
+        for (const seg of entry.segments) {
+          if (seg.startedAt) {
+            const segStart = new Date(seg.startedAt).getTime();
+            const segEnd = seg.stoppedAt ? new Date(seg.stoppedAt).getTime() : Date.now();
+            const clampedStart = Math.max(segStart, dayStartMs);
+            const clampedEnd = Math.min(segEnd, dayEndMs);
+            if (clampedEnd > clampedStart) {
+              daySeconds += Math.round((clampedEnd - clampedStart) / 1000);
+            }
+          } else if (seg.durationSeconds != null) {
+            // Adjustment segment — only count if its createdAt falls on this day
+            const createdDate = isoToOrgDate(seg.createdAt);
+            if (createdDate === date) {
+              daySeconds += seg.durationSeconds;
+            }
+          }
+        }
+        group.totalSeconds += daySeconds;
       }
     }
 
-    // 7. Sort entries within each day group by their most recent segment start time
+    // 8. Sort entries within each day group by their most recent segment start time
     //    within THAT day (not globally). Most recent first.
     const dayGroups: DayGroup[] = Array.from(groups.entries()).map(
       ([date, { totalSeconds, entries: groupEntries }]) => {
@@ -393,6 +472,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
         };
       },
     );
+
+    // 9. Sort day groups by date descending (today first)
+    dayGroups.sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
 
     return dayGroups;
   });

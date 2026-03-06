@@ -11,12 +11,8 @@ import { ManualEntryDialog } from '@/components/entries/manual-entry-dialog';
 import { useEntries } from '@/hooks/use-entries';
 import { Button } from '@/components/ui/button';
 import { scaled } from '@/lib/scaled';
-import { getWeekStart, getWeekEnd, shiftDays } from '@/lib/format';
+import { getWeekStart, getWeekEnd, shiftDays, getOrgToday } from '@/lib/format';
 import type { DayGroup as DayGroupType } from '@ternity/shared';
-
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** Keyboard handler for day navigation (Left/Right/T).
  *  Lives inside TimelineFocusProvider so it can auto-select the first entry
@@ -44,12 +40,12 @@ function DayKeyboardNav({
         e.preventDefault();
         setSelectedDate((d) => {
           const next = shiftDays(d, 1);
-          return next > getToday() ? d : next;
+          return next > getOrgToday() ? d : next;
         });
         clearSelection();
       } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        setSelectedDate(getToday());
+        setSelectedDate(getOrgToday());
         clearSelection();
       }
     }
@@ -76,7 +72,7 @@ function WeekStripWrapper(props: React.ComponentProps<typeof WeekStrip>) {
 }
 
 function formatLongDate(dateStr: string): string {
-  const today = getToday();
+  const today = getOrgToday();
   const yesterday = shiftDays(today, -1);
   const tomorrow = shiftDays(today, 1);
 
@@ -96,9 +92,9 @@ function formatLongDate(dateStr: string): string {
 
 export function TimerPage() {
   const [manualOpen, setManualOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(getToday);
+  const [selectedDate, setSelectedDate] = useState(getOrgToday);
 
-  const today = getToday();
+  const today = getOrgToday();
   const isToday = selectedDate === today;
 
   // ── Week data (for the strip) ──
@@ -136,7 +132,7 @@ export function TimerPage() {
   }, []);
 
   const goToToday = useCallback(() => {
-    setSelectedDate(getToday());
+    setSelectedDate(getOrgToday());
   }, []);
 
   return (
@@ -155,12 +151,12 @@ export function TimerPage() {
           </p>
         </div>
         <Button
-          variant="outline"
-          size="sm"
+          variant="subtle"
+          size="compact"
           onClick={() => setManualOpen(true)}
-          style={{ fontSize: scaled(12) }}
+          style={{ fontSize: scaled(11) }}
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
+          <Plus />
           Manual Entry
         </Button>
       </div>

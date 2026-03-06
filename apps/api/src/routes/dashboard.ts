@@ -1,39 +1,115 @@
 import { FastifyInstance } from 'fastify';
 import { sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
+import { ORG_TIMEZONE } from '@ternity/shared';
 import type { DashboardData } from '@ternity/shared';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const WEEK_TARGET_SECONDS = 144_000; // 40h
+// SQL-safe timezone literal for use in raw SQL (single-quoted for AT TIME ZONE)
+const TZ_LITERAL = sql.raw(`'${ORG_TIMEZONE}'`);
+
+// ── Timezone helpers ───────────────────────────────────────────────────────
+
+/** Get YYYY-MM-DD of a Date in the org timezone */
+function orgDateStr(date: Date): string {
+  return date.toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE }); // en-CA → YYYY-MM-DD
+}
+
+/** Get year/month/day-of-week in the org timezone */
+function orgDateParts(date: Date): { year: number; month: number; day: number; dow: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: ORG_TIMEZONE,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+  }).formatToParts(date);
+
+  const year = parseInt(parts.find((p) => p.type === 'year')!.value);
+  const month = parseInt(parts.find((p) => p.type === 'month')!.value); // 1-based
+  const day = parseInt(parts.find((p) => p.type === 'day')!.value);
+  const wd = parts.find((p) => p.type === 'weekday')!.value;
+  const dowMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return { year, month, day, dow: dowMap[wd]! };
+}
+
+/**
+ * Convert a YYYY-MM-DD midnight in org timezone to a UTC Date.
+ * Used to create DB query boundaries that represent org-timezone day boundaries.
+ */
+function orgMidnightToUTC(dateStr: string): Date {
+  // Find the UTC offset for the org timezone on the given date
+  const noon = new Date(dateStr + 'T12:00:00Z');
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: ORG_TIMEZONE,
+    hour12: false,
+    timeZoneName: 'longOffset',
+  }).formatToParts(noon);
+  const tzPart = parts.find((p) => p.type === 'timeZoneName');
+  const match = tzPart?.value.match(/GMT([+-])(\d{2}):(\d{2})/);
+  if (!match) throw new Error('Cannot parse timezone offset for ' + ORG_TIMEZONE);
+  const sign = match[1] === '+' ? 1 : -1;
+  const offsetMs = sign * (parseInt(match[2]!, 10) * 3600000 + parseInt(match[3]!, 10) * 60000);
+  // Midnight in org timezone = midnight UTC minus the UTC offset
+  return new Date(new Date(dateStr + 'T00:00:00Z').getTime() - offsetMs);
+}
+
+/** Advance a YYYY-MM-DD string by n days */
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Get day-of-week (0=Sun) for a YYYY-MM-DD string */
+function dateDow(dateStr: string): number {
+  return new Date(dateStr + 'T12:00:00Z').getUTCDay();
+}
+
+// ── Routes ─────────────────────────────────────────────────────────────────
 
 export async function dashboardRoutes(fastify: FastifyInstance) {
   fastify.get('/api/dashboard', async (request) => {
     const userId = request.auth.userId;
     const now = new Date();
 
-    // ── Week boundaries (Mon–Sun, UTC) ─────────────────────────────
-    const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ...
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const weekStart = new Date(now);
-    weekStart.setUTCDate(now.getUTCDate() + mondayOffset);
-    weekStart.setUTCHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
-    weekEnd.setUTCHours(23, 59, 59, 999);
+    // ── Today in org timezone ────────────────────────────────────────
+    const todayStr = orgDateStr(now);
+    const { year: orgYear, month: orgMonth, dow: orgDow } = orgDateParts(now);
 
-    const weekStartStr = weekStart.toISOString().slice(0, 10);
-    const weekEndStr = weekEnd.toISOString().slice(0, 10);
+    // ── Week boundaries (Mon–Sun, org timezone) ─────────────────────
+    // orgDow: 0=Sun, 1=Mon, ...
+    const mondayOffset = orgDow === 0 ? -6 : 1 - orgDow;
+    const weekStartStr = addDays(todayStr, mondayOffset);
+    const weekEndStr = addDays(weekStartStr, 6);
 
-    // ── Month boundaries ───────────────────────────────────────────
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-    const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-    const monthStartStr = monthStart.toISOString().slice(0, 10);
-    const monthEndStr = monthEnd.toISOString().slice(0, 10);
+    // UTC timestamps for DB queries (represent org timezone midnight boundaries)
+    const weekStartUTC = orgMidnightToUTC(weekStartStr);
+    const weekEndUTC = new Date(orgMidnightToUTC(addDays(weekEndStr, 1)).getTime() - 1); // end of Sunday
+
+    // ── Month boundaries (org timezone) ─────────────────────────────
+    const monthStartStr = `${orgYear}-${String(orgMonth).padStart(2, '0')}-01`;
+    // Last day of month: day 0 of next month
+    const lastDay = new Date(orgYear, orgMonth, 0).getDate(); // orgMonth is 1-based, works as 0-indexed next month
+    const monthEndStr = `${orgYear}-${String(orgMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    const monthStartUTC = orgMidnightToUTC(monthStartStr);
+    const monthEndUTC = new Date(orgMidnightToUTC(addDays(monthEndStr, 1)).getTime() - 1);
 
     // ── ISO week number ────────────────────────────────────────────
-    const weekNumber = getISOWeekNumber(weekStart);
+    const weekNumber = getISOWeekNumber(new Date(weekStartStr + 'T12:00:00Z'));
 
     // ── Query 1: Week entries grouped by date + project ────────────
+    // Group by date in org timezone so segments are attributed to the correct local day
     const weekResult = await db.execute<{
       entry_date: string;
       project_id: string | null;
@@ -44,7 +120,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       total_seconds: string;
     }>(sql`
       SELECT
-        DATE(te.created_at AT TIME ZONE 'UTC') AS entry_date,
+        DATE(COALESCE(es.started_at, es.created_at) AT TIME ZONE ${TZ_LITERAL}) AS entry_date,
         te.project_id,
         p.name AS project_name,
         p.color AS project_color,
@@ -62,9 +138,10 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       LEFT JOIN projects p ON p.id = te.project_id
       LEFT JOIN clients c ON c.id = p.client_id
       WHERE te.user_id = ${userId}
-        AND te.created_at >= ${weekStart}
-        AND te.created_at <= ${weekEnd}
-      GROUP BY DATE(te.created_at AT TIME ZONE 'UTC'), te.project_id, p.name, p.color, c.name
+        AND te.is_active = true
+        AND COALESCE(es.started_at, es.created_at) >= ${weekStartUTC}
+        AND COALESCE(es.started_at, es.created_at) <= ${weekEndUTC}
+      GROUP BY DATE(COALESCE(es.started_at, es.created_at) AT TIME ZONE ${TZ_LITERAL}), te.project_id, p.name, p.color, c.name
       ORDER BY entry_date
     `);
 
@@ -74,7 +151,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       total_seconds: string;
     }>(sql`
       SELECT
-        DATE(te.created_at AT TIME ZONE 'UTC') AS entry_date,
+        DATE(COALESCE(es.started_at, es.created_at) AT TIME ZONE ${TZ_LITERAL}) AS entry_date,
         COALESCE(SUM(
           CASE
             WHEN es.stopped_at IS NULL AND es.type = 'clocked'
@@ -85,9 +162,10 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       FROM time_entries te
       INNER JOIN entry_segments es ON es.entry_id = te.id
       WHERE te.user_id = ${userId}
-        AND te.created_at >= ${monthStart}
-        AND te.created_at <= ${monthEnd}
-      GROUP BY DATE(te.created_at AT TIME ZONE 'UTC')
+        AND te.is_active = true
+        AND COALESCE(es.started_at, es.created_at) >= ${monthStartUTC}
+        AND COALESCE(es.started_at, es.created_at) <= ${monthEndUTC}
+      GROUP BY DATE(COALESCE(es.started_at, es.created_at) AT TIME ZONE ${TZ_LITERAL})
       ORDER BY entry_date
     `);
 
@@ -98,9 +176,10 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
     let noProjectCount = 0;
 
     for (const row of weekRows) {
-      const dateStr = typeof row.entry_date === 'string'
-        ? row.entry_date.slice(0, 10)
-        : new Date(row.entry_date).toISOString().slice(0, 10);
+      const dateStr =
+        typeof row.entry_date === 'string'
+          ? row.entry_date.slice(0, 10)
+          : new Date(row.entry_date).toISOString().slice(0, 10);
       const seconds = Math.round(Number(row.total_seconds));
       weekDayTotals.set(dateStr, (weekDayTotals.get(dateStr) ?? 0) + seconds);
 
@@ -109,12 +188,9 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       }
     }
 
-    const todayStr = now.toISOString().slice(0, 10);
     const weekDays: DashboardData['weekDays'] = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setUTCDate(weekStart.getUTCDate() + i);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = addDays(weekStartStr, i);
       weekDays.push({
         date: dateStr,
         dayOfWeek: i + 1, // 1=Mon, 7=Sun
@@ -128,44 +204,36 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
     const weekPercentage = Math.round((weekTotalSeconds / WEEK_TARGET_SECONDS) * 100);
 
     // ── Attention: low day (among elapsed Mon-Fri, up to today) ────
-    const elapsedWeekdays = weekDays.filter(
-      (d) => d.dayOfWeek <= 5 && d.date <= todayStr,
-    );
+    const elapsedWeekdays = weekDays.filter((d) => d.dayOfWeek <= 5 && d.date <= todayStr);
     let lowDay: DashboardData['attention']['lowDay'] = null;
     if (elapsedWeekdays.length > 0) {
-      const min = elapsedWeekdays.reduce((a, b) =>
-        a.totalSeconds <= b.totalSeconds ? a : b,
-      );
+      const min = elapsedWeekdays.reduce((a, b) => (a.totalSeconds <= b.totalSeconds ? a : b));
       lowDay = { dayLabel: min.dayLabel, totalSeconds: min.totalSeconds };
     }
 
     // ── Week avg per day ───────────────────────────────────────────
     const weekdayTotal = elapsedWeekdays.reduce((s, d) => s + d.totalSeconds, 0);
     const weekAvgPerDaySeconds =
-      elapsedWeekdays.length > 0
-        ? Math.round(weekdayTotal / elapsedWeekdays.length)
-        : 0;
+      elapsedWeekdays.length > 0 ? Math.round(weekdayTotal / elapsedWeekdays.length) : 0;
 
     // ── Heatmap days (full month calendar grid) ────────────────────
     const monthTotalsMap = new Map<string, number>();
     for (const row of monthRows) {
-      const dateStr = typeof row.entry_date === 'string'
-        ? row.entry_date.slice(0, 10)
-        : new Date(row.entry_date).toISOString().slice(0, 10);
+      const dateStr =
+        typeof row.entry_date === 'string'
+          ? row.entry_date.slice(0, 10)
+          : new Date(row.entry_date).toISOString().slice(0, 10);
       monthTotalsMap.set(dateStr, Math.round(Number(row.total_seconds)));
     }
 
     const heatmapDays: DashboardData['heatmapDays'] = [];
-    const daysInMonth = monthEnd.getUTCDate();
-    // Determine the weekIndex of the first day
-    const firstDayDow = monthStart.getUTCDay(); // 0=Sun
+    const firstDayDow = dateDow(monthStartStr); // 0=Sun
     const firstDayIso = firstDayDow === 0 ? 7 : firstDayDow; // 1=Mon, 7=Sun
     let currentWeekIndex = 0;
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day));
-      const dateStr = d.toISOString().slice(0, 10);
-      const dow = d.getUTCDay();
+    for (let day = 1; day <= lastDay; day++) {
+      const dateStr = `${orgYear}-${String(orgMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dow = dateDow(dateStr);
       const isoDow = dow === 0 ? 7 : dow; // 1=Mon, 7=Sun
 
       if (day > 1 && isoDow === 1) {
@@ -185,16 +253,15 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
 
     // ── Working days left (Mon-Fri from tomorrow to end of month) ──
     let workingDaysLeft = 0;
-    const tomorrow = new Date(now);
-    tomorrow.setUTCDate(now.getUTCDate() + 1);
-    tomorrow.setUTCHours(0, 0, 0, 0);
-    for (let d = new Date(tomorrow); d <= monthEnd; d.setUTCDate(d.getUTCDate() + 1)) {
-      const dow = d.getUTCDay();
+    let cursor = addDays(todayStr, 1);
+    while (cursor <= monthEndStr) {
+      const dow = dateDow(cursor);
       if (dow >= 1 && dow <= 5) workingDaysLeft++;
+      cursor = addDays(cursor, 1);
     }
 
     // ── Month label ────────────────────────────────────────────────
-    const monthLabel = monthStart.toLocaleDateString('en-US', {
+    const monthLabel = new Date(monthStartStr + 'T12:00:00Z').toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
       timeZone: 'UTC',
@@ -203,7 +270,13 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
     // ── Project breakdown (week, sorted desc) ──────────────────────
     const projectMap = new Map<
       string,
-      { projectId: string | null; projectName: string; projectColor: string; clientName: string | null; totalSeconds: number }
+      {
+        projectId: string | null;
+        projectName: string;
+        projectColor: string;
+        clientName: string | null;
+        totalSeconds: number;
+      }
     >();
 
     for (const row of weekRows) {
@@ -228,9 +301,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       .map((p) => ({
         ...p,
         percentage:
-          weekTotalSeconds > 0
-            ? Math.round((p.totalSeconds / weekTotalSeconds) * 100)
-            : 0,
+          weekTotalSeconds > 0 ? Math.round((p.totalSeconds / weekTotalSeconds) * 100) : 0,
       }));
 
     // ── Response ───────────────────────────────────────────────────

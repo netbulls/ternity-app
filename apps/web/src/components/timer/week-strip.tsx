@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
-import { formatDuration, getWeekStart, shiftDays } from '@/lib/format';
+import { formatDuration, getWeekStart, shiftDays, getOrgToday } from '@/lib/format';
 import { calcTodaySeconds } from '@/components/timer/day-timeline';
 import type { DayGroup } from '@ternity/shared';
 
@@ -30,13 +30,9 @@ interface WeekStripProps {
   onToday: () => void;
 }
 
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function buildWeekDays(selectedDate: string, weekGroups: DayGroup[]): WeekDay[] {
   const monday = getWeekStart(selectedDate);
-  const today = getToday();
+  const today = getOrgToday();
 
   // Build a lookup of entries by date, and compute day-clamped seconds
   // (entry.totalDurationSeconds may include time from other days for cross-midnight entries)
@@ -75,7 +71,7 @@ export function WeekStrip({
   onNextWeek,
   onToday,
 }: WeekStripProps) {
-  const today = getToday();
+  const today = getOrgToday();
   const isOnToday = selectedDate === today;
 
   const days = useMemo(() => buildWeekDays(selectedDate, weekGroups), [selectedDate, weekGroups]);

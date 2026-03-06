@@ -4,13 +4,21 @@ import type { DashboardData } from '@ternity/shared';
 
 interface AttentionCardsProps {
   attention: DashboardData['attention'];
+  monthTotalSeconds: number;
+  workingDaysLeft: number;
+  monthLabel: string;
 }
 
-export function AttentionCards({ attention }: AttentionCardsProps) {
+export function AttentionCards({
+  attention,
+  monthTotalSeconds,
+  workingDaysLeft,
+  monthLabel,
+}: AttentionCardsProps) {
   const navigate = useNavigate();
 
   const weekFormatted = formatHM(attention.weekTotalSeconds);
-  const lowDayFormatted = attention.lowDay ? formatHM(attention.lowDay.totalSeconds) : null;
+  const monthFormatted = formatHM(monthTotalSeconds);
 
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -83,7 +91,7 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
         </div>
       </button>
 
-      {/* Low Day */}
+      {/* This Month */}
       <button
         onClick={() => navigate('/entries')}
         className="cursor-pointer rounded-lg border border-[hsl(var(--t-border-subtle))] bg-[hsl(var(--t-stat-bg))] p-3.5 text-left transition-colors hover:border-[hsl(var(--primary)/0.3)]"
@@ -93,25 +101,27 @@ export function AttentionCards({ attention }: AttentionCardsProps) {
           className="font-brand uppercase tracking-[1.5px] text-muted-foreground"
           style={{ fontSize: scaled(9), marginBottom: scaled(6) }}
         >
-          Low Day
+          {monthLabel}
         </div>
         <div
-          className="font-brand font-bold tabular-nums text-foreground"
+          className="font-brand font-bold tabular-nums text-[hsl(var(--primary))]"
           style={{ fontSize: scaled(20) }}
         >
-          {attention.lowDay?.dayLabel ?? '—'}
+          {monthFormatted}
         </div>
         <div
           className="text-muted-foreground"
           style={{ fontSize: scaled(10), marginTop: scaled(4) }}
         >
-          {attention.lowDay ? `only ${lowDayFormatted} logged` : 'no entries yet'}
+          {workingDaysLeft === 0
+            ? 'month complete'
+            : `${workingDaysLeft} working day${workingDaysLeft === 1 ? '' : 's'} left`}
         </div>
         <div
           className="text-[hsl(var(--primary))] underline underline-offset-2"
           style={{ fontSize: scaled(10), marginTop: scaled(8) }}
         >
-          {attention.lowDay ? `Check ${attention.lowDay.dayLabel} →` : 'View entries →'}
+          View entries →
         </div>
       </button>
     </div>

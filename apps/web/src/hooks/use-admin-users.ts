@@ -2,13 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
 
+export type EmploymentType = 'contractor' | 'employee';
+
 export interface AdminUser {
   id: string;
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
   globalRole: string;
+  employmentType: EmploymentType;
   active: boolean;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
+  teamClientName: string | null;
   entryCount: number;
   lastEntryAt: string | null;
 }
@@ -87,6 +94,42 @@ export function useBulkDeactivate() {
     },
     onError: (err) => {
       toast.error(`Failed to deactivate users: ${err.message}`);
+    },
+  });
+}
+
+export function useUpdateEmploymentType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, employmentType }: { userId: string; employmentType: EmploymentType }) =>
+      apiFetch(`/admin/users/${userId}/employment-type`, {
+        method: 'PATCH',
+        body: JSON.stringify({ employmentType }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('Employment type updated');
+    },
+    onError: (err) => {
+      toast.error(`Failed to update employment type: ${err.message}`);
+    },
+  });
+}
+
+export function useUpdateTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, projectId }: { userId: string; projectId: string | null }) =>
+      apiFetch(`/admin/users/${userId}/team`, {
+        method: 'PATCH',
+        body: JSON.stringify({ projectId }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('Team updated');
+    },
+    onError: (err) => {
+      toast.error(`Failed to update team: ${err.message}`);
     },
   });
 }

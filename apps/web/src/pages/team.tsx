@@ -6,18 +6,17 @@ import {
   Moon,
   Zap,
   Timer,
-  ChevronDown,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  FolderKanban,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { SelectPopover } from '@/components/ui/select-popover';
 import { useTeamBoard, type TeamBoardMember, type PresenceStatus } from '@/hooks/use-team-board';
-import { useAssignedProjects } from '@/hooks/use-reference-data';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { ProjectOption } from '@ternity/shared';
 
 // ============================================================
 // Constants
@@ -113,20 +112,6 @@ function textForColor(color: string): string {
 }
 
 /** Get initials from display name */
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-}
-
-/** Check if a member has any entries for a given project */
-function memberHasProject(member: TeamBoardMember, project: string): boolean {
-  return member.entries.some((e) => e.projectName === project);
-}
 
 // ============================================================
 // PresenceBadge
@@ -146,182 +131,6 @@ function PresenceBadge({ status }: { status: PresenceStatus }) {
       <span className={cn('h-1.5 w-1.5 rounded-full', s.dot)} />
       {s.label}
     </span>
-  );
-}
-
-// ============================================================
-// Project Filter Dropdown
-// ============================================================
-
-function groupProjectsByClient(projects: ProjectOption[]) {
-  const map = new Map<string, ProjectOption[]>();
-  for (const p of projects) {
-    const client = p.clientName ?? 'No Client';
-    if (!map.has(client)) map.set(client, []);
-    map.get(client)!.push(p);
-  }
-  return Array.from(map.entries()).map(([client, projectList]) => ({
-    client,
-    projects: projectList,
-  }));
-}
-
-function ProjectFilter({
-  value,
-  onChange,
-  projects,
-}: {
-  value: string | null;
-  onChange: (project: string | null) => void;
-  projects: ProjectOption[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  const selected = projects.find((p) => p.name === value) ?? null;
-  const grouped = groupProjectsByClient(projects);
-
-  const filtered = search
-    ? grouped
-        .map((g) => ({
-          ...g,
-          projects: g.projects.filter(
-            (p) =>
-              p.name.toLowerCase().includes(search.toLowerCase()) ||
-              g.client.toLowerCase().includes(search.toLowerCase()),
-          ),
-        }))
-        .filter((g) => g.projects.length > 0)
-    : grouped;
-
-  useEffect(() => {
-    if (open) {
-      const t = setTimeout(() => searchRef.current?.focus(), 50);
-      return () => clearTimeout(t);
-    }
-    setSearch('');
-  }, [open]);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 transition-colors hover:bg-accent',
-            selected ? 'text-foreground' : 'text-muted-foreground',
-          )}
-          style={{ fontSize: scaled(11) }}
-        >
-          {selected ? (
-            <>
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: selected.color ?? '#00D4AA' }}
-              />
-              <span className="max-w-[140px] truncate">{selected.name}</span>
-            </>
-          ) : (
-            <>
-              <FolderKanban className="h-3.5 w-3.5" />
-              <span>All Projects</span>
-            </>
-          )}
-          <ChevronDown className="h-3 w-3 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[260px] overflow-hidden p-0" align="end" sideOffset={6}>
-        {/* Search */}
-        <div className="border-b border-border p-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <motion.input
-              ref={searchRef}
-              className="h-8 w-full rounded-md bg-muted/40 pl-8 pr-3 text-foreground outline-none"
-              style={{ border: '1px solid hsl(var(--border))', fontSize: scaled(12) }}
-              whileFocus={{ borderColor: 'hsl(var(--primary) / 0.5)' }}
-              transition={{ duration: 0.2 }}
-              placeholder="Search projects..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* All Projects option */}
-        <div className="border-b border-border p-1">
-          <motion.button
-            className={cn(
-              'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
-              !value
-                ? 'bg-primary/8 text-foreground'
-                : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
-            )}
-            style={{ fontSize: scaled(12) }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              onChange(null);
-              setOpen(false);
-            }}
-          >
-            <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="flex-1">All Projects</span>
-          </motion.button>
-        </div>
-
-        {/* Project list grouped by client */}
-        <div className="max-h-[260px] overflow-y-auto p-1" onWheel={(e) => e.stopPropagation()}>
-          {filtered.length === 0 ? (
-            <div
-              className="px-3 py-4 text-center text-muted-foreground"
-              style={{ fontSize: scaled(11) }}
-            >
-              No projects match &ldquo;{search}&rdquo;
-            </div>
-          ) : (
-            filtered.map((group, gi) => (
-              <div key={group.client}>
-                <div
-                  className="flex items-center gap-1.5 px-2.5 pb-1 pt-2.5 font-brand font-semibold uppercase tracking-widest text-muted-foreground"
-                  style={{ letterSpacing: '1.5px', opacity: 0.6, fontSize: scaled(9) }}
-                >
-                  {group.client}
-                </div>
-                {group.projects.map((p, pi) => {
-                  const isSelected = value === p.name;
-                  return (
-                    <motion.button
-                      key={p.id}
-                      className={cn(
-                        'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
-                        isSelected
-                          ? 'bg-primary/8 text-foreground'
-                          : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
-                      )}
-                      style={{ fontSize: scaled(12) }}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: gi * 0.05 + pi * 0.03, duration: 0.15 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        onChange(p.name);
-                        setOpen(false);
-                      }}
-                    >
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ background: p.color ?? '#00D4AA' }}
-                      />
-                      <span className="flex-1 truncate">{p.name}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            ))
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
   );
 }
 
@@ -380,8 +189,6 @@ function TimelineRow({
   const schedWidth = schedRight - schedLeft;
   const nowPos = toPercent(nowHour);
 
-  const initials = getInitials(member.displayName);
-
   return (
     <motion.div
       layout
@@ -398,20 +205,7 @@ function TimelineRow({
       {/* Person info */}
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <div className="relative">
-          {member.avatarUrl ? (
-            <img
-              src={member.avatarUrl}
-              alt={member.displayName}
-              className="h-8 w-8 rounded-full object-cover"
-            />
-          ) : (
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-              style={{ fontSize: 11 }}
-            >
-              {initials}
-            </div>
-          )}
+          <UserAvatar user={member} size="md" />
           <div
             className={cn(
               'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[hsl(var(--t-surface))]',
@@ -595,11 +389,11 @@ function StatusFilterBar({
   counts: Record<StatusFilter, number>;
 }) {
   const pills: { key: StatusFilter; label: string; icon: React.ElementType }[] = [
-    { key: 'all', label: 'All', icon: Users },
     { key: 'active', label: 'Active', icon: Clock },
-    { key: 'overtime', label: 'Overtime', icon: Timer },
     { key: 'idle', label: 'Idle', icon: Zap },
+    { key: 'overtime', label: 'Overtime', icon: Timer },
     { key: 'off', label: 'Off', icon: Moon },
+    { key: 'all', label: 'All', icon: Users },
   ];
 
   return (
@@ -655,9 +449,8 @@ function formatDateLabel(date: Date): string {
 export function TeamPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const { data: members, isLoading, error } = useTeamBoard(selectedDate);
-  const { data: projectOptions } = useAssignedProjects();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [teamFilter, setTeamFilter] = useState('');
   const [search, setSearch] = useState('');
 
   const now = new Date();
@@ -683,11 +476,48 @@ export function TeamPage() {
 
   const goToday = useCallback(() => setSelectedDate(new Date()), []);
 
-  // Project dropdown shows all projects the current user can access (assigned for users, all for admins)
-  const allProjects = useMemo(
-    () => [...(projectOptions ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
-    [projectOptions],
-  );
+  // Keyboard left/right arrow navigation between days
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't navigate when typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goBack();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goForward();
+      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        goToday();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [goBack, goForward, goToday]);
+
+  // Distinct teams from the board members for filter dropdown
+  const teamFilterItems = useMemo(() => {
+    if (!members) return [];
+    const seen = new Map<string, { name: string; color: string | null }>();
+    for (const m of members) {
+      if (m.teamId && m.teamName && !seen.has(m.teamId)) {
+        seen.set(m.teamId, { name: m.teamName, color: m.teamColor });
+      }
+    }
+    return [
+      { value: '', label: 'All Teams' },
+      ...Array.from(seen.entries())
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([id, t]) => ({
+          value: id,
+          label: t.name,
+          color: t.color ?? undefined,
+        })),
+    ];
+  }, [members]);
 
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = {
@@ -709,8 +539,8 @@ export function TeamPage() {
     // Status filter
     if (statusFilter !== 'all') list = list.filter((m) => m.status === statusFilter);
 
-    // Project filter
-    if (projectFilter) list = list.filter((m) => memberHasProject(m, projectFilter));
+    // Team filter (by defaultProjectId / teamId)
+    if (teamFilter) list = list.filter((m) => m.teamId === teamFilter);
 
     // Search
     if (search.trim()) {
@@ -727,7 +557,15 @@ export function TeamPage() {
     return [...list].sort(
       (a, b) => STATUS_META[a.status].sortOrder - STATUS_META[b.status].sortOrder,
     );
-  }, [members, statusFilter, projectFilter, search]);
+  }, [members, statusFilter, teamFilter, search]);
+
+  const hasFilters = statusFilter !== 'all' || teamFilter !== '' || search.trim() !== '';
+
+  function clearFilters() {
+    setStatusFilter('all');
+    setTeamFilter('');
+    setSearch('');
+  }
 
   if (isLoading) {
     return (
@@ -756,69 +594,115 @@ export function TeamPage() {
           >
             Team
           </h1>
-          <div
-            className="mt-0.5 flex items-center gap-2 text-muted-foreground"
-            style={{ fontSize: scaled(12) }}
-          >
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={goBack}
-                className="rounded p-0.5 transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={goToday}
-                className={cn(
-                  'rounded px-1.5 py-0.5 font-medium transition-colors',
-                  isToday ? 'text-foreground' : 'text-primary hover:bg-primary/10',
-                )}
-                style={{ fontSize: scaled(11) }}
-              >
-                {formatDateLabel(selectedDate)}
-              </button>
-              <button
-                onClick={goForward}
-                disabled={isToday}
-                className={cn(
-                  'rounded p-0.5 transition-colors',
-                  isToday
-                    ? 'cursor-default text-muted-foreground/30'
-                    : 'hover:bg-muted/50 hover:text-foreground',
-                )}
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <span className="text-muted-foreground/40">·</span>
-            <span>{members?.length ?? 0} members</span>
-            {isToday && (
-              <>
-                <span className="text-muted-foreground/40">·</span>
-                <span>{counts.active} active</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <ProjectFilter value={projectFilter} onChange={setProjectFilter} projects={allProjects} />
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
-              className="h-8 rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none"
-              style={{ fontSize: scaled(11), width: 180 }}
-            />
-          </div>
+          <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+            See who&apos;s working, idle, or off
+          </p>
         </div>
       </div>
 
-      {/* Status filter */}
-      <div className="mb-4">
+      {/* Controls row */}
+      <div className="mb-4 flex items-center gap-3">
+        {/* Date navigation */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={goBack}
+            aria-label="Previous"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground transition-colors hover:bg-accent"
+            style={{ fontSize: scaled(12) }}
+            onClick={goToday}
+            title="Go to today"
+          >
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-brand font-semibold tracking-wide">
+              {formatDateLabel(selectedDate)}
+            </span>
+          </button>
+          <button
+            onClick={goForward}
+            disabled={isToday}
+            aria-label="Next"
+            className={cn(
+              'rounded-md p-1 transition-colors',
+              isToday
+                ? 'cursor-default text-muted-foreground/30'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Status filter */}
         <StatusFilterBar active={statusFilter} onChange={setStatusFilter} counts={counts} />
+
+        {/* Team filter */}
+        {teamFilterItems.length > 1 && (
+          <SelectPopover
+            value={teamFilter}
+            onChange={setTeamFilter}
+            items={teamFilterItems}
+            placeholder="All Teams"
+            searchable={teamFilterItems.length > 8}
+            searchPlaceholder="Search teams..."
+            compact
+            width={200}
+          />
+        )}
+
+        {/* Search */}
+        <div className="flex max-w-[280px] flex-1 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-[7px]">
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search people..."
+            className="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+            style={{ fontSize: scaled(12), border: 'none' }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Clear filters */}
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-muted-foreground hover:text-foreground"
+            style={{ fontSize: scaled(10) }}
+          >
+            Clear filters
+          </button>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Member stats */}
+        <div className="flex items-center gap-2">
+          <span
+            className="font-brand uppercase text-muted-foreground"
+            style={{ fontSize: scaled(9), letterSpacing: '1.5px' }}
+          >
+            Members
+          </span>
+          <span
+            className="font-brand font-bold tabular-nums text-foreground"
+            style={{ fontSize: scaled(13) }}
+          >
+            {members?.length ?? 0}
+          </span>
+        </div>
       </div>
 
       {/* Column headers — 1px horizontal inset to align with bordered rows */}
@@ -867,7 +751,7 @@ export function TeamPage() {
             <TimelineRow
               key={member.id}
               member={member}
-              highlightProject={projectFilter}
+              highlightProject={null}
               nowHour={nowHour}
               showNowLine={isToday}
             />

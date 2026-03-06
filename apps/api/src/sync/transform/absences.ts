@@ -4,7 +4,10 @@ import { stgTtAbsences, leaveRequests, leaveTypes, clients, projects } from '../
 import { log } from '../logger.js';
 import { findTargetId, upsertMapping } from './mappings.js';
 
-const TT_STATUS_MAP: Record<string, 'pending' | 'approved' | 'rejected' | 'cancelled'> = {
+const TT_STATUS_MAP: Record<
+  string,
+  'pending' | 'approved' | 'rejected' | 'cancelled' | 'autoconfirmed'
+> = {
   Approved: 'approved',
   Pending: 'pending',
   Declined: 'rejected',
@@ -116,21 +119,13 @@ async function getOrCreateLeaveProject(): Promise<string> {
   if (leaveProjectId) return leaveProjectId;
 
   // Find or create "Organization" client
-  let [client] = await db
-    .select()
-    .from(clients)
-    .where(eq(clients.name, 'Organization'))
-    .limit(1);
+  let [client] = await db.select().from(clients).where(eq(clients.name, 'Organization')).limit(1);
   if (!client) {
     [client] = await db.insert(clients).values({ name: 'Organization' }).returning();
   }
 
   // Find or create "Leave" project under Organization
-  let [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.name, 'Leave'))
-    .limit(1);
+  let [project] = await db.select().from(projects).where(eq(projects.name, 'Leave')).limit(1);
   if (!project) {
     [project] = await db
       .insert(projects)

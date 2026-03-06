@@ -26,8 +26,8 @@ export function WeekHistogram({
       d3.select(container).select('svg').remove();
 
       const width = container.offsetWidth || 400;
-      const height = 100;
-      const margin = { top: 8, right: 10, bottom: 22, left: 0 };
+      const height = 120;
+      const margin = { top: 22, right: 10, bottom: 22, left: 0 };
 
       const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
 

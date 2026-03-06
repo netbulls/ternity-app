@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { eq, sql, asc, ilike, or, and, inArray } from 'drizzle-orm';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
-import { users, timeEntries } from '../db/schema.js';
+import { users, timeEntries, projects, clients } from '../db/schema.js';
 
 /** Check that the REAL user (not impersonated) is admin */
 function isRealAdmin(request: { auth: { globalRole: string; impersonating?: boolean } }) {
@@ -37,9 +37,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
     // Filter by search term
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
-      conditions.push(
-        or(ilike(users.displayName, term), ilike(users.email, term))!,
-      );
+      conditions.push(or(ilike(users.displayName, term), ilike(users.email, term))!);
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -51,17 +49,84 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
         email: users.email,
         avatarUrl: users.avatarUrl,
         globalRole: users.globalRole,
+        employmentType: users.employmentType,
         active: users.active,
+        teamId: users.defaultProjectId,
+        teamName: projects.name,
+        teamColor: projects.color,
+        teamClientName: clients.name,
         entryCount: sql<number>`cast(count(${timeEntries.id}) as int)`,
         lastEntryAt: sql<string | null>`max(${timeEntries.createdAt})`,
       })
       .from(users)
       .leftJoin(timeEntries, eq(timeEntries.userId, users.id))
+      .leftJoin(projects, eq(users.defaultProjectId, projects.id))
+      .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(where)
-      .groupBy(users.id)
+      .groupBy(users.id, projects.id, clients.id)
       .orderBy(asc(users.displayName));
 
     return rows;
+  });
+
+  /** PATCH /api/admin/users/:id/team */
+  fastify.patch('/api/admin/users/:id/team', async (request, reply) => {
+    if (!isRealAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin access required' });
+    }
+
+    const { id } = request.params as { id: string };
+    const { projectId } = request.body as { projectId: string | null };
+
+    // Validate project exists if setting (not clearing)
+    if (projectId) {
+      const [project] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(eq(projects.id, projectId));
+
+      if (!project) {
+        return reply.code(400).send({ error: 'Project not found' });
+      }
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ defaultProjectId: projectId ?? null, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning({ id: users.id });
+
+    if (!updated) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+
+    return { success: true };
+  });
+
+  /** PATCH /api/admin/users/:id/employment-type */
+  fastify.patch('/api/admin/users/:id/employment-type', async (request, reply) => {
+    if (!isRealAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin access required' });
+    }
+
+    const { id } = request.params as { id: string };
+    const { employmentType } = request.body as { employmentType: string };
+
+    if (!employmentType || !['contractor', 'employee'].includes(employmentType)) {
+      return reply.code(400).send({ error: 'employmentType must be "contractor" or "employee"' });
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ employmentType, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning({ id: users.id });
+
+    if (!updated) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+
+    return { success: true };
   });
 
   /** PATCH /api/admin/users/:id/activate */

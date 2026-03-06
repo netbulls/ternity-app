@@ -4,6 +4,8 @@ import { Settings, LogOut, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
 import { useAuth } from '@/providers/auth-provider';
+import { useImpersonation } from '@/providers/impersonation-provider';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { HourglassLogo } from './hourglass-logo';
 import { BuildInfo } from '@/components/build-info';
 import { trackingNav, adminNav } from '@/lib/nav-items';
@@ -14,41 +16,14 @@ const SHOW_BUILD_IN_SIDEBAR = ENV_NAME !== 'prod';
 // ── User dropdown menu ──────────────────────────────────────────────
 
 function UserMenu({
-  isAdmin,
   onNavigate,
   onSignOut,
 }: {
-  isAdmin: boolean;
   onNavigate: (to: string) => void;
   onSignOut: () => void;
 }) {
   return (
     <div className="flex flex-col p-1">
-      {isAdmin && (
-        <>
-          <div
-            className="px-2.5 pb-1 pt-1.5 font-brand uppercase text-muted-foreground opacity-50"
-            style={{ fontSize: 'calc(9px * var(--t-scale, 1.1))', letterSpacing: '1.5px' }}
-          >
-            Admin
-          </div>
-          {adminNav.map((item) => (
-            <button
-              key={item.to}
-              onClick={() => onNavigate(item.to)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              style={{ fontSize: scaled(12) }}
-            >
-              <item.icon
-                style={{ width: scaled(15), height: scaled(15) }}
-                className="shrink-0 text-muted-foreground"
-              />
-              {item.label}
-            </button>
-          ))}
-          <div className="mx-1.5 my-1 h-px bg-border" />
-        </>
-      )}
       <button
         onClick={() => onNavigate('/settings')}
         className="flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -77,21 +52,16 @@ function UserMenu({
 
 export function Sidebar() {
   const { user, signOut } = useAuth();
+  const { isImpersonating, targetDisplayName, targetAvatarUrl, targetRole } = useImpersonation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.globalRole === 'admin';
-
-  const initials = user?.displayName
-    ? user.displayName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '??';
+  // When impersonating, show the target user's role context
+  const isAdmin = isImpersonating ? targetRole === 'admin' : user?.globalRole === 'admin';
+  const displayName = isImpersonating ? targetDisplayName : user?.displayName;
+  const avatarUrl = isImpersonating ? targetAvatarUrl : user?.avatarUrl;
 
   // Close menu on outside click
   useEffect(() => {
@@ -143,7 +113,7 @@ export function Sidebar() {
         </span>
       </div>
 
-      {/* Nav — product pages only */}
+      {/* Nav */}
       <nav className="flex flex-col gap-0.5">
         <div
           className="px-2.5 pb-1 pt-2 font-brand uppercase text-muted-foreground opacity-50"
@@ -170,6 +140,36 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+
+        {/* Admin section — only visible to admins */}
+        {isAdmin && (
+          <>
+            <div
+              className="px-2.5 pb-1 pt-4 font-brand uppercase text-muted-foreground opacity-50"
+              style={{ fontSize: 'calc(9px * var(--t-scale, 1.1))', letterSpacing: '2px' }}
+            >
+              Admin
+            </div>
+            {adminNav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-muted-foreground transition-colors',
+                    isActive
+                      ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+                      : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )
+                }
+                style={{ fontSize: 'calc(13px * var(--t-scale, 1.1))' }}
+              >
+                <item.icon style={{ width: scaled(16), height: scaled(16) }} className="shrink-0" />
+                {item.label}
+              </NavLink>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Spacer */}
@@ -177,50 +177,37 @@ export function Sidebar() {
 
       {/* User block + dropdown */}
       <div className="relative">
-        {/* Dropdown menu */}
-        {menuOpen && (
+        {/* Dropdown menu — hidden during impersonation */}
+        {menuOpen && !isImpersonating && (
           <div
             ref={menuRef}
             className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 rounded-lg border border-border bg-popover shadow-[0_-8px_30px_rgba(0,0,0,0.3)]"
           >
-            <UserMenu isAdmin={isAdmin} onNavigate={handleNavigate} onSignOut={handleSignOut} />
+            <UserMenu onNavigate={handleNavigate} onSignOut={handleSignOut} />
           </div>
         )}
 
         {/* Clickable user block */}
         <div
           ref={blockRef}
-          onClick={() => setMenuOpen((prev) => !prev)}
+          onClick={isImpersonating ? undefined : () => setMenuOpen((prev) => !prev)}
           className={cn(
-            'flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2.5 transition-colors',
-            menuOpen ? 'bg-muted/80' : 'bg-muted/50 hover:bg-muted/80',
+            'flex items-center gap-2 rounded-lg px-2.5 py-2.5 transition-colors',
+            isImpersonating
+              ? 'bg-muted/50'
+              : cn('cursor-pointer', menuOpen ? 'bg-muted/80' : 'bg-muted/50 hover:bg-muted/80'),
           )}
         >
-          {user?.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.displayName ?? ''}
-              className="shrink-0 rounded-full object-cover"
-              style={{ width: scaled(30), height: scaled(30) }}
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div
-              className="flex shrink-0 items-center justify-center rounded-full bg-[hsl(var(--t-avatar-bg))] font-semibold text-[hsl(var(--t-avatar-text))]"
-              style={{ width: scaled(30), height: scaled(30), fontSize: scaled(11) }}
-            >
-              {initials}
-            </div>
-          )}
+          <UserAvatar user={{ displayName: displayName ?? '??', avatarUrl: avatarUrl }} size="md" />
           <div className="min-w-0 flex-1">
             <div
               className="truncate font-medium text-sidebar-foreground"
               style={{ fontSize: scaled(12) }}
             >
-              {user?.displayName
+              {displayName
                 ? (() => {
-                    const parts = user.displayName.split(' ');
-                    if (parts.length < 2) return user.displayName;
+                    const parts = displayName.split(' ');
+                    if (parts.length < 2) return displayName;
                     const last = parts[parts.length - 1];
                     return `${parts.slice(0, -1).join(' ')} ${last?.[0]?.toUpperCase() ?? ''}.`;
                   })()
@@ -235,12 +222,14 @@ export function Sidebar() {
               )}
             </div>
           </div>
-          <ChevronsUpDown
-            className={cn(
-              'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-opacity',
-              menuOpen ? 'opacity-60' : 'opacity-30',
-            )}
-          />
+          {!isImpersonating && (
+            <ChevronsUpDown
+              className={cn(
+                'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-opacity',
+                menuOpen ? 'opacity-60' : 'opacity-30',
+              )}
+            />
+          )}
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import { useUpdateEntry, useOptimisticEntryPatch } from '@/hooks/use-entries';
 import { useLinkJiraIssue, useJiraConnections, resolveJiraProject } from '@/hooks/use-jira';
 import { usePalette } from '@/providers/palette-provider';
 import { getPreference } from '@/providers/preferences-provider';
+import { getOrgToday } from '@/lib/format';
 import { formatTimer, getTimezoneLabel } from '@/lib/format';
 import { scaled } from '@/lib/scaled';
 import { ProjectSelector } from './project-selector';
@@ -143,7 +144,7 @@ export function TimerBar() {
   }, [description, running, currentEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute today-only elapsed from segments (clamp to today's boundaries)
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayStr = useMemo(() => getOrgToday(), []);
   const todayStartMs = useMemo(() => new Date(todayStr + 'T00:00:00').getTime(), [todayStr]);
   const todayEndMs = useMemo(() => todayStartMs + 24 * 60 * 60 * 1000, [todayStartMs]);
   const runningSegment = currentEntry?.segments.find((s) => s.type === 'clocked' && !s.stoppedAt);

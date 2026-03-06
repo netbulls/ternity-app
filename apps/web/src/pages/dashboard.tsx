@@ -52,7 +52,12 @@ export function DashboardPage() {
 
       {/* Attention cards */}
       <div className="mb-3">
-        <AttentionCards attention={data.attention} />
+        <AttentionCards
+          attention={data.attention}
+          monthTotalSeconds={data.monthTotalSeconds}
+          workingDaysLeft={data.workingDaysLeft}
+          monthLabel={data.monthLabel}
+        />
       </div>
 
       {/* Charts: histogram + heatmap side by side */}

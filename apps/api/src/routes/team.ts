@@ -124,16 +124,20 @@ export async function teamRoutes(fastify: FastifyInstance) {
     const dayStart = new Date(refUTC.getTime() + offsetMs);
     const dayEnd = new Date(new Date(targetDateStr + 'T23:59:59.999Z').getTime() + offsetMs);
 
-    // 1. Fetch all active users with their working schedules
+    // 1. Fetch all active users with their working schedules + team (defaultProject)
     const allUsers = await db
       .select({
         id: users.id,
         displayName: users.displayName,
         avatarUrl: users.avatarUrl,
         schedule: workingSchedules.schedule,
+        teamId: users.defaultProjectId,
+        teamName: projects.name,
+        teamColor: projects.color,
       })
       .from(users)
       .leftJoin(workingSchedules, eq(users.id, workingSchedules.userId))
+      .leftJoin(projects, eq(users.defaultProjectId, projects.id))
       .where(eq(users.active, true))
       .orderBy(users.displayName);
 
@@ -276,6 +280,9 @@ export async function teamRoutes(fastify: FastifyInstance) {
         id: user.id,
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
+        teamId: user.teamId,
+        teamName: user.teamName,
+        teamColor: user.teamColor,
         status,
         schedule: todaySchedule.enabled
           ? { start: todaySchedule.start, end: todaySchedule.end }

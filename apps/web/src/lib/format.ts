@@ -9,6 +9,11 @@ export function getTimezoneAbbr(): string {
   );
 }
 
+/** Get today's date as YYYY-MM-DD in the org timezone (not UTC) */
+export function getOrgToday(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE });
+}
+
 /** Get timezone label with city and GMT offset, e.g. "Warsaw (GMT+1)" or "Warsaw (GMT+2)" */
 export function getTimezoneLabel(): string {
   const city = ORG_TIMEZONE.split('/').pop()!.replace(/_/g, ' ');
@@ -173,8 +178,8 @@ export function shiftMonths(dateStr: string, months: number): string {
 
 /** Format date as relative label or formatted date */
 export function formatDateLabel(dateStr: string): string {
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today = getOrgToday();
+  const yesterday = shiftDays(today, -1);
 
   if (dateStr === today) return 'Today';
   if (dateStr === yesterday) return 'Yesterday';

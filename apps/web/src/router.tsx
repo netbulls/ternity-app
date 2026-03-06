@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/app-shell';
 import { TimerPage } from '@/pages/timer';
 import { EntriesPage } from '@/pages/entries';
-import { CalendarPage } from '@/pages/calendar';
 import { LeavePage } from '@/pages/leave';
 import { ProjectsPage } from '@/pages/projects';
 import { SettingsPage } from '@/pages/settings';
@@ -11,6 +10,7 @@ import { CallbackPage } from '@/pages/callback';
 import { JiraCallbackPage } from '@/pages/jira-callback';
 import { DashboardPage } from '@/pages/dashboard';
 import { TeamPage } from '@/pages/team';
+import { LeaveTypesPage } from '@/pages/leave-types';
 
 export const router = createBrowserRouter([
   {
@@ -205,6 +205,41 @@ export const router = createBrowserRouter([
             return { Component: DevJiraMappingPage };
           },
         },
+        {
+          path: '/dev/leave-v1',
+          lazy: async () => {
+            const { DevLeaveV1Page } = await import('@/pages/dev-leave-v1');
+            return { Component: DevLeaveV1Page };
+          },
+        },
+        {
+          path: '/dev/leave-v2',
+          lazy: async () => {
+            const { DevLeaveV2Page } = await import('@/pages/dev-leave-v2');
+            return { Component: DevLeaveV2Page };
+          },
+        },
+        {
+          path: '/dev/leave-v3',
+          lazy: async () => {
+            const { DevLeaveV3Page } = await import('@/pages/dev-leave-v3');
+            return { Component: DevLeaveV3Page };
+          },
+        },
+        {
+          path: '/dev/leave-v4',
+          lazy: async () => {
+            const { DevLeaveV4Page } = await import('@/pages/dev-leave-v4');
+            return { Component: DevLeaveV4Page };
+          },
+        },
+        {
+          path: '/dev/leave-v5',
+          lazy: async () => {
+            const { DevLeaveV5Page } = await import('@/pages/dev-leave-v5');
+            return { Component: DevLeaveV5Page };
+          },
+        },
       ]
     : []),
   {
@@ -215,10 +250,10 @@ export const router = createBrowserRouter([
       { path: '/entries', element: <EntriesPage /> },
       { path: '/dashboard', element: <Navigate to="/reports" replace /> },
       { path: '/reports', element: <DashboardPage /> },
-      { path: '/calendar', element: <CalendarPage /> },
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/users', element: <UserManagementPage /> },
+      { path: '/leave-types', element: <LeaveTypesPage /> },
       { path: '/downloads', element: <Navigate to="/settings/downloads" replace /> },
       { path: '/settings/:tab?', element: <SettingsPage /> },
     ],
