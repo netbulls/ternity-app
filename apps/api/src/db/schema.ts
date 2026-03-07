@@ -465,6 +465,24 @@ export const stgTtAbsences = pgTable('stg_tt_absences', {
   syncRunId: uuid('sync_run_id').references(() => syncRuns.id),
 });
 
+// ── Report Templates ──────────────────────────────────────────────────────
+
+export const reportTemplates = pgTable(
+  'report_templates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    config: jsonb('config').notNull().$type<Record<string, unknown>>(),
+    isFavorite: boolean('is_favorite').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('report_templates_user_id_idx').on(t.userId)],
+);
+
 // ── Sync Scheduler State ──────────────────────────────────────────────────
 
 export const syncScheduleState = pgTable('sync_schedule_state', {

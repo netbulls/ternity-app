@@ -12,3 +12,4 @@ export * from './jira.js';
 export * from './working-hours.js';
 export * from './notification-settings.js';
 export * from './project-members.js';
+export * from './reports.js';

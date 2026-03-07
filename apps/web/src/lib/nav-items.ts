@@ -11,6 +11,7 @@ import {
   Settings2,
   Palette,
   Link2,
+  FileText,
 } from 'lucide-react';
 
 // ── Nav item definition ─────────────────────────────────────────────
@@ -34,8 +35,8 @@ export interface NavItem {
 export const trackingNav: NavItem[] = [
   { to: '/', label: 'My Day', icon: Timer, keywords: ['home', 'timer', 'today'] },
   { to: '/team', label: 'Team', icon: Users, keywords: ['presence', 'board', 'people', 'who'] },
-  { to: '/entries', label: 'Entries', icon: List, keywords: ['time', 'history', 'log'] },
   { to: '/leave', label: 'Leave', icon: Palmtree, keywords: ['holiday', 'vacation', 'absence'] },
+  { to: '/entries', label: 'Entries', icon: List, keywords: ['time', 'history', 'log'] },
   {
     to: '/reports',
     label: 'Reports',
@@ -61,6 +62,13 @@ export const adminNav: NavItem[] = [
     icon: TreePalm,
     admin: true,
     keywords: ['holiday', 'absence', 'groups', 'categories'],
+  },
+  {
+    to: '/client-reports',
+    label: 'Client Reports',
+    icon: FileText,
+    admin: true,
+    keywords: ['pdf', 'export', 'generate', 'branded'],
   },
 ];
 

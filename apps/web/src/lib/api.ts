@@ -23,8 +23,12 @@ export function getImpersonateUserId() {
 
 // Error simulation (dev-only, one-shot)
 let _simulateError = false;
-export function setSimulateError(on: boolean) { _simulateError = on; }
-export function getSimulateError() { return _simulateError; }
+export function setSimulateError(on: boolean) {
+  _simulateError = on;
+}
+export function getSimulateError() {
+  return _simulateError;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -36,10 +40,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {};
 
   // For mutating methods without an explicit body, send '{}' so Fastify's
@@ -85,4 +86,43 @@ export async function apiFetch<T>(
   if (res.status === 204) return undefined as T;
 
   return res.json();
+}
+
+/**
+ * Same as apiFetch but returns the raw Response.
+ * Use for binary responses (PDF downloads, file exports, etc.)
+ */
+export async function apiFetchRaw(path: string, options?: RequestInit): Promise<Response> {
+  const headers: Record<string, string> = {};
+
+  const method = options?.method?.toUpperCase();
+  const needsBody = method === 'POST' || method === 'PUT' || method === 'PATCH';
+  const body = options?.body ?? (needsBody ? '{}' : undefined);
+
+  if (body && typeof body === 'string') {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (_getToken) {
+    const token = await _getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  if (_impersonateUserId) {
+    headers['X-Impersonate-User-Id'] = _impersonateUserId;
+  }
+
+  const res = await fetch(`/api${path}`, {
+    ...options,
+    body,
+    headers: { ...headers, ...options?.headers },
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text());
+  }
+
+  return res;
 }

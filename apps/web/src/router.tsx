@@ -9,6 +9,7 @@ import { UserManagementPage } from '@/pages/user-management';
 import { CallbackPage } from '@/pages/callback';
 import { JiraCallbackPage } from '@/pages/jira-callback';
 import { DashboardPage } from '@/pages/dashboard';
+import { ClientReportsPage } from '@/pages/client-reports';
 import { TeamPage } from '@/pages/team';
 import { LeaveTypesPage } from '@/pages/leave-types';
 
@@ -250,6 +251,7 @@ export const router = createBrowserRouter([
       { path: '/entries', element: <EntriesPage /> },
       { path: '/dashboard', element: <Navigate to="/reports" replace /> },
       { path: '/reports', element: <DashboardPage /> },
+      { path: '/client-reports', element: <ClientReportsPage /> },
       { path: '/leave', element: <LeavePage /> },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/users', element: <UserManagementPage /> },

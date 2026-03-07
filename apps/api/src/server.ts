@@ -21,6 +21,7 @@ import { workingHoursRoutes } from './routes/working-hours.js';
 import { notificationSettingsRoutes } from './routes/notification-settings.js';
 import { teamRoutes } from './routes/team.js';
 import { leaveRoutes } from './routes/leave.js';
+import { reportsRoutes } from './routes/reports.js';
 
 const fastify = Fastify({
   logger: {
@@ -73,6 +74,7 @@ await fastify.register(workingHoursRoutes);
 await fastify.register(notificationSettingsRoutes);
 await fastify.register(teamRoutes);
 await fastify.register(leaveRoutes);
+await fastify.register(reportsRoutes);
 
 // Start
 const port = Number(process.env.PORT ?? 3010);
