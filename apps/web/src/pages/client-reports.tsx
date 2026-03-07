@@ -174,7 +174,7 @@ function PreviewIframe({ html, fit }: { html: string; fit: PreviewFit }) {
         <iframe
           ref={iframeRef}
           title="Report Preview"
-          sandbox="allow-same-origin"
+          sandbox="allow-same-origin allow-scripts"
           style={{
             border: 'none',
             display: 'block',
