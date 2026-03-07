@@ -30,6 +30,7 @@ services:
       - DRIVE_INTERNAL_URL=http://ternity-drive-prod:3020
       - DRIVE_PUBLIC_URL=https://drive.ternity.xyz
       - SIGNED_URL_SECRET=${SIGNED_URL_SECRET}
+      - GOTENBERG_URL=http://ternity-app-prod-gotenberg:3000
     networks:
       - internal
       - proxy
@@ -92,6 +93,20 @@ services:
         limits:
           cpus: '0.5'
           memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: ternity-app-prod-gotenberg
+    networks:
+      - internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
     security_opt:
       - no-new-privileges:true
 
