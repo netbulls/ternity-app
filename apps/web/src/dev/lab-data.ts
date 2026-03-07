@@ -58,6 +58,71 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'web',
     groups: [
       {
+        name: 'report-pdf-templates',
+        id: 'report-pdf-templates-lab',
+        description:
+          'Report PDF Templates — 7 visual directions for branded time report PDFs. A4 page simulation with proper headers, footers, page breaks, summary charts, and per-user entry tables.',
+        date: '2026-03-07T14:00:00',
+        items: [
+          {
+            kind: 'exploration',
+            title: 'V1 — Classic Corporate',
+            file: 'web/report-pdf-v1-a3f2.html',
+            description:
+              'Traditional layout: table-heavy, light background, corporate feel. Repeating header/footer on every page, entries grouped by day per user, pie chart for team composition.',
+            date: '2026-03-07T14:00:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V2 — Dark Executive',
+            file: 'web/report-pdf-v2-b7e4.html',
+            description:
+              'Dark background matching Ternity Dark theme. Premium executive feel with teal accents, donut chart, card-style summary stats. The report looks like the app itself.',
+            date: '2026-03-07T14:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V3 — Minimal Swiss',
+            file: 'web/report-pdf-v3-c9f5.html',
+            description:
+              'Ultra-clean Swiss/International Typographic Style. No cards, no borders — pure typography and whitespace. Horizontal bar chart instead of pie. Maximum legibility.',
+            date: '2026-03-07T14:20:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V4 — Magazine Spread',
+            file: 'web/report-pdf-v4-d2a6.html',
+            description:
+              'Editorial/magazine feel with two-column cover spread, pull-quote metrics, infographic-style stacked bar, teal accent bars on user sections. Bloomberg meets dashboard.',
+            date: '2026-03-07T14:30:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V5 — Dashboard Print',
+            file: 'web/report-pdf-v5-e4b8.html',
+            description:
+              'Web dashboard translated to paper. Card-based sections with rounded corners, shadows, Ternity Light theme. Stat widgets, donut chart card, team overview with proportional bars.',
+            date: '2026-03-07T14:40:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V6 — Invoice Style',
+            file: 'web/report-pdf-v6-f5c9.html',
+            description:
+              'Compact, dense, utilitarian. Invoice/billing aesthetic with maximum data per page. Bordered tables, alternating stripes, document number, signature block, appendix with project breakdown.',
+            date: '2026-03-07T14:50:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V7 — Cover + Chapters',
+            file: 'web/report-pdf-v7-g7h8.html',
+            description:
+              'Multi-section document with dark cover page, table of contents with dot leaders, chapter-style breaks with large gray numbers. Consulting firm deliverable feel.',
+            date: '2026-03-07T15:00:00',
+          },
+        ],
+      },
+      {
         name: 'leave-management',
         id: 'leave-management-lab',
         description:

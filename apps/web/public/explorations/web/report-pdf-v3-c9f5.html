@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — PDF Report V3: Minimal Swiss</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+           V3 — MINIMAL SWISS
+           Ultra-clean Swiss/International Typographic Style.
+           Grid-based, whitespace-heavy, restrained color.
+           No cards, no borders on tables, no decorative elements.
+           Think Massimo Vignelli — maximum legibility.
+           ============================================================ */
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #e8e8e8;
+        font-family:
+          'Inter',
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-size: 9px;
+        color: #1a1a1a;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* -- Exploration wrapper (not part of PDF) -- */
+      .exploration-header {
+        text-align: center;
+        padding: 28px 20px 18px;
+        font-family: 'Oxanium', sans-serif;
+      }
+      .exploration-header h1 {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(0, 0, 0, 0.35);
+      }
+      .exploration-header p {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.25);
+        margin-top: 4px;
+      }
+
+      /* -- A4 Page simulation -- */
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 20px auto;
+        background: #ffffff;
+        box-shadow: 0 1px 12px rgba(0, 0, 0, 0.12);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .page-inner {
+        padding: 20mm 25mm;
+        min-height: 257mm; /* 297 - 40 for top/bottom padding */
+      }
+
+      /* -- Page footer -- */
+      .page-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 0 25mm 16mm;
+      }
+      .page-footer-rule {
+        height: 1px;
+        background: #d0d0d0;
+        margin-bottom: 8px;
+      }
+      .page-footer-text {
+        font-family: 'Inter', sans-serif;
+        font-size: 8px;
+        color: #999;
+        text-align: right;
+        letter-spacing: 0.3px;
+      }
+
+      /* -- Print -- */
+      @media print {
+        body {
+          background: white;
+        }
+        .exploration-header {
+          display: none;
+        }
+        .page {
+          box-shadow: none;
+          margin: 0;
+          page-break-after: always;
+        }
+        .page:last-child {
+          page-break-after: auto;
+        }
+      }
+
+      /* -- Typography -- */
+      .font-heading {
+        font-family: 'Oxanium', sans-serif;
+      }
+
+      /* -- Page 1: Cover/Summary header -- */
+      .cover-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 40px;
+      }
+      .cover-brand {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .cover-brand svg {
+        width: 20px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .cover-brand-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #1a1a1a;
+        line-height: 1;
+        position: relative;
+        top: 1px;
+      }
+      .cover-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #999;
+      }
+
+      /* -- Cover title -- */
+      .cover-title {
+        margin-bottom: 4px;
+      }
+      .cover-title h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0a0a0a;
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+      }
+      .cover-subtitle {
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        color: #666;
+        margin-bottom: 24px;
+      }
+
+      /* -- Horizontal rule -- */
+      .rule {
+        height: 1px;
+        background: #d0d0d0;
+        border: none;
+        margin: 0;
+      }
+      .rule-dark {
+        background: #1a1a1a;
+      }
+
+      /* -- Summary metrics -- */
+      .summary-row {
+        display: flex;
+        gap: 0;
+        padding: 24px 0;
+      }
+      .summary-metric {
+        flex: 1;
+      }
+      .summary-metric-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 8px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 4px;
+      }
+      .summary-metric-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #0a0a0a;
+        line-height: 1.2;
+      }
+
+      /* -- Bar chart -- */
+      .chart-section {
+        padding: 24px 0 20px;
+      }
+      .chart-section-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 8px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 16px;
+      }
+      .bar-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .bar-label {
+        width: 130px;
+        font-family: 'Inter', sans-serif;
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #1a1a1a;
+        flex-shrink: 0;
+      }
+      .bar-track {
+        flex: 1;
+        height: 18px;
+        background: #f5f5f5;
+        position: relative;
+        margin: 0 12px;
+      }
+      .bar-fill {
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .bar-value {
+        width: 55px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        color: #1a1a1a;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .bar-pct {
+        font-weight: 400;
+        color: #999;
+        margin-left: 4px;
+        font-size: 9px;
+      }
+
+      /* -- User section header -- */
+      .user-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-top: 28px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #d0d0d0;
+        margin-bottom: 16px;
+      }
+      .user-section-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0a0a0a;
+        letter-spacing: -0.2px;
+      }
+      .user-section-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
+      }
+
+      /* -- Continuation header (pages 2-4) -- */
+      .continuation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      .continuation-brand {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: #ccc;
+      }
+      .continuation-context {
+        font-family: 'Inter', sans-serif;
+        font-size: 8px;
+        color: #999;
+        letter-spacing: 0.3px;
+      }
+
+      /* -- Day group -- */
+      .day-group {
+        margin-bottom: 14px;
+      }
+      .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 5px;
+        padding-bottom: 3px;
+      }
+      .day-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        color: #1a1a1a;
+        letter-spacing: 0.2px;
+      }
+      .day-total {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        color: #00d4aa;
+      }
+
+      /* -- Entry rows -- */
+      .entry-row {
+        display: flex;
+        align-items: baseline;
+        padding: 2.5px 0 2.5px 12px;
+        line-height: 1.5;
+      }
+      .entry-project {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        width: 110px;
+        flex-shrink: 0;
+      }
+      .entry-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .entry-project-name {
+        font-size: 8.5px;
+        color: #888;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entry-desc {
+        flex: 1;
+        font-size: 9px;
+        color: #333;
+        padding-right: 8px;
+      }
+      .entry-jira {
+        font-size: 7.5px;
+        color: #aaa;
+        width: 55px;
+        flex-shrink: 0;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.2px;
+      }
+      .entry-duration {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        color: #333;
+        width: 48px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      /* -- Section divider -- */
+      .section-break {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 20px 0 0;
+      }
+
+      /* -- End marker -- */
+      .end-marker {
+        text-align: center;
+        padding: 32px 0 0;
+        font-family: 'Inter', sans-serif;
+        font-size: 8px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="exploration-header">
+      <h1>V3 — Minimal Swiss</h1>
+      <p>Swiss/International Typographic Style &middot; Whitespace-heavy &middot; Grid-based</p>
+    </div>
+
+    <!-- ============================================================
+     PAGE 1 — Cover + Summary + Chart + Anna Kowalska start
+     ============================================================ -->
+    <div class="page">
+      <div class="page-inner">
+        <!-- Header: brand left, label right -->
+        <div class="cover-header">
+          <div class="cover-brand">
+            <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+                stroke="#00D4AA"
+                stroke-width="5"
+                stroke-linejoin="round"
+                fill="none"
+              />
+              <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+              <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+              <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+              <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+              <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+            </svg>
+            <span class="cover-brand-name">Ternity</span>
+          </div>
+          <div class="cover-label">Time Report</div>
+        </div>
+
+        <!-- Title block -->
+        <div class="cover-title">
+          <h1>February 2026</h1>
+        </div>
+        <div class="cover-subtitle">Acme Corporation</div>
+
+        <div class="rule rule-dark"></div>
+
+        <!-- Summary metrics -->
+        <div class="summary-row">
+          <div class="summary-metric">
+            <div class="summary-metric-label">Total Hours</div>
+            <div class="summary-metric-value">487.5</div>
+          </div>
+          <div class="summary-metric">
+            <div class="summary-metric-label">Entries</div>
+            <div class="summary-metric-value">312</div>
+          </div>
+          <div class="summary-metric">
+            <div class="summary-metric-label">Avg / Day</div>
+            <div class="summary-metric-value">24.4h</div>
+          </div>
+          <div class="summary-metric">
+            <div class="summary-metric-label">Team</div>
+            <div class="summary-metric-value">4</div>
+          </div>
+        </div>
+
+        <div class="rule"></div>
+
+        <!-- Bar chart: user contribution -->
+        <div class="chart-section">
+          <div class="chart-section-title">Team Contribution</div>
+
+          <div class="bar-row">
+            <div class="bar-label">Anna Kowalska</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 100%; background: #00d4aa"></div>
+            </div>
+            <div class="bar-value">170.6h<span class="bar-pct">35%</span></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">Marek Nowak</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 80%; background: #6c8eef"></div>
+            </div>
+            <div class="bar-value">136.5h<span class="bar-pct">28%</span></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">Kasia Wiszniewska</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 62.9%; background: #f5a623"></div>
+            </div>
+            <div class="bar-value">107.3h<span class="bar-pct">22%</span></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">Tomek Zielinski</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 42.8%; background: #e05c6e"></div>
+            </div>
+            <div class="bar-value">73.1h<span class="bar-pct">15%</span></div>
+          </div>
+        </div>
+
+        <div class="rule"></div>
+
+        <!-- User 1: Anna Kowalska -->
+        <div class="user-section-header">
+          <div class="user-section-name">Anna Kowalska</div>
+          <div class="user-section-hours">170.6 hours</div>
+        </div>
+
+        <!-- Mon 2 Feb -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 2 February</div>
+            <div class="day-total">8h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint planning meeting with product team</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Implement user authentication flow</div>
+            <div class="entry-jira">ACME-142</div>
+            <div class="entry-duration">3h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">REST endpoint for user profiles</div>
+            <div class="entry-jira">ACME-156</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Code review — PR #287, #289</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+        </div>
+
+        <!-- Tue 3 Feb -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Tuesday, 3 February</div>
+            <div class="day-total">7h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">OAuth2 integration testing</div>
+            <div class="entry-jira">ACME-142</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Mobile responsive navigation</div>
+            <div class="entry-jira">ACME-201</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Daily standup + bug triage</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">0h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Database migration scripts</div>
+            <div class="entry-jira">ACME-158</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Wed 4 Feb -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Wednesday, 4 February</div>
+            <div class="day-total">8h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Dashboard widget refactoring</div>
+            <div class="entry-jira">ACME-145</div>
+            <div class="entry-duration">4h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Architecture review with tech lead</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Push notification integration</div>
+            <div class="entry-jira">ACME-203</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-rule"></div>
+        <div class="page-footer-text">Page 1</div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+     PAGE 2 — Anna continued + Marek Nowak start
+     ============================================================ -->
+    <div class="page">
+      <div class="page-inner">
+        <div class="continuation-header">
+          <div class="continuation-brand">Ternity</div>
+          <div class="continuation-context">February 2026 &middot; Acme Corporation</div>
+        </div>
+
+        <!-- Thu 5 Feb — Anna continued -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label" style="color: #888">
+              Anna Kowalska <span style="color: #ccc">/</span> Thursday, 5 February
+            </div>
+            <div class="day-total">9h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">GraphQL schema design</div>
+            <div class="entry-jira">ACME-160</div>
+            <div class="entry-duration">3h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Lunch &amp; learn: React Server Components</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Search functionality implementation</div>
+            <div class="entry-jira">ACME-148</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">App store metadata preparation</div>
+            <div class="entry-jira">ACME-205</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Fri 6 Feb — Anna -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Friday, 6 February</div>
+            <div class="day-total">7h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint retrospective</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">E2E test suite setup</div>
+            <div class="entry-jira">ACME-150</div>
+            <div class="entry-duration">4h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">API documentation update</div>
+            <div class="entry-jira">ACME-162</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Mon 9 Feb — Anna -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 9 February</div>
+            <div class="day-total">8h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint planning — iteration 4</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Role-based access control implementation</div>
+            <div class="entry-jira">ACME-152</div>
+            <div class="entry-duration">4h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Offline mode data sync architecture</div>
+            <div class="entry-jira">ACME-210</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- User 2: Marek Nowak -->
+        <div class="user-section-header">
+          <div class="user-section-name">Marek Nowak</div>
+          <div class="user-section-hours">136.5 hours</div>
+        </div>
+
+        <!-- Mon 2 Feb — Marek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 2 February</div>
+            <div class="day-total">7h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint planning meeting with product team</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Rate limiting middleware</div>
+            <div class="entry-jira">ACME-155</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Settings page redesign</div>
+            <div class="entry-jira">ACME-143</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+        </div>
+
+        <!-- Tue 3 Feb — Marek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Tuesday, 3 February</div>
+            <div class="day-total">8h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">WebSocket event system</div>
+            <div class="entry-jira">ACME-157</div>
+            <div class="entry-duration">3h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Performance profiling — bundle analysis</div>
+            <div class="entry-jira">ACME-144</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Push notification service integration</div>
+            <div class="entry-jira">ACME-202</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Wed 4 Feb — Marek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Wednesday, 4 February</div>
+            <div class="day-total">7h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Pagination and filtering for list endpoints</div>
+            <div class="entry-jira">ACME-159</div>
+            <div class="entry-duration">3h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Dark mode theme implementation</div>
+            <div class="entry-jira">ACME-146</div>
+            <div class="entry-duration">2h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Code review — PR #291, #294</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Thu 5 Feb — Marek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Thursday, 5 February</div>
+            <div class="day-total">8h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Error handling standardization</div>
+            <div class="entry-jira">ACME-161</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Accessibility audit — WCAG 2.1 compliance</div>
+            <div class="entry-jira">ACME-149</div>
+            <div class="entry-duration">3h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Biometric authentication setup</div>
+            <div class="entry-jira">ACME-207</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-rule"></div>
+        <div class="page-footer-text">Page 2</div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+     PAGE 3 — Kasia Wiszniewska
+     ============================================================ -->
+    <div class="page">
+      <div class="page-inner">
+        <div class="continuation-header">
+          <div class="continuation-brand">Ternity</div>
+          <div class="continuation-context">February 2026 &middot; Acme Corporation</div>
+        </div>
+
+        <!-- User 3: Kasia Wiszniewska -->
+        <div class="user-section-header" style="padding-top: 0">
+          <div class="user-section-name">Kasia Wiszniewska</div>
+          <div class="user-section-hours">107.3 hours</div>
+        </div>
+
+        <!-- Mon 2 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 2 February</div>
+            <div class="day-total">6h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint planning meeting with product team</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Onboarding flow redesign — user research analysis</div>
+            <div class="entry-jira">ACME-220</div>
+            <div class="entry-duration">3h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Component library documentation</div>
+            <div class="entry-jira">ACME-170</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Tue 3 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Tuesday, 3 February</div>
+            <div class="day-total">7h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Wireframes for settings screen</div>
+            <div class="entry-jira">ACME-221</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Design system color tokens update</div>
+            <div class="entry-jira">ACME-171</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">API response format documentation</div>
+            <div class="entry-jira">ACME-163</div>
+            <div class="entry-duration">1h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Daily standup</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+        </div>
+
+        <!-- Wed 4 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Wednesday, 4 February</div>
+            <div class="day-total">8h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">High-fidelity mockups — dashboard views</div>
+            <div class="entry-jira">ACME-222</div>
+            <div class="entry-duration">4h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Icon set audit and replacement</div>
+            <div class="entry-jira">ACME-172</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Cross-browser testing — Safari, Firefox</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Thu 5 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Thursday, 5 February</div>
+            <div class="day-total">7h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Prototype user testing — 3 sessions</div>
+            <div class="entry-jira">ACME-223</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Figma to code handoff — notification panel</div>
+            <div class="entry-jira">ACME-173</div>
+            <div class="entry-duration">2h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Swagger UI customization</div>
+            <div class="entry-jira">ACME-164</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Fri 6 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Friday, 6 February</div>
+            <div class="day-total">6h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Animation and micro-interaction specs</div>
+            <div class="entry-jira">ACME-224</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint retrospective</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Responsive layout audit — tablet breakpoints</div>
+            <div class="entry-jira">ACME-174</div>
+            <div class="entry-duration">2h 45m</div>
+          </div>
+        </div>
+
+        <!-- Mon 9 Feb — Kasia -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 9 February</div>
+            <div class="day-total">7h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Design review with stakeholders</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Typography scale adjustment — headings, body</div>
+            <div class="entry-jira">ACME-175</div>
+            <div class="entry-duration">2h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Offline empty states design</div>
+            <div class="entry-jira">ACME-225</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Error response UX copy</div>
+            <div class="entry-jira">ACME-165</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-rule"></div>
+        <div class="page-footer-text">Page 3</div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+     PAGE 4 — Tomek Zielinski + End
+     ============================================================ -->
+    <div class="page">
+      <div class="page-inner">
+        <div class="continuation-header">
+          <div class="continuation-brand">Ternity</div>
+          <div class="continuation-context">February 2026 &middot; Acme Corporation</div>
+        </div>
+
+        <!-- User 4: Tomek Zielinski -->
+        <div class="user-section-header" style="padding-top: 0">
+          <div class="user-section-name">Tomek Zielinski</div>
+          <div class="user-section-hours">73.1 hours</div>
+        </div>
+
+        <!-- Mon 2 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 2 February</div>
+            <div class="day-total">6h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint planning meeting with product team</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">CI/CD pipeline optimization</div>
+            <div class="entry-jira">ACME-180</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Docker container health checks</div>
+            <div class="entry-jira">ACME-181</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Tue 3 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Tuesday, 3 February</div>
+            <div class="day-total">7h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Database connection pooling setup</div>
+            <div class="entry-jira">ACME-182</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Monitoring dashboard — Grafana config</div>
+            <div class="entry-jira">ACME-183</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Log aggregation — structured logging format</div>
+            <div class="entry-jira">ACME-184</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Wed 4 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Wednesday, 4 February</div>
+            <div class="day-total">6h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Load testing — k6 scenario scripts</div>
+            <div class="entry-jira">ACME-185</div>
+            <div class="entry-duration">3h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">SSL certificate automation — Let's Encrypt</div>
+            <div class="entry-jira">ACME-186</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">Fastlane deployment configuration</div>
+            <div class="entry-jira">ACME-230</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <!-- Thu 5 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Thursday, 5 February</div>
+            <div class="day-total">7h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Redis caching layer — session storage</div>
+            <div class="entry-jira">ACME-187</div>
+            <div class="entry-duration">3h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Backup strategy — automated snapshots</div>
+            <div class="entry-jira">ACME-188</div>
+            <div class="entry-duration">2h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Infrastructure cost analysis report</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+        </div>
+
+        <!-- Fri 6 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Friday, 6 February</div>
+            <div class="day-total">5h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">API versioning strategy documentation</div>
+            <div class="entry-jira">ACME-189</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Sprint retrospective</div>
+            <div class="entry-jira">&mdash;</div>
+            <div class="entry-duration">1h 00m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Security audit — dependency vulnerability scan</div>
+            <div class="entry-jira">ACME-190</div>
+            <div class="entry-duration">2h 30m</div>
+          </div>
+        </div>
+
+        <!-- Mon 9 Feb — Tomek -->
+        <div class="day-group">
+          <div class="day-header">
+            <div class="day-label">Monday, 9 February</div>
+            <div class="day-total">6h 45m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #6c8eef"></span
+              ><span class="entry-project-name">Acme API</span>
+            </div>
+            <div class="entry-desc">Database index optimization — slow query log</div>
+            <div class="entry-jira">ACME-191</div>
+            <div class="entry-duration">3h 15m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #f5a623"></span
+              ><span class="entry-project-name">Acme Mobile</span>
+            </div>
+            <div class="entry-desc">TestFlight distribution setup</div>
+            <div class="entry-jira">ACME-231</div>
+            <div class="entry-duration">1h 30m</div>
+          </div>
+          <div class="entry-row">
+            <div class="entry-project">
+              <span class="entry-dot" style="background: #00d4aa"></span
+              ><span class="entry-project-name">Acme Platform</span>
+            </div>
+            <div class="entry-desc">Staging environment provisioning</div>
+            <div class="entry-jira">ACME-192</div>
+            <div class="entry-duration">2h 00m</div>
+          </div>
+        </div>
+
+        <div class="end-marker">End of report</div>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-rule"></div>
+        <div class="page-footer-text">Page 4</div>
+      </div>
+    </div>
+  </body>
+</html>

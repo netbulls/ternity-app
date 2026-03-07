@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — Jira Project Mapping V4: Table Grid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 20px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.5);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-top: 4px;
+        max-width: 640px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground) / 0.6);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button.active {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      .instances {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 20px 0;
+      }
+      .instance-label {
+        text-align: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-bottom: 12px;
+      }
+
+      /* Card */
+      .mapping-card {
+        width: 580px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+      }
+      .card-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--primary) / 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: hsl(var(--primary));
+      }
+      .card-info {
+        flex: 1;
+      }
+      .card-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .card-meta {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* Table */
+      .mapping-table {
+        width: 100%;
+        border-collapse: collapse;
+        border-top: 1px solid hsl(var(--border) / 0.5);
+      }
+      .mapping-table thead th {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground) / 0.4);
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid hsl(var(--border) / 0.3);
+        background: hsl(var(--muted) / 0.15);
+      }
+      .mapping-table thead th:first-child {
+        padding-left: 20px;
+      }
+      .mapping-table thead th:last-child {
+        padding-right: 20px;
+        width: 60px;
+        text-align: center;
+      }
+
+      .mapping-table tbody tr {
+        border-bottom: 1px solid hsl(var(--border) / 0.15);
+        transition: background 0.1s;
+      }
+      .mapping-table tbody tr:hover {
+        background: hsl(var(--muted) / 0.15);
+      }
+      .mapping-table tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      .mapping-table td {
+        padding: 8px 12px;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        vertical-align: middle;
+      }
+      .mapping-table td:first-child {
+        padding-left: 20px;
+      }
+      .mapping-table td:last-child {
+        padding-right: 20px;
+        text-align: center;
+      }
+
+      /* Jira project cell */
+      .jira-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .jira-cell-key {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.1);
+        padding: 2px 7px;
+        border-radius: 4px;
+        min-width: 40px;
+        text-align: center;
+      }
+      .jira-cell-name {
+        color: hsl(var(--foreground) / 0.7);
+      }
+
+      /* Ternity project cell */
+      .ternity-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .ternity-cell-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .ternity-cell-name {
+        color: hsl(var(--foreground));
+      }
+      .ternity-cell-client {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.4);
+        margin-left: auto;
+      }
+
+      /* Empty cell */
+      .ternity-cell-empty {
+        color: hsl(var(--muted-foreground) / 0.3);
+        font-style: italic;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px dashed hsl(var(--border) / 0.4);
+        transition: all 0.15s;
+      }
+      .ternity-cell-empty:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--primary) / 0.6);
+      }
+
+      /* Status column */
+      .status-icon {
+        width: 16px;
+        height: 16px;
+      }
+      .status-ok {
+        color: hsl(var(--primary));
+      }
+      .status-empty {
+        color: hsl(var(--muted-foreground) / 0.15);
+      }
+      .status-warn {
+        color: hsl(35 100% 50%);
+      }
+
+      /* Footer */
+      .table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        border-top: 1px solid hsl(var(--border) / 0.3);
+        background: hsl(var(--muted) / 0.1);
+      }
+      .footer-stats {
+        display: flex;
+        gap: 12px;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.5);
+      }
+      .footer-stats strong {
+        color: hsl(var(--primary));
+        font-weight: 600;
+      }
+      .footer-action {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        padding: 4px 10px;
+        border-radius: 5px;
+        border: 1px solid hsl(var(--primary) / 0.3);
+        background: transparent;
+        color: hsl(var(--primary));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .footer-action:hover {
+        background: hsl(var(--primary) / 0.08);
+      }
+
+      /* Grouped by client */
+      .client-group-header td {
+        padding: 8px 12px 4px;
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground) / 0.4);
+        border-bottom: none !important;
+      }
+      .client-group-header td:first-child {
+        padding-left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Jira Project Mapping V4</h1>
+      <p>
+        Table Grid — spreadsheet-style table with Jira project and Ternity project columns. Compact,
+        scannable, dense. Status column shows mapping health at a glance. Grouped by Ternity client.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <div>
+        <div class="switcher-label">Theme</div>
+        <div class="switcher-group" id="theme-switcher">
+          <button onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button class="active" onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <div>
+        <div class="switcher-label">Scale</div>
+        <div class="switcher-group" id="scale-switcher">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="instances">
+      <!-- STATE 1: Partially mapped table -->
+      <div>
+        <div class="instance-label">Partial — 3 of 5 mapped</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">NB</div>
+            <div class="card-info">
+              <div class="card-name">netbulls.atlassian.net</div>
+              <div class="card-meta">Przemek Rudzki &middot; 5 projects in scope</div>
+            </div>
+          </div>
+          <table class="mapping-table">
+            <thead>
+              <tr>
+                <th>Jira Project</th>
+                <th>Ternity Project</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">ADM</span>
+                    <span class="jira-cell-name">Admin Dashboard</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #00d4aa"></span>
+                    <span class="ternity-cell-name">Admin Portal</span>
+                    <span class="ternity-cell-client">NETBULLS</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">BIT</span>
+                    <span class="jira-cell-name">Bitflow Platform</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #6366f1"></span>
+                    <span class="ternity-cell-name">Bitflow</span>
+                    <span class="ternity-cell-client">NETBULLS</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">INT</span>
+                    <span class="jira-cell-name">Internal Tools</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #f59e0b"></span>
+                    <span class="ternity-cell-name">Internal Tools</span>
+                    <span class="ternity-cell-client">NETBULLS</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">MOB</span>
+                    <span class="jira-cell-name">Mobile App</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="ternity-cell-empty">Click to assign...</span>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-empty"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">WEB</span>
+                    <span class="jira-cell-name">Marketing Website</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="ternity-cell-empty">Click to assign...</span>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-empty"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="table-footer">
+            <div class="footer-stats">
+              <span><strong>3</strong> mapped</span>
+              <span><strong>2</strong> unmapped</span>
+            </div>
+            <button class="footer-action">Auto-match by name</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATE 2: Fully mapped, grouped by client -->
+      <div>
+        <div class="instance-label">Complete — grouped by Ternity client</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">AC</div>
+            <div class="card-info">
+              <div class="card-name">acme-corp.atlassian.net</div>
+              <div class="card-meta">Przemek Rudzki &middot; 5 projects in scope</div>
+            </div>
+          </div>
+          <table class="mapping-table">
+            <thead>
+              <tr>
+                <th>Jira Project</th>
+                <th>Ternity Project</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Client group: ACME -->
+              <tr class="client-group-header">
+                <td colspan="3">ACME CORP</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">CRM</span>
+                    <span class="jira-cell-name">Customer Portal</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #f59e0b"></span>
+                    <span class="ternity-cell-name">CRM Platform</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">PAY</span>
+                    <span class="jira-cell-name">Payment Engine</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #ef4444"></span>
+                    <span class="ternity-cell-name">Payments</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">MKT</span>
+                    <span class="jira-cell-name">Marketing Hub</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #8b5cf6"></span>
+                    <span class="ternity-cell-name">Marketing</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">OPS</span>
+                    <span class="jira-cell-name">Operations</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #f59e0b"></span>
+                    <span class="ternity-cell-name">CRM Platform</span>
+                    <span
+                      style="
+                        font-size: calc(9px * var(--t-scale, 1.1));
+                        background: hsl(var(--primary) / 0.1);
+                        color: hsl(var(--primary) / 0.7);
+                        padding: 1px 5px;
+                        border-radius: 3px;
+                        margin-left: 4px;
+                      "
+                      >shared</span
+                    >
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- Client group: NETBULLS -->
+              <tr class="client-group-header">
+                <td colspan="3">NETBULLS</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="jira-cell">
+                    <span class="jira-cell-key">SEC</span>
+                    <span class="jira-cell-name">Security</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="ternity-cell">
+                    <span class="ternity-cell-dot" style="background: #00d4aa"></span>
+                    <span class="ternity-cell-name">Infrastructure</span>
+                  </div>
+                </td>
+                <td>
+                  <svg
+                    class="status-icon status-ok"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="table-footer">
+            <div class="footer-stats">
+              <span><strong>5</strong> mapped</span>
+              <span><strong>2</strong> clients</span>
+              <span><strong>1</strong> shared mapping</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.className = [
+          'ternity-light',
+          'warm-sand',
+          'high-contrast',
+        ].includes(t)
+          ? 'light'
+          : 'dark';
+        document
+          .querySelectorAll('#theme-switcher button')
+          .forEach((b) =>
+            b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g, '-') === t),
+          );
+      }
+      function setScale(s) {
+        document.documentElement.setAttribute('data-scale', s);
+        document
+          .querySelectorAll('#scale-switcher button')
+          .forEach((b) => b.classList.toggle('active', b.textContent.toLowerCase() === s));
+      }
+    </script>
+  </body>
+</html>

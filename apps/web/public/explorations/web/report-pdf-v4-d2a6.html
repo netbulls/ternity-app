@@ -1,0 +1,1776 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — PDF Report V4: Magazine Spread</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+         V4 — MAGAZINE SPREAD
+         Editorial/magazine feel. Two-column layouts, infographic
+         data viz, pull-quote metrics, generous white space.
+         Bloomberg Businessweek meets data dashboard.
+         ============================================================ */
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #e8e8e8;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 9.5px;
+        color: #1a1a1a;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* -- Exploration header (browser only) -- */
+      .exploration-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        font-family: 'Oxanium', sans-serif;
+      }
+      .exploration-header h1 {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(0, 0, 0, 0.35);
+      }
+      .exploration-header p {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.25);
+        margin-top: 4px;
+      }
+
+      /* -- A4 page simulation -- */
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 16px auto;
+        background: #ffffff;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.12);
+        position: relative;
+        overflow: hidden;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .exploration-header {
+          display: none;
+        }
+        .page {
+          box-shadow: none;
+          margin: 0;
+          page-break-after: always;
+        }
+        .page:last-child {
+          page-break-after: auto;
+        }
+      }
+
+      /* -- Page footer -- */
+      .page-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 0 20mm 8mm 20mm;
+      }
+      .page-footer-line {
+        height: 1px;
+        background: #00d4aa;
+        opacity: 0.4;
+        margin-bottom: 6px;
+      }
+      .page-footer-text {
+        text-align: center;
+        font-size: 7.5px;
+        color: #999;
+        letter-spacing: 0.3px;
+      }
+
+      /* -- Page content area -- */
+      .page-content {
+        padding: 0 20mm;
+      }
+
+      /* ============================================================
+         PAGE 1 — COVER SPREAD
+         ============================================================ */
+
+      /* Top teal bar */
+      .cover-bar {
+        height: 3mm;
+        background: #00d4aa;
+      }
+
+      /* Masthead */
+      .masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6mm 20mm 0 20mm;
+      }
+      .masthead-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .masthead-logo svg {
+        width: 24px;
+        height: 29px;
+      }
+      .masthead-wordmark {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: 3px;
+        color: #0a0a0a;
+        text-transform: uppercase;
+      }
+      .masthead-right {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #0a0a0a;
+      }
+
+      /* Cover hero two-column */
+      .cover-hero {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 8mm;
+        padding: 0 20mm;
+        margin-top: 8mm;
+      }
+
+      /* Left column: Title + Stats */
+      .cover-left {
+      }
+
+      .cover-month {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 32px;
+        font-weight: 700;
+        color: #0a0a0a;
+        line-height: 1.1;
+        letter-spacing: -0.5px;
+      }
+      .cover-org {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: #666;
+        margin-top: 3px;
+        margin-bottom: 10mm;
+      }
+
+      /* 2x2 Stat Grid */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6mm;
+      }
+      .stat-block {
+      }
+      .stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 48px;
+        font-weight: 700;
+        color: #0a0a0a;
+        line-height: 1;
+        letter-spacing: -1px;
+      }
+      .stat-value .stat-unit {
+        font-size: 20px;
+        font-weight: 400;
+        color: #999;
+        letter-spacing: 0;
+      }
+      .stat-label {
+        font-size: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #999;
+        margin-top: 2px;
+      }
+      .stat-block .stat-accent {
+        color: #00d4aa;
+      }
+
+      /* Right column: Donut Chart */
+      .cover-right {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 2mm;
+      }
+      .donut-wrapper {
+        position: relative;
+        width: 150px;
+        height: 150px;
+      }
+      .donut-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .donut-center-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #0a0a0a;
+        line-height: 1;
+      }
+      .donut-center-label {
+        font-size: 7px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        margin-top: 2px;
+      }
+      .donut-legend {
+        margin-top: 5mm;
+        width: 100%;
+      }
+      .donut-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 3px 0;
+        font-size: 9px;
+      }
+      .donut-legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .donut-legend-name {
+        flex: 1;
+        color: #333;
+      }
+      .donut-legend-pct {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        color: #0a0a0a;
+        font-size: 9px;
+      }
+
+      /* Team Performance section */
+      .team-section {
+        padding: 0 20mm;
+        margin-top: 8mm;
+      }
+      .team-section-header {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #0a0a0a;
+        margin-bottom: 5mm;
+        padding-bottom: 2mm;
+        border-bottom: 1px solid #e8e8e8;
+      }
+
+      /* Stacked bar */
+      .stacked-bar-wrapper {
+        margin-bottom: 5mm;
+      }
+      .stacked-bar {
+        display: flex;
+        height: 14px;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .stacked-segment {
+        height: 100%;
+        transition: opacity 0.2s;
+      }
+      .stacked-labels {
+        display: flex;
+        margin-top: 3px;
+      }
+      .stacked-label {
+        font-size: 7px;
+        color: #999;
+        text-align: center;
+      }
+
+      /* Summary table */
+      .team-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .team-table th {
+        font-size: 7.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        text-align: left;
+        padding: 5px 0;
+        border-bottom: 1px solid #e8e8e8;
+      }
+      .team-table th:nth-child(n + 2) {
+        text-align: right;
+      }
+      .team-table td {
+        padding: 7px 0;
+        font-size: 9.5px;
+        border-bottom: 1px solid #f4f4f4;
+      }
+      .team-table td:nth-child(n + 2) {
+        text-align: right;
+      }
+      .team-table .t-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .team-table .t-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .team-table .t-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        color: #0a0a0a;
+      }
+      .team-table .t-pct {
+        color: #999;
+        font-size: 9px;
+      }
+      .team-table .t-entries {
+        color: #666;
+        font-size: 9px;
+      }
+
+      /* ============================================================
+         PAGES 2-4 — USER DETAIL
+         ============================================================ */
+
+      /* Compact header bar for inner pages */
+      .inner-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20mm;
+        height: 12mm;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .inner-header-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .inner-header-left svg {
+        width: 16px;
+        height: 19px;
+      }
+      .inner-header-brand {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: #ccc;
+        text-transform: uppercase;
+      }
+      .inner-header-right {
+        font-size: 8px;
+        color: #999;
+      }
+      .inner-teal-stripe {
+        height: 2px;
+        background: #00d4aa;
+      }
+
+      /* User section header */
+      .user-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6mm 20mm 4mm 20mm;
+        position: relative;
+      }
+      .user-header::before {
+        content: '';
+        position: absolute;
+        left: 20mm;
+        top: 4mm;
+        bottom: 2mm;
+        width: 3px;
+        background: #00d4aa;
+        border-radius: 2px;
+      }
+      .user-header-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        padding-left: 10px;
+      }
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        color: #0a0a0a;
+        flex-shrink: 0;
+      }
+      .user-meta {
+        flex: 1;
+      }
+      .user-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0a0a0a;
+        letter-spacing: 0.3px;
+      }
+      .user-role {
+        font-size: 9px;
+        color: #999;
+      }
+      .user-total-block {
+        text-align: right;
+      }
+      .user-total-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: #00d4aa;
+        line-height: 1;
+      }
+      .user-total-label {
+        font-size: 7px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #999;
+        margin-top: 1px;
+      }
+
+      /* Entries table */
+      .entries {
+        padding: 0 20mm;
+        margin-bottom: 4mm;
+      }
+      .entries-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .entries-table thead th {
+        background: #f7f8f9;
+        padding: 5px 8px;
+        text-align: left;
+        font-size: 7.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #999;
+        border-bottom: 1px solid #e8e8e8;
+      }
+      .entries-table thead th:last-child {
+        text-align: right;
+      }
+      .entries-table tbody tr {
+        border-bottom: 1px solid #f2f2f2;
+      }
+      .entries-table td {
+        padding: 4.5px 8px;
+        vertical-align: middle;
+        font-size: 9px;
+      }
+
+      /* Day group headers */
+      .day-row td {
+        background: #f9fafb;
+        padding: 6px 8px;
+        border-bottom: 1px solid #ebebeb;
+      }
+      .day-row-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .day-date {
+        font-weight: 700;
+        font-size: 9.5px;
+        color: #333;
+      }
+      .day-total {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        font-size: 9.5px;
+        color: #00d4aa;
+      }
+
+      /* Entry row specifics */
+      .entry-time {
+        color: #999;
+        font-size: 8.5px;
+        white-space: nowrap;
+      }
+      .entry-project {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .project-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .entry-project-name {
+        color: #333;
+        font-weight: 500;
+      }
+      .entry-desc {
+        color: #444;
+      }
+      .entry-jira {
+        display: inline-block;
+        background: #f0f1f3;
+        color: #6c8eef;
+        font-size: 7.5px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 8px;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+      .entry-jira-none {
+        color: #ccc;
+        font-size: 8px;
+      }
+      .entry-duration {
+        text-align: right;
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        color: #0a0a0a;
+        white-space: nowrap;
+        font-size: 9px;
+      }
+
+      /* Section divider between users */
+      .user-divider {
+        margin: 4mm 20mm;
+        border: none;
+        border-top: 1px solid #e8e8e8;
+      }
+
+      /* End of report */
+      .end-report {
+        text-align: center;
+        padding: 10mm 20mm 6mm;
+      }
+      .end-report-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #ccc;
+        margin-bottom: 6px;
+      }
+      .end-report-text {
+        font-size: 8px;
+        color: #bbb;
+        line-height: 1.6;
+      }
+      .end-teal-bar {
+        height: 3mm;
+        background: #00d4aa;
+        position: absolute;
+        bottom: 18mm;
+        left: 0;
+        right: 0;
+      }
+
+      /* Page break helpers */
+      .avoid-break {
+        page-break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="exploration-header">
+      <h1>PDF Report Template</h1>
+      <p>
+        V4 — Magazine Spread &middot; Editorial layout, infographic data viz, pull-quote metrics
+      </p>
+    </div>
+
+    <!-- ============================================================
+         PAGE 1 — THE COVER SPREAD
+         ============================================================ -->
+    <div class="page">
+      <!-- Thin teal top bar -->
+      <div class="cover-bar"></div>
+
+      <!-- Masthead -->
+      <div class="masthead">
+        <div class="masthead-left">
+          <div class="masthead-logo">
+            <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+                stroke="#00D4AA"
+                stroke-width="5"
+                stroke-linejoin="round"
+                fill="none"
+              />
+              <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+              <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+              <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+              <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+              <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+            </svg>
+          </div>
+          <span class="masthead-wordmark">Ternity</span>
+        </div>
+        <div class="masthead-right">Time Report</div>
+      </div>
+
+      <!-- Two-column hero -->
+      <div class="cover-hero">
+        <!-- LEFT: Title + Stats -->
+        <div class="cover-left">
+          <div class="cover-month">February<br />2026</div>
+          <div class="cover-org">Acme Corporation &middot; Monthly Time Report</div>
+
+          <div class="stat-grid">
+            <div class="stat-block">
+              <div class="stat-value">487<span class="stat-unit">.5</span></div>
+              <div class="stat-label">Total Hours</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-value">312</div>
+              <div class="stat-label">Time Entries</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-value stat-accent">24.4</div>
+              <div class="stat-label">Avg Hours / Day</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-value">3</div>
+              <div class="stat-label">Active Projects</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Donut Chart -->
+        <div class="cover-right">
+          <div class="donut-wrapper">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <!-- Background ring -->
+              <circle cx="75" cy="75" r="55" fill="none" stroke="#f0f0f0" stroke-width="18" />
+              <!--
+                Circumference = 2 * PI * 55 = 345.575
+                Anna: 35% = 120.95
+                Marek: 28% = 96.76
+                Kasia: 22% = 76.03
+                Tomek: 15% = 51.84
+              -->
+              <!-- Anna 35% -->
+              <circle
+                cx="75"
+                cy="75"
+                r="55"
+                fill="none"
+                stroke="#00D4AA"
+                stroke-width="18"
+                stroke-dasharray="120.95 345.575"
+                stroke-dashoffset="0"
+                transform="rotate(-90 75 75)"
+                stroke-linecap="butt"
+              />
+              <!-- Marek 28% -->
+              <circle
+                cx="75"
+                cy="75"
+                r="55"
+                fill="none"
+                stroke="#6C8EEF"
+                stroke-width="18"
+                stroke-dasharray="96.76 345.575"
+                stroke-dashoffset="-120.95"
+                transform="rotate(-90 75 75)"
+                stroke-linecap="butt"
+              />
+              <!-- Kasia 22% -->
+              <circle
+                cx="75"
+                cy="75"
+                r="55"
+                fill="none"
+                stroke="#F5A623"
+                stroke-width="18"
+                stroke-dasharray="76.03 345.575"
+                stroke-dashoffset="-217.71"
+                transform="rotate(-90 75 75)"
+                stroke-linecap="butt"
+              />
+              <!-- Tomek 15% -->
+              <circle
+                cx="75"
+                cy="75"
+                r="55"
+                fill="none"
+                stroke="#E05C6E"
+                stroke-width="18"
+                stroke-dasharray="51.84 345.575"
+                stroke-dashoffset="-293.74"
+                transform="rotate(-90 75 75)"
+                stroke-linecap="butt"
+              />
+            </svg>
+            <div class="donut-center">
+              <div class="donut-center-value">4</div>
+              <div class="donut-center-label">Team</div>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <div class="donut-legend-item">
+              <div class="donut-legend-dot" style="background: #00d4aa"></div>
+              <span class="donut-legend-name">Anna Kowalska</span>
+              <span class="donut-legend-pct">35%</span>
+            </div>
+            <div class="donut-legend-item">
+              <div class="donut-legend-dot" style="background: #6c8eef"></div>
+              <span class="donut-legend-name">Marek Nowak</span>
+              <span class="donut-legend-pct">28%</span>
+            </div>
+            <div class="donut-legend-item">
+              <div class="donut-legend-dot" style="background: #f5a623"></div>
+              <span class="donut-legend-name">Kasia Wiszniewska</span>
+              <span class="donut-legend-pct">22%</span>
+            </div>
+            <div class="donut-legend-item">
+              <div class="donut-legend-dot" style="background: #e05c6e"></div>
+              <span class="donut-legend-name">Tomek Zielinski</span>
+              <span class="donut-legend-pct">15%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Performance section -->
+      <div class="team-section">
+        <div class="team-section-header">Team Performance</div>
+
+        <!-- Stacked bar -->
+        <div class="stacked-bar-wrapper">
+          <div class="stacked-bar">
+            <div class="stacked-segment" style="width: 35%; background: #00d4aa"></div>
+            <div class="stacked-segment" style="width: 28%; background: #6c8eef"></div>
+            <div class="stacked-segment" style="width: 22%; background: #f5a623"></div>
+            <div class="stacked-segment" style="width: 15%; background: #e05c6e"></div>
+          </div>
+          <div class="stacked-labels" style="display: flex">
+            <div class="stacked-label" style="width: 35%">Anna</div>
+            <div class="stacked-label" style="width: 28%">Marek</div>
+            <div class="stacked-label" style="width: 22%">Kasia</div>
+            <div class="stacked-label" style="width: 15%">Tomek</div>
+          </div>
+        </div>
+
+        <!-- Summary table -->
+        <table class="team-table">
+          <thead>
+            <tr>
+              <th>Team Member</th>
+              <th>Hours</th>
+              <th>Share</th>
+              <th>Entries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="t-name">
+                  <span class="t-dot" style="background: #00d4aa"></span>
+                  Anna Kowalska
+                </div>
+              </td>
+              <td class="t-hours">170.6h</td>
+              <td class="t-pct">35%</td>
+              <td class="t-entries">89</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="t-name">
+                  <span class="t-dot" style="background: #6c8eef"></span>
+                  Marek Nowak
+                </div>
+              </td>
+              <td class="t-hours">136.5h</td>
+              <td class="t-pct">28%</td>
+              <td class="t-entries">76</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="t-name">
+                  <span class="t-dot" style="background: #f5a623"></span>
+                  Kasia Wiszniewska
+                </div>
+              </td>
+              <td class="t-hours">107.3h</td>
+              <td class="t-pct">22%</td>
+              <td class="t-entries">82</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="t-name">
+                  <span class="t-dot" style="background: #e05c6e"></span>
+                  Tomek Zielinski
+                </div>
+              </td>
+              <td class="t-hours">73.1h</td>
+              <td class="t-pct">15%</td>
+              <td class="t-entries">65</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-line"></div>
+        <div class="page-footer-text">
+          Ternity &middot; Acme Corporation &middot; February 2026 &middot; Page 1 of 4
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 2 — USER DETAIL: Anna + Marek start
+         ============================================================ -->
+    <div class="page">
+      <div class="inner-teal-stripe"></div>
+      <div class="inner-header">
+        <div class="inner-header-left">
+          <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+              stroke="#00D4AA"
+              stroke-width="5"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+            <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+            <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+            <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+            <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+          </svg>
+          <span class="inner-header-brand">Ternity</span>
+        </div>
+        <div class="inner-header-right">February 2026 &middot; Acme Corporation</div>
+      </div>
+
+      <!-- User 1: Anna Kowalska -->
+      <div class="user-header">
+        <div class="user-header-content">
+          <div class="user-avatar" style="background: #00d4aa">AK</div>
+          <div class="user-meta">
+            <div class="user-name">Anna Kowalska</div>
+            <div class="user-role">
+              Senior Developer &middot; 89 entries &middot; 20 days active
+            </div>
+          </div>
+          <div class="user-total-block">
+            <div class="user-total-value">170.6h</div>
+            <div class="user-total-label">Total Hours</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries">
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th style="width: 55px">Time</th>
+              <th style="width: 110px">Project</th>
+              <th>Description</th>
+              <th style="width: 62px">Jira</th>
+              <th style="width: 58px">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Monday, 2 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Monday, 2 February 2026</span>
+                  <span class="day-total">8h 30m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Sprint planning meeting with product team</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Implement user authentication flow</td>
+              <td><span class="entry-jira">ACME-142</span></td>
+              <td class="entry-duration">3h 15m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">REST endpoint for user profiles</td>
+              <td><span class="entry-jira">ACME-156</span></td>
+              <td class="entry-duration">2h 45m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">17:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Code review &mdash; PR #287, #289</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 00m</td>
+            </tr>
+
+            <!-- Tuesday, 3 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Tuesday, 3 February 2026</span>
+                  <span class="day-total">7h 45m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:15</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">OAuth2 integration testing</td>
+              <td><span class="entry-jira">ACME-142</span></td>
+              <td class="entry-duration">2h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">12:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Mobile responsive navigation</td>
+              <td><span class="entry-jira">ACME-201</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">15:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Daily standup + bug triage</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">0h 45m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">16:15</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">Database migration scripts</td>
+              <td><span class="entry-jira">ACME-158</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+
+            <!-- Wednesday, 4 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Wednesday, 4 February 2026</span>
+                  <span class="day-total">8h 15m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">08:45</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Dashboard widget refactoring</td>
+              <td><span class="entry-jira">ACME-145</span></td>
+              <td class="entry-duration">4h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">13:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Architecture review with tech lead</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Push notification integration</td>
+              <td><span class="entry-jira">ACME-203</span></td>
+              <td class="entry-duration">2h 45m</td>
+            </tr>
+
+            <!-- Thursday, 5 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Thursday, 5 February 2026</span>
+                  <span class="day-total">9h 00m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">08:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">GraphQL schema design</td>
+              <td><span class="entry-jira">ACME-160</span></td>
+              <td class="entry-duration">3h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">12:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Lunch &amp; learn: React Server Components</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">13:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Search functionality implementation</td>
+              <td><span class="entry-jira">ACME-148</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">16:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">App store metadata preparation</td>
+              <td><span class="entry-jira">ACME-205</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-line"></div>
+        <div class="page-footer-text">
+          Ternity &middot; Acme Corporation &middot; February 2026 &middot; Page 2 of 4
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 3 — Anna continued + Marek
+         ============================================================ -->
+    <div class="page">
+      <div class="inner-teal-stripe"></div>
+      <div class="inner-header">
+        <div class="inner-header-left">
+          <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+              stroke="#00D4AA"
+              stroke-width="5"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+            <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+            <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+            <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+            <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+          </svg>
+          <span class="inner-header-brand">Ternity</span>
+        </div>
+        <div class="inner-header-right">February 2026 &middot; Acme Corporation</div>
+      </div>
+
+      <!-- Anna continued: Friday -->
+      <div class="user-header">
+        <div class="user-header-content">
+          <div class="user-avatar" style="background: #00d4aa">AK</div>
+          <div class="user-meta">
+            <div class="user-name">
+              Anna Kowalska
+              <span style="font-weight: 400; font-size: 10px; color: #999">(continued)</span>
+            </div>
+            <div class="user-role">Senior Developer</div>
+          </div>
+          <div class="user-total-block">
+            <div class="user-total-value">170.6h</div>
+            <div class="user-total-label">Total Hours</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries">
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th style="width: 55px">Time</th>
+              <th style="width: 110px">Project</th>
+              <th>Description</th>
+              <th style="width: 62px">Jira</th>
+              <th style="width: 58px">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Friday, 6 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Friday, 6 February 2026</span>
+                  <span class="day-total">7h 00m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Sprint retrospective</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">E2E test suite setup</td>
+              <td><span class="entry-jira">ACME-150</span></td>
+              <td class="entry-duration">4h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">API documentation update</td>
+              <td><span class="entry-jira">ACME-162</span></td>
+              <td class="entry-duration">2h 00m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="user-divider" />
+
+      <!-- User 2: Marek Nowak -->
+      <div class="user-header">
+        <div class="user-header-content">
+          <div class="user-avatar" style="background: #6c8eef; color: #fff">MN</div>
+          <div class="user-meta">
+            <div class="user-name">Marek Nowak</div>
+            <div class="user-role">
+              Full-Stack Developer &middot; 76 entries &middot; 19 days active
+            </div>
+          </div>
+          <div class="user-total-block">
+            <div class="user-total-value">136.5h</div>
+            <div class="user-total-label">Total Hours</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries">
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th style="width: 55px">Time</th>
+              <th style="width: 110px">Project</th>
+              <th>Description</th>
+              <th style="width: 62px">Jira</th>
+              <th style="width: 58px">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Monday, 2 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Monday, 2 February 2026</span>
+                  <span class="day-total">7h 15m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Sprint planning meeting with product team</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:45</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">Rate limiting middleware</td>
+              <td><span class="entry-jira">ACME-155</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Settings page redesign</td>
+              <td><span class="entry-jira">ACME-143</span></td>
+              <td class="entry-duration">2h 45m</td>
+            </tr>
+
+            <!-- Tuesday, 3 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Tuesday, 3 February 2026</span>
+                  <span class="day-total">8h 00m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">08:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">WebSocket event system</td>
+              <td><span class="entry-jira">ACME-157</span></td>
+              <td class="entry-duration">4h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">13:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Offline data sync</td>
+              <td><span class="entry-jira">ACME-202</span></td>
+              <td class="entry-duration">2h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">16:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Code review &mdash; PR #290, #292</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 00m</td>
+            </tr>
+
+            <!-- Wednesday, 4 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Wednesday, 4 February 2026</span>
+                  <span class="day-total">7h 30m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Performance profiling &mdash; React renders</td>
+              <td><span class="entry-jira">ACME-164</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">12:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">Caching layer implementation</td>
+              <td><span class="entry-jira">ACME-159</span></td>
+              <td class="entry-duration">2h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">15:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Deep linking configuration</td>
+              <td><span class="entry-jira">ACME-208</span></td>
+              <td class="entry-duration">2h 00m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-footer">
+        <div class="page-footer-line"></div>
+        <div class="page-footer-text">
+          Ternity &middot; Acme Corporation &middot; February 2026 &middot; Page 3 of 4
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 4 — Kasia + Tomek + End of Report
+         ============================================================ -->
+    <div class="page">
+      <div class="inner-teal-stripe"></div>
+      <div class="inner-header">
+        <div class="inner-header-left">
+          <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+              stroke="#00D4AA"
+              stroke-width="5"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+            <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+            <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+            <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+            <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+          </svg>
+          <span class="inner-header-brand">Ternity</span>
+        </div>
+        <div class="inner-header-right">February 2026 &middot; Acme Corporation</div>
+      </div>
+
+      <!-- User 3: Kasia Wiszniewska -->
+      <div class="user-header">
+        <div class="user-header-content">
+          <div class="user-avatar" style="background: #f5a623; color: #fff">KW</div>
+          <div class="user-meta">
+            <div class="user-name">Kasia Wiszniewska</div>
+            <div class="user-role">UX Designer &middot; 82 entries &middot; 18 days active</div>
+          </div>
+          <div class="user-total-block">
+            <div class="user-total-value">107.3h</div>
+            <div class="user-total-label">Total Hours</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries">
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th style="width: 55px">Time</th>
+              <th style="width: 110px">Project</th>
+              <th>Description</th>
+              <th style="width: 62px">Jira</th>
+              <th style="width: 58px">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Monday, 2 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Monday, 2 February 2026</span>
+                  <span class="day-total">6h 30m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Sprint planning meeting with product team</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">User onboarding flow wireframes</td>
+              <td><span class="entry-jira">ACME-144</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Mobile app design system</td>
+              <td><span class="entry-jira">ACME-200</span></td>
+              <td class="entry-duration">2h 00m</td>
+            </tr>
+
+            <!-- Tuesday, 3 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Tuesday, 3 February 2026</span>
+                  <span class="day-total">7h 00m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Prototype iterations &mdash; round 2</td>
+              <td><span class="entry-jira">ACME-144</span></td>
+              <td class="entry-duration">3h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">13:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Design review with stakeholders</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 00m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">14:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Touch gesture patterns research</td>
+              <td><span class="entry-jira">ACME-204</span></td>
+              <td class="entry-duration">2h 30m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="user-divider" />
+
+      <!-- User 4: Tomek Zielinski -->
+      <div class="user-header">
+        <div class="user-header-content">
+          <div class="user-avatar" style="background: #e05c6e; color: #fff">TZ</div>
+          <div class="user-meta">
+            <div class="user-name">Tomek Zielinski</div>
+            <div class="user-role">QA Engineer &middot; 65 entries &middot; 17 days active</div>
+          </div>
+          <div class="user-total-block">
+            <div class="user-total-value">73.1h</div>
+            <div class="user-total-label">Total Hours</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries">
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th style="width: 55px">Time</th>
+              <th style="width: 110px">Project</th>
+              <th>Description</th>
+              <th style="width: 62px">Jira</th>
+              <th style="width: 58px">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Monday, 2 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Monday, 2 February 2026</span>
+                  <span class="day-total">4h 30m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Sprint planning meeting with product team</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Regression test suite &mdash; auth module</td>
+              <td><span class="entry-jira">ACME-170</span></td>
+              <td class="entry-duration">3h 00m</td>
+            </tr>
+
+            <!-- Tuesday, 3 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Tuesday, 3 February 2026</span>
+                  <span class="day-total">5h 15m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">09:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Performance testing &mdash; load scenarios</td>
+              <td><span class="entry-jira">ACME-171</span></td>
+              <td class="entry-duration">3h 15m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">12:30</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #6c8eef"></span
+                  ><span class="entry-project-name">Acme API</span>
+                </div>
+              </td>
+              <td class="entry-desc">API contract testing setup</td>
+              <td><span class="entry-jira">ACME-163</span></td>
+              <td class="entry-duration">2h 00m</td>
+            </tr>
+
+            <!-- Wednesday, 4 Feb -->
+            <tr class="day-row">
+              <td colspan="5">
+                <div class="day-row-inner">
+                  <span class="day-date">Wednesday, 4 February 2026</span>
+                  <span class="day-total">3h 45m</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="entry-time">10:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #f5a623"></span
+                  ><span class="entry-project-name">Acme Mobile</span>
+                </div>
+              </td>
+              <td class="entry-desc">Mobile device lab testing</td>
+              <td><span class="entry-jira">ACME-207</span></td>
+              <td class="entry-duration">2h 30m</td>
+            </tr>
+            <tr>
+              <td class="entry-time">13:00</td>
+              <td>
+                <div class="entry-project">
+                  <span class="project-dot" style="background: #00d4aa"></span
+                  ><span class="entry-project-name">Acme Platform</span>
+                </div>
+              </td>
+              <td class="entry-desc">Bug triage meeting with dev team</td>
+              <td><span class="entry-jira-none">&mdash;</span></td>
+              <td class="entry-duration">1h 15m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- End of report -->
+      <div class="end-report">
+        <div class="end-report-label">End of Report</div>
+        <div class="end-report-text">
+          Generated by Ternity on 7 March 2026 at 14:32 CET<br />
+          For questions, contact your organization administrator.
+        </div>
+        <div style="margin-top: 8px; opacity: 0.15">
+          <svg
+            viewBox="0 0 100 120"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="24"
+          >
+            <path
+              d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+              stroke="#00D4AA"
+              stroke-width="5"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+            <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+            <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+            <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+            <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bottom teal bar -->
+      <div class="end-teal-bar"></div>
+
+      <div class="page-footer">
+        <div class="page-footer-line"></div>
+        <div class="page-footer-text">
+          Ternity &middot; Acme Corporation &middot; February 2026 &middot; Page 4 of 4
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

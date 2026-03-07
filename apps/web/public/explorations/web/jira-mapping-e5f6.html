@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — Jira Project Mapping V3: Inline Chips</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 20px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.5);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-top: 4px;
+        max-width: 640px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .switcher-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .switcher-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .switcher-group {
+        display: flex;
+        gap: 4px;
+      }
+      .switcher-group button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground) / 0.6);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .switcher-group button.active {
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      .instances {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 20px 0;
+      }
+      .instance-label {
+        text-align: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-bottom: 12px;
+      }
+
+      /* Card */
+      .mapping-card {
+        width: 560px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+      }
+      .card-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: hsl(var(--primary) / 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: hsl(var(--primary));
+      }
+      .card-info {
+        flex: 1;
+      }
+      .card-name {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+      .card-meta {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 2px;
+      }
+
+      /* Section */
+      .section {
+        border-top: 1px solid hsl(var(--border) / 0.5);
+        padding: 14px 20px;
+      }
+      .section-label {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground) / 0.45);
+        margin-bottom: 4px;
+      }
+      .section-desc {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.35);
+        margin-bottom: 12px;
+      }
+
+      /* Visual query line — shows selected Jira projects as chips */
+      .query-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .ql-label {
+        font-family: 'Oxanium', monospace;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.5);
+        margin-right: 2px;
+      }
+
+      /* Jira project chip with mapping */
+      .jira-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid hsl(var(--primary) / 0.2);
+        background: hsl(var(--primary) / 0.05);
+        transition: all 0.15s;
+      }
+      .jira-chip:hover {
+        border-color: hsl(var(--primary) / 0.4);
+      }
+
+      .jira-chip-key {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--primary));
+        padding: 4px 8px;
+        background: hsl(var(--primary) / 0.1);
+      }
+      .jira-chip-name {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--primary) / 0.6);
+        padding: 4px 6px 4px 4px;
+      }
+
+      /* Mapping arrow + ternity mini chip */
+      .jira-chip-map {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        border-left: 1px solid hsl(var(--border) / 0.3);
+      }
+      .map-arrow {
+        padding: 0 4px;
+        color: hsl(var(--muted-foreground) / 0.25);
+      }
+      .jira-chip.mapped .map-arrow {
+        color: hsl(var(--primary) / 0.4);
+      }
+
+      .ternity-mini {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px 4px 2px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        cursor: pointer;
+      }
+      .ternity-mini .tm-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .ternity-mini .tm-name {
+        color: hsl(var(--foreground) / 0.8);
+        white-space: nowrap;
+      }
+      .ternity-mini .tm-empty {
+        color: hsl(var(--muted-foreground) / 0.3);
+        font-style: italic;
+      }
+
+      /* Remove button */
+      .chip-remove {
+        background: none;
+        border: none;
+        color: hsl(var(--muted-foreground) / 0.3);
+        padding: 4px 6px 4px 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        transition: color 0.15s;
+      }
+      .chip-remove:hover {
+        color: hsl(var(--destructive));
+      }
+
+      /* Add button */
+      .add-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px dashed hsl(var(--primary) / 0.3);
+        color: hsl(var(--primary));
+        font-size: calc(11px * var(--t-scale, 1.1));
+        cursor: pointer;
+        transition: all 0.15s;
+        background: transparent;
+      }
+      .add-chip:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.05);
+      }
+
+      /* Status excluded line (unchanged from existing) */
+      .excl-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--destructive) / 0.2);
+        background: hsl(var(--destructive) / 0.05);
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--destructive));
+        text-decoration: line-through;
+      }
+      .excl-chip button {
+        background: none;
+        border: none;
+        color: hsl(var(--destructive) / 0.4);
+        cursor: pointer;
+        display: flex;
+        padding: 0;
+      }
+
+      /* summary row */
+      .summary-row {
+        border-top: 1px solid hsl(var(--border) / 0.3);
+        padding: 10px 20px;
+        display: flex;
+        gap: 16px;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .summary-row strong {
+        color: hsl(var(--primary));
+        font-weight: 600;
+      }
+      .summary-row .warn {
+        color: hsl(35 100% 50% / 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Jira Project Mapping V3</h1>
+      <p>
+        Inline Chips — extends the existing visual query builder. Each Jira project chip gets a
+        small Ternity project badge attached to its right side. Mapping lives alongside the existing
+        PROJECT IN / STATUS NOT IN pattern.
+      </p>
+    </div>
+
+    <div class="switcher-row">
+      <div>
+        <div class="switcher-label">Theme</div>
+        <div class="switcher-group" id="theme-switcher">
+          <button onclick="setTheme('ternity-dark')">Ternity Dark</button>
+          <button onclick="setTheme('ternity-light')">Ternity Light</button>
+          <button onclick="setTheme('midnight')">Midnight</button>
+          <button onclick="setTheme('warm-sand')">Warm Sand</button>
+          <button class="active" onclick="setTheme('carbon')">Carbon</button>
+          <button onclick="setTheme('high-contrast')">High Contrast</button>
+        </div>
+      </div>
+      <div>
+        <div class="switcher-label">Scale</div>
+        <div class="switcher-group" id="scale-switcher">
+          <button onclick="setScale('compact')">Compact</button>
+          <button class="active" onclick="setScale('default')">Default</button>
+          <button onclick="setScale('comfortable')">Comfortable</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="instances">
+      <!-- STATE 1: All mapped -->
+      <div>
+        <div class="instance-label">All mapped — 3 chips with Ternity assignments</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">NB</div>
+            <div class="card-info">
+              <div class="card-name">netbulls.atlassian.net</div>
+              <div class="card-meta">Przemek Rudzki &middot; Connected</div>
+            </div>
+          </div>
+          <div class="section">
+            <!-- PROJECT IN line -->
+            <div class="query-line">
+              <span class="ql-label">PROJECT IN</span>
+
+              <div class="jira-chip mapped">
+                <span class="jira-chip-key">ADM</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-dot" style="background: #00d4aa"></span>
+                    <span class="tm-name">Admin Portal</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="jira-chip mapped">
+                <span class="jira-chip-key">BIT</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-dot" style="background: #6366f1"></span>
+                    <span class="tm-name">Bitflow</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="jira-chip mapped">
+                <span class="jira-chip-key">INT</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-dot" style="background: #f59e0b"></span>
+                    <span class="tm-name">Internal Tools</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <button class="add-chip">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- STATUS NOT IN line -->
+            <div class="query-line" style="margin-top: 10px">
+              <span class="ql-label">AND STATUS NOT IN</span>
+              <span class="excl-chip">
+                Done
+                <button>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+              <span class="excl-chip">
+                Cancelled
+                <button>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            </div>
+
+            <!-- ORDER BY line -->
+            <div class="query-line" style="margin-top: 10px">
+              <span class="ql-label">ORDER BY</span>
+              <span
+                style="
+                  font-size: calc(11px * var(--t-scale, 1.1));
+                  color: hsl(var(--muted-foreground));
+                "
+                >updated DESC</span
+              >
+            </div>
+          </div>
+          <div class="summary-row">
+            <span><strong>3</strong> projects, all mapped</span>
+            <span><strong>2</strong> statuses excluded</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATE 2: Mixed — some mapped, some not -->
+      <div>
+        <div class="instance-label">Mixed — 2 mapped, 2 unmapped</div>
+        <div class="mapping-card">
+          <div class="card-header">
+            <div class="card-avatar">AC</div>
+            <div class="card-info">
+              <div class="card-name">acme-corp.atlassian.net</div>
+              <div class="card-meta">Przemek Rudzki &middot; Connected</div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="query-line">
+              <span class="ql-label">PROJECT IN</span>
+
+              <div class="jira-chip mapped">
+                <span class="jira-chip-key">CRM</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-dot" style="background: #f59e0b"></span>
+                    <span class="tm-name">CRM Platform</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="jira-chip mapped">
+                <span class="jira-chip-key">PAY</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-dot" style="background: #ef4444"></span>
+                    <span class="tm-name">Payments</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="jira-chip">
+                <span class="jira-chip-key">MKT</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-empty">map...</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="jira-chip">
+                <span class="jira-chip-key">OPS</span>
+                <div class="jira-chip-map">
+                  <svg
+                    class="map-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <div class="ternity-mini">
+                    <span class="tm-empty">map...</span>
+                  </div>
+                </div>
+                <button class="chip-remove">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <button class="add-chip">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="query-line" style="margin-top: 10px">
+              <span class="ql-label">AND STATUS NOT IN</span>
+              <span class="excl-chip">
+                Done
+                <button>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            </div>
+
+            <div class="query-line" style="margin-top: 10px">
+              <span class="ql-label">ORDER BY</span>
+              <span
+                style="
+                  font-size: calc(11px * var(--t-scale, 1.1));
+                  color: hsl(var(--muted-foreground));
+                "
+                >updated DESC</span
+              >
+            </div>
+          </div>
+          <div class="summary-row">
+            <span><strong>2</strong> of 4 mapped</span>
+            <span class="warn">2 unmapped (will use default or be ignored)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.className = [
+          'ternity-light',
+          'warm-sand',
+          'high-contrast',
+        ].includes(t)
+          ? 'light'
+          : 'dark';
+        document
+          .querySelectorAll('#theme-switcher button')
+          .forEach((b) =>
+            b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s+/g, '-') === t),
+          );
+      }
+      function setScale(s) {
+        document.documentElement.setAttribute('data-scale', s);
+        document
+          .querySelectorAll('#scale-switcher button')
+          .forEach((b) => b.classList.toggle('active', b.textContent.toLowerCase() === s));
+      }
+    </script>
+  </body>
+</html>

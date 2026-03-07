@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Adjust Time V5: Radial Dial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .dialogs-row {
+            display: flex; gap: 32px; justify-content: center;
+            flex-wrap: wrap; align-items: flex-start;
+        }
+        .state-label {
+            text-align: center;
+            font-size: 10px;
+            color: hsl(var(--muted-foreground) / 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            font-family: 'Oxanium', sans-serif;
+        }
+
+        .dialog {
+            width: 420px; max-width: 100%;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px hsl(0 0% 0% / 0.3);
+        }
+        .dialog-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .dialog-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 8px;
+        }
+        .entry-info { display: flex; flex-direction: column; gap: 4px; }
+        .entry-desc {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.8);
+            font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+            font-weight: 500;
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .dialog-body { padding: 20px 24px; }
+
+        /* Sign toggle */
+        .sign-toggle {
+            display: flex; gap: 0; margin-bottom: 16px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            width: fit-content; margin-left: auto; margin-right: auto;
+        }
+        .sign-btn {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            font-weight: 600;
+            padding: 6px 20px;
+            border: none; cursor: pointer;
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+            transition: all 0.15s;
+        }
+        .sign-btn.active-plus {
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+        }
+        .sign-btn.active-minus {
+            background: hsl(var(--destructive) / 0.15);
+            color: hsl(var(--destructive));
+        }
+
+        /* Dial */
+        .dial-container {
+            display: flex; justify-content: center;
+            margin-bottom: 16px;
+            position: relative;
+            height: 240px;
+            user-select: none;
+        }
+        .dial-svg {
+            width: 240px; height: 240px;
+            cursor: pointer;
+        }
+        .dial-ring {
+            fill: none;
+            stroke: hsl(var(--border));
+            stroke-width: 2;
+        }
+        .dial-track {
+            fill: none;
+            stroke: hsl(var(--muted));
+            stroke-width: 24;
+        }
+        .dial-fill-pos {
+            fill: none;
+            stroke: hsl(var(--primary) / 0.3);
+            stroke-width: 24;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s ease-out;
+        }
+        .dial-fill-neg {
+            fill: none;
+            stroke: hsl(var(--destructive) / 0.3);
+            stroke-width: 24;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s ease-out;
+        }
+        .dial-tick {
+            stroke: hsl(var(--muted-foreground) / 0.15);
+            stroke-width: 1;
+        }
+        .dial-tick-major {
+            stroke: hsl(var(--muted-foreground) / 0.35);
+            stroke-width: 1.5;
+        }
+        .dial-number {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px;
+            fill: hsl(var(--muted-foreground) / 0.5);
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        .dial-handle {
+            fill: hsl(var(--primary));
+            stroke: hsl(var(--card));
+            stroke-width: 3;
+            cursor: grab;
+            filter: drop-shadow(0 2px 4px hsl(0 0% 0% / 0.3));
+            transition: r 0.1s;
+        }
+        .dial-handle:hover { r: 12; }
+        .dial-handle.dragging {
+            cursor: grabbing;
+            r: 12;
+        }
+        .dial-handle-neg {
+            fill: hsl(var(--destructive));
+        }
+        .dial-center-bg {
+            fill: hsl(var(--card));
+        }
+        .dial-center-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-variant-numeric: tabular-nums;
+        }
+        .dial-center-value.positive { fill: hsl(var(--primary)); }
+        .dial-center-value.negative { fill: hsl(var(--destructive)); }
+        .dial-center-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px;
+            fill: hsl(var(--muted-foreground) / 0.5);
+            text-anchor: middle;
+            dominant-baseline: middle;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* Hours ring */
+        .hours-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; margin-bottom: 16px;
+        }
+        .hours-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .hours-btn {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: 6px;
+            cursor: pointer;
+            color: hsl(var(--muted-foreground));
+            transition: all 0.15s;
+            font-size: 14px;
+        }
+        .hours-btn:hover {
+            background: hsl(var(--accent));
+            border-color: hsl(var(--primary) / 0.3);
+            color: hsl(var(--foreground));
+        }
+        .hours-btn:active { transform: scale(0.95); }
+        .hours-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(18px * var(--t-scale, 1.1));
+            font-weight: 700;
+            min-width: 24px; text-align: center;
+            font-variant-numeric: tabular-nums;
+            color: hsl(var(--foreground));
+        }
+
+        /* Summary */
+        .summary-row {
+            display: flex; justify-content: space-between;
+            padding: 12px 16px;
+            background: hsl(var(--muted) / 0.5);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .summary-item {
+            display: flex; flex-direction: column; gap: 2px;
+            min-width: 110px;
+        }
+        .summary-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .summary-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(15px * var(--t-scale, 1.1));
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 100px;
+        }
+        .summary-value.current { color: hsl(var(--muted-foreground)); }
+        .summary-value.total { color: hsl(var(--foreground)); }
+
+        /* Reason */
+        .reason-group { margin-bottom: 16px; }
+        .reason-label {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 6px; display: block;
+        }
+        .reason-input {
+            width: 100%; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            outline: none; transition: border-color 0.15s;
+        }
+        .reason-input::placeholder { color: hsl(var(--muted-foreground) / 0.35); }
+        .reason-input:focus { border-color: hsl(var(--ring)); }
+
+        .dialog-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 16px 24px;
+            border-top: 1px solid hsl(var(--border) / 0.5);
+        }
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 8px 16px; border-radius: 6px;
+            border: 1px solid transparent;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            border-color: hsl(var(--border));
+        }
+        .btn-ghost:hover { background: hsl(var(--muted)); }
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Adjust Time — V5: Radial Dial</h1>
+        <p>Circular clock-face dial for minutes with draggable handle, plus hour stepper buttons</p>
+    </div>
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ternity-dark">Dark</button>
+                <button data-theme="midnight">Midnight</button>
+                <button data-theme="ternity-light">Light</button>
+                <button data-theme="warm-sand">Sand</button>
+                <button data-theme="high-contrast">Hi-Con</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialogs-row">
+        <!-- Positive -->
+        <div>
+            <div class="state-label">Positive Adjustment (+30m)</div>
+            <div class="dialog" data-id="pos" data-minutes="30" data-hours="0" data-positive="true">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme &middot; Website Redesign</div>
+                        <div class="entry-duration">Current: <span>02:15:00</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="sign-toggle">
+                        <button class="sign-btn active-plus" onclick="setDialSign(this, true)">+ Add</button>
+                        <button class="sign-btn" onclick="setDialSign(this, false)">&minus; Remove</button>
+                    </div>
+                    <div class="dial-container">
+                        <svg class="dial-svg" viewBox="0 0 240 240">
+                            <!-- Background circle -->
+                            <circle cx="120" cy="120" r="96" class="dial-track" />
+                            <!-- Fill arc -->
+                            <circle cx="120" cy="120" r="96" class="dial-fill dial-fill-pos"
+                                stroke-dasharray="603.19" stroke-dashoffset="603.19"
+                                transform="rotate(-90 120 120)" />
+                            <!-- Tick marks -->
+                            <g class="ticks"></g>
+                            <!-- Numbers at 0, 15, 30, 45 -->
+                            <text x="120" y="38" class="dial-number">0</text>
+                            <text x="202" y="124" class="dial-number">15</text>
+                            <text x="120" y="210" class="dial-number">30</text>
+                            <text x="38" y="124" class="dial-number">45</text>
+                            <!-- Center display -->
+                            <circle cx="120" cy="120" r="52" class="dial-center-bg" />
+                            <text x="120" y="114" class="dial-center-value positive center-val">+30m</text>
+                            <text x="120" y="134" class="dial-center-label">MINUTES</text>
+                            <!-- Handle -->
+                            <circle cx="120" cy="216" r="10" class="dial-handle handle" />
+                        </svg>
+                    </div>
+                    <div class="hours-row">
+                        <button class="hours-btn" onclick="adjustHours(this, -1)">&#9660;</button>
+                        <span class="hours-label">Hours:</span>
+                        <span class="hours-value h-val">0</span>
+                        <button class="hours-btn" onclick="adjustHours(this, 1)">&#9650;</button>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-label">Current</div>
+                            <div class="summary-value current">02:15:00</div>
+                        </div>
+                        <div class="summary-item" style="text-align: right;">
+                            <div class="summary-label">New Total</div>
+                            <div class="summary-value total total-val">02:45:00</div>
+                        </div>
+                    </div>
+                    <div class="reason-group">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g., Forgot to start timer">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary submit-btn">Add 30m</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Negative -->
+        <div>
+            <div class="state-label">Negative Adjustment (&minus;15m)</div>
+            <div class="dialog" data-id="neg" data-minutes="15" data-hours="0" data-positive="false">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme &middot; Website Redesign</div>
+                        <div class="entry-duration">Current: <span>02:15:00</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="sign-toggle">
+                        <button class="sign-btn" onclick="setDialSign(this, true)">+ Add</button>
+                        <button class="sign-btn active-minus" onclick="setDialSign(this, false)">&minus; Remove</button>
+                    </div>
+                    <div class="dial-container">
+                        <svg class="dial-svg" viewBox="0 0 240 240">
+                            <circle cx="120" cy="120" r="96" class="dial-track" />
+                            <circle cx="120" cy="120" r="96" class="dial-fill dial-fill-neg"
+                                stroke-dasharray="603.19" stroke-dashoffset="603.19"
+                                transform="rotate(-90 120 120)" />
+                            <g class="ticks"></g>
+                            <text x="120" y="38" class="dial-number">0</text>
+                            <text x="202" y="124" class="dial-number">15</text>
+                            <text x="120" y="210" class="dial-number">30</text>
+                            <text x="38" y="124" class="dial-number">45</text>
+                            <circle cx="120" cy="120" r="52" class="dial-center-bg" />
+                            <text x="120" y="114" class="dial-center-value negative center-val">&minus;15m</text>
+                            <text x="120" y="134" class="dial-center-label">MINUTES</text>
+                            <circle cx="120" cy="216" r="10" class="dial-handle dial-handle-neg handle" />
+                        </svg>
+                    </div>
+                    <div class="hours-row">
+                        <button class="hours-btn" onclick="adjustHours(this, -1)">&#9660;</button>
+                        <span class="hours-label">Hours:</span>
+                        <span class="hours-value h-val">0</span>
+                        <button class="hours-btn" onclick="adjustHours(this, 1)">&#9650;</button>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-label">Current</div>
+                            <div class="summary-value current">02:15:00</div>
+                        </div>
+                        <div class="summary-item" style="text-align: right;">
+                            <div class="summary-label">New Total</div>
+                            <div class="summary-value total total-val">02:00:00</div>
+                        </div>
+                    </div>
+                    <div class="reason-group">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g., Took a break, forgot to pause">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary submit-btn">Remove 15m</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme/scale switching
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector('#theme-switcher [data-theme="carbon"]')?.classList.add('active');
+        document.querySelector('#scale-switcher [data-scale="default"]')?.classList.add('active');
+
+        function fmt(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            let result = '';
+            if (h > 0) result += h + 'h ';
+            if (m > 0 || h > 0) result += (h > 0 ? String(m).padStart(2, '0') : m) + 'm';
+            if (s > 0 && h === 0) result += ' ' + (m > 0 ? String(s).padStart(2, '0') : s) + 's';
+            return result || '0s';
+        }
+        function fmtFixed(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        const BASE = 8100;
+        const CX = 120, CY = 120, R = 96;
+        const CIRCUMFERENCE = 2 * Math.PI * R; // ~603.19
+
+        // Generate tick marks for each SVG
+        document.querySelectorAll('.dial-svg').forEach(svg => {
+            const ticksG = svg.querySelector('.ticks');
+            for (let i = 0; i < 60; i++) {
+                const angle = (i / 60) * 2 * Math.PI - Math.PI / 2;
+                const isMajor = i % 5 === 0;
+                const r1 = isMajor ? 68 : 72;
+                const r2 = 80;
+                const x1 = CX + r1 * Math.cos(angle);
+                const y1 = CY + r1 * Math.sin(angle);
+                const x2 = CX + r2 * Math.cos(angle);
+                const y2 = CY + r2 * Math.sin(angle);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('class', isMajor ? 'dial-tick-major' : 'dial-tick');
+                ticksG.appendChild(line);
+            }
+        });
+
+        function minuteToAngle(m) {
+            // 0 min = top (12 o'clock), clockwise
+            return (m / 60) * 2 * Math.PI - Math.PI / 2;
+        }
+
+        function angleToMinute(angle) {
+            // angle from atan2, convert to 0-60 minutes clockwise from top
+            let deg = ((angle + Math.PI / 2) / (2 * Math.PI)) * 60;
+            if (deg < 0) deg += 60;
+            return Math.round(deg) % 60;
+        }
+
+        function updateDial(dialog) {
+            const minutes = parseInt(dialog.dataset.minutes) || 0;
+            const hours = parseInt(dialog.dataset.hours) || 0;
+            const isPos = dialog.dataset.positive === 'true';
+            const totalAdj = (hours * 60 + minutes) * 60; // in seconds
+            const signedAdj = isPos ? totalAdj : -totalAdj;
+            const newTotal = Math.max(0, BASE + signedAdj);
+
+            const svg = dialog.querySelector('.dial-svg');
+            const fill = svg.querySelector('.dial-fill');
+            const handle = svg.querySelector('.handle');
+            const centerVal = svg.querySelector('.center-val');
+
+            // Arc fill
+            const fraction = minutes / 60;
+            const offset = CIRCUMFERENCE * (1 - fraction);
+            fill.style.strokeDashoffset = offset;
+
+            // Handle position
+            const angle = minuteToAngle(minutes);
+            const hx = CX + R * Math.cos(angle);
+            const hy = CY + R * Math.sin(angle);
+            handle.setAttribute('cx', hx);
+            handle.setAttribute('cy', hy);
+
+            // Fill class
+            fill.setAttribute('class', 'dial-fill ' + (isPos ? 'dial-fill-pos' : 'dial-fill-neg'));
+            handle.setAttribute('class', 'dial-handle handle' + (isPos ? '' : ' dial-handle-neg'));
+
+            // Center text
+            const sign = isPos ? '+' : '\u2212';
+            let adjText = sign;
+            if (hours > 0) adjText += hours + 'h ';
+            adjText += minutes + 'm';
+            centerVal.textContent = adjText;
+            centerVal.setAttribute('class', 'dial-center-value center-val ' + (isPos ? 'positive' : 'negative'));
+
+            // Hours
+            dialog.querySelector('.h-val').textContent = hours;
+
+            // Total
+            dialog.querySelector('.total-val').textContent = fmtFixed(newTotal);
+
+            // Submit
+            const submitBtn = dialog.querySelector('.submit-btn');
+            submitBtn.textContent = (isPos ? 'Add ' : 'Remove ') + fmt(totalAdj);
+        }
+
+        function setDialSign(btn, isPos) {
+            const dialog = btn.closest('.dialog');
+            dialog.dataset.positive = isPos ? 'true' : 'false';
+            const toggle = btn.closest('.sign-toggle');
+            toggle.querySelectorAll('.sign-btn').forEach(b => {
+                b.classList.remove('active-plus', 'active-minus');
+            });
+            btn.classList.add(isPos ? 'active-plus' : 'active-minus');
+            updateDial(dialog);
+        }
+
+        function adjustHours(btn, delta) {
+            const dialog = btn.closest('.dialog');
+            let h = parseInt(dialog.dataset.hours) || 0;
+            h = Math.max(0, Math.min(12, h + delta));
+            dialog.dataset.hours = h;
+            updateDial(dialog);
+        }
+
+        // Drag interaction
+        document.querySelectorAll('.dialog').forEach(dialog => {
+            const svg = dialog.querySelector('.dial-svg');
+            const handle = svg.querySelector('.handle');
+            let dragging = false;
+
+            function getMinutesFromEvent(e) {
+                const rect = svg.getBoundingClientRect();
+                const scaleX = 240 / rect.width;
+                const scaleY = 240 / rect.height;
+                const mx = (e.clientX - rect.left) * scaleX;
+                const my = (e.clientY - rect.top) * scaleY;
+                const angle = Math.atan2(my - CY, mx - CX);
+                return angleToMinute(angle);
+            }
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                dragging = true;
+                handle.classList.add('dragging');
+            });
+
+            // Also allow clicking anywhere on the dial to set minutes
+            svg.addEventListener('mousedown', (e) => {
+                if (e.target === handle) return;
+                const rect = svg.getBoundingClientRect();
+                const scaleX = 240 / rect.width;
+                const scaleY = 240 / rect.height;
+                const mx = (e.clientX - rect.left) * scaleX;
+                const my = (e.clientY - rect.top) * scaleY;
+                const dist = Math.sqrt((mx - CX) ** 2 + (my - CY) ** 2);
+                if (dist > 55 && dist < 130) { // within the track area
+                    dialog.dataset.minutes = getMinutesFromEvent(e);
+                    updateDial(dialog);
+                    dragging = true;
+                    handle.classList.add('dragging');
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const m = getMinutesFromEvent(e);
+                dialog.dataset.minutes = m;
+                updateDial(dialog);
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (dragging) {
+                    dragging = false;
+                    handle.classList.remove('dragging');
+                }
+            });
+
+            // Touch support
+            handle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                dragging = true;
+                handle.classList.add('dragging');
+            }, { passive: false });
+
+            svg.addEventListener('touchstart', (e) => {
+                if (e.target === handle) return;
+                const touch = e.touches[0];
+                const rect = svg.getBoundingClientRect();
+                const scaleX = 240 / rect.width;
+                const scaleY = 240 / rect.height;
+                const mx = (touch.clientX - rect.left) * scaleX;
+                const my = (touch.clientY - rect.top) * scaleY;
+                const dist = Math.sqrt((mx - CX) ** 2 + (my - CY) ** 2);
+                if (dist > 55 && dist < 130) {
+                    const angle = Math.atan2(my - CY, mx - CX);
+                    dialog.dataset.minutes = angleToMinute(angle);
+                    updateDial(dialog);
+                    dragging = true;
+                    handle.classList.add('dragging');
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!dragging) return;
+                const touch = e.touches[0];
+                const rect = svg.getBoundingClientRect();
+                const scaleX = 240 / rect.width;
+                const scaleY = 240 / rect.height;
+                const mx = (touch.clientX - rect.left) * scaleX;
+                const my = (touch.clientY - rect.top) * scaleY;
+                const angle = Math.atan2(my - CY, mx - CX);
+                dialog.dataset.minutes = angleToMinute(angle);
+                updateDial(dialog);
+            }, { passive: false });
+
+            document.addEventListener('touchend', () => {
+                if (dragging) {
+                    dragging = false;
+                    handle.classList.remove('dragging');
+                }
+            });
+
+            updateDial(dialog);
+        });
+    </script>
+</body>
+</html>

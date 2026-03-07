@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Downloads v10 (Back to Basics)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #111; color: #ccc; font-family: 'Inter', system-ui, sans-serif; padding: 20px; font-size: 14px; }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 { font-family: 'Oxanium', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .switcher-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button { font-family: 'Inter', sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 4px; border: 1px solid #222; background: #161616; color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s; }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active { background: #333; border-color: #555; color: rgba(255,255,255,0.8); }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .vlabel { text-align: center; margin: 40px 0 4px; font-family: 'Oxanium', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+        .vlabel:first-of-type { margin-top: 20px; }
+        .vdesc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.12); margin-bottom: 12px; }
+
+        .tc { max-width: 1200px; margin: 0 auto; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+        .app { display: grid; grid-template-columns: 220px 1fr; min-height: 700px; }
+        .sb { display: flex; flex-direction: column; gap: 2px; border-right: 1px solid hsl(var(--sidebar-border)); background: hsl(var(--sidebar-background)); padding: 20px 12px; }
+        .sb-brand { display: flex; align-items: center; gap: 8px; padding: 0 10px; margin-bottom: 20px; }
+        .sb-brand span { font-family: 'Oxanium', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: hsl(var(--sidebar-foreground)); }
+        .sb-sec { padding: 12px 10px 4px; font-family: 'Oxanium', sans-serif; font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: hsl(var(--muted-foreground)); opacity: 0.5; }
+        .sb-item { padding: 8px 10px; border-radius: 6px; font-size: 13px; color: hsl(var(--muted-foreground)); }
+        .sb-item.act { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 600; }
+        .sb-sp { flex: 1; }
+        .mn { background: hsl(var(--background)); color: hsl(var(--foreground)); padding: 24px 32px; overflow: auto; }
+
+        /* Page title */
+        .pg-title { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(18px * var(--t-scale, 1.1)); letter-spacing: 1px; color: hsl(var(--foreground)); }
+        .pg-sub { font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 2px; }
+
+        /* Detection bar */
+        .detect-bar { display: flex; align-items: center; gap: 8px; border-radius: 6px; border: 1px solid hsl(var(--primary) / 0.12); background: hsl(var(--primary) / 0.04); padding: 8px 14px; margin: 12px 0 16px; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); }
+        .detect-bar i { width: 14px; height: 14px; color: hsl(var(--primary)); flex-shrink: 0; }
+        .detect-bar strong { color: hsl(var(--foreground)); font-weight: 500; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 600; cursor: default; transition: all 0.15s; white-space: nowrap; }
+        .badge i { width: 12px; height: 12px; }
+        .b-rel { border: 1px solid hsl(142 71% 45% / 0.2); background: hsl(142 71% 45% / 0.1); color: hsl(142 71% 45%); }
+        .b-snap { border: 1px solid hsl(38 92% 50% / 0.2); background: hsl(38 92% 50% / 0.1); color: hsl(38 92% 50%); }
+        .b-rel.muted, .b-snap.muted { border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; opacity: 0.5; }
+        .b-rel.muted:hover { opacity: 0.8; border-color: hsl(142 71% 45% / 0.3); }
+        .b-snap.muted:hover { opacity: 0.8; border-color: hsl(38 92% 50% / 0.3); }
+
+        /* Shared card shell */
+        .card { border-radius: 10px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); overflow: hidden; }
+        .card-hdr { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid hsl(var(--border)); }
+        .card-icon { width: 40px; height: 40px; border-radius: 10px; background: hsl(var(--primary) / 0.08); border: 1px solid hsl(var(--primary) / 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .card-icon i { color: hsl(var(--primary)); width: 20px; height: 20px; }
+        .card-title { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(15px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .card-desc { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 1px; }
+        .card-meta { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .card-ver { font-family: 'Oxanium', sans-serif; font-weight: 500; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); background: hsl(var(--muted) / 0.5); padding: 4px 10px; border-radius: 6px; }
+
+        /* Platform tabs */
+        .ptabs { display: flex; gap: 0; border-bottom: 1px solid hsl(var(--border)); padding: 0 20px; }
+        .ptab { display: flex; align-items: center; gap: 6px; padding: 10px 14px; font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1.1)); letter-spacing: 0.5px; border-bottom: 2px solid transparent; color: hsl(var(--muted-foreground)); cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; transition: all 0.15s; }
+        .ptab:hover { color: hsl(var(--foreground)); }
+        .ptab.act { border-bottom-color: hsl(var(--primary)); color: hsl(var(--primary)); font-weight: 600; }
+        .ptab svg { width: 14px; height: 14px; fill: currentColor; }
+        .ptab .det { font-size: calc(8px * var(--t-scale, 1.1)); background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Download rows */
+        .dl-rows { padding: 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+        .dl-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid hsl(var(--border)); transition: all 0.15s; cursor: pointer; }
+        .dl-row:hover { border-color: hsl(var(--primary) / 0.3); }
+        .dl-row .dl-icon { width: 32px; height: 32px; border-radius: 8px; background: hsl(var(--muted) / 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dl-row .dl-icon i { width: 16px; height: 16px; color: hsl(var(--muted-foreground)); }
+        .dl-row .dl-info { flex: 1; }
+        .dl-row .dl-label { font-size: calc(13px * var(--t-scale, 1.1)); font-weight: 500; color: hsl(var(--foreground)); }
+        .dl-row .dl-detail { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 1px; }
+        .dl-row .rec-badge { font-size: calc(9px * var(--t-scale, 1.1)); background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Oxanium', sans-serif; }
+        .dl-row .dl-size { font-family: 'Oxanium', sans-serif; font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+        .dl-row .dl-btn { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); font-size: calc(12px * var(--t-scale, 1.1)); font-weight: 500; transition: all 0.15s; flex-shrink: 0; }
+        .dl-row .dl-btn:hover { background: hsl(var(--primary) / 0.18); }
+        .dl-row .dl-btn i { width: 14px; height: 14px; }
+
+        /* Footer links (checksums, release date) */
+        .card-foot { padding: 0 20px; border-top: 1px solid hsl(var(--border) / 0.3); }
+        .card-foot-row { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.6; cursor: pointer; transition: opacity 0.15s; }
+        .card-foot-row:hover { opacity: 0.9; }
+        .card-foot-row i { width: 14px; height: 14px; }
+
+        /* Expandable notes */
+        .notes-toggle { display: flex; align-items: center; gap: 4px; padding: 8px 20px; font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.5; cursor: pointer; transition: all 0.15s; user-select: none; border-top: 1px solid hsl(var(--border) / 0.3); }
+        .notes-toggle:hover { opacity: 0.8; }
+        .notes-toggle i { width: 12px; height: 12px; transition: transform 0.2s; }
+        .notes-toggle.open i { transform: rotate(90deg); }
+        .notes-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease-out; padding: 0 20px; }
+        .notes-body.open { max-height: 300px; padding: 0 20px 14px; }
+        .n-cat { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: hsl(var(--foreground)); opacity: 0.6; margin-bottom: 4px; }
+        .n-cat:not(:first-child) { margin-top: 8px; }
+        .n-entry { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); line-height: 1.5; padding-left: 10px; position: relative; }
+        .n-entry::before { content: ''; position: absolute; left: 0; top: 8px; width: 3px; height: 3px; border-radius: 50%; background: hsl(var(--muted-foreground)); opacity: 0.4; }
+
+        /* Framework tabs (for L1) */
+        .fw-tabs { display: flex; overflow: hidden; border-radius: 6px; border: 1px solid hsl(var(--border)); margin-left: auto; }
+        .fw-tab { font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1.1)); font-weight: 500; letter-spacing: 0.5px; padding: 5px 12px; border: none; border-right: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; transition: all 0.15s; }
+        .fw-tab:last-child { border-right: none; }
+        .fw-tab:hover { background: hsl(var(--muted) / 0.3); }
+        .fw-tab.act { background: hsl(var(--primary) / 0.08); color: hsl(var(--foreground)); font-weight: 600; }
+
+        /* Framework select (for L2) */
+        .fw-select { font-family: 'Oxanium', sans-serif; font-size: calc(14px * var(--t-scale, 1.1)); font-weight: 600; color: hsl(var(--foreground)); background: transparent; border: none; cursor: pointer; appearance: none; padding-right: 20px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0 center; }
+        .fw-select option { background: hsl(var(--card)); color: hsl(var(--foreground)); }
+
+        /* Framework pills (for L3) */
+        .fw-pills { display: flex; gap: 8px; margin: 16px 0; }
+        .fw-pill { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: all 0.15s; }
+        .fw-pill:hover { border-color: hsl(var(--primary) / 0.3); }
+        .fw-pill.act { border-color: hsl(var(--primary) / 0.4); background: hsl(var(--primary) / 0.04); }
+        .fw-pill .fp-name { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(13px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .fw-pill .fp-ver { font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); }
+
+        /* Hero section (for L4) */
+        .hero { text-align: center; padding: 32px 20px 24px; }
+        .hero-icon { width: 56px; height: 56px; border-radius: 14px; background: hsl(var(--primary) / 0.08); border: 1px solid hsl(var(--primary) / 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+        .hero-icon i { color: hsl(var(--primary)); width: 28px; height: 28px; }
+        .hero-title { font-family: 'Oxanium', sans-serif; font-weight: 700; font-size: calc(20px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .hero-sub { font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 4px; }
+        .hero-dl { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 12px 28px; border-radius: 8px; border: none; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: calc(14px * var(--t-scale, 1.1)); font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .hero-dl:hover { opacity: 0.9; }
+        .hero-dl i { width: 18px; height: 18px; }
+        .hero-meta { font-size: calc(10px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-top: 8px; opacity: 0.6; }
+
+        /* Comparison table (for L4) */
+        .cmp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .cmp-table th { font-family: 'Oxanium', sans-serif; font-size: calc(10px * var(--t-scale, 1.1)); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: hsl(var(--muted-foreground)); opacity: 0.6; text-align: left; padding: 8px 12px; border-bottom: 1px solid hsl(var(--border)); }
+        .cmp-table td { padding: 10px 12px; border-bottom: 1px solid hsl(var(--border) / 0.3); font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .cmp-table .fw-name-cell { font-family: 'Oxanium', sans-serif; font-weight: 600; }
+        .cmp-table .dl-link { color: hsl(var(--primary)); cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .cmp-table .dl-link i { width: 14px; height: 14px; }
+
+        /* Slim card (for L5) */
+        .slim-card { border-radius: 8px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); overflow: hidden; margin-bottom: 10px; }
+        .slim-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+        .slim-hdr .sl-name { font-family: 'Oxanium', sans-serif; font-weight: 600; font-size: calc(14px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .slim-hdr .sl-desc { font-size: calc(11px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); margin-left: 4px; }
+        .slim-hdr .sl-meta { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+        .slim-rows { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+        .slim-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; border: 1px solid hsl(var(--border) / 0.5); background: hsl(var(--background) / 0.5); transition: all 0.15s; }
+        .slim-row:hover { border-color: hsl(var(--primary) / 0.3); }
+        .slim-row .sr-label { flex: 1; font-size: calc(12px * var(--t-scale, 1.1)); color: hsl(var(--foreground)); }
+        .slim-row .sr-ext { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.5; }
+        .slim-row .sr-size { font-family: 'Oxanium', sans-serif; font-size: calc(9px * var(--t-scale, 1.1)); color: hsl(var(--muted-foreground)); opacity: 0.5; }
+        .slim-row .sr-dl { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); }
+        .slim-row .sr-dl:hover { background: hsl(var(--primary) / 0.2); }
+        .slim-row .sr-dl i { width: 14px; height: 14px; }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Downloads v10 — Back to Basics</h1>
+    <p>5 approaches: L1) Tabbed Product, L2) Dropdown Card, L3) Pill Accordion, L4) Hero + Table, L5) Slim Stacked</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<!-- SIDEBAR TEMPLATE (reused via JS) -->
+<template id="sidebar-tpl">
+    <div class="sb">
+        <div class="sb-brand">
+            <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg>
+            <span>Ternity</span>
+        </div>
+        <div class="sb-sec">Tracking</div>
+        <div class="sb-item">Timer & Entries</div>
+        <div class="sb-item">Dashboard</div>
+        <div class="sb-item">Reports</div>
+        <div class="sb-sec">Admin</div>
+        <div class="sb-item">Users</div>
+        <div class="sb-item">Projects</div>
+        <div class="sb-sp"></div>
+        <div class="sb-item act"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+        <div class="sb-item">Settings</div>
+    </div>
+</template>
+
+
+<!-- ============================================================ -->
+<!-- L1 — Tabbed Product Selector                                  -->
+<!-- ============================================================ -->
+
+<div class="vlabel">L1 — Tabbed Product Selector</div>
+<div class="vdesc">Current prod layout + framework tabs in the card header. One framework at a time. Conservative evolution.</div>
+
+<div class="tc"><div class="app">
+    <div class="sb-slot" data-sb></div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+        <div class="detect-bar"><i data-lucide="info"></i> Detected <strong>macOS</strong> — showing recommended downloads first.</div>
+
+        <div class="card">
+            <div class="card-hdr">
+                <div class="card-icon"><i data-lucide="monitor"></i></div>
+                <div>
+                    <div class="card-title">Ternity Desktop</div>
+                    <div class="card-desc">Lightweight native app built with Rust</div>
+                </div>
+                <div class="card-meta">
+                    <span class="badge b-rel"><i data-lucide="tag"></i> Release</span>
+                    <span class="badge b-snap muted" style="cursor:pointer"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+                    <span class="card-ver">v0.1.0</span>
+                    <div class="fw-tabs">
+                        <button class="fw-tab act">Tauri</button>
+                        <button class="fw-tab">Flutter</button>
+                        <button class="fw-tab">Electron</button>
+                    </div>
+                </div>
+            </div>
+            <div class="ptabs">
+                <button class="ptab act"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS <span class="det">detected</span></button>
+                <button class="ptab"><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg> Windows</button>
+                <button class="ptab"><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg> Linux</button>
+            </div>
+            <div class="dl-rows">
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">macOS — Apple Silicon <span class="rec-badge">recommended</span></div><div class="dl-detail">M1, M2, M3, M4 · .dmg · Ternity-Tauri-0.1.0-arm64.dmg</div></div>
+                    <div class="dl-size">4.8 MB</div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">macOS — Intel</div><div class="dl-detail">x86_64 · .dmg · Ternity-Tauri-0.1.0-x64.dmg</div></div>
+                    <div class="dl-size">5.1 MB</div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new in v0.1.0</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">System tray with idle detection</div><div class="n-entry">Auto-start on login preference</div><div class="n-cat">Fixed</div><div class="n-entry">Timer not stopping on sleep/wake cycle</div></div>
+            <div class="card-foot">
+                <div class="card-foot-row"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+                <div class="card-foot-row" style="cursor:default;opacity:0.4">Released February 18, 2026</div>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+
+<!-- ============================================================ -->
+<!-- L2 — Single Smart Card + Framework Dropdown                  -->
+<!-- ============================================================ -->
+
+<div class="vlabel">L2 — Smart Card + Dropdown</div>
+<div class="vdesc">One card, framework name is a dropdown. All complexity behind selects. Minimal surface area.</div>
+
+<div class="tc"><div class="app">
+    <div class="sb-slot" data-sb></div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+        <div class="detect-bar"><i data-lucide="info"></i> Detected <strong>macOS</strong> — showing recommended downloads first.</div>
+
+        <div class="card">
+            <div class="card-hdr">
+                <div class="card-icon"><i data-lucide="monitor"></i></div>
+                <div>
+                    <select class="fw-select">
+                        <option>Ternity Desktop (Tauri)</option>
+                        <option>Ternity Desktop (Flutter)</option>
+                        <option>Ternity Desktop (Electron)</option>
+                    </select>
+                    <div class="card-desc">Lightweight native app built with Rust</div>
+                </div>
+                <div class="card-meta">
+                    <span class="badge b-rel"><i data-lucide="tag"></i> Release</span>
+                    <span class="badge b-snap muted" style="cursor:pointer"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+                    <span class="card-ver">v0.1.0</span>
+                </div>
+            </div>
+            <div class="ptabs">
+                <button class="ptab act"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS <span class="det">detected</span></button>
+                <button class="ptab"><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg> Windows</button>
+                <button class="ptab"><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg> Linux</button>
+            </div>
+            <div class="dl-rows">
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">macOS — Apple Silicon <span class="rec-badge">recommended</span></div><div class="dl-detail">M1, M2, M3, M4 · .dmg · 4.8 MB</div></div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">macOS — Intel</div><div class="dl-detail">x86_64 · .dmg · 5.1 MB</div></div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">System tray with idle detection</div><div class="n-entry">Auto-start on login preference</div><div class="n-cat">Fixed</div><div class="n-entry">Timer not stopping on sleep/wake cycle</div></div>
+            <div class="card-foot"><div class="card-foot-row"><i data-lucide="shield-check"></i> SHA-256 checksums</div></div>
+        </div>
+    </div>
+</div></div>
+
+
+<!-- ============================================================ -->
+<!-- L3 — Compact Framework Pill + Accordion                      -->
+<!-- ============================================================ -->
+
+<div class="vlabel">L3 — Pill Accordion</div>
+<div class="vdesc">Framework pills at top with channel badge. Click to expand detail. Only one open at a time.</div>
+
+<div class="tc"><div class="app">
+    <div class="sb-slot" data-sb></div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+        <div class="detect-bar"><i data-lucide="info"></i> Detected <strong>macOS</strong> — showing recommended downloads first.</div>
+
+        <div class="fw-pills">
+            <div class="fw-pill act">
+                <div><div class="fp-name">Tauri</div><div class="fp-ver">v0.1.0</div></div>
+                <span class="badge b-rel" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="tag"></i> Release</span>
+            </div>
+            <div class="fw-pill">
+                <div><div class="fp-name">Flutter</div><div class="fp-ver">v0.1.0-3-g8f2d4a1</div></div>
+                <span class="badge b-snap" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+            </div>
+            <div class="fw-pill">
+                <div><div class="fp-name">Electron</div><div class="fp-ver">v0.2.1</div></div>
+                <span class="badge b-rel" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="tag"></i> Release</span>
+            </div>
+        </div>
+
+        <!-- Expanded: Tauri -->
+        <div class="card">
+            <div class="card-hdr" style="padding:12px 20px">
+                <div>
+                    <div class="card-title" style="font-size:calc(14px * var(--t-scale,1.1))">Tauri — Lightweight native app built with Rust</div>
+                </div>
+                <div class="card-meta">
+                    <span class="badge b-rel"><i data-lucide="tag"></i> Release</span>
+                    <span class="badge b-snap muted" style="cursor:pointer"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+                    <span class="card-ver">v0.1.0</span>
+                </div>
+            </div>
+            <div class="dl-rows">
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">Apple Silicon <span class="rec-badge">recommended</span></div><div class="dl-detail">.dmg · 4.8 MB</div></div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+                <div class="dl-row">
+                    <div class="dl-icon"><i data-lucide="cpu"></i></div>
+                    <div class="dl-info"><div class="dl-label">Intel</div><div class="dl-detail">.dmg · 5.1 MB</div></div>
+                    <button class="dl-btn"><i data-lucide="download"></i> Download</button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">System tray with idle detection</div><div class="n-entry">Auto-start on login preference</div><div class="n-cat">Fixed</div><div class="n-entry">Timer not stopping on sleep/wake cycle</div></div>
+        </div>
+    </div>
+</div></div>
+
+
+<!-- ============================================================ -->
+<!-- L4 — Hero Download + Comparison Table                        -->
+<!-- ============================================================ -->
+
+<div class="vlabel">L4 — Hero + Table</div>
+<div class="vdesc">Big CTA for the recommended framework. All frameworks in a comparison table below.</div>
+
+<div class="tc"><div class="app">
+    <div class="sb-slot" data-sb></div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+
+        <div class="card" style="margin-top:16px">
+            <div class="hero">
+                <div class="hero-icon"><i data-lucide="monitor"></i></div>
+                <div class="hero-title">Ternity Desktop (Tauri)</div>
+                <div class="hero-sub">Lightweight native app built with Rust</div>
+                <button class="hero-dl"><i data-lucide="download"></i> Download for macOS (Apple Silicon)</button>
+                <div class="hero-meta">v0.1.0 · Release · .dmg · 4.8 MB · <span style="text-decoration:underline;cursor:pointer">Other architectures</span></div>
+            </div>
+
+            <div style="padding:0 20px 20px">
+                <div style="font-family:'Oxanium',sans-serif;font-size:calc(11px * var(--t-scale,1.1));font-weight:600;letter-spacing:1px;text-transform:uppercase;color:hsl(var(--muted-foreground));opacity:0.5;margin-bottom:8px">All frameworks</div>
+                <table class="cmp-table">
+                    <thead><tr><th>Framework</th><th>Channel</th><th>Version</th><th>Size (macOS)</th><th></th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-name-cell">Tauri</td>
+                            <td><span class="badge b-rel" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="tag"></i> Release</span></td>
+                            <td style="font-family:'Oxanium',sans-serif">v0.1.0</td>
+                            <td style="font-family:'Oxanium',sans-serif">4.8 MB</td>
+                            <td><span class="dl-link"><i data-lucide="download"></i> Download</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-name-cell">Flutter</td>
+                            <td><span class="badge b-snap" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="git-commit-horizontal"></i> Snapshot</span></td>
+                            <td style="font-family:'Oxanium',sans-serif">v0.1.0-3-g8f2d4a1</td>
+                            <td style="font-family:'Oxanium',sans-serif">43 MB</td>
+                            <td><span class="dl-link"><i data-lucide="download"></i> Download</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-name-cell">Electron</td>
+                            <td><span class="badge b-rel" style="font-size:calc(9px * var(--t-scale,1.1));padding:1px 7px"><i data-lucide="tag"></i> Release</span></td>
+                            <td style="font-family:'Oxanium',sans-serif">v0.2.1</td>
+                            <td style="font-family:'Oxanium',sans-serif">92 MB</td>
+                            <td><span class="dl-link"><i data-lucide="download"></i> Download</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">System tray with idle detection</div><div class="n-entry">Auto-start on login preference</div><div class="n-cat">Fixed</div><div class="n-entry">Timer not stopping on sleep/wake cycle</div></div>
+        </div>
+    </div>
+</div></div>
+
+
+<!-- ============================================================ -->
+<!-- L5 — Slim Stacked Cards                                      -->
+<!-- ============================================================ -->
+
+<div class="vlabel">L5 — Slim Stacked Cards</div>
+<div class="vdesc">Like current prod but much slimmer. No icon box, no platform tabs (just detected OS). Channel + version inline.</div>
+
+<div class="tc"><div class="app">
+    <div class="sb-slot" data-sb></div>
+    <div class="mn">
+        <div class="pg-title">Downloads</div>
+        <div class="pg-sub">Desktop apps and tools</div>
+        <div class="detect-bar"><i data-lucide="info"></i> Detected <strong>macOS</strong> — showing recommended downloads first.</div>
+
+        <div class="slim-card">
+            <div class="slim-hdr">
+                <span class="sl-name">Tauri</span>
+                <span class="sl-desc">— Lightweight native app built with Rust</span>
+                <div class="sl-meta">
+                    <span class="badge b-rel"><i data-lucide="tag"></i> Release</span>
+                    <span class="badge b-snap muted" style="cursor:pointer"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+                    <span class="card-ver">v0.1.0</span>
+                </div>
+            </div>
+            <div class="slim-rows">
+                <div class="slim-row">
+                    <span class="sr-label">Apple Silicon <span class="rec-badge">recommended</span></span>
+                    <span class="sr-ext">.dmg</span>
+                    <span class="sr-size">4.8 MB</span>
+                    <button class="sr-dl"><i data-lucide="download"></i></button>
+                </div>
+                <div class="slim-row">
+                    <span class="sr-label">Intel</span>
+                    <span class="sr-ext">.dmg</span>
+                    <span class="sr-size">5.1 MB</span>
+                    <button class="sr-dl"><i data-lucide="download"></i></button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">System tray with idle detection</div><div class="n-entry">Auto-start on login preference</div><div class="n-cat">Fixed</div><div class="n-entry">Timer not stopping on sleep/wake cycle</div></div>
+        </div>
+
+        <div class="slim-card">
+            <div class="slim-hdr">
+                <span class="sl-name">Flutter</span>
+                <span class="sl-desc">— Cross-platform native app</span>
+                <div class="sl-meta">
+                    <span class="badge b-snap"><i data-lucide="git-commit-horizontal"></i> Snapshot</span>
+                    <span class="card-ver">v0.1.0-3-g8f2d4a1</span>
+                </div>
+            </div>
+            <div class="slim-rows">
+                <div class="slim-row">
+                    <span class="sr-label">Universal</span>
+                    <span class="sr-ext">.dmg</span>
+                    <span class="sr-size">43 MB</span>
+                    <button class="sr-dl"><i data-lucide="download"></i></button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Added</div><div class="n-entry">Initial build with timer and entries</div><div class="n-entry">Project and label selectors</div></div>
+        </div>
+
+        <div class="slim-card">
+            <div class="slim-hdr">
+                <span class="sl-name">Electron</span>
+                <span class="sl-desc">— Full-featured app with system tray and offline support</span>
+                <div class="sl-meta">
+                    <span class="badge b-rel"><i data-lucide="tag"></i> Release</span>
+                    <span class="card-ver">v0.2.1</span>
+                </div>
+            </div>
+            <div class="slim-rows">
+                <div class="slim-row">
+                    <span class="sr-label">Apple Silicon <span class="rec-badge">recommended</span></span>
+                    <span class="sr-ext">.dmg</span>
+                    <span class="sr-size">92 MB</span>
+                    <button class="sr-dl"><i data-lucide="download"></i></button>
+                </div>
+                <div class="slim-row">
+                    <span class="sr-label">Intel</span>
+                    <span class="sr-ext">.dmg</span>
+                    <span class="sr-size">98 MB</span>
+                    <button class="sr-dl"><i data-lucide="download"></i></button>
+                </div>
+            </div>
+            <div class="notes-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><i data-lucide="chevron-right"></i> What's new</div>
+            <div class="notes-body"><div class="n-cat">Fixed</div><div class="n-entry">Window position not restored on secondary display</div><div class="n-cat">Changed</div><div class="n-entry">Reduce idle detection threshold from 10 to 5 minutes</div></div>
+        </div>
+    </div>
+</div></div>
+
+
+<script>
+    // Clone sidebars from template
+    document.querySelectorAll('[data-sb]').forEach(slot => {
+        const tpl = document.getElementById('sidebar-tpl');
+        slot.replaceWith(tpl.content.cloneNode(true));
+    });
+
+    // Theme/scale switchers
+    document.getElementById('theme-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-theme', e.target.dataset.theme);
+    });
+    document.getElementById('scale-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-scale', e.target.dataset.scale);
+    });
+
+    lucide.createIcons();
+</script>
+</body>
+</html>

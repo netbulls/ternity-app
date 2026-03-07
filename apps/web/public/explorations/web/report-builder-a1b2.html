@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en" class="dark" data-theme="ternity-dark" data-scale="default">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — Report Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+      }
+      [data-scale='compact'] {
+        --t-scale: 0.9;
+      }
+      [data-scale='default'] {
+        --t-scale: 1.1;
+      }
+      [data-scale='comfortable'] {
+        --t-scale: 1.2;
+      }
+
+      /* ── Exploration toolbar ── */
+      .x-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 5px 16px;
+        background: hsl(0 0% 0% / 0.88);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+      }
+      .x-bar .x-id {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: hsl(0 0% 100% / 0.45);
+        margin-right: auto;
+      }
+      .x-bar .x-lbl {
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: hsl(0 0% 100% / 0.3);
+      }
+      .x-bar .x-grp {
+        display: flex;
+        gap: 2px;
+      }
+      .x-bar button {
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        padding: 3px 7px;
+        border-radius: 3px;
+        border: 1px solid hsl(0 0% 100% / 0.1);
+        background: transparent;
+        color: hsl(0 0% 100% / 0.45);
+        cursor: pointer;
+      }
+      .x-bar button.active {
+        background: hsl(168 100% 42%);
+        border-color: hsl(168 100% 42%);
+        color: #000;
+        font-weight: 600;
+      }
+
+      /* ── App shell ── */
+      .shell {
+        display: flex;
+        height: 100vh;
+        padding-top: 32px;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+
+      /* ── Sidebar ── */
+      .sb {
+        width: 220px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid hsl(var(--sidebar-border));
+        background: hsl(var(--sidebar-background));
+        padding: 20px 12px;
+        overflow: hidden;
+      }
+      .sb-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .sb-logo svg.logo-icon {
+        width: 22px;
+        height: 26px;
+        flex-shrink: 0;
+      }
+      .sb-logo span {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: hsl(var(--sidebar-foreground));
+      }
+      .sb-hdr {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(9px * var(--t-scale, 1.1));
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        padding: 8px 10px 4px;
+      }
+      .sb-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        cursor: default;
+        transition: all 0.15s;
+      }
+      .sb-item:hover {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+      }
+      .sb-item.on {
+        background: hsl(var(--sidebar-accent));
+        color: hsl(var(--sidebar-accent-foreground));
+        font-weight: 600;
+      }
+      .sb-item i {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+      .sb-sep {
+        height: 1px;
+        background: hsl(var(--sidebar-border));
+        margin: 8px 10px;
+      }
+      .sb-sp {
+        flex: 1;
+      }
+      .sb-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 8px;
+        background: hsl(var(--muted) / 0.5);
+      }
+      .sb-av {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: hsl(var(--t-avatar-bg));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--t-avatar-text));
+        flex-shrink: 0;
+      }
+      .sb-uname {
+        font-size: 12px;
+        font-weight: 500;
+        color: hsl(var(--sidebar-foreground));
+      }
+      .sb-urole {
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Page header ── */
+      .page-hdr {
+        padding: 24px 32px 0;
+      }
+      .page-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(22px * var(--t-scale, 1.1));
+        font-weight: 600;
+        letter-spacing: 1px;
+      }
+      .page-sub {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        margin-top: 4px;
+      }
+
+      /* ── Filter bar ── */
+      .filter-bar {
+        display: flex;
+        align-items: flex-end;
+        gap: 16px;
+        padding: 20px 32px 0;
+        flex-wrap: wrap;
+      }
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .filter-label {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+      }
+      .filter-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .filter-input {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        padding: 7px 12px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted) / 0.3);
+        color: hsl(var(--foreground));
+        outline: none;
+        width: 140px;
+      }
+      .filter-input:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+      }
+      .filter-select {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        padding: 7px 28px 7px 12px;
+        border-radius: 6px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted) / 0.3);
+        color: hsl(var(--foreground));
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+      }
+      .filter-select:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+      }
+      .preset-btns {
+        display: flex;
+        gap: 4px;
+      }
+      .preset-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid hsl(var(--border));
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .preset-btn:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        color: hsl(var(--primary));
+      }
+      .preset-btn.on {
+        background: hsl(var(--primary) / 0.12);
+        border-color: hsl(var(--primary) / 0.3);
+        color: hsl(var(--primary));
+        font-weight: 500;
+      }
+      .btn-generate {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: none;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-generate:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+      }
+      .btn-generate:active {
+        transform: translateY(0);
+      }
+      .btn-generate i {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ── Saved templates ── */
+      .templates-section {
+        padding: 16px 32px 0;
+      }
+      .templates-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        user-select: none;
+      }
+      .templates-header i {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--primary));
+      }
+      .templates-header .badge {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 100px;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+      }
+      .templates-header .chevron {
+        width: 14px;
+        height: 14px;
+        color: hsl(var(--muted-foreground));
+        transition: transform 0.2s;
+        margin-left: auto;
+      }
+      .templates-header.collapsed .chevron {
+        transform: rotate(-90deg);
+      }
+      .templates-list {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .templates-list.hidden {
+        display: none;
+      }
+      .tmpl-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .tmpl-pill:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        background: hsl(var(--primary) / 0.04);
+      }
+      .tmpl-name {
+        font-size: calc(12px * var(--t-scale, 1.1));
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        white-space: nowrap;
+      }
+      .tmpl-date {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+      }
+      .tmpl-star {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .tmpl-star.filled {
+        color: hsl(35 100% 55%);
+        fill: hsl(35 100% 55%);
+      }
+      .tmpl-star.empty {
+        color: hsl(var(--muted-foreground) / 0.4);
+      }
+      .tmpl-star:hover {
+        color: hsl(35 100% 55%);
+      }
+      .tmpl-del {
+        width: 12px;
+        height: 12px;
+        color: hsl(var(--muted-foreground) / 0.3);
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+      .tmpl-del:hover {
+        color: hsl(var(--destructive));
+      }
+
+      /* ── Report area ── */
+      .report-area {
+        display: flex;
+        gap: 24px;
+        padding: 20px 32px 32px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* ── Data preview (left 60%) ── */
+      .data-preview {
+        flex: 6;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+        overflow-y: auto;
+      }
+
+      /* Stats row */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .stat-card {
+        padding: 16px;
+        border-radius: 10px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .stat-label {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .stat-label i {
+        width: 13px;
+        height: 13px;
+      }
+      .stat-value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(24px * var(--t-scale, 1.1));
+        font-weight: 700;
+        color: hsl(var(--foreground));
+      }
+      .stat-trend {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        color: hsl(var(--primary));
+        font-weight: 500;
+      }
+
+      /* Team bar */
+      .team-section {
+      }
+      .section-label {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 8px;
+        font-family: 'Oxanium', sans-serif;
+      }
+      .team-bar-container {
+        margin-bottom: 8px;
+      }
+      .team-bar {
+        display: flex;
+        height: 10px;
+        border-radius: 100px;
+        overflow: hidden;
+        gap: 2px;
+      }
+      .team-bar-seg {
+        transition: all 0.3s;
+        border-radius: 100px;
+      }
+      .team-bar-legend {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground));
+      }
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      /* User table */
+      .user-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .user-table th {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .user-table th:last-child,
+      .user-table td:last-child {
+        text-align: right;
+      }
+      .user-table th:nth-child(3),
+      .user-table td:nth-child(3) {
+        text-align: center;
+      }
+      .user-table td {
+        padding: 10px 12px;
+        font-size: calc(13px * var(--t-scale, 1.1));
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+      }
+      .user-table tr:last-child td {
+        border-bottom: none;
+      }
+      .user-table tr:hover td {
+        background: hsl(var(--muted) / 0.15);
+      }
+      .user-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .user-av-name {
+        font-weight: 500;
+      }
+      .user-hours {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+      }
+      .user-pct {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+      }
+      .user-entries {
+        font-family: 'Oxanium', sans-serif;
+        color: hsl(var(--muted-foreground));
+      }
+      .pct-bar-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+      }
+      .pct-bar {
+        width: 60px;
+        height: 4px;
+        border-radius: 100px;
+        background: hsl(var(--muted));
+        overflow: hidden;
+      }
+      .pct-bar-fill {
+        height: 100%;
+        border-radius: 100px;
+        background: hsl(var(--primary));
+      }
+
+      /* ── Template gallery (right 40%) ── */
+      .template-panel {
+        flex: 4;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+        overflow-y: auto;
+      }
+      .template-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .tmpl-thumb {
+        position: relative;
+        border-radius: 8px;
+        border: 2px solid hsl(var(--border));
+        background: hsl(var(--card));
+        cursor: pointer;
+        transition: all 0.2s;
+        overflow: hidden;
+        aspect-ratio: 3/4;
+      }
+      .tmpl-thumb:hover {
+        border-color: hsl(var(--primary) / 0.5);
+        box-shadow: 0 0 16px hsl(var(--primary) / 0.1);
+      }
+      .tmpl-thumb.selected {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+      }
+      .tmpl-thumb-inner {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px;
+        text-align: center;
+      }
+      .tmpl-thumb-icon {
+        width: 100%;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tmpl-thumb-icon i {
+        width: 28px;
+        height: 28px;
+        color: hsl(var(--muted-foreground) / 0.3);
+      }
+      .tmpl-thumb.selected .tmpl-thumb-icon i {
+        color: hsl(var(--primary) / 0.5);
+      }
+      .tmpl-thumb-name {
+        font-size: calc(10px * var(--t-scale, 1.1));
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        line-height: 1.3;
+      }
+      .tmpl-thumb.selected .tmpl-thumb-name {
+        color: hsl(var(--primary));
+      }
+      .tmpl-badge {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        font-size: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 2px 5px;
+        border-radius: 3px;
+      }
+      .tmpl-badge.print {
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+      }
+      .tmpl-badge.screen {
+        background: hsl(var(--primary) / 0.15);
+        color: hsl(var(--primary));
+      }
+
+      /* Mini preview lines inside thumbnails */
+      .mini-preview {
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .mini-line {
+        height: 3px;
+        border-radius: 2px;
+        background: hsl(var(--muted-foreground) / 0.1);
+      }
+      .mini-line.w100 {
+        width: 100%;
+      }
+      .mini-line.w80 {
+        width: 80%;
+      }
+      .mini-line.w60 {
+        width: 60%;
+      }
+      .mini-line.w40 {
+        width: 40%;
+      }
+      .mini-line.accent {
+        background: hsl(var(--primary) / 0.2);
+      }
+      .mini-block {
+        height: 14px;
+        border-radius: 3px;
+        background: hsl(var(--muted-foreground) / 0.06);
+        width: 100%;
+      }
+      .mini-header {
+        height: 8px;
+        border-radius: 2px;
+        background: hsl(var(--primary) / 0.15);
+        width: 100%;
+        margin-bottom: 2px;
+      }
+
+      /* Preview box */
+      .preview-box {
+        border-radius: 10px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        padding: 20px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-height: 100px;
+      }
+      .preview-box-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: calc(11px * var(--t-scale, 1.1));
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: hsl(var(--muted-foreground));
+      }
+      .preview-box-template {
+        font-size: calc(14px * var(--t-scale, 1.1));
+        font-weight: 600;
+        color: hsl(var(--primary));
+      }
+      .preview-box-desc {
+        font-size: calc(11px * var(--t-scale, 1.1));
+        color: hsl(var(--muted-foreground) / 0.6);
+      }
+
+      /* Download button */
+      .btn-download {
+        font-family: 'Inter', sans-serif;
+        font-size: calc(14px * var(--t-scale, 1.1));
+        padding: 12px 24px;
+        border-radius: 10px;
+        border: none;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+      }
+      .btn-download:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px hsl(var(--primary) / 0.35);
+      }
+      .btn-download:active {
+        transform: translateY(0);
+      }
+      .btn-download i {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* ── Scrollbars ── */
+      .data-preview::-webkit-scrollbar,
+      .template-panel::-webkit-scrollbar,
+      .main::-webkit-scrollbar {
+        width: 6px;
+      }
+      .data-preview::-webkit-scrollbar-track,
+      .template-panel::-webkit-scrollbar-track,
+      .main::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .data-preview::-webkit-scrollbar-thumb,
+      .template-panel::-webkit-scrollbar-thumb,
+      .main::-webkit-scrollbar-thumb {
+        background: hsl(var(--muted-foreground) / 0.15);
+        border-radius: 3px;
+      }
+
+      /* ── Card wrap for table ── */
+      .card-wrap {
+        border-radius: 10px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        overflow: hidden;
+      }
+
+      /* ── Check icon for selected template ── */
+      .tmpl-check {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .tmpl-thumb.selected .tmpl-check {
+        display: flex;
+      }
+      .tmpl-check i {
+        width: 11px;
+        height: 11px;
+        color: hsl(var(--primary-foreground));
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Exploration toolbar ── -->
+    <div class="x-bar">
+      <span class="x-id">Report Builder</span>
+      <span class="x-lbl">Theme</span>
+      <div class="x-grp" id="ts">
+        <button class="active" onclick="T('ternity-dark')">Dark</button>
+        <button onclick="T('ternity-light')">Light</button>
+        <button onclick="T('midnight')">Mid</button>
+        <button onclick="T('warm-sand')">Sand</button>
+        <button onclick="T('carbon')">Carbon</button>
+        <button onclick="T('high-contrast')">HiCon</button>
+      </div>
+      <span class="x-lbl">Scale</span>
+      <div class="x-grp" id="ss">
+        <button onclick="S('compact')">Compact</button>
+        <button class="active" onclick="S('default')">Default</button>
+        <button onclick="S('comfortable')">Comfy</button>
+      </div>
+    </div>
+
+    <!-- ── App shell ── -->
+    <div class="shell">
+      <!-- ── Sidebar ── -->
+      <aside class="sb">
+        <div class="sb-logo">
+          <svg class="logo-icon" viewBox="0 0 100 120" fill="none">
+            <path
+              d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+              stroke="#00D4AA"
+              stroke-width="5"
+              stroke-linejoin="round"
+              fill="none"
+            />
+            <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+            <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+            <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+            <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+            <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+          </svg>
+          <span>Ternity</span>
+        </div>
+        <div class="sb-hdr">Tracking</div>
+        <div class="sb-item"><i data-lucide="play-circle"></i>Timer</div>
+        <div class="sb-item"><i data-lucide="users"></i>Team</div>
+        <div class="sb-item"><i data-lucide="list"></i>Entries</div>
+        <div class="sb-item on"><i data-lucide="bar-chart-3"></i>Reports</div>
+        <div class="sb-item"><i data-lucide="calendar-days"></i>Leave</div>
+        <div class="sb-sep"></div>
+        <div class="sb-hdr">Admin</div>
+        <div class="sb-item"><i data-lucide="folder"></i>Projects</div>
+        <div class="sb-item"><i data-lucide="user-cog"></i>Users</div>
+        <div class="sb-item"><i data-lucide="palm-tree"></i>Leave Types</div>
+        <div class="sb-item"><i data-lucide="settings"></i>Settings</div>
+        <div class="sb-sp"></div>
+        <div class="sb-user">
+          <div class="sb-av">PR</div>
+          <div style="flex: 1; min-width: 0">
+            <div class="sb-uname">Przemek Rudzki</div>
+            <div class="sb-urole">Admin</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main content ── -->
+      <main class="main">
+        <!-- Page header -->
+        <div class="page-hdr">
+          <div class="page-title">Reports</div>
+          <div class="page-sub">Generate branded time reports for your clients</div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <div class="filter-label">Date Range</div>
+            <div class="filter-row">
+              <input type="date" class="filter-input" id="dateFrom" value="2026-02-01" />
+              <span style="color: hsl(var(--muted-foreground)); font-size: 11px">to</span>
+              <input type="date" class="filter-input" id="dateTo" value="2026-02-28" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Presets</div>
+            <div class="preset-btns">
+              <button class="preset-btn on" data-preset="this-month">This Month</button>
+              <button class="preset-btn" data-preset="last-month">Last Month</button>
+              <button class="preset-btn" data-preset="this-quarter">This Quarter</button>
+              <button class="preset-btn" data-preset="custom">Custom</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Projects</div>
+            <select class="filter-select">
+              <option>All Projects</option>
+              <option>Acme Platform</option>
+              <option>Acme API</option>
+              <option>Acme Mobile</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Users</div>
+            <select class="filter-select">
+              <option>All Users</option>
+              <option>Anna Kowalska</option>
+              <option>Marek Nowak</option>
+              <option>Kasia Wiszniewska</option>
+              <option>Tomek Zielinski</option>
+            </select>
+          </div>
+          <button class="btn-generate"><i data-lucide="sparkles"></i>Generate Report</button>
+        </div>
+
+        <!-- Saved templates -->
+        <div class="templates-section">
+          <div class="templates-header" id="tmplToggle">
+            <i data-lucide="star"></i>
+            <span>Saved Templates</span>
+            <span class="badge">3</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+          </div>
+          <div class="templates-list" id="tmplList">
+            <div class="tmpl-pill">
+              <svg
+                class="tmpl-star filled"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                />
+              </svg>
+              <span class="tmpl-name">Feb 2026 &mdash; Acme Corp</span>
+              <span class="tmpl-date">Feb 26</span>
+              <svg
+                class="tmpl-del"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
+            <div class="tmpl-pill">
+              <svg
+                class="tmpl-star empty"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                />
+              </svg>
+              <span class="tmpl-name">Q1 2026 &mdash; All Projects</span>
+              <span class="tmpl-date">Mar 1</span>
+              <svg
+                class="tmpl-del"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
+            <div class="tmpl-pill">
+              <svg
+                class="tmpl-star empty"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                />
+              </svg>
+              <span class="tmpl-name">Weekly &mdash; Dev Team</span>
+              <span class="tmpl-date">Mar 3</span>
+              <svg
+                class="tmpl-del"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report area: data preview + template gallery -->
+        <div class="report-area">
+          <!-- Data preview (left 60%) -->
+          <div class="data-preview">
+            <!-- Summary stats -->
+            <div class="stats-row">
+              <div class="stat-card">
+                <div class="stat-label"><i data-lucide="clock"></i>Total Hours</div>
+                <div class="stat-value">487.5h</div>
+                <div class="stat-trend">+12% vs Jan</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label"><i data-lucide="hash"></i>Entries</div>
+                <div class="stat-value">312</div>
+                <div class="stat-trend">+8% vs Jan</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label"><i data-lucide="users"></i>Team</div>
+                <div class="stat-value">4</div>
+                <div class="stat-trend">All active</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label"><i data-lucide="folder"></i>Projects</div>
+                <div class="stat-value">3</div>
+                <div class="stat-trend">Acme Corp</div>
+              </div>
+            </div>
+
+            <!-- Team composition bar -->
+            <div class="team-section">
+              <div class="section-label">Team Composition</div>
+              <div class="team-bar-container">
+                <div class="team-bar">
+                  <div
+                    class="team-bar-seg"
+                    style="flex: 35; background: #00d4aa"
+                    title="Anna Kowalska — 35%"
+                  ></div>
+                  <div
+                    class="team-bar-seg"
+                    style="flex: 28; background: #6c8eef"
+                    title="Marek Nowak — 28%"
+                  ></div>
+                  <div
+                    class="team-bar-seg"
+                    style="flex: 22; background: #f5a623"
+                    title="Kasia Wiszniewska — 22%"
+                  ></div>
+                  <div
+                    class="team-bar-seg"
+                    style="flex: 15; background: hsl(355 100% 64%)"
+                    title="Tomek Zielinski — 15%"
+                  ></div>
+                </div>
+                <div class="team-bar-legend">
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #00d4aa"></div>
+                    Anna Kowalska
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #6c8eef"></div>
+                    Marek Nowak
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #f5a623"></div>
+                    Kasia Wiszniewska
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: hsl(355 100% 64%)"></div>
+                    Tomek Zielinski
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- User breakdown table -->
+            <div class="card-wrap">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Hours</th>
+                    <th>%</th>
+                    <th>Entries</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="user-name-cell">
+                        <div class="user-av" style="background: #00d4aa; color: #0a0a0a">AK</div>
+                        <span class="user-av-name">Anna Kowalska</span>
+                      </div>
+                    </td>
+                    <td class="user-hours">170.6h</td>
+                    <td>
+                      <div class="pct-bar-cell">
+                        <div class="pct-bar">
+                          <div class="pct-bar-fill" style="width: 35%; background: #00d4aa"></div>
+                        </div>
+                        <span class="user-pct">35%</span>
+                      </div>
+                    </td>
+                    <td class="user-entries">112</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="user-name-cell">
+                        <div class="user-av" style="background: #6c8eef; color: #0a0a0a">MN</div>
+                        <span class="user-av-name">Marek Nowak</span>
+                      </div>
+                    </td>
+                    <td class="user-hours">136.5h</td>
+                    <td>
+                      <div class="pct-bar-cell">
+                        <div class="pct-bar">
+                          <div class="pct-bar-fill" style="width: 28%; background: #6c8eef"></div>
+                        </div>
+                        <span class="user-pct">28%</span>
+                      </div>
+                    </td>
+                    <td class="user-entries">89</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="user-name-cell">
+                        <div class="user-av" style="background: #f5a623; color: #0a0a0a">KW</div>
+                        <span class="user-av-name">Kasia Wiszniewska</span>
+                      </div>
+                    </td>
+                    <td class="user-hours">107.3h</td>
+                    <td>
+                      <div class="pct-bar-cell">
+                        <div class="pct-bar">
+                          <div class="pct-bar-fill" style="width: 22%; background: #f5a623"></div>
+                        </div>
+                        <span class="user-pct">22%</span>
+                      </div>
+                    </td>
+                    <td class="user-entries">67</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="user-name-cell">
+                        <div class="user-av" style="background: hsl(355 100% 64%); color: #fff">
+                          TZ
+                        </div>
+                        <span class="user-av-name">Tomek Zielinski</span>
+                      </div>
+                    </td>
+                    <td class="user-hours">73.1h</td>
+                    <td>
+                      <div class="pct-bar-cell">
+                        <div class="pct-bar">
+                          <div
+                            class="pct-bar-fill"
+                            style="width: 15%; background: hsl(355 100% 64%)"
+                          ></div>
+                        </div>
+                        <span class="user-pct">15%</span>
+                      </div>
+                    </td>
+                    <td class="user-entries">44</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Template gallery (right 40%) -->
+          <div class="template-panel">
+            <div class="section-label">PDF Template</div>
+            <div class="template-grid">
+              <!-- Classic Corporate -->
+              <div
+                class="tmpl-thumb selected"
+                data-tmpl="classic-corporate"
+                onclick="selectTemplate(this)"
+              >
+                <span class="tmpl-badge print">Print</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div class="mini-preview">
+                      <div class="mini-header"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w80"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-block" style="margin-top: 4px"></div>
+                      <div class="mini-line w60" style="margin-top: 4px"></div>
+                      <div class="mini-line w80"></div>
+                      <div class="mini-line w100"></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Classic Corporate</div>
+                </div>
+              </div>
+              <!-- Dark Executive -->
+              <div class="tmpl-thumb" data-tmpl="dark-executive" onclick="selectTemplate(this)">
+                <span class="tmpl-badge screen">Screen</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div
+                      class="mini-preview"
+                      style="background: hsl(var(--muted) / 0.3); padding: 8px; border-radius: 4px"
+                    >
+                      <div class="mini-line accent w80"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w60"></div>
+                      <div class="mini-block" style="margin-top: 4px"></div>
+                      <div class="mini-block" style="height: 8px"></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Dark Executive</div>
+                </div>
+              </div>
+              <!-- Minimal Swiss -->
+              <div class="tmpl-thumb" data-tmpl="minimal-swiss" onclick="selectTemplate(this)">
+                <span class="tmpl-badge print">Print</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div class="mini-preview">
+                      <div class="mini-line accent w40"></div>
+                      <div style="height: 6px"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w80"></div>
+                      <div style="height: 4px"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w100"></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Minimal Swiss</div>
+                </div>
+              </div>
+              <!-- Magazine Spread -->
+              <div class="tmpl-thumb" data-tmpl="magazine-spread" onclick="selectTemplate(this)">
+                <span class="tmpl-badge print">Print</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div
+                      class="mini-preview"
+                      style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px"
+                    >
+                      <div class="mini-block" style="height: 24px"></div>
+                      <div style="display: flex; flex-direction: column; gap: 3px">
+                        <div class="mini-line accent w80"></div>
+                        <div class="mini-line w100"></div>
+                        <div class="mini-line w60"></div>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 3px">
+                        <div class="mini-line w100"></div>
+                        <div class="mini-line w80"></div>
+                      </div>
+                      <div class="mini-block" style="height: 18px"></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Magazine Spread</div>
+                </div>
+              </div>
+              <!-- Dashboard Print -->
+              <div class="tmpl-thumb" data-tmpl="dashboard-print" onclick="selectTemplate(this)">
+                <span class="tmpl-badge print">Print</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div
+                      class="mini-preview"
+                      style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px"
+                    >
+                      <div class="mini-block" style="height: 16px"></div>
+                      <div class="mini-block" style="height: 16px"></div>
+                      <div class="mini-block" style="height: 16px"></div>
+                      <div class="mini-block" style="height: 16px"></div>
+                      <div class="mini-line w100" style="grid-column: 1/-1"></div>
+                      <div class="mini-line w80" style="grid-column: 1/-1"></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Dashboard Print</div>
+                </div>
+              </div>
+              <!-- Invoice Style -->
+              <div class="tmpl-thumb" data-tmpl="invoice-style" onclick="selectTemplate(this)">
+                <span class="tmpl-badge screen">Screen</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div class="tmpl-thumb-inner">
+                  <div class="tmpl-thumb-icon">
+                    <div class="mini-preview">
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-bottom: 4px;
+                        "
+                      >
+                        <div class="mini-line accent" style="width: 30%; height: 5px"></div>
+                        <div class="mini-line" style="width: 25%; height: 4px"></div>
+                      </div>
+                      <div class="mini-line w100" style="height: 1px; opacity: 0.3"></div>
+                      <div class="mini-line w100" style="margin-top: 4px"></div>
+                      <div class="mini-line w100"></div>
+                      <div class="mini-line w100"></div>
+                      <div
+                        class="mini-line w100"
+                        style="height: 1px; opacity: 0.3; margin-top: 4px"
+                      ></div>
+                      <div
+                        class="mini-line accent"
+                        style="width: 40%; margin-top: 4px; height: 4px; margin-left: auto"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="tmpl-thumb-name">Invoice Style</div>
+                </div>
+              </div>
+              <!-- Cover + Chapters -->
+              <div
+                class="tmpl-thumb"
+                data-tmpl="cover-chapters"
+                onclick="selectTemplate(this)"
+                style="grid-column: 1 / -1"
+              >
+                <span class="tmpl-badge print">Print</span>
+                <div class="tmpl-check"><i data-lucide="check"></i></div>
+                <div
+                  class="tmpl-thumb-inner"
+                  style="flex-direction: row; gap: 16px; justify-content: center"
+                >
+                  <div class="mini-preview" style="width: 60px; flex-shrink: 0">
+                    <div style="height: 12px"></div>
+                    <div class="mini-line accent w60" style="margin: 0 auto"></div>
+                    <div style="height: 4px"></div>
+                    <div class="mini-line w80" style="margin: 0 auto"></div>
+                    <div class="mini-line w40" style="margin: 0 auto"></div>
+                  </div>
+                  <div class="mini-preview" style="width: 60px; flex-shrink: 0">
+                    <div class="mini-header"></div>
+                    <div class="mini-line w100"></div>
+                    <div class="mini-line w80"></div>
+                    <div class="mini-block" style="margin-top: 3px; height: 10px"></div>
+                  </div>
+                  <div class="tmpl-thumb-name" style="position: absolute; bottom: 10px">
+                    Cover + Chapters
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview box -->
+            <div class="preview-box" id="previewBox">
+              <div class="preview-box-title">Selected Template</div>
+              <div class="preview-box-template" id="previewName">Classic Corporate</div>
+              <div class="preview-box-desc">
+                Feb 1 &ndash; 28, 2026 &middot; Acme Corporation &middot; 487.5 hours
+              </div>
+            </div>
+
+            <!-- Download button -->
+            <button class="btn-download"><i data-lucide="download"></i>Download PDF</button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Theme / Scale switchers
+      const TM = {
+        Dark: 'ternity-dark',
+        Light: 'ternity-light',
+        Mid: 'midnight',
+        Sand: 'warm-sand',
+        Carbon: 'carbon',
+        HiCon: 'high-contrast',
+      };
+      const SM = { Compact: 'compact', Default: 'default', Comfy: 'comfortable' };
+      function T(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.className = ['ternity-light', 'warm-sand'].includes(t)
+          ? 'light'
+          : 'dark';
+        document
+          .querySelectorAll('#ts button')
+          .forEach((b) => b.classList.toggle('active', TM[b.textContent] === t));
+      }
+      function S(s) {
+        document.documentElement.setAttribute('data-scale', s);
+        document
+          .querySelectorAll('#ss button')
+          .forEach((b) => b.classList.toggle('active', SM[b.textContent] === s));
+      }
+
+      // Date preset buttons
+      const presetBtns = document.querySelectorAll('.preset-btn');
+      const dateFrom = document.getElementById('dateFrom');
+      const dateTo = document.getElementById('dateTo');
+
+      const presets = {
+        'this-month': { from: '2026-02-01', to: '2026-02-28' },
+        'last-month': { from: '2026-01-01', to: '2026-01-31' },
+        'this-quarter': { from: '2026-01-01', to: '2026-03-31' },
+        custom: { from: dateFrom.value, to: dateTo.value },
+      };
+
+      presetBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          presetBtns.forEach((b) => b.classList.remove('on'));
+          btn.classList.add('on');
+          const p = presets[btn.dataset.preset];
+          if (p && btn.dataset.preset !== 'custom') {
+            dateFrom.value = p.from;
+            dateTo.value = p.to;
+          }
+        });
+      });
+
+      // Template selection
+      function selectTemplate(el) {
+        document.querySelectorAll('.tmpl-thumb').forEach((t) => t.classList.remove('selected'));
+        el.classList.add('selected');
+        const name = el.querySelector('.tmpl-thumb-name').textContent;
+        document.getElementById('previewName').textContent = name;
+      }
+
+      // Saved templates collapse/expand
+      const tmplToggle = document.getElementById('tmplToggle');
+      const tmplList = document.getElementById('tmplList');
+      tmplToggle.addEventListener('click', () => {
+        tmplToggle.classList.toggle('collapsed');
+        tmplList.classList.toggle('hidden');
+      });
+
+      // Star toggle on saved template pills
+      document.querySelectorAll('.tmpl-star').forEach((star) => {
+        star.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isFilled = star.classList.contains('filled');
+          star.classList.toggle('filled', !isFilled);
+          star.classList.toggle('empty', isFilled);
+          if (isFilled) {
+            star.setAttribute('fill', 'none');
+          } else {
+            star.setAttribute('fill', 'currentColor');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

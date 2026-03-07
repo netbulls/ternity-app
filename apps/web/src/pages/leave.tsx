@@ -247,18 +247,30 @@ function MonthNavigator({
 // ── Cell Tooltip ────────────────────────────────────────────────
 
 function CellTooltip({
-  booking,
+  bookings,
   position,
   holidays,
 }: {
-  booking: LeaveBooking;
+  bookings: LeaveBooking[];
   position: { top: number; left: number };
   holidays: Record<string, string>;
 }) {
-  const isPartial = booking.hours !== null;
-  const category = getBookingCategory(booking);
-  const catColor = CATEGORY_COLORS[category];
-  const days = getBookingWorkingDays(booking, holidays);
+  // Use the first booking for the shared date header
+  const first = bookings[0]!;
+  const allPartial = bookings.every((b) => b.hours !== null);
+  const allSameDay = bookings.every(
+    (b) => b.startDate === first.startDate && b.endDate === first.endDate,
+  );
+
+  const formatDateRange = (b: LeaveBooking) =>
+    b.startDate === b.endDate
+      ? new Date(b.startDate + 'T12:00:00').toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        })
+      : `${new Date(b.startDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(b.endDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
   return (
     <div
       className="pointer-events-none fixed z-50"
@@ -272,37 +284,67 @@ function CellTooltip({
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 4 }}
-        className="rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
+        className="flex flex-col rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
       >
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: catColor }} />
-          <span className="font-medium text-foreground" style={{ fontSize: scaled(11) }}>
-            {CATEGORY_LABELS[category]}
-          </span>
-          {isPartial && (
-            <span
-              className="rounded-full px-1.5 py-0.5 font-brand font-medium"
-              style={{
-                fontSize: scaled(8),
-                backgroundColor: catColor + '15',
-                color: catColor,
-              }}
-            >
-              {booking.startHour ? `${booking.startHour} · ` : ''}
-              {booking.hours}h
-            </span>
-          )}
+        {/* Shared date header when all bookings are on the same day */}
+        {allSameDay && (
+          <div className="mb-1 text-muted-foreground" style={{ fontSize: scaled(10) }}>
+            {formatDateRange(first)}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1">
+          {bookings.map((booking) => {
+            const isPartial = booking.hours !== null;
+            const category = getBookingCategory(booking);
+            const catColor = CATEGORY_COLORS[category];
+            const days = getBookingWorkingDays(booking, holidays);
+            return (
+              <div key={booking.id}>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: catColor }} />
+                  <span className="font-medium text-foreground" style={{ fontSize: scaled(11) }}>
+                    {CATEGORY_LABELS[category]}
+                  </span>
+                  {isPartial && (
+                    <span
+                      className="rounded-full px-1.5 py-0.5 font-brand font-medium"
+                      style={{
+                        fontSize: scaled(8),
+                        backgroundColor: catColor + '15',
+                        color: catColor,
+                      }}
+                    >
+                      {booking.startHour ? `${booking.startHour} · ` : ''}
+                      {booking.hours}h
+                    </span>
+                  )}
+                  {!isPartial && (
+                    <span className="text-muted-foreground" style={{ fontSize: scaled(10) }}>
+                      {days} day{days !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                {/* Per-booking date line only when bookings span different date ranges */}
+                {!allSameDay && (
+                  <div className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(10) }}>
+                    {formatDateRange(booking)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <div className="mt-1 text-muted-foreground" style={{ fontSize: scaled(10) }}>
-          {booking.startDate === booking.endDate
-            ? new Date(booking.startDate + 'T12:00:00').toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'short',
-                day: 'numeric',
-              })
-            : `${new Date(booking.startDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(booking.endDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-          {!isPartial && ` · ${days} day${days !== 1 ? 's' : ''}`}
-        </div>
+
+        {/* Total line when multiple partial bookings */}
+        {bookings.length > 1 && allPartial && (
+          <div
+            className="mt-1 border-t border-border pt-1 font-brand font-semibold text-foreground"
+            style={{ fontSize: scaled(10) }}
+          >
+            Total: {bookings.reduce((sum, b) => sum + (b.hours ?? 0), 0)}h
+          </div>
+        )}
       </motion.div>
     </div>
   );
@@ -336,7 +378,7 @@ function WallchartGrid({
   viewMode: ViewMode;
 }) {
   const [hover, setHover] = useState<{
-    booking: LeaveBooking;
+    bookings: LeaveBooking[];
     pos: { top: number; left: number };
   } | null>(null);
 
@@ -431,12 +473,13 @@ function WallchartGrid({
               Days
             </span>
           </div>
-          {days.map((day) => (
+          {days.map((day, dayIdx) => (
             <div
               key={day.dateStr}
               className={cn(
                 'flex items-center justify-center',
                 isWeek ? 'min-w-0 flex-1 flex-col py-1' : 'min-w-0 flex-1',
+                isWeek && dayIdx < days.length - 1 && 'border-r border-border/30',
                 day.isWeekend && 'bg-muted/15',
                 day.isHoliday && !day.isWeekend && 'bg-amber-500/5',
                 day.isToday && 'bg-primary/5',
@@ -490,10 +533,22 @@ function WallchartGrid({
         {/* Rows */}
         {filtered.map((user) => {
           const userBookings = getUserRangeBookings(user);
-          const totalDays = userBookings.reduce(
-            (sum, b) => sum + getBookingWorkingDays(b, holidays),
-            0,
-          );
+          // Separate full-day and partial-hour totals for compact display
+          let fullDays = 0;
+          let partialHours = 0;
+          for (const b of userBookings) {
+            if (b.hours !== null && b.hours !== undefined) {
+              partialHours += b.hours;
+            } else {
+              fullDays += countWorkingDays(b.startDate, b.endDate, holidays);
+            }
+          }
+          // Roll over every 8 partial hours into a full day
+          if (partialHours >= 8) {
+            fullDays += Math.floor(partialHours / 8);
+            partialHours = partialHours % 8;
+          }
+          const hasTotal = fullDays > 0 || partialHours > 0;
           const isOwnRow = currentUserId === user.id;
 
           return (
@@ -530,12 +585,13 @@ function WallchartGrid({
                 )}
                 style={{ width: daysColW, left: personColW }}
               >
-                {totalDays > 0 && (
+                {hasTotal && (
                   <span
                     className="font-brand font-bold tabular-nums text-foreground"
-                    style={{ fontSize: scaled(11) }}
+                    style={{ fontSize: scaled(10) }}
                   >
-                    {totalDays % 1 === 0 ? totalDays : totalDays.toFixed(1)}
+                    {fullDays > 0 && <>{fullDays}d</>}
+                    {partialHours > 0 && <>{partialHours}h</>}
                   </span>
                 )}
               </div>
@@ -545,6 +601,10 @@ function WallchartGrid({
                 const bookings = isNonWorking ? [] : getBookingsForUserOnDate(user, day.dateStr);
                 const booking = bookings[0];
                 const isPartial = booking?.hours !== null && booking?.hours !== undefined;
+                const totalHours =
+                  bookings.length > 0 && bookings.every((b) => b.hours !== null)
+                    ? bookings.reduce((sum, b) => sum + (b.hours ?? 0), 0)
+                    : null;
 
                 // Determine visual rounding by checking adjacent working days on the grid
                 let isVisualStart = false;
@@ -588,6 +648,7 @@ function WallchartGrid({
                     className={cn(
                       'relative flex items-center justify-center self-stretch',
                       isWeek ? 'min-w-0 flex-1' : 'min-w-0 flex-1',
+                      isWeek && dayIdx < days.length - 1 && 'border-r border-border/30',
                       day.isWeekend && 'bg-muted/15',
                       day.isHoliday && !day.isWeekend && 'bg-amber-500/5',
                       day.isToday && 'bg-primary/5',
@@ -600,10 +661,10 @@ function WallchartGrid({
                       if (isDragging.current && dragState?.userId === user.id) {
                         setDragState((prev) => (prev ? { ...prev, endIdx: dayIdx } : null));
                       }
-                      if (booking) {
+                      if (bookings.length > 0) {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setHover({
-                          booking,
+                          bookings,
                           pos: { top: rect.top, left: rect.left + rect.width / 2 },
                         });
                       }
@@ -648,8 +709,8 @@ function WallchartGrid({
                     {isDragSelected && (
                       <div className="absolute inset-x-0 inset-y-[4px] z-[1] rounded-sm bg-primary/15" />
                     )}
-                    {/* Day number inside each cell (month view only) */}
-                    {!isWeek && (
+                    {/* Day number inside each cell (month view only, hidden for partial bookings — hours label shown instead) */}
+                    {!isWeek && !isPartial && (
                       <span
                         className={cn(
                           'absolute inset-0 z-[2] flex items-center justify-center font-brand font-semibold tabular-nums',
@@ -669,6 +730,35 @@ function WallchartGrid({
                     {booking &&
                       (() => {
                         const catColor = CATEGORY_COLORS[getBookingCategory(booking)];
+                        // Week view + partial: horizontal proportional bars (left→right = start→end of day)
+                        if (isWeek && isPartial) {
+                          const WORK_DAY_H = 8;
+                          const WORK_START = 8.5; // 08:30
+                          return bookings.map((b) => {
+                            const bCatColor = CATEGORY_COLORS[getBookingCategory(b)];
+                            const bHours = b.hours ?? WORK_DAY_H;
+                            let startDecimal = WORK_START;
+                            if (b.startHour) {
+                              const [hh, mm] = b.startHour.split(':').map(Number);
+                              startDecimal = hh! + mm! / 60;
+                            }
+                            const leftPct = ((startDecimal - WORK_START) / WORK_DAY_H) * 100;
+                            const widthPct = (bHours / WORK_DAY_H) * 100;
+                            return (
+                              <div
+                                key={b.id}
+                                className="absolute inset-y-[4px] z-[1] rounded-sm border border-dashed"
+                                style={{
+                                  left: `${leftPct}%`,
+                                  width: `${Math.max(widthPct, 4)}%`,
+                                  backgroundColor: bCatColor + '20',
+                                  borderColor: bCatColor + '50',
+                                }}
+                              />
+                            );
+                          });
+                        }
+                        // Full-day or month view: single bar spanning the cell
                         return (
                           <div
                             className={cn(
@@ -689,10 +779,10 @@ function WallchartGrid({
                           >
                             {isPartial && (
                               <span
-                                className="font-brand font-bold"
+                                className="z-[2] font-brand font-bold"
                                 style={{ fontSize: scaled(7), color: catColor }}
                               >
-                                {booking.hours}
+                                {totalHours ?? booking.hours}h
                               </span>
                             )}
                           </div>
@@ -728,7 +818,7 @@ function WallchartGrid({
             )}
             style={{ width: daysColW, left: personColW, height: isWeek ? undefined : rowH }}
           />
-          {days.map((day) => {
+          {days.map((day, dayIdx) => {
             const isNonWorking = day.isWeekend || day.isHoliday;
             const count = isNonWorking
               ? 0
@@ -739,6 +829,7 @@ function WallchartGrid({
                 className={cn(
                   'flex items-center justify-center',
                   isWeek ? 'min-w-0 flex-1' : 'min-w-0 flex-1',
+                  isWeek && dayIdx < days.length - 1 && 'border-r border-border/30',
                   day.isWeekend && 'bg-muted/15',
                   day.isHoliday && !day.isWeekend && 'bg-amber-500/5',
                   day.isToday && 'bg-primary/5',
@@ -770,7 +861,7 @@ function WallchartGrid({
       {createPortal(
         <AnimatePresence>
           {hover && (
-            <CellTooltip booking={hover.booking} position={hover.pos} holidays={holidays} />
+            <CellTooltip bookings={hover.bookings} position={hover.pos} holidays={holidays} />
           )}
         </AnimatePresence>,
         document.body,

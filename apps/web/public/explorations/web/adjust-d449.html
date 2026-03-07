@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="carbon" data-scale="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Adjust Time V9: Clock Face</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .page-header p {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-top: 4px;
+        }
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.4);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground) / 0.6);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button.active {
+            background: hsl(var(--primary));
+            border-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            font-weight: 600;
+        }
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .instances {
+            display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+            padding: 20px 0;
+        }
+        .instance-label {
+            text-align: center;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.35);
+            margin-bottom: 8px;
+        }
+
+        .dialog {
+            width: 420px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .dialog-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        .dialog-title {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            margin-bottom: 8px;
+        }
+        .entry-info { display: flex; flex-direction: column; gap: 4px; }
+        .entry-desc {
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground) / 0.9);
+            font-weight: 500;
+        }
+        .entry-project {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--primary));
+        }
+        .entry-duration {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 400;
+            color: hsl(var(--muted-foreground));
+            font-variant-numeric: tabular-nums;
+        }
+        .dialog-body { padding: 20px 24px; }
+
+        /* Clock */
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .clock-svg {
+            width: 200px;
+            height: 200px;
+            cursor: pointer;
+        }
+        .clock-bg {
+            fill: hsl(var(--muted) / 0.3);
+            stroke: hsl(var(--border));
+            stroke-width: 1;
+        }
+        .clock-tick {
+            stroke: hsl(var(--muted-foreground) / 0.2);
+            stroke-width: 1;
+        }
+        .clock-tick.major {
+            stroke: hsl(var(--muted-foreground) / 0.4);
+            stroke-width: 1.5;
+        }
+        .clock-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            fill: hsl(var(--muted-foreground) / 0.5);
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .clock-arc {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: butt;
+            transition: d 0.1s;
+        }
+        .clock-arc.positive { stroke: hsl(var(--primary) / 0.35); }
+        .clock-arc.negative { stroke: hsl(var(--destructive) / 0.3); }
+        .clock-needle {
+            stroke: hsl(var(--primary));
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+        .clock-needle.negative { stroke: hsl(var(--destructive)); }
+        .clock-center-dot {
+            fill: hsl(var(--primary));
+        }
+        .clock-center-dot.negative { fill: hsl(var(--destructive)); }
+        .clock-center-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            fill: hsl(var(--foreground));
+            text-anchor: middle;
+            font-variant-numeric: tabular-nums;
+        }
+        .clock-center-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 9px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            fill: hsl(var(--muted-foreground) / 0.5);
+            text-anchor: middle;
+        }
+
+        /* Controls row */
+        .clock-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .sign-toggle {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid hsl(var(--border));
+        }
+        .sign-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            width: 36px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: hsl(var(--muted) / 0.5);
+            border: none;
+            color: hsl(var(--muted-foreground));
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sign-btn.active.plus {
+            background: hsl(var(--primary) / 0.15);
+            color: hsl(var(--primary));
+        }
+        .sign-btn.active.minus {
+            background: hsl(var(--destructive) / 0.15);
+            color: hsl(var(--destructive));
+        }
+
+        .hours-input-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hours-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(10px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground) / 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .hours-input {
+            width: 48px;
+            padding: 6px 8px;
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: 6px;
+            color: hsl(var(--foreground));
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(16px * var(--t-scale, 1.1));
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            outline: none;
+        }
+        .hours-input:focus { border-color: hsl(var(--ring)); }
+
+        /* Summary */
+        .summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 0;
+            margin-bottom: 12px;
+        }
+        .summary-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 100px;
+        }
+        .summary-block-label {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(9px * var(--t-scale, 1.1));
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: hsl(var(--muted-foreground) / 0.5);
+        }
+        .summary-block-value {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(18px * var(--t-scale, 1.1));
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .summary-block-value.current { color: hsl(var(--muted-foreground)); }
+        .summary-block-value.positive { color: hsl(var(--primary)); }
+        .summary-block-value.negative { color: hsl(var(--destructive)); }
+        .summary-block-value.total { color: hsl(var(--foreground)); }
+        .summary-sep {
+            font-size: 18px;
+            color: hsl(var(--muted-foreground) / 0.3);
+            margin-top: 12px;
+        }
+
+        .reason-field { margin-top: 0; }
+        .reason-label {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500;
+            color: hsl(var(--muted-foreground) / 0.7);
+            margin-bottom: 6px; display: block;
+        }
+        .reason-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: 6px;
+            color: hsl(var(--foreground));
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            outline: none; transition: border-color 0.15s;
+        }
+        .reason-input::placeholder { color: hsl(var(--muted-foreground) / 0.3); }
+        .reason-input:focus { border-color: hsl(var(--ring)); }
+
+        .dialog-footer {
+            padding: 16px 24px 20px;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500;
+            padding: 8px 16px; border-radius: 6px;
+            cursor: pointer; transition: all 0.15s; border: none;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border));
+        }
+        .btn-ghost:hover { background: hsl(var(--muted)); }
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        .btn-primary:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>Adjust Time — V9: Clock Face</h1>
+        <p>Analog clock interface — click minute ticks to set adjustment, arc fills to show amount</p>
+    </div>
+    <div class="switcher-row">
+        <div>
+            <div class="switcher-label">Theme</div>
+            <div class="switcher-group" id="theme-switcher">
+                <button data-theme="carbon">Carbon</button>
+                <button data-theme="ember">Ember</button>
+                <button data-theme="ocean">Ocean</button>
+                <button data-theme="sandstone">Sandstone</button>
+                <button data-theme="forest">Forest</button>
+                <button data-theme="arctic">Arctic</button>
+            </div>
+        </div>
+        <div>
+            <div class="switcher-label">Scale</div>
+            <div class="switcher-group" id="scale-switcher">
+                <button data-scale="compact">Compact</button>
+                <button data-scale="default">Default</button>
+                <button data-scale="comfortable">Comfortable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="instances">
+        <!-- Positive instance -->
+        <div>
+            <div class="instance-label">Adding Time</div>
+            <div class="dialog" id="dialog-pos">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme · Website Redesign</div>
+                        <div class="entry-duration">Current: <span>2h 15m</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="clock-container">
+                        <svg class="clock-svg" id="pos-clock" viewBox="0 0 200 200"></svg>
+                        <div class="clock-controls">
+                            <div class="sign-toggle">
+                                <button class="sign-btn plus active" data-sign="1" data-dialog="pos">+</button>
+                                <button class="sign-btn minus" data-sign="-1" data-dialog="pos">−</button>
+                            </div>
+                            <div class="hours-input-group">
+                                <span class="hours-label">Hours</span>
+                                <input class="hours-input" id="pos-hours-input" type="number" value="0" min="0" max="23">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-block">
+                            <div class="summary-block-label">Current</div>
+                            <div class="summary-block-value current">2h 15m</div>
+                        </div>
+                        <div class="summary-sep">→</div>
+                        <div class="summary-block">
+                            <div class="summary-block-label">Adjustment</div>
+                            <div class="summary-block-value positive" id="pos-adj">+30m</div>
+                        </div>
+                        <div class="summary-sep">→</div>
+                        <div class="summary-block">
+                            <div class="summary-block-label">New Total</div>
+                            <div class="summary-block-value total" id="pos-total">2h 45m</div>
+                        </div>
+                    </div>
+                    <div class="reason-field">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g. Forgot to start timer">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary">Apply Adjustment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Negative instance -->
+        <div>
+            <div class="instance-label">Removing Time</div>
+            <div class="dialog" id="dialog-neg">
+                <div class="dialog-header">
+                    <div class="dialog-title">Adjust Time</div>
+                    <div class="entry-info">
+                        <div class="entry-desc">Implementing component catalog</div>
+                        <div class="entry-project">Acme · Website Redesign</div>
+                        <div class="entry-duration">Current: <span>2h 15m</span></div>
+                    </div>
+                </div>
+                <div class="dialog-body">
+                    <div class="clock-container">
+                        <svg class="clock-svg" id="neg-clock" viewBox="0 0 200 200"></svg>
+                        <div class="clock-controls">
+                            <div class="sign-toggle">
+                                <button class="sign-btn plus" data-sign="1" data-dialog="neg">+</button>
+                                <button class="sign-btn minus active" data-sign="-1" data-dialog="neg">−</button>
+                            </div>
+                            <div class="hours-input-group">
+                                <span class="hours-label">Hours</span>
+                                <input class="hours-input" id="neg-hours-input" type="number" value="0" min="0" max="23">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-block">
+                            <div class="summary-block-label">Current</div>
+                            <div class="summary-block-value current">2h 15m</div>
+                        </div>
+                        <div class="summary-sep">→</div>
+                        <div class="summary-block">
+                            <div class="summary-block-label">Adjustment</div>
+                            <div class="summary-block-value negative" id="neg-adj">−15m</div>
+                        </div>
+                        <div class="summary-sep">→</div>
+                        <div class="summary-block">
+                            <div class="summary-block-label">New Total</div>
+                            <div class="summary-block-value total" id="neg-total">2h 00m</div>
+                        </div>
+                    </div>
+                    <div class="reason-field">
+                        <label class="reason-label">Reason (optional)</label>
+                        <input class="reason-input" type="text" placeholder="e.g. Logged break time incorrectly">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary">Apply Adjustment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme/scale switching
+        document.getElementById('theme-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.theme = btn.dataset.theme;
+            document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.getElementById('scale-switcher').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            document.documentElement.dataset.scale = btn.dataset.scale;
+            document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.toggle('active', b === btn));
+        });
+        document.querySelector('#theme-switcher [data-theme="carbon"]')?.classList.add('active');
+        document.querySelector('#scale-switcher [data-scale="default"]')?.classList.add('active');
+
+        function fmt(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            let result = '';
+            if (h > 0) result += h + 'h ';
+            if (m > 0 || h > 0) result += (h > 0 ? String(m).padStart(2, '0') : m) + 'm';
+            if (s > 0 && h === 0) result += ' ' + (m > 0 ? String(s).padStart(2, '0') : s) + 's';
+            return result || '0s';
+        }
+        function fmtFixed(seconds) {
+            const abs = Math.abs(seconds);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        const BASE = 8100;
+        const CX = 100, CY = 100, R = 80;
+
+        const clocks = {
+            pos: { minutes: 30, hours: 0, sign: 1 },
+            neg: { minutes: 15, hours: 0, sign: -1 }
+        };
+
+        function polarToCart(cx, cy, r, angleDeg) {
+            const rad = (angleDeg - 90) * Math.PI / 180;
+            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+        }
+
+        function arcPath(cx, cy, r, startAngle, endAngle) {
+            if (endAngle <= startAngle) return '';
+            const start = polarToCart(cx, cy, r, startAngle);
+            const end = polarToCart(cx, cy, r, endAngle);
+            const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+            return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+        }
+
+        function buildClock(id) {
+            const svg = document.getElementById(id + '-clock');
+            const c = clocks[id];
+            const isNeg = c.sign < 0;
+            const cls = isNeg ? 'negative' : 'positive';
+
+            let html = '';
+
+            // Background circle
+            html += `<circle cx="${CX}" cy="${CY}" r="${R}" class="clock-bg"/>`;
+
+            // Tick marks
+            for (let i = 0; i < 60; i++) {
+                const angle = i * 6;
+                const isMajor = i % 15 === 0;
+                const r1 = isMajor ? R - 12 : R - 7;
+                const r2 = R - 2;
+                const p1 = polarToCart(CX, CY, r1, angle);
+                const p2 = polarToCart(CX, CY, r2, angle);
+                html += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="clock-tick${isMajor ? ' major' : ''}"/>`;
+            }
+
+            // Quarter labels
+            const labels = [
+                { min: 15, angle: 90 },
+                { min: 30, angle: 180 },
+                { min: 45, angle: 270 },
+                { min: 60, angle: 0 }
+            ];
+            labels.forEach(l => {
+                const p = polarToCart(CX, CY, R - 22, l.angle);
+                html += `<text x="${p.x}" y="${p.y}" class="clock-label">${l.min}</text>`;
+            });
+
+            // Arc showing selected minutes
+            const mins = Math.min(c.minutes, 60);
+            if (mins > 0) {
+                const endAngle = (mins / 60) * 360;
+                const path = arcPath(CX, CY, R - 10, 0, endAngle);
+                html += `<path d="${path}" class="clock-arc ${cls}" stroke-width="18"/>`;
+            }
+
+            // Needle
+            if (mins > 0) {
+                const needleAngle = (mins / 60) * 360;
+                const p = polarToCart(CX, CY, R - 22, needleAngle);
+                html += `<line x1="${CX}" y1="${CY}" x2="${p.x}" y2="${p.y}" class="clock-needle ${cls}"/>`;
+            }
+
+            // Center dot
+            html += `<circle cx="${CX}" cy="${CY}" r="4" class="clock-center-dot ${cls}"/>`;
+
+            // Center value
+            const adjSec = (c.hours * 3600 + c.minutes * 60) * c.sign;
+            const adjSign = c.sign > 0 ? '+' : '\u2212';
+            const adjText = adjSign + fmt(Math.abs(adjSec));
+            html += `<text x="${CX}" y="${CY - 28}" class="clock-center-value">${String(mins).padStart(2, '0')}m</text>`;
+            html += `<text x="${CX}" y="${CY - 42}" class="clock-center-label">MINUTES</text>`;
+
+            svg.innerHTML = html;
+        }
+
+        function updateSummary(id) {
+            const c = clocks[id];
+            const adj = (c.hours * 3600 + c.minutes * 60) * c.sign;
+            const newTotal = Math.max(0, BASE + adj);
+            const sign = c.sign > 0 ? '+' : '\u2212';
+            const cls = c.sign > 0 ? 'positive' : 'negative';
+
+            const adjEl = document.getElementById(id + '-adj');
+            adjEl.textContent = sign + fmt(Math.abs(adj));
+            adjEl.className = 'summary-block-value ' + cls;
+
+            document.getElementById(id + '-total').textContent = fmt(newTotal);
+        }
+
+        function fullUpdate(id) {
+            buildClock(id);
+            updateSummary(id);
+        }
+
+        // Click on clock to set minutes
+        ['pos', 'neg'].forEach(id => {
+            const svg = document.getElementById(id + '-clock');
+            svg.addEventListener('click', e => {
+                const rect = svg.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const scale = 200 / rect.width;
+                const dx = x * scale - CX;
+                const dy = y * scale - CY;
+
+                // Convert to angle (0 = top, clockwise)
+                let angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+                if (angle < 0) angle += 360;
+
+                // Convert to minutes, snap to 5
+                let mins = Math.round((angle / 360) * 60);
+                mins = Math.round(mins / 5) * 5;
+                if (mins === 0) mins = 60;
+                clocks[id].minutes = mins;
+                fullUpdate(id);
+            });
+
+            // Hours input
+            document.getElementById(id + '-hours-input').addEventListener('input', e => {
+                clocks[id].hours = Math.max(0, Math.min(23, parseInt(e.target.value) || 0));
+                fullUpdate(id);
+            });
+        });
+
+        // Sign toggle
+        document.querySelectorAll('.sign-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.dialog;
+                const sign = parseInt(btn.dataset.sign);
+                clocks[id].sign = sign;
+                // Update toggle visual
+                btn.closest('.sign-toggle').querySelectorAll('.sign-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                fullUpdate(id);
+            });
+        });
+
+        fullUpdate('pos');
+        fullUpdate('neg');
+    </script>
+</body>
+</html>

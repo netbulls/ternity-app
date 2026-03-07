@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ternity — Downloads v5 (Channel Switcher)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../themes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #111; color: #ccc;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px; font-size: 14px;
+        }
+
+        .page-header { text-align: center; margin-bottom: 10px; }
+        .page-header h1 {
+            font-family: 'Oxanium', sans-serif;
+            font-size: 11px; font-weight: 400;
+            letter-spacing: 5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .page-header p { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 4px; }
+
+        .switcher-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+        }
+        .switcher-label {
+            font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .switcher-group { display: flex; gap: 4px; }
+        .switcher-group button {
+            font-family: 'Inter', sans-serif; font-size: 10px;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid #222; background: #161616;
+            color: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.15s;
+        }
+        .switcher-group button:hover { border-color: #444; }
+        .switcher-group button.active {
+            background: #333; border-color: #555; color: rgba(255,255,255,0.8);
+        }
+
+        [data-scale="compact"] { --t-scale: 0.9; }
+        [data-scale="default"] { --t-scale: 1.1; }
+        [data-scale="comfortable"] { --t-scale: 1.2; }
+
+        .variant-nav {
+            display: flex; justify-content: center; gap: 4px; margin-bottom: 12px;
+        }
+        .variant-nav button {
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+            padding: 5px 12px; border-radius: 6px;
+            border: 1px solid #2a2a2a; background: #1a1a1a;
+            color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s;
+        }
+        .variant-nav button:hover { border-color: #444; }
+        .variant-nav button.active {
+            background: #00D4AA; border-color: #00D4AA;
+            color: #0a0a0a; font-weight: 600;
+        }
+
+        .theme-container {
+            max-width: 1200px; margin: 0 auto;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .app { display: grid; grid-template-columns: 220px 1fr; min-height: 700px; }
+
+        .sidebar {
+            display: flex; flex-direction: column; gap: 2px;
+            border-right: 1px solid hsl(var(--sidebar-border));
+            background: hsl(var(--sidebar-background));
+            padding: 20px 12px;
+        }
+        .sidebar-brand {
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 10px; margin-bottom: 20px;
+        }
+        .sidebar-brand span {
+            font-family: 'Oxanium', sans-serif; font-size: 15px; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: hsl(var(--sidebar-foreground));
+        }
+        .sidebar-section {
+            padding: 12px 10px 4px;
+            font-family: 'Oxanium', sans-serif; font-size: 9px; font-weight: 400;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+        }
+        .sidebar-item {
+            padding: 8px 10px; border-radius: 6px;
+            font-size: 13px; color: hsl(var(--muted-foreground));
+        }
+        .sidebar-item.active {
+            background: hsl(var(--sidebar-accent));
+            color: hsl(var(--sidebar-accent-foreground)); font-weight: 600;
+        }
+        .sidebar-spacer { flex: 1; }
+
+        .main {
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            padding: 32px 40px; overflow: auto;
+        }
+
+        .variant { display: none; }
+        .variant.active { display: block; }
+
+        .variant-label {
+            text-align: center; margin-bottom: 20px; padding: 8px 16px;
+            font-size: 11px; color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.03); border-radius: 6px;
+        }
+
+        /* Shared hero */
+        .centered-hero {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; padding: 24px 0 0;
+        }
+        .centered-hero .app-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: hsl(var(--primary) / 0.08);
+            border: 1px solid hsl(var(--primary) / 0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+        }
+        .centered-hero .app-icon i { color: hsl(var(--primary)); width: 32px; height: 32px; }
+        .centered-hero .app-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 700;
+            font-size: calc(24px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+        .centered-hero .app-tagline {
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+        }
+
+        .platform-pills {
+            display: flex; gap: 8px; margin-top: 24px;
+        }
+        .platform-pills button {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 10px;
+            border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+            cursor: pointer; transition: all 0.15s;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground));
+        }
+        .platform-pills button:hover { border-color: hsl(var(--primary) / 0.3); }
+        .platform-pills button.active {
+            border-color: hsl(var(--primary) / 0.4);
+            background: hsl(var(--primary) / 0.06);
+            color: hsl(var(--primary)); font-weight: 500;
+        }
+        .platform-pills button svg { width: 18px; height: 18px; fill: currentColor; }
+
+        .checksum-link {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin-top: 16px;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.5;
+            cursor: pointer; transition: opacity 0.15s;
+        }
+        .checksum-link:hover { opacity: 0.8; }
+        .checksum-link i { width: 14px; height: 14px; }
+
+        /* Shared badges */
+        .badge-release {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 99px;
+            font-size: calc(10px * var(--t-scale, 1.1)); font-weight: 500;
+            background: hsl(142 71% 45% / 0.12); color: hsl(142 71% 45%);
+        }
+        .badge-release i { width: 10px; height: 10px; }
+
+        .badge-dev {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 99px;
+            font-size: calc(10px * var(--t-scale, 1.1)); font-weight: 500;
+            background: hsl(38 92% 50% / 0.12); color: hsl(38 92% 50%);
+        }
+        .badge-dev i { width: 10px; height: 10px; }
+
+        /* OS icon SVGs */
+        .os-mac { }
+        .os-win { }
+        .os-linux { }
+
+        /* ============================================ */
+        /* VARIANT H1: Pill Toggle in card              */
+        /* ============================================ */
+
+        .fw-cards-h1 {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; margin-top: 20px; width: 100%; max-width: 720px;
+        }
+        .fw-card-h1 {
+            border-radius: 10px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            display: flex; flex-direction: column;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .fw-card-h1:hover { border-color: hsl(var(--primary) / 0.4); }
+        .fw-card-h1.recommended { border-color: hsl(var(--primary) / 0.3); }
+        .fw-card-h1.recommended::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: hsl(var(--primary));
+        }
+
+        .fw-card-h1 .fw-name-row {
+            padding: 20px 16px 0; text-align: center;
+        }
+        .fw-card-h1 .fw-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(17px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+
+        /* Channel toggle — small segmented control */
+        .fw-card-h1 .channel-toggle {
+            display: flex; align-items: center; justify-content: center;
+            gap: 2px; padding: 10px 16px 0;
+        }
+        .fw-card-h1 .channel-toggle .ch-pill {
+            font-family: 'Inter', sans-serif; font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 500; padding: 3px 10px; border-radius: 99px;
+            border: 1px solid hsl(var(--border)); background: transparent;
+            color: hsl(var(--muted-foreground)); cursor: pointer;
+            transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+        }
+        .fw-card-h1 .channel-toggle .ch-pill:hover {
+            border-color: hsl(var(--foreground) / 0.3);
+        }
+        .fw-card-h1 .channel-toggle .ch-pill.active-stable {
+            background: hsl(142 71% 45% / 0.1); border-color: hsl(142 71% 45% / 0.3);
+            color: hsl(142 71% 45%);
+        }
+        .fw-card-h1 .channel-toggle .ch-pill.active-dev {
+            background: hsl(38 92% 50% / 0.1); border-color: hsl(38 92% 50% / 0.3);
+            color: hsl(38 92% 50%);
+        }
+        .fw-card-h1 .channel-toggle .ch-pill i { width: 10px; height: 10px; }
+
+        /* Single channel badge (no toggle) */
+        .fw-card-h1 .channel-single {
+            display: flex; align-items: center; justify-content: center;
+            padding: 10px 16px 0;
+        }
+
+        .fw-card-h1 .fw-version-row {
+            padding: 6px 16px 0; text-align: center;
+        }
+        .fw-card-h1 .fw-version {
+            font-family: 'Oxanium', sans-serif; font-weight: 500;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground)); opacity: 0.8;
+        }
+        .fw-card-h1 .fw-version.untagged {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            opacity: 0.6;
+        }
+
+        .fw-card-h1 .fw-desc-row {
+            padding: 6px 16px 0; text-align: center;
+            flex: 1; display: flex; align-items: flex-start; justify-content: center;
+        }
+        .fw-card-h1 .fw-desc {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); line-height: 1.4;
+        }
+
+        .fw-card-h1 .fw-meta-row {
+            padding: 6px 16px 0; text-align: center;
+        }
+        .fw-card-h1 .fw-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.45;
+        }
+
+        .fw-card-h1 .fw-action-row {
+            padding: 14px 16px 18px; text-align: center;
+        }
+        .fw-card-h1 .fw-dl {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; transition: all 0.15s; width: 100%; justify-content: center;
+        }
+        .fw-card-h1 .fw-dl i { width: 14px; height: 14px; }
+        .fw-card-h1.recommended .fw-dl {
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        }
+        .fw-card-h1.recommended .fw-dl:hover { opacity: 0.9; }
+        .fw-card-h1:not(.recommended) .fw-dl {
+            background: hsl(var(--primary) / 0.1); color: hsl(var(--primary));
+        }
+        .fw-card-h1:not(.recommended) .fw-dl:hover { background: hsl(var(--primary) / 0.18); }
+
+        /* ============================================ */
+        /* VARIANT H2: Dropdown select for channel      */
+        /* ============================================ */
+
+        .fw-cards-h2 {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; margin-top: 20px; width: 100%; max-width: 720px;
+        }
+        .fw-card-h2 {
+            border-radius: 10px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            display: flex; flex-direction: column;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .fw-card-h2:hover { border-color: hsl(var(--primary) / 0.4); }
+        .fw-card-h2.recommended { border-color: hsl(var(--primary) / 0.3); }
+        .fw-card-h2.recommended::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: hsl(var(--primary));
+        }
+
+        .fw-card-h2 .fw-name-row {
+            padding: 20px 16px 0; text-align: center;
+        }
+        .fw-card-h2 .fw-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(17px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+
+        /* Version select — looks like a subtle dropdown */
+        .fw-card-h2 .version-select-row {
+            padding: 8px 16px 0; text-align: center;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .fw-card-h2 .version-select {
+            font-family: 'Oxanium', sans-serif; font-size: calc(11px * var(--t-scale, 1.1));
+            font-weight: 500; padding: 4px 24px 4px 10px; border-radius: 6px;
+            border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+            color: hsl(var(--foreground)); cursor: pointer;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            transition: border-color 0.15s;
+        }
+        .fw-card-h2 .version-select:hover { border-color: hsl(var(--primary) / 0.4); }
+        .fw-card-h2 .version-select:focus { outline: none; border-color: hsl(var(--primary) / 0.5); }
+
+        /* Single version (no dropdown) */
+        .fw-card-h2 .version-single {
+            padding: 8px 16px 0; text-align: center;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .fw-card-h2 .version-single .fw-version {
+            font-family: 'Oxanium', sans-serif; font-weight: 500;
+            font-size: calc(12px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground)); opacity: 0.8;
+        }
+        .fw-card-h2 .version-single .fw-version.untagged {
+            font-size: calc(10px * var(--t-scale, 1.1));
+            opacity: 0.6;
+        }
+
+        .fw-card-h2 .fw-desc-row {
+            padding: 8px 16px 0; text-align: center;
+            flex: 1; display: flex; align-items: flex-start; justify-content: center;
+        }
+        .fw-card-h2 .fw-desc {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); line-height: 1.4;
+        }
+
+        .fw-card-h2 .fw-meta-row {
+            padding: 6px 16px 0; text-align: center;
+        }
+        .fw-card-h2 .fw-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.45;
+        }
+
+        .fw-card-h2 .fw-action-row {
+            padding: 14px 16px 18px; text-align: center;
+        }
+        .fw-card-h2 .fw-dl {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; transition: all 0.15s; width: 100%; justify-content: center;
+        }
+        .fw-card-h2 .fw-dl i { width: 14px; height: 14px; }
+        .fw-card-h2.recommended .fw-dl {
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        }
+        .fw-card-h2.recommended .fw-dl:hover { opacity: 0.9; }
+        .fw-card-h2:not(.recommended) .fw-dl {
+            background: hsl(var(--primary) / 0.1); color: hsl(var(--primary));
+        }
+        .fw-card-h2:not(.recommended) .fw-dl:hover { background: hsl(var(--primary) / 0.18); }
+
+        /* ============================================ */
+        /* VARIANT H3: Inline toggle with version       */
+        /* ============================================ */
+
+        .fw-cards-h3 {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; margin-top: 20px; width: 100%; max-width: 720px;
+        }
+        .fw-card-h3 {
+            border-radius: 10px; overflow: hidden;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            display: flex; flex-direction: column;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .fw-card-h3:hover { border-color: hsl(var(--primary) / 0.4); }
+        .fw-card-h3.recommended { border-color: hsl(var(--primary) / 0.3); }
+        .fw-card-h3.recommended::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: hsl(var(--primary));
+        }
+
+        .fw-card-h3 .fw-head {
+            padding: 20px 16px 0; text-align: center;
+        }
+        .fw-card-h3 .fw-name {
+            font-family: 'Oxanium', sans-serif; font-weight: 600;
+            font-size: calc(17px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground));
+        }
+
+        /* Version row with underline tabs when multiple channels */
+        .fw-card-h3 .fw-channel-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 0; padding: 10px 16px 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+            margin: 0 16px;
+        }
+        .fw-card-h3 .ch-tab {
+            font-family: 'Inter', sans-serif; font-size: calc(10px * var(--t-scale, 1.1));
+            font-weight: 500; padding: 6px 12px; border: none; background: transparent;
+            color: hsl(var(--muted-foreground)); cursor: pointer;
+            border-bottom: 2px solid transparent; margin-bottom: -1px;
+            transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+        }
+        .fw-card-h3 .ch-tab:hover { color: hsl(var(--foreground)); }
+        .fw-card-h3 .ch-tab.active-stable {
+            color: hsl(142 71% 45%); border-bottom-color: hsl(142 71% 45%);
+        }
+        .fw-card-h3 .ch-tab.active-dev {
+            color: hsl(38 92% 50%); border-bottom-color: hsl(38 92% 50%);
+        }
+        .fw-card-h3 .ch-tab i { width: 10px; height: 10px; }
+
+        /* Single channel — just a badge, no tabs */
+        .fw-card-h3 .channel-single {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px 16px 0;
+        }
+
+        .fw-card-h3 .fw-version-row {
+            padding: 8px 16px 0; text-align: center;
+        }
+        .fw-card-h3 .fw-version {
+            font-family: 'Oxanium', sans-serif; font-weight: 500;
+            font-size: calc(13px * var(--t-scale, 1.1));
+            color: hsl(var(--foreground)); opacity: 0.8;
+        }
+        .fw-card-h3 .fw-version.untagged {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            opacity: 0.6;
+        }
+
+        .fw-card-h3 .fw-desc-row {
+            padding: 6px 16px 0; text-align: center;
+            flex: 1; display: flex; align-items: flex-start; justify-content: center;
+        }
+        .fw-card-h3 .fw-desc {
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); line-height: 1.4;
+        }
+
+        .fw-card-h3 .fw-meta-row {
+            padding: 6px 16px 0; text-align: center;
+        }
+        .fw-card-h3 .fw-size {
+            font-family: 'Oxanium', sans-serif;
+            font-size: calc(11px * var(--t-scale, 1.1));
+            color: hsl(var(--muted-foreground)); opacity: 0.45;
+        }
+
+        .fw-card-h3 .fw-action-row {
+            padding: 14px 16px 18px; text-align: center;
+        }
+        .fw-card-h3 .fw-dl {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: calc(12px * var(--t-scale, 1.1));
+            font-weight: 500; transition: all 0.15s; width: 100%; justify-content: center;
+        }
+        .fw-card-h3 .fw-dl i { width: 14px; height: 14px; }
+        .fw-card-h3.recommended .fw-dl {
+            background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        }
+        .fw-card-h3.recommended .fw-dl:hover { opacity: 0.9; }
+        .fw-card-h3:not(.recommended) .fw-dl {
+            background: hsl(var(--primary) / 0.1); color: hsl(var(--primary));
+        }
+        .fw-card-h3:not(.recommended) .fw-dl:hover { background: hsl(var(--primary) / 0.18); }
+    </style>
+</head>
+<body data-theme="ternity-dark" data-scale="default">
+
+<div class="page-header">
+    <h1>Downloads v5 — Channel Switcher</h1>
+    <p>Stable / Dev channel per framework card. Shows all 3 states: both channels, only stable, only dev</p>
+</div>
+
+<div class="switcher-row">
+    <span class="switcher-label">Theme</span>
+    <div class="switcher-group" id="theme-switcher">
+        <button class="active" data-theme="ternity-dark">Ternity Dark</button>
+        <button data-theme="ternity-light">Ternity Light</button>
+        <button data-theme="midnight">Midnight</button>
+        <button data-theme="warm-sand">Warm Sand</button>
+        <button data-theme="carbon">Carbon</button>
+        <button data-theme="high-contrast">High Contrast</button>
+    </div>
+    <span class="switcher-label">Scale</span>
+    <div class="switcher-group" id="scale-switcher">
+        <button data-scale="compact">Compact</button>
+        <button class="active" data-scale="default">Default</button>
+        <button data-scale="comfortable">Comfortable</button>
+    </div>
+</div>
+
+<div class="variant-nav" id="variant-nav">
+    <button class="active" data-variant="h1">H1 — Pill Toggle</button>
+    <button data-variant="h2">H2 — Version Dropdown</button>
+    <button data-variant="h3">H3 — Tab Underline</button>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT H1: Pill Toggle                           -->
+<!-- Segmented pill control: "Stable" / "Dev"          -->
+<!-- Only appears when both channels exist             -->
+<!-- ================================================ -->
+
+<div class="variant active" id="variant-h1">
+<div class="variant-label">
+    Small pill toggle (Stable / Dev) inside each card. Only shown when both channels exist. Single-channel cards show just a badge. Card content (version, size, download) swaps on toggle.
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main">
+            <div class="centered-hero">
+                <div class="app-icon"><i data-lucide="monitor"></i></div>
+                <div class="app-name">Ternity Desktop</div>
+                <div class="app-tagline">Track time and manage projects from your desktop</div>
+
+                <div class="platform-pills">
+                    <button class="active"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg> Windows</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg> Linux</button>
+                </div>
+
+                <div class="fw-cards-h1">
+                    <!-- Tauri — BOTH stable + dev (toggle visible) -->
+                    <div class="fw-card-h1 recommended" data-card="tauri-h1">
+                        <div class="fw-name-row"><span class="fw-name">Tauri</span></div>
+                        <div class="channel-toggle">
+                            <button class="ch-pill active-stable" data-ch="stable" onclick="switchH1(this, 'tauri-h1')"><i data-lucide="tag"></i> Stable</button>
+                            <button class="ch-pill" data-ch="dev" onclick="switchH1(this, 'tauri-h1')"><i data-lucide="git-commit-horizontal"></i> Dev</button>
+                        </div>
+                        <div class="fw-version-row"><span class="fw-version" data-stable="v0.1.0" data-dev="v0.1.0-5-ga3f2c1b">v0.1.0</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Lightweight native app built with Rust</span></div>
+                        <div class="fw-meta-row"><span class="fw-size" data-stable="5 MB · .dmg" data-dev="5.2 MB · .dmg">5 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Flutter — ONLY dev (no toggle) -->
+                    <div class="fw-card-h1">
+                        <div class="fw-name-row"><span class="fw-name">Flutter</span></div>
+                        <div class="channel-single"><span class="badge-dev"><i data-lucide="git-commit-horizontal"></i> Dev build</span></div>
+                        <div class="fw-version-row"><span class="fw-version untagged">v0.1.0-3-g8f2d4a1</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Cross-platform native app</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">43 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Electron — ONLY stable (no toggle) -->
+                    <div class="fw-card-h1">
+                        <div class="fw-name-row"><span class="fw-name">Electron</span></div>
+                        <div class="channel-single"><span class="badge-release"><i data-lucide="tag"></i> Release</span></div>
+                        <div class="fw-version-row"><span class="fw-version">v0.2.1</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Full-featured app with system tray and offline support</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">98 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                </div>
+
+                <div class="checksum-link"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT H2: Version Dropdown                      -->
+<!-- Select dropdown showing versions with channel     -->
+<!-- ================================================ -->
+
+<div class="variant" id="variant-h2">
+<div class="variant-label">
+    Version dropdown — select between "v0.1.0 (Stable)" and "v0.1.0-5-ga3f2c1b (Dev)". Single-channel cards show plain version + badge. The dropdown itself IS the channel switcher.
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main">
+            <div class="centered-hero">
+                <div class="app-icon"><i data-lucide="monitor"></i></div>
+                <div class="app-name">Ternity Desktop</div>
+                <div class="app-tagline">Track time and manage projects from your desktop</div>
+
+                <div class="platform-pills">
+                    <button class="active"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg> Windows</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg> Linux</button>
+                </div>
+
+                <div class="fw-cards-h2">
+                    <!-- Tauri — BOTH channels (dropdown) -->
+                    <div class="fw-card-h2 recommended" data-card="tauri-h2">
+                        <div class="fw-name-row"><span class="fw-name">Tauri</span></div>
+                        <div class="version-select-row">
+                            <select class="version-select" onchange="switchH2(this, 'tauri-h2')">
+                                <option value="stable" data-size="5 MB · .dmg">v0.1.0 — Stable</option>
+                                <option value="dev" data-size="5.2 MB · .dmg">v0.1.0-5-ga3f2c1b — Dev</option>
+                            </select>
+                        </div>
+                        <div class="fw-desc-row"><span class="fw-desc">Lightweight native app built with Rust</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">5 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Flutter — ONLY dev (no dropdown) -->
+                    <div class="fw-card-h2">
+                        <div class="fw-name-row"><span class="fw-name">Flutter</span></div>
+                        <div class="version-single">
+                            <span class="fw-version untagged">v0.1.0-3-g8f2d4a1</span>
+                            <span class="badge-dev"><i data-lucide="git-commit-horizontal"></i> Dev</span>
+                        </div>
+                        <div class="fw-desc-row"><span class="fw-desc">Cross-platform native app</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">43 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Electron — ONLY stable (no dropdown) -->
+                    <div class="fw-card-h2">
+                        <div class="fw-name-row"><span class="fw-name">Electron</span></div>
+                        <div class="version-single">
+                            <span class="fw-version">v0.2.1</span>
+                            <span class="badge-release"><i data-lucide="tag"></i> Release</span>
+                        </div>
+                        <div class="fw-desc-row"><span class="fw-desc">Full-featured app with system tray and offline support</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">98 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                </div>
+
+                <div class="checksum-link"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!-- VARIANT H3: Tab Underline                         -->
+<!-- Minimal tabs with underline accent                -->
+<!-- ================================================ -->
+
+<div class="variant" id="variant-h3">
+<div class="variant-label">
+    Underline tabs (Stable / Dev) inside each card, colored by channel. Only shown when both exist. Single-channel cards show a badge. Clean, minimal, familiar tab pattern.
+</div>
+<div class="theme-container">
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 30" fill="none" style="height:22px;width:18px"><path d="M12 2L2 8v14l10 6 10-6V8L12 2z" stroke="currentColor" stroke-width="1.5" fill="hsl(var(--primary))" fill-opacity="0.15"/><path d="M12 2v26M2 8l10 6 10-6" stroke="hsl(var(--primary))" stroke-width="1.5"/></svg>
+                <span>Ternity</span>
+            </div>
+            <div class="sidebar-section">Tracking</div>
+            <div class="sidebar-item">Timer & Entries</div>
+            <div class="sidebar-item">Dashboard</div>
+            <div class="sidebar-item">Reports</div>
+            <div class="sidebar-section">Admin</div>
+            <div class="sidebar-item">Users</div>
+            <div class="sidebar-item">Projects</div>
+            <div class="sidebar-spacer"></div>
+            <div class="sidebar-item active"><i data-lucide="download" style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:6px"></i>Downloads</div>
+            <div class="sidebar-item">Settings</div>
+        </div>
+        <div class="main">
+            <div class="centered-hero">
+                <div class="app-icon"><i data-lucide="monitor"></i></div>
+                <div class="app-name">Ternity Desktop</div>
+                <div class="app-tagline">Track time and manage projects from your desktop</div>
+
+                <div class="platform-pills">
+                    <button class="active"><svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.01 7.87-.01V5.11l-7.87 1.7v5.2zM17 12.25V19l-7.87-1.08v-5.68L17 12.25zM9 18.75 3 17.5v-5.5l6 .08v6.67z"/></svg> Windows</button>
+                    <button><svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.777.07 1.543-.242 2.135-.598.285-.18.543-.4.762-.598.203-.2.38-.373.497-.415.063-.023.197.14.33.14.265.004.524-.06.722-.204.396-.29.535-.868.357-1.523a1.99 1.99 0 0 0-.142-.385 7.87 7.87 0 0 0 .215-.567c.182-.56.264-1.164.089-1.794a3.87 3.87 0 0 0-.492-1.015c-.399-.573-.82-1.067-1.139-1.632-.317-.576-.506-1.2-.507-2.063 0-1.2.324-2.113.842-2.898.514-.785 1.2-1.444 1.786-2.164.586-.721 1.07-1.517 1.07-2.618v-.011c-.001-1.594-.46-2.71-1.192-3.506C18.603.97 17.534.46 16.43.16A9.689 9.689 0 0 0 12.504 0"/></svg> Linux</button>
+                </div>
+
+                <div class="fw-cards-h3">
+                    <!-- Tauri — BOTH channels (tabs visible) -->
+                    <div class="fw-card-h3 recommended" data-card="tauri-h3">
+                        <div class="fw-head"><span class="fw-name">Tauri</span></div>
+                        <div class="fw-channel-row">
+                            <button class="ch-tab active-stable" data-ch="stable" onclick="switchH3(this, 'tauri-h3')"><i data-lucide="tag"></i> Stable</button>
+                            <button class="ch-tab" data-ch="dev" onclick="switchH3(this, 'tauri-h3')"><i data-lucide="git-commit-horizontal"></i> Dev</button>
+                        </div>
+                        <div class="fw-version-row"><span class="fw-version" data-stable="v0.1.0" data-dev="v0.1.0-5-ga3f2c1b">v0.1.0</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Lightweight native app built with Rust</span></div>
+                        <div class="fw-meta-row"><span class="fw-size" data-stable="5 MB · .dmg" data-dev="5.2 MB · .dmg">5 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Flutter — ONLY dev (badge, no tabs) -->
+                    <div class="fw-card-h3">
+                        <div class="fw-head"><span class="fw-name">Flutter</span></div>
+                        <div class="channel-single"><span class="badge-dev"><i data-lucide="git-commit-horizontal"></i> Dev build</span></div>
+                        <div class="fw-version-row"><span class="fw-version untagged">v0.1.0-3-g8f2d4a1</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Cross-platform native app</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">43 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                    <!-- Electron — ONLY stable (badge, no tabs) -->
+                    <div class="fw-card-h3">
+                        <div class="fw-head"><span class="fw-name">Electron</span></div>
+                        <div class="channel-single"><span class="badge-release"><i data-lucide="tag"></i> Release</span></div>
+                        <div class="fw-version-row"><span class="fw-version">v0.2.1</span></div>
+                        <div class="fw-desc-row"><span class="fw-desc">Full-featured app with system tray and offline support</span></div>
+                        <div class="fw-meta-row"><span class="fw-size">98 MB · .dmg</span></div>
+                        <div class="fw-action-row"><button class="fw-dl"><i data-lucide="download"></i> Download .dmg</button></div>
+                    </div>
+                </div>
+
+                <div class="checksum-link"><i data-lucide="shield-check"></i> SHA-256 checksums</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    // Theme & scale switchers
+    document.getElementById('theme-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#theme-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-theme', e.target.dataset.theme);
+    });
+    document.getElementById('scale-switcher').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#scale-switcher button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.body.setAttribute('data-scale', e.target.dataset.scale);
+    });
+    document.getElementById('variant-nav').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('.variant-nav button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+        document.getElementById('variant-' + e.target.dataset.variant).classList.add('active');
+    });
+
+    // H1 — Pill toggle switching
+    function switchH1(btn, cardId) {
+        const card = document.querySelector(`[data-card="${cardId}"]`);
+        const pills = card.querySelectorAll('.ch-pill');
+        pills.forEach(p => { p.classList.remove('active-stable', 'active-dev'); });
+        const ch = btn.dataset.ch;
+        btn.classList.add(ch === 'stable' ? 'active-stable' : 'active-dev');
+
+        const ver = card.querySelector('.fw-version');
+        const size = card.querySelector('.fw-size');
+        ver.textContent = ver.dataset[ch];
+        size.textContent = size.dataset[ch];
+        if (ch === 'dev') {
+            ver.classList.add('untagged');
+        } else {
+            ver.classList.remove('untagged');
+        }
+    }
+
+    // H2 — Dropdown switching
+    function switchH2(select, cardId) {
+        const card = document.querySelector(`[data-card="${cardId}"]`);
+        const size = card.querySelector('.fw-size');
+        const opt = select.options[select.selectedIndex];
+        size.textContent = opt.dataset.size;
+    }
+
+    // H3 — Tab underline switching
+    function switchH3(btn, cardId) {
+        const card = document.querySelector(`[data-card="${cardId}"]`);
+        const tabs = card.querySelectorAll('.ch-tab');
+        tabs.forEach(t => { t.classList.remove('active-stable', 'active-dev'); });
+        const ch = btn.dataset.ch;
+        btn.classList.add(ch === 'stable' ? 'active-stable' : 'active-dev');
+
+        const ver = card.querySelector('.fw-version');
+        const size = card.querySelector('.fw-size');
+        ver.textContent = ver.dataset[ch];
+        size.textContent = size.dataset[ch];
+        if (ch === 'dev') {
+            ver.classList.add('untagged');
+        } else {
+            ver.classList.remove('untagged');
+        }
+    }
+
+    lucide.createIcons();
+</script>
+</body>
+</html>

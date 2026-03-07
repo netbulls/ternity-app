@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ternity — PDF Report V6: Invoice Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+         V6 — INVOICE STYLE
+         Compact, dense, utilitarian. Professional invoice / billing
+         statement feel. Maximum data per page. No charts, no cards —
+         pure tabular data with hierarchical headers. Optimized for
+         accountants, finance teams, and timesheet attachments.
+         ============================================================ */
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #e8e8e8;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 8.5px;
+        color: #111111;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* -- Exploration header (browser only) -- */
+      .exploration-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        font-family: 'Oxanium', sans-serif;
+      }
+      .exploration-header h1 {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(0, 0, 0, 0.35);
+      }
+      .exploration-header p {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.25);
+        margin-top: 4px;
+      }
+
+      /* -- A4 page simulation -- */
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 16px auto;
+        background: #ffffff;
+        position: relative;
+        overflow: hidden;
+        page-break-after: always;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .exploration-header {
+          display: none;
+        }
+        .page {
+          margin: 0;
+          box-shadow: none;
+          page-break-after: always;
+        }
+      }
+
+      /* -- Page inner content area -- */
+      .page-content {
+        padding: 12mm 15mm;
+        min-height: calc(297mm - 24mm);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-body {
+        flex: 1;
+      }
+
+      /* ============================================================
+         HEADER — Invoice Style
+         ============================================================ */
+      .inv-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0;
+      }
+
+      .inv-header-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .inv-logo svg {
+        display: block;
+      }
+
+      .inv-company {
+        font-family: 'Oxanium', sans-serif;
+      }
+
+      .inv-company-name {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        line-height: 1.1;
+      }
+
+      .inv-company-address {
+        font-size: 7.5px;
+        color: #666;
+        margin-top: 2px;
+        letter-spacing: 0.5px;
+      }
+
+      .inv-header-right {
+        text-align: right;
+      }
+
+      .inv-header-right table {
+        margin-left: auto;
+        border-collapse: collapse;
+      }
+
+      .inv-header-right td {
+        padding: 1px 0;
+        font-size: 8px;
+        line-height: 1.3;
+        vertical-align: top;
+      }
+
+      .inv-header-right .inv-label {
+        font-size: 7px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #888;
+        padding-right: 10px;
+        white-space: nowrap;
+      }
+
+      .inv-header-right .inv-value {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        color: #111;
+        white-space: nowrap;
+      }
+
+      .inv-header-right .inv-doc-type {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #111;
+        margin-bottom: 6px;
+        display: block;
+        text-align: right;
+      }
+
+      /* Double rule */
+      .double-rule {
+        border: none;
+        border-top: 2px solid #111;
+        margin: 8px 0 2px;
+        padding: 0;
+      }
+
+      .double-rule + .double-rule-inner {
+        border: none;
+        border-top: 1px solid #111;
+        margin: 2px 0 10px;
+        padding: 0;
+      }
+
+      /* Simplified page header (pages 2+) */
+      .inv-header-simple {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0;
+      }
+
+      .inv-header-simple-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .inv-header-simple-left .inv-company-name {
+        font-size: 11px;
+        letter-spacing: 2px;
+      }
+
+      .inv-header-simple-right {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #555;
+      }
+
+      /* ============================================================
+         SECTION HEADERS
+         ============================================================ */
+      .section-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #111;
+        margin: 12px 0 6px;
+      }
+
+      .section-title:first-child {
+        margin-top: 0;
+      }
+
+      /* ============================================================
+         TABLES — Dense, bordered, utilitarian
+         ============================================================ */
+      table.inv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8px;
+        margin-bottom: 10px;
+      }
+
+      table.inv-table th {
+        font-size: 7px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: #555;
+        background: #f0f1f3;
+        border: 1px solid #ddd;
+        padding: 3px 5px;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      table.inv-table td {
+        border: 1px solid #ddd;
+        padding: 2.5px 5px;
+        vertical-align: top;
+        line-height: 1.35;
+      }
+
+      /* Alternating stripes */
+      table.inv-table tbody tr:nth-child(even) td {
+        background: #fafbfc;
+      }
+
+      /* Numeric cells */
+      table.inv-table .num {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      table.inv-table .num-center {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      /* Right-aligned header */
+      table.inv-table th.r {
+        text-align: right;
+      }
+
+      table.inv-table th.c {
+        text-align: center;
+      }
+
+      /* Mono / code-style cells */
+      table.inv-table .mono {
+        font-family: 'Oxanium', monospace;
+        font-size: 7.5px;
+        letter-spacing: 0.3px;
+      }
+
+      /* Description column — allow wrap */
+      table.inv-table .desc {
+        max-width: 200px;
+        word-wrap: break-word;
+      }
+
+      /* User header row */
+      table.inv-table tr.user-header td {
+        background: #ebedf0;
+        font-family: 'Oxanium', sans-serif;
+        font-size: 8.5px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        border-top: 2px solid #999;
+        padding: 4px 5px;
+      }
+
+      /* Subtotal row */
+      table.inv-table tr.subtotal td {
+        background: #f5f6f8;
+        font-weight: 600;
+        border-top: 1.5px solid #bbb;
+        border-bottom: 1.5px solid #bbb;
+      }
+
+      table.inv-table tr.subtotal .num {
+        font-weight: 700;
+      }
+
+      /* Grand total row */
+      table.inv-table tr.grand-total td {
+        background: #111;
+        color: #fff;
+        font-weight: 700;
+        border: 2px solid #111;
+        padding: 4px 5px;
+      }
+
+      table.inv-table tr.grand-total .num {
+        color: #00d4aa;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      /* Summary table value emphasis */
+      table.inv-table .val-emphasis {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #111;
+      }
+
+      table.inv-table .val-teal {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        color: #00d4aa;
+      }
+
+      /* ============================================================
+         FOOTER
+         ============================================================ */
+      .page-footer {
+        margin-top: auto;
+        padding-top: 6px;
+        border-top: 1px solid #ccc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 7px;
+        color: #888;
+        letter-spacing: 0.3px;
+      }
+
+      .page-footer .footer-left {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+      }
+
+      .page-footer .footer-center {
+        text-align: center;
+      }
+
+      .page-footer .footer-right {
+        font-family: 'Oxanium', sans-serif;
+        font-weight: 600;
+        text-align: right;
+      }
+
+      /* ============================================================
+         APPENDIX — Signature block
+         ============================================================ */
+      .signature-block {
+        margin-top: 24px;
+        display: flex;
+        gap: 60px;
+      }
+
+      .signature-line {
+        flex: 1;
+        max-width: 200px;
+      }
+
+      .signature-line .sig-rule {
+        border: none;
+        border-top: 1px solid #111;
+        margin-bottom: 4px;
+      }
+
+      .signature-line .sig-label {
+        font-size: 7.5px;
+        color: #555;
+        letter-spacing: 0.5px;
+      }
+
+      .legal-footer {
+        margin-top: 16px;
+        font-size: 7px;
+        color: #999;
+        font-style: italic;
+        letter-spacing: 0.2px;
+      }
+
+      .appendix-note {
+        font-size: 7.5px;
+        color: #888;
+        font-style: italic;
+        margin: 4px 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+         EXPLORATION HEADER (browser only)
+         ============================================================ -->
+    <div class="exploration-header">
+      <h1>V6 — Invoice Style</h1>
+      <p>Compact · Dense · Utilitarian — Maximum data per page</p>
+    </div>
+
+    <!-- ============================================================
+         PAGE 1 — Header, Summary, Detailed Log (Anna + Marek)
+         ============================================================ -->
+    <div class="page">
+      <div class="page-content">
+        <div class="page-body">
+          <!-- Invoice Header -->
+          <div class="inv-header">
+            <div class="inv-header-left">
+              <div class="inv-logo">
+                <svg
+                  width="20"
+                  height="24"
+                  viewBox="0 0 100 120"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+                    stroke="#00D4AA"
+                    stroke-width="5"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                  <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+                  <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+                  <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+                  <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+                  <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+                </svg>
+              </div>
+              <div class="inv-company">
+                <div class="inv-company-name">Ternity</div>
+                <div class="inv-company-address">Ternity · app.ternity.xyz</div>
+              </div>
+            </div>
+            <div class="inv-header-right">
+              <span class="inv-doc-type">Time Report</span>
+              <table>
+                <tr>
+                  <td class="inv-label">Report No</td>
+                  <td class="inv-value">TR-2026-02-001</td>
+                </tr>
+                <tr>
+                  <td class="inv-label">Date</td>
+                  <td class="inv-value">7 March 2026</td>
+                </tr>
+                <tr>
+                  <td class="inv-label">Period</td>
+                  <td class="inv-value">1 Feb — 28 Feb 2026</td>
+                </tr>
+                <tr>
+                  <td class="inv-label">Client</td>
+                  <td class="inv-value">Acme Corporation</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <hr class="double-rule" />
+          <hr class="double-rule-inner" />
+
+          <!-- Summary Table -->
+          <div class="section-title">Summary</div>
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th style="width: 28%">Metric</th>
+                <th style="width: 20%" class="r">Value</th>
+                <th style="width: 28%">Detail</th>
+                <th style="width: 24%">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total Hours</td>
+                <td class="num val-teal">487.5 h</td>
+                <td>Across 3 projects</td>
+                <td>Billable hours only</td>
+              </tr>
+              <tr>
+                <td>Total Entries</td>
+                <td class="num val-emphasis">142</td>
+                <td>Avg 6.1h per entry</td>
+                <td>Excludes zero-duration</td>
+              </tr>
+              <tr>
+                <td>Working Days</td>
+                <td class="num val-emphasis">20</td>
+                <td>1 Feb — 28 Feb 2026</td>
+                <td>Mon–Fri, excl. holidays</td>
+              </tr>
+              <tr>
+                <td>Team Size</td>
+                <td class="num val-emphasis">4</td>
+                <td>Active contributors</td>
+                <td>All full-time</td>
+              </tr>
+              <tr>
+                <td>Avg Hours / Person / Day</td>
+                <td class="num val-emphasis">6.09</td>
+                <td>487.5h ÷ 4 ÷ 20d</td>
+                <td>Target: 6.5h</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <hr class="double-rule" />
+          <hr class="double-rule-inner" />
+
+          <!-- Detailed Time Log -->
+          <div class="section-title">Detailed Time Log</div>
+
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th style="width: 11%">Date</th>
+                <th style="width: 10%">Time</th>
+                <th style="width: 17%">Project</th>
+                <th>Description</th>
+                <th style="width: 11%">Jira</th>
+                <th style="width: 9%" class="r">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- ANNA KOWALSKA -->
+              <tr class="user-header">
+                <td colspan="5">Anna Kowalska — Senior Developer</td>
+                <td class="num" style="letter-spacing: 1px">170.6 h</td>
+              </tr>
+              <tr>
+                <td class="mono">02-02</td>
+                <td class="mono">09:00–17:15</td>
+                <td>Acme Platform</td>
+                <td class="desc">
+                  Dashboard layout refactor, responsive grid system implementation
+                </td>
+                <td class="mono">ACM-1201</td>
+                <td class="num">8.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-03</td>
+                <td class="mono">08:45–16:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">User settings page, profile photo upload component</td>
+                <td class="mono">ACM-1202</td>
+                <td class="num">7.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-04</td>
+                <td class="mono">09:15–18:00</td>
+                <td>Acme API</td>
+                <td class="desc">REST endpoint for report generation, pagination logic</td>
+                <td class="mono">ACM-1210</td>
+                <td class="num">8.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-05</td>
+                <td class="mono">09:00–15:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">Bug fix: date picker timezone offset in Safari</td>
+                <td class="mono">ACM-1198</td>
+                <td class="num">6.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-06</td>
+                <td class="mono">10:00–17:45</td>
+                <td>Acme API</td>
+                <td class="desc">WebSocket integration for real-time notifications</td>
+                <td class="mono">ACM-1215</td>
+                <td class="num">7.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-09</td>
+                <td class="mono">08:30–17:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Search component with debounce, filter persistence</td>
+                <td class="mono">ACM-1220</td>
+                <td class="num">8.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-10</td>
+                <td class="mono">09:00–16:45</td>
+                <td>Acme Mobile</td>
+                <td class="desc">React Native navigation stack, deep linking setup</td>
+                <td class="mono">ACM-1225</td>
+                <td class="num">7.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-11</td>
+                <td class="mono">09:30–18:15</td>
+                <td>Acme Platform</td>
+                <td class="desc">Performance audit, bundle splitting, lazy loading routes</td>
+                <td class="mono">ACM-1230</td>
+                <td class="num">8.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-12</td>
+                <td class="mono">08:45–17:30</td>
+                <td>Acme API</td>
+                <td class="desc">Database migration scripts, schema versioning tooling</td>
+                <td class="mono">ACM-1234</td>
+                <td class="num">8.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-16</td>
+                <td class="mono">09:00–17:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Accessibility audit fixes, ARIA labels, keyboard nav</td>
+                <td class="mono">ACM-1240</td>
+                <td class="num">8.00</td>
+              </tr>
+              <tr>
+                <td class="mono">02-17</td>
+                <td class="mono">09:15–16:00</td>
+                <td>Acme Mobile</td>
+                <td class="desc">Push notification integration, permission handling</td>
+                <td class="mono">ACM-1245</td>
+                <td class="num">6.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-18</td>
+                <td class="mono">08:30–14:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">Code review, PR feedback, documentation updates</td>
+                <td class="mono">ACM-1248</td>
+                <td class="num">6.00</td>
+              </tr>
+              <tr class="subtotal">
+                <td
+                  colspan="5"
+                  style="
+                    text-align: right;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    font-size: 7px;
+                  "
+                >
+                  Subtotal — Anna Kowalska (12 entries)
+                </td>
+                <td class="num">170.60</td>
+              </tr>
+
+              <!-- MAREK NOWAK -->
+              <tr class="user-header">
+                <td colspan="5">Marek Nowak — Backend Engineer</td>
+                <td class="num" style="letter-spacing: 1px">136.5 h</td>
+              </tr>
+              <tr>
+                <td class="mono">02-02</td>
+                <td class="mono">09:30–17:00</td>
+                <td>Acme API</td>
+                <td class="desc">Authentication middleware refactor, JWT rotation</td>
+                <td class="mono">ACM-1203</td>
+                <td class="num">7.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-03</td>
+                <td class="mono">08:45–17:30</td>
+                <td>Acme API</td>
+                <td class="desc">Rate limiting implementation, Redis cache layer</td>
+                <td class="mono">ACM-1205</td>
+                <td class="num">8.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-04</td>
+                <td class="mono">09:00–16:15</td>
+                <td>Acme API</td>
+                <td class="desc">Database query optimization, N+1 query resolution</td>
+                <td class="mono">ACM-1208</td>
+                <td class="num">7.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-05</td>
+                <td class="mono">10:00–17:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">GraphQL schema design, resolver implementation</td>
+                <td class="mono">ACM-1212</td>
+                <td class="num">7.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-06</td>
+                <td class="mono">09:00–15:45</td>
+                <td>Acme API</td>
+                <td class="desc">Error handling standardization, custom error classes</td>
+                <td class="mono">ACM-1216</td>
+                <td class="num">6.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-09</td>
+                <td class="mono">08:30–16:30</td>
+                <td>Acme API</td>
+                <td class="desc">CI/CD pipeline optimization, parallel test execution</td>
+                <td class="mono">ACM-1221</td>
+                <td class="num">8.00</td>
+              </tr>
+              <tr>
+                <td class="mono">02-10</td>
+                <td class="mono">09:15–17:45</td>
+                <td>Acme API</td>
+                <td class="desc">Webhook system architecture, retry logic with backoff</td>
+                <td class="mono">ACM-1226</td>
+                <td class="num">8.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-11</td>
+                <td class="mono">09:00–16:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">API client SDK generation, type-safe fetch wrappers</td>
+                <td class="mono">ACM-1231</td>
+                <td class="num">7.00</td>
+              </tr>
+              <tr>
+                <td class="mono">02-12</td>
+                <td class="mono">08:45–17:15</td>
+                <td>Acme API</td>
+                <td class="desc">Logging infrastructure, structured JSON logs, correlation IDs</td>
+                <td class="mono">ACM-1235</td>
+                <td class="num">8.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-16</td>
+                <td class="mono">09:00–16:00</td>
+                <td>Acme API</td>
+                <td class="desc">Load testing with k6, bottleneck identification</td>
+                <td class="mono">ACM-1241</td>
+                <td class="num">7.00</td>
+              </tr>
+              <tr class="subtotal">
+                <td
+                  colspan="5"
+                  style="
+                    text-align: right;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    font-size: 7px;
+                  "
+                >
+                  Subtotal — Marek Nowak (10 entries)
+                </td>
+                <td class="num">136.50</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="page-footer">
+          <div class="footer-left">TR-2026-02-001</div>
+          <div class="footer-center">Acme Corporation — February 2026</div>
+          <div class="footer-right">Page 1 of 3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 2 — Kasia, Tomek + Grand Total
+         ============================================================ -->
+    <div class="page">
+      <div class="page-content">
+        <div class="page-body">
+          <!-- Simplified Header -->
+          <div class="inv-header-simple">
+            <div class="inv-header-simple-left">
+              <svg
+                width="16"
+                height="19"
+                viewBox="0 0 100 120"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+                  stroke="#00D4AA"
+                  stroke-width="5"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+                <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+                <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+                <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+                <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+                <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+              </svg>
+              <span class="inv-company-name" style="font-family: 'Oxanium', sans-serif"
+                >Ternity</span
+              >
+            </div>
+            <div class="inv-header-simple-right">Time Report — TR-2026-02-001</div>
+          </div>
+
+          <hr class="double-rule" />
+          <hr class="double-rule-inner" />
+
+          <div class="section-title">Detailed Time Log (continued)</div>
+
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th style="width: 11%">Date</th>
+                <th style="width: 10%">Time</th>
+                <th style="width: 17%">Project</th>
+                <th>Description</th>
+                <th style="width: 11%">Jira</th>
+                <th style="width: 9%" class="r">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- KASIA WISNIEWSKA -->
+              <tr class="user-header">
+                <td colspan="5">Kasia Wisniewska — UX Designer</td>
+                <td class="num" style="letter-spacing: 1px">112.9 h</td>
+              </tr>
+              <tr>
+                <td class="mono">02-02</td>
+                <td class="mono">09:00–16:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">User research synthesis, persona updates, journey maps</td>
+                <td class="mono">ACM-1204</td>
+                <td class="num">7.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-03</td>
+                <td class="mono">09:30–17:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Wireframes for onboarding flow, stakeholder review prep</td>
+                <td class="mono">ACM-1206</td>
+                <td class="num">7.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-04</td>
+                <td class="mono">08:45–15:30</td>
+                <td>Acme Mobile</td>
+                <td class="desc">Mobile navigation patterns, gesture interaction specs</td>
+                <td class="mono">ACM-1209</td>
+                <td class="num">6.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-05</td>
+                <td class="mono">09:00–17:15</td>
+                <td>Acme Platform</td>
+                <td class="desc">Design system component audit, token documentation</td>
+                <td class="mono">ACM-1213</td>
+                <td class="num">8.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-06</td>
+                <td class="mono">10:00–16:45</td>
+                <td>Acme Platform</td>
+                <td class="desc">High-fidelity mockups for dashboard redesign</td>
+                <td class="mono">ACM-1217</td>
+                <td class="num">6.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-09</td>
+                <td class="mono">09:00–17:30</td>
+                <td>Acme Mobile</td>
+                <td class="desc">Prototype animations, micro-interaction specifications</td>
+                <td class="mono">ACM-1222</td>
+                <td class="num">8.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-10</td>
+                <td class="mono">09:15–16:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Usability testing session facilitation (5 participants)</td>
+                <td class="mono">ACM-1227</td>
+                <td class="num">6.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-11</td>
+                <td class="mono">08:30–16:45</td>
+                <td>Acme Platform</td>
+                <td class="desc">Usability test analysis, findings report, priority matrix</td>
+                <td class="mono">ACM-1232</td>
+                <td class="num">8.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-12</td>
+                <td class="mono">09:00–15:15</td>
+                <td>Acme Mobile</td>
+                <td class="desc">Icon set design, SVG optimization, asset handoff</td>
+                <td class="mono">ACM-1236</td>
+                <td class="num">6.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-16</td>
+                <td class="mono">09:00–16:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">Design QA on implemented features, redline review</td>
+                <td class="mono">ACM-1242</td>
+                <td class="num">7.50</td>
+              </tr>
+              <tr class="subtotal">
+                <td
+                  colspan="5"
+                  style="
+                    text-align: right;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    font-size: 7px;
+                  "
+                >
+                  Subtotal — Kasia Wisniewska (10 entries)
+                </td>
+                <td class="num">112.90</td>
+              </tr>
+
+              <!-- TOMEK ZIELINSKI -->
+              <tr class="user-header">
+                <td colspan="5">Tomek Zielinski — QA Engineer</td>
+                <td class="num" style="letter-spacing: 1px">67.5 h</td>
+              </tr>
+              <tr>
+                <td class="mono">02-02</td>
+                <td class="mono">09:00–16:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Test plan creation for sprint 14 features, env setup</td>
+                <td class="mono">ACM-1207</td>
+                <td class="num">7.00</td>
+              </tr>
+              <tr>
+                <td class="mono">02-03</td>
+                <td class="mono">09:30–17:15</td>
+                <td>Acme API</td>
+                <td class="desc">API contract testing, Postman collection maintenance</td>
+                <td class="mono">ACM-1211</td>
+                <td class="num">7.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-04</td>
+                <td class="mono">08:45–16:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">Regression test suite execution, defect logging</td>
+                <td class="mono">ACM-1214</td>
+                <td class="num">7.75</td>
+              </tr>
+              <tr>
+                <td class="mono">02-05</td>
+                <td class="mono">09:00–17:00</td>
+                <td>Acme Mobile</td>
+                <td class="desc">Mobile device matrix testing, cross-browser validation</td>
+                <td class="mono">ACM-1218</td>
+                <td class="num">8.00</td>
+              </tr>
+              <tr>
+                <td class="mono">02-09</td>
+                <td class="mono">09:15–16:30</td>
+                <td>Acme Platform</td>
+                <td class="desc">E2E test automation, Playwright script development</td>
+                <td class="mono">ACM-1223</td>
+                <td class="num">7.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-10</td>
+                <td class="mono">09:00–16:15</td>
+                <td>Acme API</td>
+                <td class="desc">Performance test scenarios, response time benchmarks</td>
+                <td class="mono">ACM-1228</td>
+                <td class="num">7.25</td>
+              </tr>
+              <tr>
+                <td class="mono">02-11</td>
+                <td class="mono">08:30–15:00</td>
+                <td>Acme Platform</td>
+                <td class="desc">Security scan review, vulnerability triage, OWASP checks</td>
+                <td class="mono">ACM-1233</td>
+                <td class="num">6.50</td>
+              </tr>
+              <tr>
+                <td class="mono">02-12</td>
+                <td class="mono">09:00–17:00</td>
+                <td>Acme Mobile</td>
+                <td class="desc">UAT coordination, test case sign-off, release checklist</td>
+                <td class="mono">ACM-1237</td>
+                <td class="num">8.00</td>
+              </tr>
+              <tr class="subtotal">
+                <td
+                  colspan="5"
+                  style="
+                    text-align: right;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    font-size: 7px;
+                  "
+                >
+                  Subtotal — Tomek Zielinski (8 entries)
+                </td>
+                <td class="num">67.50</td>
+              </tr>
+
+              <!-- GRAND TOTAL -->
+              <tr class="grand-total">
+                <td
+                  colspan="5"
+                  style="
+                    text-align: right;
+                    letter-spacing: 1.5px;
+                    text-transform: uppercase;
+                    font-size: 8px;
+                    font-family: 'Oxanium', sans-serif;
+                  "
+                >
+                  Grand Total — 4 Users · 40 Entries
+                </td>
+                <td class="num">487.50</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="page-footer">
+          <div class="footer-left">TR-2026-02-001</div>
+          <div class="footer-center">Acme Corporation — February 2026</div>
+          <div class="footer-right">Page 2 of 3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 3 — Appendix: Project Breakdown + User Summary
+         ============================================================ -->
+    <div class="page">
+      <div class="page-content">
+        <div class="page-body">
+          <!-- Simplified Header -->
+          <div class="inv-header-simple">
+            <div class="inv-header-simple-left">
+              <svg
+                width="16"
+                height="19"
+                viewBox="0 0 100 120"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
+                  stroke="#00D4AA"
+                  stroke-width="5"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+                <circle cx="50" cy="32" r="6" fill="#00D4AA" />
+                <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
+                <circle cx="54" cy="67" r="5.5" fill="#00D4AA" />
+                <circle cx="44" cy="77" r="7" fill="#00D4AA" />
+                <circle cx="56" cy="83" r="6" fill="#00D4AA" />
+              </svg>
+              <span class="inv-company-name" style="font-family: 'Oxanium', sans-serif"
+                >Ternity</span
+              >
+            </div>
+            <div class="inv-header-simple-right">Time Report — TR-2026-02-001</div>
+          </div>
+
+          <hr class="double-rule" />
+          <hr class="double-rule-inner" />
+
+          <!-- Project Breakdown -->
+          <div class="section-title">Appendix: Project Breakdown</div>
+
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th style="width: 25%">Project</th>
+                <th style="width: 22%">Client</th>
+                <th style="width: 15%" class="r">Total Hours</th>
+                <th style="width: 13%" class="c">% of Total</th>
+                <th style="width: 12%" class="c">Entries</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 600">Acme Platform</td>
+                <td>Acme Corporation</td>
+                <td class="num">272.25</td>
+                <td class="num-center">55.8%</td>
+                <td class="num-center">24</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600">Acme API</td>
+                <td>Acme Corporation</td>
+                <td class="num">137.50</td>
+                <td class="num-center">28.2%</td>
+                <td class="num-center">11</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600">Acme Mobile</td>
+                <td>Acme Corporation</td>
+                <td class="num">77.75</td>
+                <td class="num-center">16.0%</td>
+                <td class="num-center">7</td>
+              </tr>
+              <tr class="grand-total">
+                <td
+                  colspan="2"
+                  style="
+                    text-align: right;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    font-size: 7.5px;
+                    font-family: 'Oxanium', sans-serif;
+                  "
+                >
+                  Total
+                </td>
+                <td class="num">487.50</td>
+                <td class="num-center" style="color: #00d4aa">100.0%</td>
+                <td class="num-center" style="color: #00d4aa">42</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- User Summary -->
+          <div class="section-title" style="margin-top: 16px">User Summary</div>
+
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th style="width: 20%">User</th>
+                <th style="width: 16%">Role</th>
+                <th style="width: 10%" class="c">Days Active</th>
+                <th style="width: 9%" class="c">Entries</th>
+                <th style="width: 11%" class="r">Hours</th>
+                <th style="width: 11%" class="r">Rate</th>
+                <th style="width: 13%" class="r">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 600">Anna Kowalska</td>
+                <td>Senior Developer</td>
+                <td class="num-center">12</td>
+                <td class="num-center">12</td>
+                <td class="num">170.60</td>
+                <td class="num" style="color: #999">—</td>
+                <td class="num" style="color: #999">—</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600">Marek Nowak</td>
+                <td>Backend Engineer</td>
+                <td class="num-center">10</td>
+                <td class="num-center">10</td>
+                <td class="num">136.50</td>
+                <td class="num" style="color: #999">—</td>
+                <td class="num" style="color: #999">—</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600">Kasia Wisniewska</td>
+                <td>UX Designer</td>
+                <td class="num-center">10</td>
+                <td class="num-center">10</td>
+                <td class="num">112.90</td>
+                <td class="num" style="color: #999">—</td>
+                <td class="num" style="color: #999">—</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600">Tomek Zielinski</td>
+                <td>QA Engineer</td>
+                <td class="num-center">8</td>
+                <td class="num-center">8</td>
+                <td class="num">67.50</td>
+                <td class="num" style="color: #999">—</td>
+                <td class="num" style="color: #999">—</td>
+              </tr>
+              <tr class="grand-total">
+                <td
+                  colspan="2"
+                  style="
+                    text-align: right;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    font-size: 7.5px;
+                    font-family: 'Oxanium', sans-serif;
+                  "
+                >
+                  Total
+                </td>
+                <td class="num-center" style="color: #00d4aa">—</td>
+                <td class="num-center" style="color: #00d4aa">40</td>
+                <td class="num" style="color: #00d4aa">487.50</td>
+                <td class="num" style="color: #666">—</td>
+                <td class="num" style="color: #666">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="appendix-note">(Rate and Amount columns left blank — fill as needed)</p>
+
+          <!-- Signature Block -->
+          <div class="signature-block">
+            <div class="signature-line">
+              <hr class="sig-rule" />
+              <div class="sig-label">Authorized by</div>
+            </div>
+            <div class="signature-line">
+              <hr class="sig-rule" />
+              <div class="sig-label">Date</div>
+            </div>
+          </div>
+
+          <!-- Legal Footer -->
+          <p class="legal-footer">
+            This document is computer-generated. No signature required unless noted.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="page-footer">
+          <div class="footer-left">TR-2026-02-001</div>
+          <div class="footer-center">Acme Corporation — February 2026</div>
+          <div class="footer-right">Page 3 of 3</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
