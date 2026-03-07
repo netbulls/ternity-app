@@ -184,7 +184,7 @@ body {
 
 /* ── Page content area ────────────────────────────────────────────── */
 
-.page-content { padding: 4mm 20mm 20mm 20mm; }
+.page-content { padding: 4mm 20mm 10mm 20mm; }
 
 /* ── TOC ──────────────────────────────────────────────────────────── */
 
@@ -370,7 +370,23 @@ body {
   justify-content: space-between;
   margin-bottom: 4mm;
   padding-bottom: 2mm;
-  page-break-inside: avoid;
+}
+/* Section chapter as table row for continuous flow */
+.section-chapter-row td {
+  padding: 10px 8px 6px 8px !important;
+  border-bottom: none !important;
+  background: #fff !important;
+}
+.section-chapter-row.has-divider td { padding-top: 16px !important; border-top: 1px solid #e5e5e5 !important; }
+.section-chapter-accent-row td {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+.section-chapter-accent-row .section-chapter-accent-line {
+  width: 100%;
+  height: 2px;
+  background: #00D4AA;
+  margin-bottom: 2mm;
 }
 
 .section-chapter-left {
@@ -419,22 +435,10 @@ body {
 .entries-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 6mm;
   font-size: 9px;
 }
 
-.entries-table thead th {
-  background: #f4f5f6;
-  border-bottom: 2px solid #dee2e6;
-  padding: 6px 8px;
-  text-align: left;
-  font-size: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #666;
-}
-.entries-table thead th:last-child { text-align: right; }
+
 
 .entries-table tbody tr { border-bottom: 1px solid #f0f0f0; }
 
@@ -606,37 +610,27 @@ function renderCover(data: ReportData): string {
 
 export function renderV7(data: ReportData): string {
   // Numbered chapters: 01 = Executive Summary, then one per user (02, 03, ...)
-  // TOC entries list chapter number, title, and page number.
   // Cover = page 1, TOC = page 2, content starts on page 3.
+  // TOC page numbers are updated by script after pagination.
 
-  // ── Build content pages ─────────────────────────────────────────
-  // Each entry in contentPages is one <div class="page"> of body content.
-  // We'll number pages at the end.
+  const COLGROUP = `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
 
-  const contentPages: string[] = [];
-
-  // ── Chapter 01: Executive Summary + first user ──────────────────
-
-  let ch01 = '';
-
-  // Chapter heading
-  ch01 += `<div class="chapter-heading">
-  <div class="chapter-number">${chapterNum(1)}</div>
-  <div class="chapter-title">Executive Summary</div>
-  <div class="chapter-accent"></div>
-</div>`;
-
-  // 2×2 metrics grid
+  // ── Chapter 01: Executive Summary ──────────────────────────────
   const avgPerDay =
     data.summary.workingDays > 0
       ? formatHours(data.summary.totalSeconds / data.summary.workingDays)
-      : '—';
+      : '\u2014';
   const avgPerPerson =
     data.summary.userCount > 0
       ? formatHours(data.summary.totalSeconds / data.summary.userCount)
-      : '—';
+      : '\u2014';
 
-  ch01 += `<div class="metrics-grid">
+  let ch01Content = `<div class="chapter-heading">
+  <div class="chapter-number">${chapterNum(1)}</div>
+  <div class="chapter-title">Executive Summary</div>
+  <div class="chapter-accent"></div>
+</div>
+<div class="metrics-grid">
   <div class="metric-card">
     <div class="metric-label">Total Hours</div>
     <div class="metric-value">${formatHours(data.summary.totalSeconds)}</div>
@@ -673,7 +667,7 @@ export function renderV7(data: ReportData): string {
     )
     .join('\n');
 
-  ch01 += `<div class="chart-section">
+  ch01Content += `<div class="chart-section">
   <div class="chart-container">${pieChart}</div>
   <div class="chart-legend">
     <h3>Team Composition</h3>
@@ -681,230 +675,306 @@ export function renderV7(data: ReportData): string {
   </div>
 </div>`;
 
-  // First user section starts on the same page as executive summary
-  // Only add the section header — entries paginate from here
-  const V7_CH01_LINES = 8; // very limited line budget on the summary page
-  const V7_PAGE_LINES = 32;
-  const V7_HEADER_LINES = 6;
-  const V7_DESC_CHARS_PER_LINE = 60;
+  // Add user 0 section header on the exec summary page
+  if (data.userDetails.length > 0) {
+    const user0 = data.userDetails[0]!;
+    ch01Content += `<hr class="user-divider"/>`;
+    ch01Content += `<div class="section-chapter">
+  <div class="section-chapter-left">
+    <div class="section-chapter-id">${chapterNum(2)}</div>
+    <div>
+      <div class="section-chapter-name">${esc(user0.userName)}</div>
+      <div class="section-chapter-stats">${user0.entryCount} entries &middot; ${user0.daysActive} days active</div>
+    </div>
+  </div>
+  <div class="section-chapter-hours">${formatHours(user0.totalSeconds)}</div>
+</div>
+<div class="section-chapter-accent"></div>`;
+    // Empty table — script will fill with rows that fit
+    ch01Content += `<table class="entries-table" id="ch01-table">${COLGROUP}<tbody></tbody></table>`;
+  }
 
-  const V7_TABLE_HEAD = `<thead><tr>
-  <th style="width:70px">Time</th>
-  <th style="width:120px">Project</th>
-  <th>Description</th>
-  <th style="width:60px">Jira</th>
-  <th style="width:65px">Duration</th>
-</tr></thead>`;
+  // Exec summary page (page 3)
+  const execSummaryPage = `<div class="page" id="page-3">
+  ${pageHeader()}
+  <div class="page-content">${ch01Content}</div>
+  ${pageFooter(data, 3, 0)}
+</div>`;
 
-  type RowItem = { html: string; lines: number };
+  // ── Build all data rows ────────────────────────────────────────
+  // ALL rows for ALL users (including user0) go into the measure container.
+  const allRowsHtml: string[] = [];
 
-  function collectUserRows(user: ReportData['userDetails'][number]): RowItem[] {
-    const rows: RowItem[] = [];
+  for (let ui = 0; ui < data.userDetails.length; ui++) {
+    const user = data.userDetails[ui]!;
+    const chapterNumber = ui + 2;
+
+    // User section header as table rows (for users 1+; user0's header is on exec page already)
+    if (ui > 0) {
+      const dividerCls = ' has-divider';
+      allRowsHtml.push(`<tr class="section-chapter-row${dividerCls}" data-sticky data-user="${esc(user.userName)}">
+  <td colspan="5"><div class="section-chapter">
+    <div class="section-chapter-left">
+      <div class="section-chapter-id">${chapterNum(chapterNumber)}</div>
+      <div>
+        <div class="section-chapter-name">${esc(user.userName)}</div>
+        <div class="section-chapter-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+      </div>
+    </div>
+    <div class="section-chapter-hours">${formatHours(user.totalSeconds)}</div>
+  </div></td>
+</tr>
+<tr class="section-chapter-accent-row"><td colspan="5"><div class="section-chapter-accent-line"></div></td></tr>`);
+    }
+
+    // Day groups + entries
     for (const dg of user.dayGroups) {
-      rows.push({
-        html: `<tr class="day-group-row">
+      allRowsHtml.push(`<tr class="day-group-row" data-sticky>
   <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
   <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
-</tr>`,
-        lines: 1,
-      });
+</tr>`);
+
       for (const entry of dg.entries) {
-        const descLen = entry.description.length;
-        const lines =
-          descLen > V7_DESC_CHARS_PER_LINE * 2 ? 3 : descLen > V7_DESC_CHARS_PER_LINE ? 2 : 1;
-        rows.push({
-          html: `<tr>
+        allRowsHtml.push(`<tr>
   <td class="time-cell">${esc(entry.startTime)}</td>
   <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
-  <td class="jira-cell" style="color: ${entry.jiraIssueKey ? '#6c8eef' : '#ccc'}">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
+  <td class="jira-cell" style="color: ${entry.jiraIssueKey ? '#6c8eef' : '#ccc'}">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '\u2014'}</td>
   <td class="duration-cell">${formatDuration(entry.durationSeconds)}</td>
-</tr>`,
-          lines,
-        });
+</tr>`);
       }
     }
-    return rows;
   }
 
-  /** Count how many rows fit within a given line budget, return the end index */
-  function fitRows(rows: RowItem[], startIdx: number, budget: number): number {
-    let idx = startIdx;
-    let remaining = budget;
-    while (idx < rows.length && remaining >= rows[idx]!.lines) {
-      remaining -= rows[idx]!.lines;
-      idx++;
-    }
-    // Ensure at least one row to avoid infinite loops
-    if (idx === startIdx && startIdx < rows.length) idx = startIdx + 1;
-    return idx;
-  }
-
-  /** Sum line units for a range of rows */
-  function sumLines(rows: RowItem[], start: number, end: number): number {
-    let total = 0;
-    for (let i = start; i < end; i++) total += rows[i]!.lines;
-    return total;
-  }
-
-  function userSectionHeader(
-    user: ReportData['userDetails'][number],
-    userIdx: number,
-    chapterNumber: number,
-  ): string {
-    const color = CHART_COLORS[userIdx % CHART_COLORS.length];
-    return `<div class="section-chapter">
-  <div class="section-chapter-left">
-    <div class="section-chapter-id">${chapterNum(chapterNumber)}</div>
-    <div>
-      <div class="section-chapter-name">${esc(user.userName)}</div>
-      <div class="section-chapter-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+  // ── Measure container ──────────────────────────────────────────
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div class="page" style="height:auto;min-height:0">
+    <div class="page-content">
+      <table class="entries-table">${COLGROUP}<tbody>
+        ${allRowsHtml.join('\n')}
+      </tbody></table>
     </div>
   </div>
-  <div class="section-chapter-hours">${formatHours(user.totalSeconds)}</div>
-</div>
-<div class="section-chapter-accent"></div>`;
-  }
+</div>`;
 
+  // ── Static pages ───────────────────────────────────────────────
+  const coverHtml = renderCover(data);
+
+  // TOC page with placeholder page numbers (script updates them)
+  // Build TOC entries server-side — exec summary + team composition always page 3
+  // User entries get placeholder page "0"
+  let tocRows = '';
+  tocRows += `<div class="toc-entry">
+    <span class="toc-number">${chapterNum(1)}</span>
+    <span class="toc-label">Executive Summary</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">3</span>
+  </div>`;
+  tocRows += `<div class="toc-entry">
+    <span class="toc-number">${chapterNum(2)}</span>
+    <span class="toc-label">Team Composition</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">3</span>
+  </div>`;
   if (data.userDetails.length > 0) {
-    const user0 = data.userDetails[0]!;
-    const user0Rows = collectUserRows(user0);
-
-    ch01 += `<hr class="user-divider"/>`;
-    ch01 += userSectionHeader(user0, 0, 2);
-
-    // Fit what we can on the summary page (line-budget aware)
-    const ch01End = fitRows(user0Rows, 0, V7_CH01_LINES);
-    if (ch01End > 0) {
-      ch01 += `<table class="entries-table">\n${V7_TABLE_HEAD}\n<tbody>\n${user0Rows
-        .slice(0, ch01End)
-        .map((r) => r.html)
-        .join('\n')}\n</tbody></table>`;
-    }
-    contentPages.push(ch01);
-
-    // Remaining rows for user 0 on continuation pages
-    let rowIdx = ch01End;
-    while (rowIdx < user0Rows.length) {
-      const chunkEnd = fitRows(user0Rows, rowIdx, V7_PAGE_LINES);
-      const chunkRows = user0Rows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-      contentPages.push(
-        `<table class="entries-table">\n${V7_TABLE_HEAD}\n<tbody>\n${chunkRows}\n</tbody></table>`,
-      );
-      rowIdx = chunkEnd;
-    }
-  } else {
-    contentPages.push(ch01);
+    tocRows += `<div class="toc-entry">
+    <span class="toc-number">${chapterNum(3)}</span>
+    <span class="toc-label">${esc(data.userDetails[0]!.userName)}</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">3</span>
+  </div>`;
   }
-
-  // ── Subsequent user sections (each with pagination) ─────────────
-
   for (let ui = 1; ui < data.userDetails.length; ui++) {
-    const user = data.userDetails[ui]!;
-    const chapterNumber = ui + 2;
-    const userRows = collectUserRows(user);
-    const header = userSectionHeader(user, ui, chapterNumber);
-
-    let rowIdx = 0;
-    let isFirstChunk = true;
-    while (rowIdx < userRows.length) {
-      const budget = V7_PAGE_LINES - (isFirstChunk ? V7_HEADER_LINES : 0);
-      const chunkEnd = fitRows(userRows, rowIdx, budget);
-      const chunkRows = userRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-
-      let pageHtml = '';
-      if (isFirstChunk) pageHtml += header;
-      pageHtml += `<table class="entries-table">\n${V7_TABLE_HEAD}\n<tbody>\n${chunkRows}\n</tbody></table>`;
-
-      contentPages.push(pageHtml);
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    if (userRows.length === 0) {
-      contentPages.push(
-        header + `<table class="entries-table">\n${V7_TABLE_HEAD}\n<tbody></tbody></table>`,
-      );
-    }
+    tocRows += `<div class="toc-entry" data-toc-user="${esc(data.userDetails[ui]!.userName)}">
+    <span class="toc-number">${chapterNum(ui + 3)}</span>
+    <span class="toc-label">${esc(data.userDetails[ui]!.userName)}</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">0</span>
+  </div>`;
   }
 
-  // ── Closing block on last page ──────────────────────────────────
+  const tocPageHtml = `<div class="page" id="page-2">
+  ${pageHeader()}
+  <div class="page-content">
+    <h2 class="toc-title">Contents</h2>
+    <hr class="toc-rule"/>
+    ${tocRows}
+  </div>
+  ${pageFooter(data, 2, 0)}
+</div>`;
 
-  const lastIdx = contentPages.length - 1;
-  contentPages[lastIdx] += renderClosingBlock(data);
+  // ── Templates ──────────────────────────────────────────────────
+  const headerTpl = `<template id="tpl-header">${pageHeader()}</template>`;
+  const footerTpl = `<template id="tpl-footer">${pageFooter(data, 0, 0)}</template>`;
+  const closingTpl = `<template id="tpl-closing">${renderClosingBlock(data)}</template>`;
 
-  // ── Calculate page numbers ──────────────────────────────────────
-  // Cover = page 1, TOC = page 2, then content pages start at 3
-  const totalPages = 2 + contentPages.length;
+  const colgroup = COLGROUP.replace(/"/g, '\\"');
 
-  // Build TOC entries: chapter number → title → page
-  // Cover = page 1, TOC = page 2, content starts at page 3
-  // We need to track which contentPages index each user starts at
-  const tocEntries: Array<{ num: string; title: string; page: number }> = [];
-  tocEntries.push({ num: chapterNum(1), title: 'Executive Summary', page: 3 });
-  tocEntries.push({ num: chapterNum(2), title: 'Team Composition', page: 3 });
+  const paginationScript = `<script>
+(function() {
+  // ── Measure exec summary available height ────────────────────
+  var ch01Table = document.getElementById('ch01-table');
+  var ch01TableRect = ch01Table.getBoundingClientRect();
+  var p3Footer = document.querySelector('#page-3 .page-footer');
+  var p3FooterRect = p3Footer.getBoundingClientRect();
+  var execAvailH = p3FooterRect.top - ch01TableRect.top - 3;
 
-  // Walk through contentPages to find where each user's first chunk starts
-  // contentPages[0] is always ch01 (summary + first user start)
-  // We need to find the start index for each user
-  {
-    let cpIdx = 0; // content page index
-    for (let ui = 0; ui < data.userDetails.length; ui++) {
-      const user = data.userDetails[ui]!;
-      const chapNum = ui + 3;
-      if (ui === 0) {
-        // First user starts on page 3 (content page 0)
-        tocEntries.push({ num: chapterNum(chapNum), title: user.userName, page: 3 });
-        const userRows = collectUserRows(user);
-        const ch01End = fitRows(userRows, 0, V7_CH01_LINES);
-        cpIdx = 1; // ch01 is index 0, overflows start at 1
-        let rowIdx = ch01End;
-        while (rowIdx < userRows.length) {
-          rowIdx = fitRows(userRows, rowIdx, V7_PAGE_LINES);
-          cpIdx++;
-        }
-      } else {
-        tocEntries.push({ num: chapterNum(chapNum), title: user.userName, page: 3 + cpIdx });
-        const userRows = collectUserRows(user);
-        let rowIdx = 0;
-        let isFirst = true;
-        let pageCount = 0;
-        while (rowIdx < userRows.length) {
-          const budget = V7_PAGE_LINES - (isFirst ? V7_HEADER_LINES : 0);
-          rowIdx = fitRows(userRows, rowIdx, budget);
-          pageCount++;
-          isFirst = false;
-        }
-        if (userRows.length === 0) pageCount = 1;
-        cpIdx += pageCount;
+  // ── Measure continuation available height ────────────────────
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var hdr = document.getElementById('tpl-header').content.cloneNode(true);
+  tmpPage.appendChild(hdr);
+  var tmpContent = document.createElement('div');
+  tmpContent.className = 'page-content';
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpContent.appendChild(marker);
+  var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+  tmpPage.appendChild(tmpContent);
+  tmpPage.appendChild(ftr);
+  document.body.appendChild(tmpPage);
+  var cStyle = window.getComputedStyle(tmpContent);
+  var cRect = tmpContent.getBoundingClientRect();
+  var fRect = tmpPage.querySelector('.page-footer').getBoundingClientRect();
+  var contAvailH = fRect.top - cRect.top - parseFloat(cStyle.paddingTop) - parseFloat(cStyle.paddingBottom) - 3;
+  document.body.removeChild(tmpPage);
+
+  // ── Measure rows ─────────────────────────────────────────────
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('tbody > tr');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  // ── Distribute rows ──────────────────────────────────────────
+  var dataPages = [];
+  var idx = 0;
+
+  // Page 3 (exec summary — less space)
+  var p3Rows = [];
+  var p3Used = 0;
+  while (idx < heights.length) {
+    if (p3Used + heights[idx].h > execAvailH && p3Rows.length > 0) break;
+    p3Rows.push(heights[idx]);
+    p3Used += heights[idx].h;
+    idx++;
+  }
+  while (p3Rows.length > 1 && p3Rows[p3Rows.length - 1].sticky) {
+    idx--;
+    p3Rows.pop();
+  }
+  dataPages.push(p3Rows);
+
+  // Continuation pages
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      if (usedH + heights[idx].h > contAvailH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += heights[idx].h;
+      idx++;
+    }
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  // totalPages = cover + TOC + all content pages
+  var totalPages = 2 + dataPages.length;
+
+  // ── Fill exec summary table (page 3) ─────────────────────────
+  var ch01Tbody = ch01Table.querySelector('tbody');
+  for (var r = 0; r < dataPages[0].length; r++) {
+    ch01Tbody.appendChild(dataPages[0][r].el);
+  }
+
+  // Fix page 3 footer
+  var p3FooterPN = p3Footer.querySelector('.page-number');
+  if (p3FooterPN) p3FooterPN.textContent = 'Page 3';
+
+  // Fix TOC footer
+  var p2PN = document.querySelector('#page-2 .page-number');
+  if (p2PN) p2PN.textContent = 'Page 2';
+
+  // ── Build continuation pages ─────────────────────────────────
+  var colgroup = "${colgroup}";
+  for (var p = 1; p < dataPages.length; p++) {
+    var pageNum = 3 + p;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    var hdrClone = document.getElementById('tpl-header').content.cloneNode(true);
+    pageDiv.appendChild(hdrClone);
+
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'page-content';
+    var table = document.createElement('table');
+    table.className = 'entries-table';
+    table.innerHTML = colgroup;
+    var tbody = document.createElement('tbody');
+    for (var r = 0; r < dataPages[p].length; r++) {
+      // Widow divider fix
+      if (r === 0) dataPages[p][r].el.classList.remove('has-divider');
+      tbody.appendChild(dataPages[p][r].el);
+    }
+    table.appendChild(tbody);
+    contentDiv.appendChild(table);
+
+    // Closing block on last page
+    if (p === dataPages.length - 1) {
+      var closing = document.getElementById('tpl-closing').content.cloneNode(true);
+      contentDiv.appendChild(closing);
+    }
+
+    pageDiv.appendChild(contentDiv);
+
+    var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftrClone.querySelector('.page-number').textContent = 'Page ' + pageNum;
+    pageDiv.appendChild(ftrClone);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  // If only exec page (no continuation), add closing block to page 3
+  if (dataPages.length === 1) {
+    var closingEl = document.getElementById('tpl-closing').content.cloneNode(true);
+    document.querySelector('#page-3 .page-content').appendChild(closingEl);
+  }
+
+  // ── Update TOC page numbers ──────────────────────────────────
+  // Find which page each user section header landed on
+  var tocUserEntries = document.querySelectorAll('[data-toc-user]');
+  for (var t = 0; t < tocUserEntries.length; t++) {
+    var userName = tocUserEntries[t].getAttribute('data-toc-user');
+    var tocPageSpan = tocUserEntries[t].querySelector('.toc-page');
+    // Search all pages for the user's section-chapter-name
+    var allPages = document.querySelectorAll('.page');
+    for (var pg = 0; pg < allPages.length; pg++) {
+      var nameEl = allPages[pg].querySelector('[data-user="' + userName + '"]');
+      if (nameEl) {
+        // Page index: cover=0, toc=1, page3=2, ...
+        tocPageSpan.textContent = String(pg + 1);
+        break;
       }
     }
   }
 
-  // ── Assemble pages ──────────────────────────────────────────────
-
-  // Page 1: Cover (no header/footer)
-  const coverHtml = renderCover(data);
-
-  // Page 2: TOC
-  const tocHtml = renderTocPage(tocEntries, data, totalPages);
-
-  // Content pages (3+)
-  const contentHtml = contentPages
-    .map(
-      (content, i) => `<div class="page">
-  ${pageHeader()}
-  <div class="page-content">${content}</div>
-  ${pageFooter(data, 3 + i, totalPages)}
-</div>`,
-    )
-    .join('\n');
+  // Cleanup templates
+  document.getElementById('tpl-header').remove();
+  document.getElementById('tpl-footer').remove();
+  document.getElementById('tpl-closing').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -915,8 +985,13 @@ ${FONTS_LINK}
 </head>
 <body>
 ${coverHtml}
-${tocHtml}
-${contentHtml}
+${tocPageHtml}
+${execSummaryPage}
+${measureHtml}
+${headerTpl}
+${footerTpl}
+${closingTpl}
+${paginationScript}
 </body>
 </html>`;
 }
@@ -948,62 +1023,6 @@ function renderTocPage(
   </div>
   ${pageFooter(data, 2, totalPages)}
 </div>`;
-}
-
-// ── User section renderer ────────────────────────────────────────────────
-
-function renderUserSection(
-  user: ReportData['userDetails'][number],
-  userIndex: number,
-  chapterNumber: number,
-): string {
-  const color = CHART_COLORS[userIndex % CHART_COLORS.length];
-  let html = '';
-
-  // Section chapter heading
-  html += `<div class="section-chapter">
-  <div class="section-chapter-left">
-    <div class="section-chapter-id">${chapterNum(chapterNumber)}</div>
-    <div>
-      <div class="section-chapter-name">${esc(user.userName)}</div>
-      <div class="section-chapter-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
-    </div>
-  </div>
-  <div class="section-chapter-hours">${formatHours(user.totalSeconds)}</div>
-</div>
-<div class="section-chapter-accent"></div>`;
-
-  // Entries table
-  html += `<table class="entries-table">
-<thead><tr>
-  <th style="width:70px">Time</th>
-  <th style="width:120px">Project</th>
-  <th>Description</th>
-  <th style="width:60px">Jira</th>
-  <th style="width:65px">Duration</th>
-</tr></thead>
-<tbody>`;
-
-  for (const dg of user.dayGroups) {
-    html += `<tr class="day-group-row">
-  <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
-  <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
-</tr>`;
-
-    for (const entry of dg.entries) {
-      html += `<tr>
-  <td class="time-cell">${esc(entry.startTime)}</td>
-  <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
-  <td class="desc-cell">${esc(entry.description)}</td>
-  <td class="jira-cell" style="color: ${entry.jiraIssueKey ? '#6c8eef' : '#ccc'}">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
-  <td class="duration-cell">${formatDuration(entry.durationSeconds)}</td>
-</tr>`;
-    }
-  }
-
-  html += `</tbody></table>`;
-
-  return html;
 }
 
 // ── Closing block renderer ───────────────────────────────────────────────

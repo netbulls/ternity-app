@@ -223,7 +223,8 @@ body {
 
 /* ── User detail card ──────────────────────────── */
 
-.user-detail-card { margin-bottom: 5mm; overflow: hidden; }
+.user-detail-card { margin-bottom: 0; overflow: hidden; }
+[data-row] { overflow: hidden; }
 .user-detail-header {
   display: flex;
   align-items: center;
@@ -231,6 +232,7 @@ body {
   padding: 14px 20px;
   border-bottom: 1px solid var(--card-border);
 }
+.user-detail-header.has-divider { border-top: 1px solid var(--card-border); }
 .user-detail-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -470,23 +472,37 @@ export function renderV5(data: ReportData): string {
   </div>`;
   }
 
-  page1 += `<div class="card team-card">
+  const teamCardHtml = `<div class="card team-card">
   <div class="team-card-heading">Team Overview</div>
   ${teamRows}
 </div>`;
 
-  pages.push(page1);
+  // With >10 users the team card overflows A4 when combined with stat + chart cards.
+  // Split it to a second page so Chromium doesn't create an extra physical page without header/footer.
+  const V5_TEAM_USER_THRESHOLD = 10;
+  if (data.userBreakdown.length <= V5_TEAM_USER_THRESHOLD) {
+    page1 += teamCardHtml;
+    pages.push(page1);
+  } else {
+    pages.push(page1);
+    let teamPage = navBar(data, true);
+    teamPage += teamCardHtml;
+    pages.push(teamPage);
+  }
 
-  // ── Inner pages: User Detail Cards (with pagination) ────────────
-  const PAGE_LINES = 26;
-  const HEADER_LINES = 5;
-  const DESC_CHARS_PER_LINE = 50;
+  // ── Build all data rows as HTML ────────────────────────────────────
+  // Each row is wrapped in <div data-row> for measurement.
+  // Sticky rows (user headers, day headers) get data-sticky.
+  const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
     const color = CHART_COLORS[ui % CHART_COLORS.length];
+    const dividerCls = ui > 0 ? ' has-divider' : '';
 
-    const cardHeader = `<div class="user-detail-header">
+    // User detail header — sticky
+    allRowsHtml.push(`<div data-row data-sticky>
+  <div class="user-detail-header${dividerCls}">
     <div class="user-detail-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
     <div class="user-detail-info">
       <div class="user-detail-name">${esc(user.userName)}</div>
@@ -496,91 +512,198 @@ export function renderV5(data: ReportData): string {
       <div class="user-detail-hours">${formatHours(user.totalSeconds)}</div>
       <div class="user-detail-label">Total Hours</div>
     </div>
-  </div>`;
+  </div>
+</div>`);
 
-    const allRows: Array<{ html: string; lines: number }> = [];
     for (const dg of user.dayGroups) {
-      allRows.push({
-        html: `<div class="day-header">
-      <span class="day-header-date">${esc(formatDate(dg.date))}</span>
-      <span class="day-header-total">${formatDuration(dg.dayTotalSeconds)}</span>
-    </div>`,
-        lines: 1,
-      });
+      // Day header — sticky
+      allRowsHtml.push(`<div data-row data-sticky>
+  <div class="day-header">
+    <span class="day-header-date">${esc(formatDate(dg.date))}</span>
+    <span class="day-header-total">${formatDuration(dg.dayTotalSeconds)}</span>
+  </div>
+</div>`);
+
       for (const entry of dg.entries) {
         const jiraHtml = entry.jiraIssueKey
           ? `<span class="entry-jira">${esc(entry.jiraIssueKey)}</span>`
           : `<span class="entry-jira-empty"></span>`;
-        const descLen = entry.description.length;
-        const lines = descLen > DESC_CHARS_PER_LINE * 2 ? 3 : descLen > DESC_CHARS_PER_LINE ? 2 : 1;
-        allRows.push({
-          html: `<div class="entry-row">
-      <div class="entry-project">
-        <span class="project-dot" style="background: ${entry.projectColor}"></span>
-        <span class="entry-project-name">${esc(entry.projectName)}</span>
-      </div>
-      <span class="entry-description">${esc(entry.description)}</span>
-      ${jiraHtml}
-      <span class="entry-duration">${formatDuration(entry.durationSeconds)}</span>
-    </div>`,
-          lines,
-        });
+        allRowsHtml.push(`<div data-row>
+  <div class="entry-row">
+    <div class="entry-project">
+      <span class="project-dot" style="background: ${entry.projectColor}"></span>
+      <span class="entry-project-name">${esc(entry.projectName)}</span>
+    </div>
+    <span class="entry-description">${esc(entry.description)}</span>
+    ${jiraHtml}
+    <span class="entry-duration">${formatDuration(entry.durationSeconds)}</span>
+  </div>
+</div>`);
       }
-    }
-
-    let rowIdx = 0;
-    let isFirstChunk = true;
-    while (rowIdx < allRows.length) {
-      let budget = PAGE_LINES - (isFirstChunk ? HEADER_LINES : 0);
-      let chunkEnd = rowIdx;
-      while (chunkEnd < allRows.length && budget >= allRows[chunkEnd]!.lines) {
-        budget -= allRows[chunkEnd]!.lines;
-        chunkEnd++;
-      }
-      if (chunkEnd === rowIdx) chunkEnd = rowIdx + 1;
-
-      const chunkRows = allRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-
-      let userPage = navBar(data, true);
-      userPage += `<div class="card user-detail-card">`;
-      if (isFirstChunk) userPage += cardHeader;
-      userPage += `<div class="user-detail-body">\n${chunkRows}\n</div>\n</div>`;
-
-      pages.push(userPage);
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    if (allRows.length === 0) {
-      let userPage = navBar(data, true);
-      userPage += `<div class="card user-detail-card">${cardHeader}<div class="user-detail-body"></div></div>`;
-      pages.push(userPage);
     }
   }
 
-  // ── Last page: Generation info card ───────────────────────────────
-
-  const lastPageIdx = pages.length - 1;
-  pages[lastPageIdx] += `<div class="card gen-info-card" style="margin-top: auto;">
+  // ── Generation info card (appended to last page by script) ────────
+  const genInfoHtml = `<div class="card gen-info-card" style="margin-top: auto;">
   <div class="gen-label">Report Generated</div>
   <div class="gen-value">${esc(formatGeneratedAt(data.generatedAt))}</div>
 </div>`;
 
-  // ── Assemble final HTML ───────────────────────────────────────────
-
-  const totalPages = pages.length;
-
-  const pagesHtml = pages
+  // ── Static pages (cover / team overflow) ──────────────────────────
+  const staticPageCount = pages.length;
+  const staticPagesHtml = pages
     .map(
-      (content, i) => `<div class="page">
+      (content, i) => `<div class="page" id="page-${i + 1}">
   ${content}
-  ${pageFooter(data, i + 1, totalPages)}
+  <div class="page-footer card">
+    Generated by Ternity \u00b7 ${esc(formatDateShort(data.dateFrom))} \u2013 ${esc(formatDateShort(data.dateTo))} \u00b7 Page ${i + 1} of 0
+  </div>
 </div>`,
     )
     .join('\n');
+
+  // ── Measurement container ─────────────────────────────────────────
+  const navBarCompact = navBar(data, true);
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div class="page" style="height:auto;min-height:0;padding:10mm 12mm 18mm 12mm">
+    ${navBarCompact}
+    <div class="card user-detail-card"><div class="user-detail-body">
+      ${allRowsHtml.join('\n')}
+    </div></div>
+  </div>
+</div>`;
+
+  // ── Templates ─────────────────────────────────────────────────────
+  const navTpl = `<template id="tpl-nav">${navBarCompact}</template>`;
+  const footerTpl = `<template id="tpl-footer"><div class="page-footer card"></div></template>`;
+  const genInfoTpl = `<template id="tpl-geninfo">${genInfoHtml}</template>`;
+
+  const paginationScript = `<script>
+(function() {
+  var staticPageCount = ${staticPageCount};
+
+  // Measure available height
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+
+  // Nav bar
+  var navClone = document.getElementById('tpl-nav').content.cloneNode(true);
+  tmpPage.appendChild(navClone);
+
+  // Card wrapper (like data pages have)
+  var tmpCard = document.createElement('div');
+  tmpCard.className = 'card user-detail-card';
+  var tmpBody = document.createElement('div');
+  tmpBody.className = 'user-detail-body';
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpBody.appendChild(marker);
+  tmpCard.appendChild(tmpBody);
+  tmpPage.appendChild(tmpCard);
+
+  // Footer
+  var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+  tmpPage.appendChild(ftrClone);
+  document.body.appendChild(tmpPage);
+
+  var markerRect = marker.getBoundingClientRect();
+  var footerEl = tmpPage.querySelector('.page-footer');
+  var footerRect = footerEl.getBoundingClientRect();
+  // Available = from content marker to footer top minus 3px safety
+  var availableH = footerRect.top - markerRect.top - 3;
+  document.body.removeChild(tmpPage);
+
+  // Measure rows
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('[data-row]');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  // Build pages
+  var dataPages = [];
+  var idx = 0;
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      var rowH = heights[idx].h;
+      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += rowH;
+      idx++;
+    }
+    // Pull back trailing sticky rows
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  var totalPages = staticPageCount + dataPages.length;
+
+  // Fix static page footers (replace "of 0")
+  for (var s = 0; s < staticPageCount; s++) {
+    var sFtr = document.getElementById('page-' + (s + 1)).querySelector('.page-footer');
+    if (sFtr) sFtr.textContent = sFtr.textContent.replace('of 0', 'of ' + totalPages);
+  }
+
+  // Build data page divs
+  var dateRange = '${esc(formatDateShort(data.dateFrom))} \\u2013 ${esc(formatDateShort(data.dateTo))}';
+  for (var p = 0; p < dataPages.length; p++) {
+    var pageNum = staticPageCount + p + 1;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    // Nav bar
+    var nav = document.getElementById('tpl-nav').content.cloneNode(true);
+    pageDiv.appendChild(nav);
+
+    // Card wrapper
+    var card = document.createElement('div');
+    card.className = 'card user-detail-card';
+    var body = document.createElement('div');
+    body.className = 'user-detail-body';
+    for (var r = 0; r < dataPages[p].length; r++) {
+      // Strip divider from first row on page (widow divider fix)
+      if (r === 0) {
+        var hdrEl = dataPages[p][r].el.querySelector('.user-detail-header');
+        if (hdrEl) hdrEl.classList.remove('has-divider');
+      }
+      body.appendChild(dataPages[p][r].el);
+    }
+    card.appendChild(body);
+    pageDiv.appendChild(card);
+
+    // Gen-info card on last page
+    if (p === dataPages.length - 1) {
+      var gi = document.getElementById('tpl-geninfo').content.cloneNode(true);
+      pageDiv.appendChild(gi);
+    }
+
+    // Footer
+    var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftr.querySelector('.page-footer').textContent =
+      'Generated by Ternity \\u00b7 ' + dateRange + ' \\u00b7 Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftr);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  // Cleanup templates
+  document.getElementById('tpl-nav').remove();
+  document.getElementById('tpl-footer').remove();
+  document.getElementById('tpl-geninfo').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -590,7 +713,12 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${staticPagesHtml}
+${measureHtml}
+${navTpl}
+${footerTpl}
+${genInfoTpl}
+${paginationScript}
 </body>
 </html>`;
 }

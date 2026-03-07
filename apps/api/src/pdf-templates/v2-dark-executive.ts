@@ -83,7 +83,7 @@ body {
 }
 .page-footer .page-number { font-weight: 600; color: rgba(255,255,255,0.5); }
 
-.page-content { padding: 8mm 20mm 20mm 20mm; }
+.page-content { padding: 8mm 20mm 10mm 20mm; }
 
 .report-title { margin-bottom: 6mm; }
 .report-title h1 {
@@ -146,42 +146,40 @@ body {
 .legend-hours { font-weight: 600; color: #00D4AA; min-width: 50px; text-align: right; }
 .legend-pct { color: rgba(255,255,255,0.5); min-width: 40px; text-align: right; }
 
-.section-header {
+.section-header-row td {
+  padding: 10px 8px 8px 8px !important;
+  border-bottom: 2px solid #222 !important;
+  background: #111 !important;
+}
+.section-header-row .section-header-inner {
   display: flex; align-items: center; gap: 12px;
-  margin-bottom: 4mm; padding-bottom: 2mm;
-  border-bottom: 1px solid #222;
-  page-break-inside: avoid;
 }
-.section-header .user-avatar {
+.section-header-row .user-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: #00D4AA; display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-family: 'Oxanium', sans-serif; font-weight: 700; font-size: 13px; color: #0a0a0a;
+  flex-shrink: 0;
 }
-.section-header .user-info h2 {
+.section-header-row .user-info h2 {
   font-family: 'Oxanium', sans-serif;
   font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;
 }
-.section-header .user-info .user-stats { font-size: 9px; color: rgba(255,255,255,0.5); }
-.section-header .user-total { margin-left: auto; text-align: right; }
-.section-header .user-total .total-hours {
+.section-header-row .user-info .user-stats { font-size: 9px; color: rgba(255,255,255,0.5); }
+.section-header-row .user-total { margin-left: auto; text-align: right; }
+.section-header-row .user-total .total-hours {
   font-family: 'Oxanium', sans-serif;
   font-size: 18px; font-weight: 700; color: #00D4AA;
 }
-.section-header .user-total .total-label {
+.section-header-row .user-total .total-label {
   font-size: 8px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px;
 }
+.section-header-row.has-divider td { padding-top: 16px !important; border-top: 1px solid #222; }
 
 .entries-table {
   width: 100%; border-collapse: collapse;
-  margin-bottom: 8mm; font-size: 9px;
+  font-size: 9px;
 }
-.entries-table thead th {
-  background: #1a1a1a; border-bottom: 2px solid #222;
-  padding: 6px 8px; text-align: left;
-  font-size: 8px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.5px; color: rgba(255,255,255,0.5);
-}
-.entries-table thead th:last-child { text-align: right; }
+
 .entries-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
 .entries-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.01); }
 .entries-table td { padding: 5px 8px; vertical-align: top; }
@@ -308,122 +306,184 @@ export function renderV2(data: ReportData): string {
   </div>
 </div>`;
 
-  pages.push({ html: page1, subtitle: `Generated: ${formatGeneratedAt(data.generatedAt)}` });
+  // ── Build all data rows as HTML ──────────────────────────────────
+  const COLGROUP = `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
 
-  // ── User detail pages (with pagination) ─────────────────────────
-  const PAGE_LINES = 32;
-  const HEADER_LINES = 6;
-  const DESC_CHARS_PER_LINE = 60;
-
-  const TABLE_HEAD = `<thead><tr>
-  <th style="width:70px">Time</th>
-  <th style="width:120px">Project</th>
-  <th>Description</th>
-  <th style="width:60px">Jira</th>
-  <th style="width:65px">Duration</th>
-</tr></thead>`;
+  const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
     const color = CHART_COLORS[ui % CHART_COLORS.length];
-    const isLastUser = ui === data.userDetails.length - 1;
+    const dividerCls = ui > 0 ? ' has-divider' : '';
 
-    const sectionHeader = `<div class="section-header">
-  <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
-  <div class="user-info">
-    <h2>${esc(user.userName)}</h2>
-    <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
-  </div>
-  <div class="user-total">
-    <div class="total-hours">${formatHours(user.totalSeconds)}</div>
-    <div class="total-label">Total Hours</div>
-  </div>
-</div>`;
+    // User section header — sticky (must not be last on a page)
+    allRowsHtml.push(`<tr class="section-header-row${dividerCls}" data-sticky>
+  <td colspan="5"><div class="section-header-inner">
+    <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
+    <div class="user-info">
+      <h2>${esc(user.userName)}</h2>
+      <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+    </div>
+    <div class="user-total">
+      <div class="total-hours">${formatHours(user.totalSeconds)}</div>
+      <div class="total-label">Total Hours</div>
+    </div>
+  </div></td>
+</tr>`);
 
-    const allRows: Array<{ html: string; lines: number }> = [];
     for (const dg of user.dayGroups) {
-      allRows.push({
-        html: `<tr class="day-group-row">
+      // Day group header — sticky
+      allRowsHtml.push(`<tr class="day-group-row" data-sticky>
   <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
   <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
-</tr>`,
-        lines: 1,
-      });
+</tr>`);
+
       for (const entry of dg.entries) {
-        const descLen = entry.description.length;
-        const lines = descLen > DESC_CHARS_PER_LINE * 2 ? 3 : descLen > DESC_CHARS_PER_LINE ? 2 : 1;
-        allRows.push({
-          html: `<tr>
+        allRowsHtml.push(`<tr>
   <td class="date-cell">${esc(entry.startTime)}</td>
   <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td style="color: ${entry.jiraIssueKey ? '#6c8eef' : 'rgba(255,255,255,0.25)'}; font-size: 8px">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
   <td class="duration-cell">${formatDuration(entry.durationSeconds)}</td>
-</tr>`,
-          lines,
-        });
+</tr>`);
       }
-    }
-
-    let rowIdx = 0;
-    let isFirstChunk = true;
-
-    while (rowIdx < allRows.length) {
-      let budget = PAGE_LINES - (isFirstChunk ? HEADER_LINES : 0);
-      let chunkEnd = rowIdx;
-      while (chunkEnd < allRows.length && budget >= allRows[chunkEnd]!.lines) {
-        budget -= allRows[chunkEnd]!.lines;
-        chunkEnd++;
-      }
-      if (chunkEnd === rowIdx) chunkEnd = rowIdx + 1;
-
-      const chunkRows = allRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-      const isLastChunk = chunkEnd >= allRows.length;
-
-      let pageHtml = '';
-      if (isFirstChunk) pageHtml += sectionHeader;
-      pageHtml += `<table class="entries-table">\n${TABLE_HEAD}\n<tbody>\n${chunkRows}\n</tbody></table>`;
-
-      if (isLastUser && isLastChunk) {
-        pageHtml += `<div class="end-of-report">
-  <div class="eor-label">End of Report</div>
-  <div>${esc(formatDateRange(data.dateFrom, data.dateTo))} &middot; ${data.summary.userCount} team member${data.summary.userCount !== 1 ? 's' : ''} &middot; ${formatHours(data.summary.totalSeconds)} total</div>
-</div>`;
-      }
-
-      pages.push({ html: pageHtml, subtitle: esc(user.userName) });
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    if (allRows.length === 0) {
-      let pageHtml =
-        sectionHeader + `<table class="entries-table">\n${TABLE_HEAD}\n<tbody></tbody></table>`;
-      if (isLastUser) {
-        pageHtml += `<div class="end-of-report">
-  <div class="eor-label">End of Report</div>
-  <div>${esc(formatDateRange(data.dateFrom, data.dateTo))} &middot; ${data.summary.userCount} team member${data.summary.userCount !== 1 ? 's' : ''} &middot; ${formatHours(data.summary.totalSeconds)} total</div>
-</div>`;
-      }
-      pages.push({ html: pageHtml, subtitle: esc(user.userName) });
     }
   }
 
-  // ── Assemble final HTML ─────────────────────────────────────────
-  const totalPages = pages.length;
+  const endOfReport = `<div class="end-of-report">
+  <div class="eor-label">End of Report</div>
+  <div>${esc(formatDateRange(data.dateFrom, data.dateTo))} &middot; ${data.summary.userCount} team member${data.summary.userCount !== 1 ? 's' : ''} &middot; ${formatHours(data.summary.totalSeconds)} total</div>
+</div>`;
 
-  const pagesHtml = pages
-    .map(
-      (p, i) => `<div class="page">
-  ${pageHeader(p.subtitle)}
-  <div class="page-content">${p.html}</div>
-  ${pageFooter(data, i + 1, totalPages)}
-</div>`,
-    )
-    .join('\n');
+  // ── Page 1 assembled statically ─────────────────────────────────
+  const page1Html = `<div class="page" id="page-1">
+  ${pageHeader(`Generated: ${formatGeneratedAt(data.generatedAt)}`)}
+  <div class="page-content">${page1}</div>
+  ${pageFooter(data, 1, 0)}
+</div>`;
+
+  // ── Measurement container + pagination script ───────────────────
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div style="padding:8mm 20mm 10mm 20mm">
+    <table class="entries-table">${COLGROUP}<tbody>
+      ${allRowsHtml.join('\n')}
+    </tbody></table>
+  </div>
+</div>`;
+
+  // Header/footer templates (hidden, cloned by script)
+  const headerTpl = `<template id="tpl-header">${pageHeader()}</template>`;
+  const footerTpl = `<template id="tpl-footer"><div class="page-footer">
+  <span class="footer-brand">Ternity &middot; app.ternity.xyz</span>
+  <span>Time Report &mdash; ${esc(formatDateRange(data.dateFrom, data.dateTo))}</span>
+  <span class="page-number"></span>
+</div></template>`;
+
+  // End-of-report template
+  const eorTpl = `<template id="tpl-eor">${endOfReport}</template>`;
+
+  const paginationScript = `<script>
+(function() {
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var hdr = document.getElementById('tpl-header').content.cloneNode(true);
+  var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+  var tmpContent = document.createElement('div');
+  tmpContent.className = 'page-content';
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpContent.appendChild(marker);
+  tmpPage.appendChild(hdr);
+  tmpPage.appendChild(tmpContent);
+  tmpPage.appendChild(ftr);
+  document.body.appendChild(tmpPage);
+  var footerEl = tmpPage.querySelector('.page-footer');
+  var contentRect = tmpContent.getBoundingClientRect();
+  var footerRect = footerEl.getBoundingClientRect();
+  var contentStyle = window.getComputedStyle(tmpContent);
+  var cPadTop = parseFloat(contentStyle.paddingTop);
+  var cPadBottom = parseFloat(contentStyle.paddingBottom);
+  var availableH = footerRect.top - contentRect.top - cPadTop - cPadBottom - 3;
+  document.body.removeChild(tmpPage);
+
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('tbody > tr');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  var dataPages = [];
+  var idx = 0;
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      var rowH = heights[idx].h;
+      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += rowH;
+      idx++;
+    }
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  var totalPages = 1 + dataPages.length;
+
+  var page1Footer = document.querySelector('#page-1 .page-number');
+  if (page1Footer) page1Footer.textContent = 'Page 1 of ' + totalPages;
+
+  var colgroup = '${COLGROUP.replace(/'/g, "\\'")}';
+
+  for (var p = 0; p < dataPages.length; p++) {
+    var pageNum = p + 2;
+    var isLast = (p === dataPages.length - 1);
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    var hdrClone = document.getElementById('tpl-header').content.cloneNode(true);
+    pageDiv.appendChild(hdrClone);
+
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'page-content';
+    var table = document.createElement('table');
+    table.className = 'entries-table';
+    table.innerHTML = colgroup;
+    var tbody = document.createElement('tbody');
+    for (var r = 0; r < dataPages[p].length; r++) {
+      if (r === 0) dataPages[p][r].el.classList.remove('has-divider');
+      tbody.appendChild(dataPages[p][r].el);
+    }
+    table.appendChild(tbody);
+    contentDiv.appendChild(table);
+    if (isLast) {
+      var eorClone = document.getElementById('tpl-eor').content.cloneNode(true);
+      contentDiv.appendChild(eorClone);
+    }
+    pageDiv.appendChild(contentDiv);
+
+    var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftrClone.querySelector('.page-number').textContent = 'Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftrClone);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  document.getElementById('tpl-header').remove();
+  document.getElementById('tpl-footer').remove();
+  document.getElementById('tpl-eor').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -433,7 +493,12 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${page1Html}
+${measureHtml}
+${headerTpl}
+${footerTpl}
+${eorTpl}
+${paginationScript}
 </body>
 </html>`;
 }

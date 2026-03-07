@@ -45,7 +45,7 @@ body {
 }
 .page:last-child { page-break-after: auto; }
 
-.page-inner { padding: 20mm 25mm 24mm 25mm; }
+.page-inner { padding: 20mm 25mm 14mm 25mm; }
 
 .page-footer {
   position: absolute;
@@ -229,7 +229,8 @@ body {
 
 /* ── User section ───────────────────────────────────────────────────── */
 
-.user-section { margin-bottom: 6mm; }
+.user-section { margin-bottom: 0; }
+[data-row] { overflow: hidden; } /* contain child margins for accurate measurement */
 
 .user-header {
   display: flex;
@@ -238,8 +239,8 @@ body {
   padding-bottom: 2mm;
   border-bottom: 1px solid #1a1a1a;
   margin-bottom: 4mm;
-  page-break-inside: avoid;
 }
+.user-header.has-divider { padding-top: 6mm; border-top: 0.5px solid #ccc; }
 .user-name {
   font-family: 'Oxanium', sans-serif;
   font-size: 13px;
@@ -263,7 +264,6 @@ body {
 
 .day-group {
   margin-bottom: 3mm;
-  page-break-inside: avoid;
 }
 .day-header {
   display: flex;
@@ -464,93 +464,180 @@ export function renderV3(data: ReportData): string {
   // Horizontal bar chart
   cover += generateBarChart(data);
 
-  pages.push({ html: cover, isCover: true });
+  // ── Build all data rows as HTML ──────────────────────────────────
+  // Each row is wrapped in a <div data-row> for measurement.
+  // Sticky rows (user headers, day headers) get data-sticky.
+  const allRowsHtml: string[] = [];
 
-  // ── User detail pages (with pagination) ─────────────────────────
-  const PAGE_LINES = 28;
-  const HEADER_LINES = 4;
-  const DESC_CHARS_PER_LINE = 55;
+  for (let ui = 0; ui < data.userDetails.length; ui++) {
+    const user = data.userDetails[ui]!;
+    const dividerCls = ui > 0 ? ' has-divider' : '';
 
-  for (const user of data.userDetails) {
-    const sectionHeader = `<div class="user-header">
-  <span class="user-name">${esc(user.userName)}</span>
-  <span class="user-hours">${formatHours(user.totalSeconds)}</span>
-</div>
-<div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>`;
+    // User section header — sticky
+    allRowsHtml.push(`<div data-row data-sticky>
+  <div class="user-header${dividerCls}">
+    <span class="user-name">${esc(user.userName)}</span>
+    <span class="user-hours">${formatHours(user.totalSeconds)}</span>
+  </div>
+  <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+</div>`);
 
-    const allRows: Array<{ html: string; lines: number }> = [];
     for (const dg of user.dayGroups) {
-      allRows.push({
-        html: `<div class="day-header">
-  <span class="day-label">${esc(formatDate(dg.date))}</span>
-  <span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span>
-</div>`,
-        lines: 1,
-      });
+      // Day group header — sticky
+      allRowsHtml.push(`<div data-row data-sticky>
+  <div class="day-header">
+    <span class="day-label">${esc(formatDate(dg.date))}</span>
+    <span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span>
+  </div>
+</div>`);
+
       for (const entry of dg.entries) {
         const jiraHtml = entry.jiraIssueKey
           ? `<div class="entry-jira">${esc(entry.jiraIssueKey)}</div>`
           : `<div class="entry-jira empty">&mdash;</div>`;
-        const descLen = entry.description.length;
-        const lines = descLen > DESC_CHARS_PER_LINE * 2 ? 3 : descLen > DESC_CHARS_PER_LINE ? 2 : 1;
-        allRows.push({
-          html: `<div class="entry-row">
-  <div class="entry-project"><span class="entry-dot" style="background: ${entry.projectColor}"></span><span class="entry-project-name">${esc(entry.projectName)}</span></div>
-  <div class="entry-desc">${esc(entry.description)}</div>
-  ${jiraHtml}
-  <div class="entry-duration">${formatDuration(entry.durationSeconds)}</div>
-</div>`,
-          lines,
-        });
+        allRowsHtml.push(`<div data-row>
+  <div class="entry-row">
+    <div class="entry-project"><span class="entry-dot" style="background: ${entry.projectColor}"></span><span class="entry-project-name">${esc(entry.projectName)}</span></div>
+    <div class="entry-desc">${esc(entry.description)}</div>
+    ${jiraHtml}
+    <div class="entry-duration">${formatDuration(entry.durationSeconds)}</div>
+  </div>
+</div>`);
       }
-    }
-
-    let rowIdx = 0;
-    let isFirstChunk = true;
-    while (rowIdx < allRows.length) {
-      let budget = PAGE_LINES - (isFirstChunk ? HEADER_LINES : 0);
-      let chunkEnd = rowIdx;
-      while (chunkEnd < allRows.length && budget >= allRows[chunkEnd]!.lines) {
-        budget -= allRows[chunkEnd]!.lines;
-        chunkEnd++;
-      }
-      if (chunkEnd === rowIdx) chunkEnd = rowIdx + 1;
-
-      const chunkRows = allRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-
-      let pageHtml = '<div class="user-section">';
-      if (isFirstChunk) pageHtml += sectionHeader;
-      pageHtml += chunkRows;
-      pageHtml += '</div>';
-
-      pages.push({ html: pageHtml });
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    if (allRows.length === 0) {
-      pages.push({ html: `<div class="user-section">${sectionHeader}</div>` });
     }
   }
 
-  // ── Assemble final HTML ─────────────────────────────────────────
-  const totalPages = pages.length;
-
-  const pagesHtml = pages
-    .map((p, i) => {
-      const inner = p.isCover
-        ? `<div class="page-inner">${p.html}</div>`
-        : `<div class="page-inner">${contHeader(data)}${p.html}</div>`;
-
-      return `<div class="page">
-  ${inner}
-  ${pageFooter(i + 1)}
+  // ── Page 1 (cover) assembled statically ─────────────────────────
+  const page1Html = `<div class="page" id="page-1">
+  <div class="page-inner">${cover}</div>
+  ${pageFooter(1)}
 </div>`;
-    })
-    .join('\n');
+
+  // ── Measurement container ───────────────────────────────────────
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div class="page-inner">${contHeader(data)}<div class="user-section">
+    ${allRowsHtml.join('\n')}
+  </div></div>
+</div>`;
+
+  // Header/footer templates
+  const contHeaderHtml = contHeader(data);
+  const headerTpl = `<template id="tpl-header">${contHeaderHtml}</template>`;
+  const footerTpl = `<template id="tpl-footer"><div class="page-footer">
+  <hr class="page-footer-rule"/>
+  <div class="page-footer-text"></div>
+</div></template>`;
+
+  const paginationScript = `<script>
+(function() {
+  // Measure available height
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var tmpInner = document.createElement('div');
+  tmpInner.className = 'page-inner';
+  // Clone cont-header to get its real height
+  var hdrClone = document.getElementById('tpl-header').content.cloneNode(true);
+  tmpInner.appendChild(hdrClone);
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpInner.appendChild(marker);
+  var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+  tmpPage.appendChild(tmpInner);
+  tmpPage.appendChild(ftrClone);
+  document.body.appendChild(tmpPage);
+
+  var footerEl = tmpPage.querySelector('.page-footer');
+  var innerRect = tmpInner.getBoundingClientRect();
+  var footerRect = footerEl.getBoundingClientRect();
+  var innerStyle = window.getComputedStyle(tmpInner);
+  var iPadTop = parseFloat(innerStyle.paddingTop);
+  var iPadBottom = parseFloat(innerStyle.paddingBottom);
+  // Available = from after cont-header to footer top, minus bottom padding
+  // But we need to subtract the cont-header height from inner
+  var contHdrEl = tmpInner.querySelector('.cont-header');
+  var contHdrH = contHdrEl ? contHdrEl.offsetHeight + parseFloat(window.getComputedStyle(contHdrEl).marginBottom) : 0;
+  var availableH = footerRect.top - innerRect.top - iPadTop - iPadBottom - contHdrH - 3;
+  document.body.removeChild(tmpPage);
+
+  // Measure rows
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('[data-row]');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  // Build pages
+  var dataPages = [];
+  var idx = 0;
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      var rowH = heights[idx].h;
+      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += rowH;
+      idx++;
+    }
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  var totalPages = 1 + dataPages.length;
+
+  // Fix page 1 footer
+  var p1Ftr = document.querySelector('#page-1 .page-footer-text');
+  if (p1Ftr) p1Ftr.textContent = 'Page 1 of ' + totalPages;
+
+  // Build page divs
+  for (var p = 0; p < dataPages.length; p++) {
+    var pageNum = p + 2;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    var innerDiv = document.createElement('div');
+    innerDiv.className = 'page-inner';
+
+    // Cont header
+    var hdr = document.getElementById('tpl-header').content.cloneNode(true);
+    innerDiv.appendChild(hdr);
+
+    // User section wrapper
+    var section = document.createElement('div');
+    section.className = 'user-section';
+    for (var r = 0; r < dataPages[p].length; r++) {
+      // Strip divider from first row on page
+      if (r === 0) {
+        var hdrEl = dataPages[p][r].el.querySelector('.user-header');
+        if (hdrEl) hdrEl.classList.remove('has-divider');
+      }
+      section.appendChild(dataPages[p][r].el);
+    }
+    innerDiv.appendChild(section);
+    pageDiv.appendChild(innerDiv);
+
+    // Footer
+    var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftr.querySelector('.page-footer-text').textContent = 'Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftr);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  document.getElementById('tpl-header').remove();
+  document.getElementById('tpl-footer').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -560,7 +647,11 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${page1Html}
+${measureHtml}
+${headerTpl}
+${footerTpl}
+${paginationScript}
 </body>
 </html>`;
 }

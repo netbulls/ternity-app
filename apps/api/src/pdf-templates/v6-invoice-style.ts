@@ -72,7 +72,7 @@ body {
 }
 .page:last-child { page-break-after: auto; }
 
-.page-content { padding: 12mm 15mm 18mm 15mm; }
+.page-content { padding: 12mm 15mm 10mm 15mm; }
 
 /* ── Invoice header (page 1) ── */
 .inv-header {
@@ -182,17 +182,7 @@ body {
   width: 100%; border-collapse: collapse;
   font-size: 8px;
 }
-.log-table thead th {
-  background: #f4f5f6;
-  border: 1px solid #bbb;
-  padding: 3px 6px;
-  text-align: left;
-  font-size: 7px; font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #555;
-}
-.log-table thead th:last-child { text-align: right; }
+
 .log-table tbody td {
   border: 1px solid #ddd;
   padding: 3px 6px;
@@ -377,27 +367,14 @@ function pageFooter(data: ReportData, pageNum: number, totalPages: number): stri
 </div>`;
 }
 
-// ── Table header row (reusable for continuation pages) ───────────────────
+// ── Column widths (reusable for continuation pages) ──────────────────────
 
-const LOG_TABLE_HEAD = `<thead><tr>
-  <th style="width:38px">Date</th>
-  <th style="width:72px">Time</th>
-  <th style="width:90px">Project</th>
-  <th>Description</th>
-  <th style="width:58px">Jira</th>
-  <th style="width:44px" class="r">Hours</th>
-</tr></thead>`;
+const LOG_COLGROUP = `<colgroup><col style="width:38px"><col style="width:72px"><col style="width:90px"><col><col style="width:58px"><col style="width:44px"></colgroup>`;
 
 // ── Main render ──────────────────────────────────────────────────────────
 
 export function renderV6(data: ReportData): string {
-  // We collect pages, then assemble with page numbers at the end
-  const pages: Array<{ html: string; headerType: 'invoice' | 'compact' }> = [];
-
-  // ── Page 1: Summary + start of time log ────────────────────────
-  let p1 = '';
-
-  // Summary section
+  // ── Page 1: Invoice header + Summary + start of time log ──────
   const avgPerDay =
     data.summary.workingDays > 0
       ? formatHours(data.summary.totalSeconds / data.summary.workingDays)
@@ -407,8 +384,8 @@ export function renderV6(data: ReportData): string {
       ? formatHours(data.summary.totalSeconds / data.summary.userCount)
       : '—';
 
-  p1 += `<div class="section-title">Summary</div>`;
-  p1 += `<table class="summary-table">
+  const summaryHtml = `<div class="section-title">Summary</div>
+<table class="summary-table">
 <thead><tr>
   <th style="width:120px">Metric</th>
   <th style="width:80px">Value</th>
@@ -435,29 +412,34 @@ export function renderV6(data: ReportData): string {
     <td class="notes">${data.summary.projectCount} project${data.summary.projectCount !== 1 ? 's' : ''} tracked</td>
   </tr>
 </tbody>
-</table>`;
+</table>
+<div class="section-title">Detailed Time Log</div>`;
 
-  // Start time log
-  p1 += `<div class="section-title">Detailed Time Log</div>`;
-  p1 += `<table class="log-table">`;
-  p1 += LOG_TABLE_HEAD;
-  p1 += `<tbody>`;
+  // Page 1 rendered statically with empty tbody (script fills it)
+  const page1Html = `<div class="page" id="page-1">
+  ${invoiceHeader(data)}
+  <div class="page-content">
+    ${summaryHtml}
+    <table class="log-table" id="p1-table">${LOG_COLGROUP}<tbody></tbody></table>
+  </div>
+  <div class="page-footer">
+    <span class="pf-left">${esc(reportNo(data))}</span>
+    <span class="pf-center">Ternity &middot; ${esc(formatDateRange(data.dateFrom, data.dateTo))}</span>
+    <span class="pf-right">Page 1 of 0</span>
+  </div>
+</div>`;
 
-  // Build all entry rows first, then paginate
-  // We'll build the full tbody content and split across pages
-  type RowEntry = { html: string };
-  const allRows: RowEntry[] = [];
+  // ── Build all table rows as HTML ──────────────────────────────
+  const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
 
-    // User header row
-    allRows.push({
-      html: `<tr class="user-header-row">
+    // User header row (sticky)
+    allRowsHtml.push(`<tr class="user-header-row" data-sticky>
   <td colspan="5">${esc(user.userName.toUpperCase())}</td>
   <td class="user-hours">${decimalHours(user.totalSeconds)}</td>
-</tr>`,
-    });
+</tr>`);
 
     // Entry rows
     for (const dg of user.dayGroups) {
@@ -468,82 +450,46 @@ export function renderV6(data: ReportData): string {
           ? `<span class="mono jira-cell">${esc(entry.jiraIssueKey)}</span>`
           : `<span class="jira-cell empty">&mdash;</span>`;
 
-        allRows.push({
-          html: `<tr>
+        allRowsHtml.push(`<tr>
   <td class="mono">${dateStr}</td>
   <td class="mono">${timeRange}</td>
   <td>${esc(entry.projectName)}</td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td>${jiraHtml}</td>
   <td class="dur">${decimalHours(entry.durationSeconds)}</td>
-</tr>`,
-        });
+</tr>`);
       }
     }
 
     // Subtotal row
-    allRows.push({
-      html: `<tr class="subtotal-row">
-  <td colspan="5" class="subtotal-label">Subtotal — ${esc(user.userName)}</td>
+    allRowsHtml.push(`<tr class="subtotal-row">
+  <td colspan="5" class="subtotal-label">Subtotal \u2014 ${esc(user.userName)}</td>
   <td class="subtotal-hours">${decimalHours(user.totalSeconds)}</td>
-</tr>`,
-    });
+</tr>`);
   }
 
   // Grand total row
-  allRows.push({
-    html: `<tr class="grand-total-row">
+  allRowsHtml.push(`<tr class="grand-total-row">
   <td colspan="5">GRAND TOTAL</td>
   <td class="grand-total-hours">${decimalHours(data.summary.totalSeconds)}</td>
-</tr>`,
-  });
+</tr>`);
 
-  // Paginate rows — page 1 has less room (summary takes space)
-  // Estimate: ~38 entry rows on page 1, ~52 on continuation pages
-  const PAGE1_ROWS = 38;
-  const CONT_ROWS = 52;
+  // ── Measure container ─────────────────────────────────────────
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div class="page" style="height:auto;min-height:0">
+    <div class="page-content">
+      <table class="log-table">${LOG_COLGROUP}<tbody>
+        ${allRowsHtml.join('\n')}
+      </tbody></table>
+    </div>
+  </div>
+</div>`;
 
-  let rowIdx = 0;
-
-  // Page 1 rows
-  const page1Limit = Math.min(PAGE1_ROWS, allRows.length);
-  for (let i = 0; i < page1Limit; i++) {
-    p1 += allRows[rowIdx]!.html;
-    rowIdx++;
-  }
-
-  if (rowIdx >= allRows.length) {
-    // Everything fits on page 1
-    p1 += `</tbody></table>`;
-    pages.push({ html: p1, headerType: 'invoice' });
-  } else {
-    // Close page 1 table (will continue on next page)
-    p1 += `</tbody></table>`;
-    pages.push({ html: p1, headerType: 'invoice' });
-
-    // Continuation pages
-    while (rowIdx < allRows.length) {
-      let contHtml = '';
-      contHtml += `<table class="log-table">`;
-      contHtml += LOG_TABLE_HEAD;
-      contHtml += `<tbody>`;
-
-      const contLimit = Math.min(CONT_ROWS, allRows.length - rowIdx);
-      for (let i = 0; i < contLimit; i++) {
-        contHtml += allRows[rowIdx]!.html;
-        rowIdx++;
-      }
-
-      contHtml += `</tbody></table>`;
-      pages.push({ html: contHtml, headerType: 'compact' });
-    }
-  }
-
-  // ── Appendix page ──────────────────────────────────────────────
+  // ── Appendix page (static) ────────────────────────────────────
   let appendix = '';
 
   // Project Breakdown
-  appendix += `<div class="section-title">Appendix — Project Breakdown</div>`;
+  appendix += `<div class="section-title">Appendix \u2014 Project Breakdown</div>`;
   appendix += `<table class="app-table">
 <thead><tr>
   <th>Project</th>
@@ -555,7 +501,6 @@ export function renderV6(data: ReportData): string {
 <tbody>`;
 
   for (const proj of data.projectBreakdown) {
-    // Count entries for this project across all users
     let projEntries = 0;
     for (const user of data.userDetails) {
       for (const dg of user.dayGroups) {
@@ -618,20 +563,157 @@ export function renderV6(data: ReportData): string {
   This document does not constitute an invoice. For billing purposes, refer to the corresponding invoice issued by the service provider.
 </div>`;
 
-  pages.push({ html: appendix, headerType: 'compact' });
+  // ── Templates ─────────────────────────────────────────────────
+  const compactHdrTpl = `<template id="tpl-compact-hdr">${compactHeader(data)}</template>`;
+  const footerTpl = `<template id="tpl-footer"><div class="page-footer">
+  <span class="pf-left">${esc(reportNo(data))}</span>
+  <span class="pf-center">Ternity &middot; ${esc(formatDateRange(data.dateFrom, data.dateTo))}</span>
+  <span class="pf-right"></span>
+</div></template>`;
 
-  // ── Assemble final HTML ────────────────────────────────────────
-  const totalPages = pages.length;
+  const colgroup = LOG_COLGROUP.replace(/"/g, '\\"');
 
-  const pagesHtml = pages
-    .map(
-      (p, i) => `<div class="page">
-  ${p.headerType === 'invoice' ? invoiceHeader(data) : compactHeader(data)}
-  <div class="page-content">${p.html}</div>
-  ${pageFooter(data, i + 1, totalPages)}
-</div>`,
-    )
-    .join('\n');
+  const paginationScript = `<script>
+(function() {
+  // ── Measure page-1 available height ──────────────────────────
+  // Page 1 has the summary section above the table, so less space for rows.
+  var p1Table = document.getElementById('p1-table');
+  var p1TableRect = p1Table.getBoundingClientRect();
+  var p1Footer = document.querySelector('#page-1 .page-footer');
+  var p1FooterRect = p1Footer.getBoundingClientRect();
+  var page1AvailH = p1FooterRect.top - p1TableRect.top - 3;
+
+  // ── Measure continuation available height ────────────────────
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var hdrClone = document.getElementById('tpl-compact-hdr').content.cloneNode(true);
+  tmpPage.appendChild(hdrClone);
+  var tmpContent = document.createElement('div');
+  tmpContent.className = 'page-content';
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpContent.appendChild(marker);
+  var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+  tmpPage.appendChild(tmpContent);
+  tmpPage.appendChild(ftrClone);
+  document.body.appendChild(tmpPage);
+  var cStyle = window.getComputedStyle(tmpContent);
+  var cRect = tmpContent.getBoundingClientRect();
+  var fRect = tmpPage.querySelector('.page-footer').getBoundingClientRect();
+  var contAvailH = fRect.top - cRect.top - parseFloat(cStyle.paddingTop) - parseFloat(cStyle.paddingBottom) - 3;
+  document.body.removeChild(tmpPage);
+
+  // ── Measure rows ─────────────────────────────────────────────
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('tbody > tr');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  // ── Distribute rows into pages ───────────────────────────────
+  var dataPages = [];
+  var idx = 0;
+
+  // Page 1 (less space)
+  var p1Rows = [];
+  var p1Used = 0;
+  while (idx < heights.length) {
+    if (p1Used + heights[idx].h > page1AvailH && p1Rows.length > 0) break;
+    p1Rows.push(heights[idx]);
+    p1Used += heights[idx].h;
+    idx++;
+  }
+  while (p1Rows.length > 1 && p1Rows[p1Rows.length - 1].sticky) {
+    idx--;
+    p1Rows.pop();
+  }
+  dataPages.push(p1Rows);
+
+  // Continuation pages
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      if (usedH + heights[idx].h > contAvailH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += heights[idx].h;
+      idx++;
+    }
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  // Total pages: page1 + continuation data pages (dataPages[1..n]) + appendix
+  var totalPages = dataPages.length + 1; // +1 for appendix
+
+  // ── Fill page 1 tbody ────────────────────────────────────────
+  var p1Tbody = p1Table.querySelector('tbody');
+  for (var r = 0; r < dataPages[0].length; r++) {
+    p1Tbody.appendChild(dataPages[0][r].el);
+  }
+  // Fix page 1 footer
+  document.querySelector('#page-1 .pf-right').textContent = 'Page 1 of ' + totalPages;
+
+  // ── Build continuation pages ─────────────────────────────────
+  var colgroup = "${colgroup}";
+  for (var p = 1; p < dataPages.length; p++) {
+    var pageNum = p + 1;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    var hdr = document.getElementById('tpl-compact-hdr').content.cloneNode(true);
+    pageDiv.appendChild(hdr);
+
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'page-content';
+    var table = document.createElement('table');
+    table.className = 'log-table';
+    table.innerHTML = colgroup;
+    var tbody = document.createElement('tbody');
+    for (var r = 0; r < dataPages[p].length; r++) {
+      tbody.appendChild(dataPages[p][r].el);
+    }
+    table.appendChild(tbody);
+    contentDiv.appendChild(table);
+    pageDiv.appendChild(contentDiv);
+
+    var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftr.querySelector('.pf-right').textContent = 'Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftr);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  // ── Fix appendix page number ─────────────────────────────────
+  var appFtr = document.getElementById('appendix-page').querySelector('.pf-right');
+  if (appFtr) appFtr.textContent = 'Page ' + totalPages + ' of ' + totalPages;
+
+  // Cleanup
+  document.getElementById('tpl-compact-hdr').remove();
+  document.getElementById('tpl-footer').remove();
+})();
+</script>`;
+
+  // Appendix page (rendered statically, placed after script fills data pages)
+  const appendixPage = `<div class="page" id="appendix-page">
+  ${compactHeader(data)}
+  <div class="page-content">${appendix}</div>
+  <div class="page-footer">
+    <span class="pf-left">${esc(reportNo(data))}</span>
+    <span class="pf-center">Ternity &middot; ${esc(formatDateRange(data.dateFrom, data.dateTo))}</span>
+    <span class="pf-right"></span>
+  </div>
+</div>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -641,7 +723,12 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${page1Html}
+${measureHtml}
+${compactHdrTpl}
+${footerTpl}
+${paginationScript}
+${appendixPage}
 </body>
 </html>`;
 }

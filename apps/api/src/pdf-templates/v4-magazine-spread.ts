@@ -288,29 +288,27 @@ body {
 }
 
 .inner-content {
-  padding: 6mm 20mm 20mm 20mm;
+  padding: 6mm 20mm 10mm 20mm;
 }
 
-/* User header with teal accent */
-.user-header {
+/* User header row (inline in table) */
+.user-header-row td {
+  padding: 10px 8px 8px 8px !important;
+  background: #f7f8f9 !important;
+  border-bottom: 2px solid #e5e5e5 !important;
+  position: relative;
+}
+.user-header-row td::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: #00D4AA;
+}
+.user-header-row .user-header-inner {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  margin-bottom: 5mm;
-  position: relative;
-  background: #f7f8f9;
-  border-radius: 6px;
-}
-.user-header::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #00D4AA;
-  border-radius: 6px 0 0 6px;
 }
 .user-avatar {
   width: 36px;
@@ -349,29 +347,16 @@ body {
 .user-total-block .total-label {
   font-size: 8px;
   color: #999;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
+.user-header-row.has-divider td { padding-top: 16px !important; border-top: 1px dashed #ddd; }
 
 /* Day groups & entries */
 .entries-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 9px;
-  margin-bottom: 5mm;
 }
-.entries-table thead th {
-  background: #f4f5f6;
-  border-bottom: 2px solid #dee2e6;
-  padding: 5px 8px;
-  text-align: left;
-  font-size: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #666;
-}
-.entries-table thead th:last-child { text-align: right; }
+
 
 .day-group-row td {
   padding: 6px 8px 4px 8px;
@@ -567,8 +552,8 @@ export function renderV4(data: ReportData): string {
   </div>
 </div>`;
 
-  // Team Performance section
-  cover += `<div class="team-section">
+  // Team Performance section — split to a second cover page if many users
+  const teamPerformanceHtml = `<div class="team-section">
   <div class="team-section-title">Team Performance</div>
   ${generateStackedBar(data)}
   <table class="summary-table">
@@ -596,116 +581,73 @@ export function renderV4(data: ReportData): string {
   </table>
 </div>`;
 
-  pages.push({ type: 'cover', html: cover });
+  // With ≤10 users, everything fits on one cover page.
+  // With >10, the hero grid + donut legend + team table overflows A4.
+  const V4_COVER_USER_THRESHOLD = 10;
+  if (data.userBreakdown.length <= V4_COVER_USER_THRESHOLD) {
+    cover += teamPerformanceHtml;
+    pages.push({ type: 'cover', html: cover });
+  } else {
+    pages.push({ type: 'cover', html: cover });
+    // Second page uses inner layout so it gets proper header/footer
+    pages.push({ type: 'inner', html: teamPerformanceHtml });
+  }
 
-  // ── User detail pages (with pagination) ────────────────────────
-  const PAGE_LINES = 32;
-  const HEADER_LINES = 6;
-  const DESC_CHARS_PER_LINE = 55;
+  // ── Build all data rows as HTML ──────────────────────────────────
+  const COLGROUP = `<colgroup><col style="width:55px"><col style="width:110px"><col><col style="width:70px"><col style="width:60px"></colgroup>`;
 
-  const V4_TABLE_HEAD = `<thead><tr>
-  <th style="width:55px">Time</th>
-  <th style="width:110px">Project</th>
-  <th>Description</th>
-  <th style="width:70px">Jira</th>
-  <th style="width:60px">Duration</th>
-</tr></thead>`;
+  const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
     const color = CHART_COLORS[ui % CHART_COLORS.length];
+    const dividerCls = ui > 0 ? ' has-divider' : '';
 
-    const sectionHeader = `<div class="user-header">
-  <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
-  <div class="user-meta">
-    <div class="user-name">${esc(user.userName)}</div>
-    <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
-  </div>
-  <div class="user-total-block">
-    <div class="total-hours">${formatHours(user.totalSeconds)}</div>
-    <div class="total-label">Total Hours</div>
-  </div>
-</div>`;
+    allRowsHtml.push(`<tr class="user-header-row${dividerCls}" data-sticky>
+  <td colspan="5"><div class="user-header-inner">
+    <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
+    <div class="user-meta">
+      <div class="user-name">${esc(user.userName)}</div>
+      <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+    </div>
+    <div class="user-total-block">
+      <div class="total-hours">${formatHours(user.totalSeconds)}</div>
+      <div class="total-label">Total Hours</div>
+    </div>
+  </div></td>
+</tr>`);
 
-    const allRows: Array<{ html: string; lines: number }> = [];
     for (const dg of user.dayGroups) {
-      allRows.push({
-        html: `<tr class="day-group-row">
+      allRowsHtml.push(`<tr class="day-group-row" data-sticky>
   <td colspan="5"><div class="day-group-inner"><span class="day-group-date">${esc(formatDate(dg.date))}</span><span class="day-group-total">${formatDuration(dg.dayTotalSeconds)}</span></div></td>
-</tr>`,
-        lines: 1,
-      });
+</tr>`);
+
       for (const entry of dg.entries) {
         const jiraCell = entry.jiraIssueKey
           ? `<span class="jira-pill">${esc(entry.jiraIssueKey)}</span>`
           : `<span class="jira-empty">&mdash;</span>`;
-        const descLen = entry.description.length;
-        const lines = descLen > DESC_CHARS_PER_LINE * 2 ? 3 : descLen > DESC_CHARS_PER_LINE ? 2 : 1;
-        allRows.push({
-          html: `<tr>
+        allRowsHtml.push(`<tr>
   <td class="time-cell">${esc(entry.startTime)}</td>
   <td><div class="project-cell-inner"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td>${jiraCell}</td>
   <td class="duration-cell">${formatDuration(entry.durationSeconds)}</td>
-</tr>`,
-          lines,
-        });
+</tr>`);
       }
-    }
-
-    let rowIdx = 0;
-    let isFirstChunk = true;
-    while (rowIdx < allRows.length) {
-      let budget = PAGE_LINES - (isFirstChunk ? HEADER_LINES : 0);
-      let chunkEnd = rowIdx;
-      while (chunkEnd < allRows.length && budget >= allRows[chunkEnd]!.lines) {
-        budget -= allRows[chunkEnd]!.lines;
-        chunkEnd++;
-      }
-      if (chunkEnd === rowIdx) chunkEnd = rowIdx + 1;
-
-      const chunkRows = allRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-
-      let pageHtml = '';
-      if (isFirstChunk) pageHtml += sectionHeader;
-      pageHtml += `<table class="entries-table">\n${V4_TABLE_HEAD}\n<tbody>\n${chunkRows}\n</tbody></table>`;
-
-      pages.push({ type: 'inner', html: pageHtml });
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    if (allRows.length === 0) {
-      pages.push({
-        type: 'inner',
-        html:
-          sectionHeader +
-          `<table class="entries-table">\n${V4_TABLE_HEAD}\n<tbody></tbody></table>`,
-      });
     }
   }
 
-  // ── Assemble final HTML ────────────────────────────────────────
-
-  const totalPages = pages.length;
-
-  const pagesHtml = pages
+  // ── Assemble static pages (cover + optional team perf) ─────────
+  const staticPagesHtml = pages
     .map((p, i) => {
       const pageNum = i + 1;
-
       if (p.type === 'cover') {
-        return `<div class="page">
+        return `<div class="page" id="page-${pageNum}">
   ${p.html}
-  <div class="cover-footer">${coverFooterText(data)} &middot; Page ${pageNum} of ${totalPages}</div>
+  <div class="cover-footer"><span class="page-number">${coverFooterText(data)} &middot; Page ${pageNum} of 0</span></div>
 </div>`;
       }
-
-      // Inner page
-      return `<div class="page">
+      return `<div class="page" id="page-${pageNum}">
   <div class="inner-stripe"></div>
   <div class="inner-header">
     <div class="inner-header-left">
@@ -715,10 +657,147 @@ export function renderV4(data: ReportData): string {
     <div class="inner-header-right">${esc(formatDateRange(data.dateFrom, data.dateTo))}</div>
   </div>
   <div class="inner-content">${p.html}</div>
-  <div class="inner-footer">${innerFooterText(data, pageNum, totalPages)}</div>
+  <div class="inner-footer"><span class="page-number">${innerFooterText(data, pageNum, 0)}</span></div>
 </div>`;
     })
     .join('\n');
+
+  const staticPageCount = pages.length;
+
+  // ── Measurement container ───────────────────────────────────────
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div class="inner-stripe"></div>
+  <div class="inner-header">
+    <div class="inner-header-left">
+      ${LOGO_SVG}
+      <span class="inner-brand">Ternity</span>
+    </div>
+    <div class="inner-header-right">${esc(formatDateRange(data.dateFrom, data.dateTo))}</div>
+  </div>
+  <div class="inner-content">
+    <table class="entries-table">${COLGROUP}<tbody>
+      ${allRowsHtml.join('\n')}
+    </tbody></table>
+  </div>
+</div>`;
+
+  const innerHeaderTpl = `<template id="tpl-inner-header">
+  <div class="inner-stripe"></div>
+  <div class="inner-header">
+    <div class="inner-header-left">
+      ${LOGO_SVG}
+      <span class="inner-brand">Ternity</span>
+    </div>
+    <div class="inner-header-right">${esc(formatDateRange(data.dateFrom, data.dateTo))}</div>
+  </div>
+</template>`;
+
+  const innerFooterTpl = `<template id="tpl-inner-footer">
+  <div class="inner-footer"><span class="page-number"></span></div>
+</template>`;
+
+  const paginationScript = `<script>
+(function() {
+  var staticPageCount = ${staticPageCount};
+
+  // Measure available height
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var hdr = document.getElementById('tpl-inner-header').content.cloneNode(true);
+  var ftr = document.getElementById('tpl-inner-footer').content.cloneNode(true);
+  var tmpContent = document.createElement('div');
+  tmpContent.className = 'inner-content';
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpContent.appendChild(marker);
+  tmpPage.appendChild(hdr);
+  tmpPage.appendChild(tmpContent);
+  tmpPage.appendChild(ftr);
+  document.body.appendChild(tmpPage);
+  var footerEl = tmpPage.querySelector('.inner-footer');
+  var contentRect = tmpContent.getBoundingClientRect();
+  var footerRect = footerEl.getBoundingClientRect();
+  var cs = window.getComputedStyle(tmpContent);
+  var cPadTop = parseFloat(cs.paddingTop);
+  var cPadBottom = parseFloat(cs.paddingBottom);
+  var availableH = footerRect.top - contentRect.top - cPadTop - cPadBottom - 3;
+  document.body.removeChild(tmpPage);
+
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('tbody > tr');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+  container.remove();
+
+  var dataPages = [];
+  var idx = 0;
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+    while (idx < heights.length) {
+      var rowH = heights[idx].h;
+      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += rowH;
+      idx++;
+    }
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+    dataPages.push(pageRows);
+  }
+
+  var totalPages = staticPageCount + dataPages.length;
+
+  // Fix static page footers
+  for (var s = 0; s < staticPageCount; s++) {
+    var el = document.querySelector('#page-' + (s+1) + ' .page-number');
+    if (el) el.textContent = el.textContent.replace(/of 0/, 'of ' + totalPages);
+  }
+
+  var colgroup = '${COLGROUP.replace(/'/g, "\\'")}';
+
+  for (var p = 0; p < dataPages.length; p++) {
+    var pageNum = staticPageCount + p + 1;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    var hdrClone = document.getElementById('tpl-inner-header').content.cloneNode(true);
+    pageDiv.appendChild(hdrClone);
+
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'inner-content';
+    var table = document.createElement('table');
+    table.className = 'entries-table';
+    table.innerHTML = colgroup;
+    var tbody = document.createElement('tbody');
+    for (var r = 0; r < dataPages[p].length; r++) {
+      if (r === 0) dataPages[p][r].el.classList.remove('has-divider');
+      tbody.appendChild(dataPages[p][r].el);
+    }
+    table.appendChild(tbody);
+    contentDiv.appendChild(table);
+    pageDiv.appendChild(contentDiv);
+
+    var ftrClone = document.getElementById('tpl-inner-footer').content.cloneNode(true);
+    ftrClone.querySelector('.page-number').textContent = 'Ternity \\u00b7 ${esc(formatDateRange(data.dateFrom, data.dateTo))} \\u00b7 Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftrClone);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  document.getElementById('tpl-inner-header').remove();
+  document.getElementById('tpl-inner-footer').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -728,7 +807,11 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${staticPagesHtml}
+${measureHtml}
+${innerHeaderTpl}
+${innerFooterTpl}
+${paginationScript}
 </body>
 </html>`;
 }

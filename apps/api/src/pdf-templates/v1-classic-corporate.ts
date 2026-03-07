@@ -82,7 +82,7 @@ body {
 }
 .page-footer .page-number { font-weight: 600; color: #666; }
 
-.page-content { padding: 8mm 20mm 20mm 20mm; }
+.page-content { padding: 8mm 20mm 10mm 20mm; }
 
 .report-title { margin-bottom: 6mm; }
 .report-title h1 {
@@ -138,42 +138,41 @@ body {
 .legend-hours { font-weight: 600; color: #0a0a0a; min-width: 50px; text-align: right; }
 .legend-pct { color: #999; min-width: 40px; text-align: right; }
 
-.section-header {
+.section-header-row td {
+  padding: 10px 8px 8px 8px !important;
+  border-bottom: 2px solid #e5e5e5 !important;
+  background: #fff !important;
+}
+.section-header-row .section-header-inner {
   display: flex; align-items: center; gap: 12px;
-  margin-bottom: 4mm; padding-bottom: 2mm;
-  border-bottom: 1px solid #e5e5e5;
-  page-break-inside: avoid;
 }
-.section-header .user-avatar {
+.section-header-row .user-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: #00D4AA; display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-family: 'Oxanium', sans-serif; font-weight: 700; font-size: 13px; color: #0a0a0a;
+  flex-shrink: 0;
 }
-.section-header .user-info h2 {
+.section-header-row .user-info h2 {
   font-family: 'Oxanium', sans-serif;
   font-size: 14px; font-weight: 600; color: #0a0a0a; letter-spacing: 0.5px;
 }
-.section-header .user-info .user-stats { font-size: 9px; color: #999; }
-.section-header .user-total { margin-left: auto; text-align: right; }
-.section-header .user-total .total-hours {
+.section-header-row .user-info .user-stats { font-size: 9px; color: #999; }
+.section-header-row .user-total { margin-left: auto; text-align: right; }
+.section-header-row .user-total .total-hours {
   font-family: 'Oxanium', sans-serif;
   font-size: 18px; font-weight: 700; color: #00D4AA;
 }
-.section-header .user-total .total-label {
+.section-header-row .user-total .total-label {
   font-size: 8px; color: #999; text-transform: uppercase; letter-spacing: 1px;
 }
+/* Extra top margin for non-first user headers */
+.section-header-row.has-divider td { padding-top: 16px !important; border-top: 1px solid #e5e5e5; }
 
 .entries-table {
   width: 100%; border-collapse: collapse;
-  margin-bottom: 8mm; font-size: 9px;
+  font-size: 9px;
 }
-.entries-table thead th {
-  background: #f4f5f6; border-bottom: 2px solid #dee2e6;
-  padding: 6px 8px; text-align: left;
-  font-size: 8px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #666;
-}
-.entries-table thead th:last-child { text-align: right; }
+
 .entries-table tbody tr { border-bottom: 1px solid #f0f0f0; }
 .entries-table td { padding: 5px 8px; vertical-align: top; }
 .entries-table .date-cell { white-space: nowrap; color: #666; font-weight: 500; }
@@ -293,127 +292,195 @@ export function renderV1(data: ReportData): string {
 
   pages.push({ html: page1, subtitle: `Generated: ${formatGeneratedAt(data.generatedAt)}` });
 
-  // ── User detail pages (with pagination) ─────────────────────────
-  // Row capacity in "line units" — each single-line row = 1 unit, multi-line rows
-  // (long descriptions) count as 2. Header area takes ~6 units on first page.
-  const PAGE_LINES = 32;
-  const HEADER_LINES = 6; // section header + gap
+  // ── Build all data rows as HTML ──────────────────────────────────
+  const COLGROUP = `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
 
-  // ~60 chars per line in the description column at 9px/Inter
-  const DESC_CHARS_PER_LINE = 60;
-
-  const TABLE_HEAD = `<thead><tr>
-  <th style="width:70px">Time</th>
-  <th style="width:120px">Project</th>
-  <th>Description</th>
-  <th style="width:60px">Jira</th>
-  <th style="width:65px">Duration</th>
-</tr></thead>`;
+  const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
     const color = CHART_COLORS[ui % CHART_COLORS.length];
+    const dividerCls = ui > 0 ? ' has-divider' : '';
 
-    // Build the user section header (only for the first page of this user)
-    const sectionHeader = `<div class="section-header">
-  <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
-  <div class="user-info">
-    <h2>${esc(user.userName)}</h2>
-    <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
-  </div>
-  <div class="user-total">
-    <div class="total-hours">${formatHours(user.totalSeconds)}</div>
-    <div class="total-label">Total Hours</div>
-  </div>
-</div>`;
+    // User section header — sticky (must not be last on a page)
+    allRowsHtml.push(`<tr class="section-header-row${dividerCls}" data-sticky>
+  <td colspan="5"><div class="section-header-inner">
+    <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
+    <div class="user-info">
+      <h2>${esc(user.userName)}</h2>
+      <div class="user-stats">${user.entryCount} entries &middot; ${user.daysActive} days active</div>
+    </div>
+    <div class="user-total">
+      <div class="total-hours">${formatHours(user.totalSeconds)}</div>
+      <div class="total-label">Total Hours</div>
+    </div>
+  </div></td>
+</tr>`);
 
-    // Collect all table rows for this user, with line-height estimates
-    const allRows: Array<{ html: string; lines: number }> = [];
     for (const dg of user.dayGroups) {
-      allRows.push({
-        html: `<tr class="day-group-row">
+      // Day group header — sticky
+      allRowsHtml.push(`<tr class="day-group-row" data-sticky>
   <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
   <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
-</tr>`,
-        lines: 1,
-      });
+</tr>`);
 
       for (const entry of dg.entries) {
-        // Estimate line count based on description length
-        const descLen = entry.description.length;
-        const lines = descLen > DESC_CHARS_PER_LINE * 2 ? 3 : descLen > DESC_CHARS_PER_LINE ? 2 : 1;
-
-        allRows.push({
-          html: `<tr>
+        allRowsHtml.push(`<tr>
   <td class="date-cell">${esc(entry.startTime)}</td>
   <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td style="color: ${entry.jiraIssueKey ? '#6c8eef' : '#666'}; font-size: 8px">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
   <td class="duration-cell">${formatDuration(entry.durationSeconds)}</td>
-</tr>`,
-          lines,
-        });
+</tr>`);
       }
-    }
-
-    // Paginate rows across multiple pages using line-unit budgets
-    let rowIdx = 0;
-    let isFirstChunk = true;
-
-    while (rowIdx < allRows.length) {
-      let budget = PAGE_LINES - (isFirstChunk ? HEADER_LINES : 0);
-      let chunkEnd = rowIdx;
-
-      while (chunkEnd < allRows.length && budget >= allRows[chunkEnd]!.lines) {
-        budget -= allRows[chunkEnd]!.lines;
-        chunkEnd++;
-      }
-
-      // Ensure at least one row per page to avoid infinite loops
-      if (chunkEnd === rowIdx) chunkEnd = rowIdx + 1;
-
-      const chunkRows = allRows
-        .slice(rowIdx, chunkEnd)
-        .map((r) => r.html)
-        .join('\n');
-
-      let pageHtml = '';
-      if (isFirstChunk) {
-        pageHtml += sectionHeader;
-      }
-      pageHtml += `<table class="entries-table">\n${TABLE_HEAD}\n<tbody>\n${chunkRows}\n</tbody></table>`;
-
-      pages.push({
-        html: pageHtml,
-        subtitle: esc(user.userName),
-      });
-
-      rowIdx = chunkEnd;
-      isFirstChunk = false;
-    }
-
-    // Edge case: user with no entries still gets one page
-    if (allRows.length === 0) {
-      pages.push({
-        html:
-          sectionHeader + `<table class="entries-table">\n${TABLE_HEAD}\n<tbody></tbody></table>`,
-        subtitle: esc(user.userName),
-      });
     }
   }
 
-  // ── Assemble final HTML ─────────────────────────────────────────
-  const totalPages = pages.length;
+  // ── Page 1 assembled statically ─────────────────────────────────
+  const page1Html = `<div class="page" id="page-1">
+  ${pageHeader(`Generated: ${formatGeneratedAt(data.generatedAt)}`)}
+  <div class="page-content">${page1}</div>
+  ${pageFooter(data, 1, 0)}
+</div>`;
 
-  const pagesHtml = pages
-    .map(
-      (p, i) => `<div class="page">
-  ${pageHeader(p.subtitle)}
-  <div class="page-content">${p.html}</div>
-  ${pageFooter(data, i + 1, totalPages)}
-</div>`,
-    )
-    .join('\n');
+  // ── Measurement container + pagination script ───────────────────
+  // All rows go into a hidden table so Chromium can measure real heights.
+  // A script then distributes them into proper page divs.
+  const measureHtml = `<div id="measure-container" style="position:absolute;left:0;top:0;width:210mm;visibility:hidden">
+  <div style="padding:8mm 20mm 10mm 20mm">
+    <table class="entries-table">${COLGROUP}<tbody>
+      ${allRowsHtml.join('\n')}
+    </tbody></table>
+  </div>
+</div>`;
+
+  // Header/footer templates (hidden, cloned by script)
+  const headerTpl = `<template id="tpl-header">${pageHeader()}</template>`;
+  const footerTpl = `<template id="tpl-footer"><div class="page-footer">
+  <span class="footer-brand">Ternity &middot; app.ternity.xyz</span>
+  <span>Time Report &mdash; ${esc(formatDateRange(data.dateFrom, data.dateTo))}</span>
+  <span class="page-number"></span>
+</div></template>`;
+
+  const paginationScript = `<script>
+(function() {
+  // Measure available height by creating a temp page with the real layout
+  var tmpPage = document.createElement('div');
+  tmpPage.className = 'page';
+  tmpPage.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;height:297mm';
+  var hdr = document.getElementById('tpl-header').content.cloneNode(true);
+  var ftr = document.getElementById('tpl-footer').content.cloneNode(true);
+  var tmpContent = document.createElement('div');
+  tmpContent.className = 'page-content';
+  // Use a marker div to measure the space between content top and footer top
+  var marker = document.createElement('div');
+  marker.style.cssText = 'width:1px;height:1px';
+  tmpContent.appendChild(marker);
+  tmpPage.appendChild(hdr);
+  tmpPage.appendChild(tmpContent);
+  tmpPage.appendChild(ftr);
+  document.body.appendChild(tmpPage);
+  // Available height = distance from content area start to where the footer begins
+  var footerEl = tmpPage.querySelector('.page-footer');
+  var contentRect = tmpContent.getBoundingClientRect();
+  var footerRect = footerEl.getBoundingClientRect();
+  // The content padding-top is already in contentRect, we want from the inner padding start
+  var contentStyle = window.getComputedStyle(tmpContent);
+  var cPadTop = parseFloat(contentStyle.paddingTop);
+  var cPadBottom = parseFloat(contentStyle.paddingBottom);
+  // Available height for table content inside .page-content:
+  // From content inner top (after padding) to footer top, minus content padding-bottom
+  var availableH = footerRect.top - contentRect.top - cPadTop - cPadBottom - 3;
+  document.body.removeChild(tmpPage);
+
+  // Get all measured rows
+  var container = document.getElementById('measure-container');
+  var rows = container.querySelectorAll('tbody > tr');
+  var heights = [];
+  for (var i = 0; i < rows.length; i++) {
+    heights.push({
+      el: rows[i],
+      h: rows[i].offsetHeight,
+      sticky: rows[i].hasAttribute('data-sticky')
+    });
+  }
+
+  // Remove measurement container
+  container.remove();
+
+  // Build data pages
+  var dataPages = [];
+  var idx = 0;
+  while (idx < heights.length) {
+    var pageRows = [];
+    var usedH = 0;
+
+    while (idx < heights.length) {
+      var rowH = heights[idx].h;
+      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      pageRows.push(heights[idx]);
+      usedH += rowH;
+      idx++;
+    }
+
+    // Handle sticky: if last row is sticky, pull it back (unless it's the only row)
+    while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
+      idx--;
+      pageRows.pop();
+    }
+
+    dataPages.push(pageRows);
+  }
+
+  // Total pages = 1 (cover) + data pages
+  var totalPages = 1 + dataPages.length;
+
+  // Fix page 1 footer
+  var page1Footer = document.querySelector('#page-1 .page-number');
+  if (page1Footer) page1Footer.textContent = 'Page 1 of ' + totalPages;
+
+  // Colgroup for new tables
+  var colgroup = '${COLGROUP.replace(/'/g, "\\'")}';
+
+  // Build page divs
+  for (var p = 0; p < dataPages.length; p++) {
+    var pageNum = p + 2;
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'page';
+
+    // Header
+    var hdrClone = document.getElementById('tpl-header').content.cloneNode(true);
+    pageDiv.appendChild(hdrClone);
+
+    // Content
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'page-content';
+    var table = document.createElement('table');
+    table.className = 'entries-table';
+    table.innerHTML = colgroup;
+    var tbody = document.createElement('tbody');
+    for (var r = 0; r < dataPages[p].length; r++) {
+      // Strip divider from first row on page — no content above to separate from
+      if (r === 0) dataPages[p][r].el.classList.remove('has-divider');
+      tbody.appendChild(dataPages[p][r].el);
+    }
+    table.appendChild(tbody);
+    contentDiv.appendChild(table);
+    pageDiv.appendChild(contentDiv);
+
+    // Footer
+    var ftrClone = document.getElementById('tpl-footer').content.cloneNode(true);
+    ftrClone.querySelector('.page-number').textContent = 'Page ' + pageNum + ' of ' + totalPages;
+    pageDiv.appendChild(ftrClone);
+
+    document.body.appendChild(pageDiv);
+  }
+
+  // Clean up templates
+  document.getElementById('tpl-header').remove();
+  document.getElementById('tpl-footer').remove();
+})();
+</script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -423,7 +490,11 @@ ${FONTS_LINK}
 <style>${CSS}</style>
 </head>
 <body>
-${pagesHtml}
+${page1Html}
+${measureHtml}
+${headerTpl}
+${footerTpl}
+${paginationScript}
 </body>
 </html>`;
 }
