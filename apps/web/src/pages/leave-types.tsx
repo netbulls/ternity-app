@@ -99,7 +99,10 @@ export function LeaveTypesPage() {
       const q = searchQuery.toLowerCase();
       list = list.filter((t) => t.name.toLowerCase().includes(q));
     }
-    return list;
+    // Pin contractor default to top
+    const pinned = list.filter((t) => t.isContractorDefault);
+    const rest = list.filter((t) => !t.isContractorDefault);
+    return [...pinned, ...rest];
   }, [allTypes, statusFilter, searchQuery]);
 
   const filteredGroups = useMemo(() => {
@@ -152,6 +155,13 @@ export function LeaveTypesPage() {
     [updateLeaveType],
   );
 
+  const onSetContractorDefault = useCallback(
+    (lt: AdminLeaveType) => {
+      updateLeaveType.mutate({ id: lt.id, isContractorDefault: true });
+    },
+    [updateLeaveType],
+  );
+
   // ── Group callbacks ─────────────────────────────────────────────────
   const handleRenameGroup = useCallback((g: LeaveTypeGroup) => {
     setRenameGroupDialog(g);
@@ -188,8 +198,16 @@ export function LeaveTypesPage() {
         onToggleActive,
         onChangeVisibility,
         onChangeGroup,
+        onSetContractorDefault,
       }),
-    [groups, handleEditType, onToggleActive, onChangeVisibility, onChangeGroup],
+    [
+      groups,
+      handleEditType,
+      onToggleActive,
+      onChangeVisibility,
+      onChangeGroup,
+      onSetContractorDefault,
+    ],
   );
 
   const groupColumns = useMemo(

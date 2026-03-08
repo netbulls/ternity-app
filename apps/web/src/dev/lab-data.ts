@@ -58,6 +58,55 @@ export const LAB_SECTIONS: LabProductSection[] = [
     id: 'web',
     groups: [
       {
+        name: 'reports-sidebar-layout',
+        id: 'reports-sidebar-layout-lab',
+        description:
+          'Client Reports sidebar cleanup — 5 approaches to reorganize the export panel (format picker, template selector, favourites, download/preview actions).',
+        date: '2026-03-08T18:00:00',
+        items: [
+          {
+            kind: 'exploration',
+            title: 'V1 — Compact Toolbar',
+            file: 'web/reports-sidebar-v1-a3f2.html',
+            description:
+              'Template + format as separate dropdowns. Preview is icon-only. Download is a split button (main action + format dropdown). "Save current" replaces "Save as New". No editing/detach states.',
+            date: '2026-03-08T18:00:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V2 — Download-First',
+            file: 'web/reports-sidebar-v2-b7e4.html',
+            description:
+              'Format is the primary choice — visual card selector (PDF/CSV/Excel). Template dropdown only appears when PDF is selected. Download button reflects chosen format. Clean action row.',
+            date: '2026-03-08T18:10:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V3 — Merged Into Filter Bar',
+            file: 'web/reports-sidebar-v3-c9f5.html',
+            description:
+              'No sidebar — template, format, preview, and download merge into the filter bar. Favourites as chips above. Data gets full width. Tradeoff: dense on small screens.',
+            date: '2026-03-08T18:20:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V4 — Accordion Sections',
+            file: 'web/reports-sidebar-v4-d2a6.html',
+            description:
+              'Two collapsible sections: Export (format + template + download) and Favourites (list + inline save). Only one open at a time. Summary text when collapsed.',
+            date: '2026-03-08T18:30:00',
+          },
+          {
+            kind: 'exploration',
+            title: 'V5 — Sticky Bottom Bar',
+            file: 'web/reports-sidebar-v5-e4b8.html',
+            description:
+              'All export controls in a fixed bar at the bottom. Favourites in a slide-out drawer. Data gets full width. Clean separation between viewing and exporting.',
+            date: '2026-03-08T18:40:00',
+          },
+        ],
+      },
+      {
         name: 'report-pdf-templates',
         id: 'report-pdf-templates-lab',
         description:

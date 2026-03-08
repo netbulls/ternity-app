@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports Sidebar — V3 Merged Into Filter Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      /* ── Favourite chips ── */
+      .fav-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        align-items: center;
+      }
+      .fav-chip-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: rgba(255, 255, 255, 0.25);
+        margin-right: 4px;
+      }
+      .fav-chip {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .fav-chip:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .fav-chip.active {
+        border-color: rgba(0, 212, 170, 0.3);
+        background: rgba(0, 212, 170, 0.06);
+        color: #00d4aa;
+      }
+      .fav-chip .x {
+        font-size: 9px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        margin-left: 2px;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .fav-chip:hover .x {
+        opacity: 1;
+      }
+
+      /* ── Filter bar (expanded) ── */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+      }
+      .filter-bar select,
+      .filter-bar .filter-btn {
+        font-size: 11px;
+        font-family: 'Inter', sans-serif;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border-radius: 6px;
+        padding: 6px 10px;
+        outline: none;
+        cursor: pointer;
+      }
+      .filter-bar .filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .filter-bar .filter-btn:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+      .preset-group {
+        display: flex;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .preset-btn {
+        font-size: 10px;
+        font-family: 'Inter', sans-serif;
+        padding: 6px 10px;
+        background: transparent;
+        border: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .preset-btn:last-child {
+        border-right: none;
+      }
+      .preset-btn.active {
+        background: rgba(0, 212, 170, 0.12);
+        color: #00d4aa;
+        font-weight: 600;
+      }
+      .date-btn {
+        font-size: 11px;
+        font-family: 'Inter', sans-serif;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .sep {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .bar-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .icon-btn:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .btn-dl {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: none;
+        background: #00d4aa;
+        color: #0a0a0a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .btn-dl:hover {
+        background: #00e8bb;
+      }
+
+      /* ── Full-width data ── */
+      .stat-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .stat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 10px;
+      }
+      .stat-card .label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .stat-card .value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin-top: 4px;
+      }
+      .data-area {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 500px;
+        margin-top: 16px;
+      }
+      .data-area .placeholder {
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 11px;
+        text-align: center;
+        padding-top: 40px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .annotation {
+        margin-top: 20px;
+        padding: 12px 16px;
+        background: rgba(0, 212, 170, 0.05);
+        border: 1px solid rgba(0, 212, 170, 0.15);
+        border-radius: 8px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.4);
+        line-height: 1.6;
+      }
+      .annotation strong {
+        color: #00d4aa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Reports Sidebar</h1>
+      <p>V3 — Merged Into Filter Bar: no sidebar, everything in one toolbar row, full-width data</p>
+    </div>
+
+    <!-- Favourite chips -->
+    <div class="fav-chips">
+      <span class="fav-chip-label">Favourites</span>
+      <div class="fav-chip active">Another config <span class="x">&times;</span></div>
+      <div class="fav-chip">Mercaso <span class="x">&times;</span></div>
+      <div class="fav-chip">Netbulls Weekly <span class="x">&times;</span></div>
+      <div class="fav-chip" style="border-style: dashed; color: rgba(255, 255, 255, 0.3)">
+        + Save
+      </div>
+    </div>
+
+    <!-- Unified filter bar -->
+    <div class="filter-bar">
+      <div class="preset-group">
+        <button class="preset-btn active">This Month</button>
+        <button class="preset-btn">Last Month</button>
+      </div>
+      <button class="date-btn">
+        <i data-lucide="calendar" style="width: 12px; height: 12px"></i>
+        Mar 1 – Mar 31, 2026
+      </button>
+      <div class="sep"></div>
+      <button class="filter-btn">
+        <i data-lucide="folder-kanban" style="width: 12px; height: 12px"></i> Projects
+      </button>
+      <button class="filter-btn">
+        <i data-lucide="building-2" style="width: 12px; height: 12px"></i> Clients
+      </button>
+      <button class="filter-btn">
+        <i data-lucide="users" style="width: 12px; height: 12px"></i> Users
+      </button>
+      <div class="sep"></div>
+      <select
+        style="
+          font-size: 11px;
+          font-family: 'Inter', sans-serif;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #ccc;
+          border-radius: 6px;
+          padding: 6px 8px;
+        "
+      >
+        <option>Dark Executive</option>
+        <option>Classic Corporate</option>
+      </select>
+      <select
+        style="
+          font-size: 11px;
+          font-family: 'Inter', sans-serif;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #ccc;
+          border-radius: 6px;
+          padding: 6px 8px;
+        "
+      >
+        <option>PDF</option>
+        <option>CSV</option>
+        <option>Excel</option>
+      </select>
+      <div class="bar-actions">
+        <button class="icon-btn">
+          <i data-lucide="eye" style="width: 14px; height: 14px"></i>
+        </button>
+        <button class="btn-dl">
+          <i data-lucide="download" style="width: 13px; height: 13px"></i> Download
+        </button>
+      </div>
+    </div>
+
+    <!-- Full-width data -->
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="label">Total Hours</div>
+        <div class="value">142h 30m</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Entries</div>
+        <div class="value">287</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Team</div>
+        <div class="value">8</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Projects</div>
+        <div class="value">12</div>
+      </div>
+    </div>
+
+    <div class="data-area">
+      <div class="placeholder">Report data &amp; team composition — full width, no sidebar</div>
+    </div>
+
+    <div class="annotation">
+      <strong>V3 — Merged Into Filter Bar.</strong> No sidebar at all — template, format, preview,
+      and download are part of the filter bar. Favourites become chips above the bar (click to load,
+      &times; to delete). Data gets full width. Tradeoff: filter bar gets dense on smaller screens.
+    </div>
+
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

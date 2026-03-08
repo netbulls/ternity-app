@@ -162,6 +162,7 @@ export async function leaveRoutes(fastify: FastifyInstance) {
         groupId: leaveTypes.groupId,
         active: leaveTypes.active,
         visibility: leaveTypes.visibility,
+        isContractorDefault: leaveTypes.isContractorDefault,
         groupName: leaveTypeGroups.name,
         groupColor: leaveTypeGroups.color,
       })
@@ -175,7 +176,7 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       )
       .orderBy(leaveTypes.name);
 
-    return types;
+    return { types, employmentType: empType };
   });
 
   /**
@@ -371,7 +372,7 @@ export async function leaveRoutes(fastify: FastifyInstance) {
   fastify.post('/api/leave/requests', async (request, reply) => {
     const userId = request.auth.userId;
     const body = request.body as {
-      leaveTypeId: string;
+      leaveTypeId?: string;
       startDate: string;
       endDate: string;
       hours?: number;
@@ -379,7 +380,31 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       note?: string;
     };
 
-    const { leaveTypeId, startDate, endDate, hours, startHour, note } = body;
+    let { leaveTypeId, startDate, endDate, hours, startHour, note } = body;
+
+    // ── Resolve leave type for contractors ──
+
+    // Get user's employment type
+    const [currentUser] = await db
+      .select({ employmentType: users.employmentType })
+      .from(users)
+      .where(eq(users.id, userId));
+    const empType = currentUser?.employmentType ?? 'contractor';
+
+    if (empType === 'contractor') {
+      // Always use the contractor default leave type, ignoring whatever was sent
+      const [contractorDefault] = await db
+        .select({ id: leaveTypes.id })
+        .from(leaveTypes)
+        .where(eq(leaveTypes.isContractorDefault, true))
+        .limit(1);
+      if (!contractorDefault) {
+        return reply
+          .code(400)
+          .send({ error: 'No contractor default leave type configured — contact admin' });
+      }
+      leaveTypeId = contractorDefault.id;
+    }
 
     // ── Validation ──
 

@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { sql, eq, and, inArray } from 'drizzle-orm';
+import { sql, eq, and, inArray, asc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { reportTemplates, projectMembers } from '../db/schema.js';
 import { ORG_TIMEZONE, GlobalRole } from '@ternity/shared';
@@ -460,7 +460,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       .select()
       .from(reportTemplates)
       .where(eq(reportTemplates.userId, userId))
-      .orderBy(reportTemplates.updatedAt);
+      .orderBy(asc(reportTemplates.name));
 
     return rows.map(
       (r): SavedReportTemplate => ({

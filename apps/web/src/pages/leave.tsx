@@ -1052,17 +1052,21 @@ function BookTimeOffDialog({
   open,
   onClose,
   leaveTypes,
+  employmentType,
   editBooking,
   prefillDates,
 }: {
   open: boolean;
   onClose: () => void;
   leaveTypes: LeaveType[];
+  employmentType: 'contractor' | 'employee';
   /** When set, dialog is in edit mode for this booking */
   editBooking?: LeaveBooking | null;
   /** Pre-fill start/end dates (from drag-select) */
   prefillDates?: { startDate: string; endDate: string } | null;
 }) {
+  const isContractor = employmentType === 'contractor';
+  const contractorDefaultType = leaveTypes.find((lt) => lt.isContractorDefault);
   const [leaveTypeId, setLeaveTypeId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -1130,6 +1134,7 @@ function BookTimeOffDialog({
   // Pre-fill form when dialog opens with editBooking or prefillDates
   useEffect(() => {
     if (!open) return;
+    const defaultTypeId = isContractor && contractorDefaultType ? contractorDefaultType.id : '';
     if (editBooking) {
       setLeaveTypeId(editBooking.leaveTypeId);
       setStartDate(editBooking.startDate);
@@ -1139,7 +1144,7 @@ function BookTimeOffDialog({
       setStartHourValue(editBooking.startHour ?? '');
       setNote(editBooking.note ?? '');
     } else if (prefillDates) {
-      setLeaveTypeId('');
+      setLeaveTypeId(defaultTypeId);
       setStartDate(prefillDates.startDate);
       setEndDate(prefillDates.endDate);
       setIsPartial(false);
@@ -1147,7 +1152,7 @@ function BookTimeOffDialog({
       setStartHourValue('');
       setNote('');
     } else {
-      setLeaveTypeId('');
+      setLeaveTypeId(defaultTypeId);
       setStartDate('');
       setEndDate('');
       setIsPartial(false);
@@ -1155,7 +1160,7 @@ function BookTimeOffDialog({
       setStartHourValue('');
       setNote('');
     }
-  }, [open, editBooking, prefillDates]);
+  }, [open, editBooking, prefillDates, isContractor, contractorDefaultType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1220,24 +1225,26 @@ function BookTimeOffDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Leave type */}
-          <div>
-            <label
-              className="mb-1 block font-brand text-muted-foreground"
-              style={{ fontSize: scaled(11) }}
-            >
-              Leave type
-            </label>
-            <SelectPopover
-              value={leaveTypeId}
-              onChange={setLeaveTypeId}
-              items={leaveTypes.map((lt) => ({ value: lt.id, label: lt.name }))}
-              placeholder="Select..."
-              searchable={leaveTypes.length > 8}
-              searchPlaceholder="Search leave types..."
-              fullWidth
-            />
-          </div>
+          {/* Leave type — hidden for contractors (auto-assigned) */}
+          {!isContractor && (
+            <div>
+              <label
+                className="mb-1 block font-brand text-muted-foreground"
+                style={{ fontSize: scaled(11) }}
+              >
+                Leave type
+              </label>
+              <SelectPopover
+                value={leaveTypeId}
+                onChange={setLeaveTypeId}
+                items={leaveTypes.map((lt) => ({ value: lt.id, label: lt.name }))}
+                placeholder="Select..."
+                searchable={leaveTypes.length > 8}
+                searchPlaceholder="Search leave types..."
+                fullWidth
+              />
+            </div>
+          )}
 
           {/* Partial toggle */}
           <label
@@ -1436,7 +1443,9 @@ export function LeavePage() {
   }, [viewMode, year, month, weekStart]);
 
   // Data fetching
-  const { data: leaveTypesData } = useLeaveTypes();
+  const { data: leaveTypesResponse } = useLeaveTypes();
+  const leaveTypesData = leaveTypesResponse?.types;
+  const employmentType = leaveTypesResponse?.employmentType;
   const { data: holidays } = useHolidays(viewMode === 'week' ? weekStart.getFullYear() : year);
   const { data: wallchartData, isLoading: wallchartLoading } = useWallchart(from, to);
 
@@ -1750,6 +1759,7 @@ export function LeavePage() {
               setPrefillDates(null);
             }}
             leaveTypes={leaveTypesData ?? []}
+            employmentType={employmentType ?? 'contractor'}
             editBooking={editBooking}
             prefillDates={prefillDates}
           />

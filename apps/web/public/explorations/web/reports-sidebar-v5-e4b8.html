@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports Sidebar — V5 Sticky Bottom Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../themes.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a0a;
+        color: #ccc;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 16px;
+        padding-bottom: 80px;
+        font-size: 14px;
+      }
+      .page-header {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .page-header h1 {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .page-header p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.15);
+        margin-top: 4px;
+      }
+
+      /* Full-width data */
+      .stat-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .stat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 10px;
+      }
+      .stat-card .label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .stat-card .value {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin-top: 4px;
+      }
+
+      .data-area {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 500px;
+        margin-top: 16px;
+      }
+      .data-area .placeholder {
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 11px;
+        text-align: center;
+        padding-top: 40px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      /* ── Bottom action bar ── */
+      .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        background: rgba(12, 12, 12, 0.95);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        z-index: 100;
+      }
+      .action-bar select {
+        font-size: 11px;
+        font-family: 'Inter', sans-serif;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border-radius: 6px;
+        padding: 7px 10px;
+        outline: none;
+      }
+      .action-bar .sep {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .action-bar .option-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .action-bar .option-row input[type='checkbox'] {
+        accent-color: #00d4aa;
+      }
+      .action-bar .spacer {
+        flex: 1;
+      }
+      .icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .icon-btn:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .btn-dl {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 6px;
+        border: none;
+        flex-shrink: 0;
+        background: #00d4aa;
+        color: #0a0a0a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-dl:hover {
+        background: #00e8bb;
+      }
+
+      /* Favourites drawer (simulated as open) */
+      .drawer-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 56px;
+        width: 300px;
+        background: rgba(16, 16, 16, 0.97);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px;
+        z-index: 99;
+        display: none;
+        backdrop-filter: blur(12px);
+      }
+      .drawer-overlay.open {
+        display: block;
+      }
+      .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .drawer-title {
+        font-family: 'Oxanium', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .drawer-close {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+      }
+      .fav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .fav-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .fav-item .name {
+        flex: 1;
+      }
+      .fav-item .badge {
+        font-size: 8px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: rgba(0, 212, 170, 0.1);
+        color: #00d4aa;
+      }
+      .fav-item .del {
+        opacity: 0;
+        transition: opacity 0.15s;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+      }
+      .fav-item:hover .del {
+        opacity: 1;
+      }
+      .save-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .save-row input {
+        flex: 1;
+        font-size: 11px;
+        font-family: 'Inter', sans-serif;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border-radius: 6px;
+        padding: 6px 8px;
+        outline: none;
+      }
+      .save-row input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .save-row button {
+        font-size: 10px;
+        font-family: 'Inter', sans-serif;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        background: #00d4aa;
+        color: #0a0a0a;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .annotation {
+        margin-top: 20px;
+        padding: 12px 16px;
+        background: rgba(0, 212, 170, 0.05);
+        border: 1px solid rgba(0, 212, 170, 0.15);
+        border-radius: 8px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.4);
+        line-height: 1.6;
+      }
+      .annotation strong {
+        color: #00d4aa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Reports Sidebar</h1>
+      <p>
+        V5 — Sticky Bottom Bar: actions docked at bottom, drawer for favourites, full-width data
+      </p>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="label">Total Hours</div>
+        <div class="value">142h 30m</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Entries</div>
+        <div class="value">287</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Team</div>
+        <div class="value">8</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Projects</div>
+        <div class="value">12</div>
+      </div>
+    </div>
+
+    <div class="data-area">
+      <div class="placeholder">Report data &amp; team composition — full width, no sidebar</div>
+    </div>
+
+    <!-- Favourites drawer -->
+    <div class="drawer-overlay open" id="drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Favourites</span>
+        <button
+          class="drawer-close"
+          onclick="document.getElementById('drawer').classList.remove('open')"
+        >
+          <i data-lucide="x" style="width: 16px; height: 16px"></i>
+        </button>
+      </div>
+      <div class="fav-item">
+        <span class="name">Another config</span>
+        <button class="del"><i data-lucide="trash-2" style="width: 12px; height: 12px"></i></button>
+      </div>
+      <div class="fav-item">
+        <span class="name">Mercaso</span>
+        <span class="badge">Last Month</span>
+        <button class="del"><i data-lucide="trash-2" style="width: 12px; height: 12px"></i></button>
+      </div>
+      <div class="fav-item">
+        <span class="name">Netbulls Weekly</span>
+        <span class="badge">This Month</span>
+        <button class="del"><i data-lucide="trash-2" style="width: 12px; height: 12px"></i></button>
+      </div>
+      <div class="save-row">
+        <input type="text" placeholder="Name this config..." />
+        <button>Save</button>
+      </div>
+    </div>
+
+    <!-- Bottom action bar -->
+    <div class="action-bar">
+      <select>
+        <option>PDF</option>
+        <option>CSV</option>
+        <option>Excel</option>
+      </select>
+      <select>
+        <option>Dark Executive</option>
+        <option>Classic Corporate</option>
+        <option>Minimal Swiss</option>
+      </select>
+      <div class="sep"></div>
+      <label class="option-row"> <input type="checkbox" /> Start times </label>
+      <div class="spacer"></div>
+      <button class="icon-btn" onclick="document.getElementById('drawer').classList.toggle('open')">
+        <i data-lucide="bookmark" style="width: 14px; height: 14px"></i>
+      </button>
+      <button class="icon-btn">
+        <i data-lucide="eye" style="width: 14px; height: 14px"></i>
+      </button>
+      <button class="btn-dl">
+        <i data-lucide="download" style="width: 14px; height: 14px"></i>
+        Download PDF
+      </button>
+    </div>
+
+    <div class="annotation">
+      <strong>V5 — Sticky Bottom Bar.</strong> All export controls in a fixed bar at the bottom —
+      always visible, never in the way of data. Favourites live in a slide-out drawer from the
+      right, triggered by bookmark icon. Data gets full page width. Clean separation: "see data"
+      (the page) vs "export" (the bar). Tradeoff: bottom bar eats ~56px of vertical space
+      permanently.
+    </div>
+
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

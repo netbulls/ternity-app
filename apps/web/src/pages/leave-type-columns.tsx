@@ -1,5 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import { MoreHorizontal, Pencil, CheckCircle2, XCircle, Shield } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ export function getLeaveTypeColumns(opts: {
   onToggleActive: (lt: AdminLeaveType) => void;
   onChangeVisibility: (lt: AdminLeaveType, visibility: LeaveVisibility) => void;
   onChangeGroup: (lt: AdminLeaveType, groupId: string | null) => void;
+  onSetContractorDefault: (lt: AdminLeaveType) => void;
 }): ColumnDef<AdminLeaveType>[] {
   return [
     // Select
@@ -51,6 +52,15 @@ export function getLeaveTypeColumns(opts: {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       size: 220,
+      sortingFn: (rowA, rowB, columnId) => {
+        const a = rowA.original;
+        const b = rowB.original;
+        if (a.isContractorDefault && !b.isContractorDefault) return -1;
+        if (!a.isContractorDefault && b.isContractorDefault) return 1;
+        const va = String(rowA.getValue(columnId) ?? '');
+        const vb = String(rowB.getValue(columnId) ?? '');
+        return va.localeCompare(vb);
+      },
       cell: ({ row }) => {
         const lt = row.original;
         return (
@@ -62,6 +72,11 @@ export function getLeaveTypeColumns(opts: {
             <span className={cn('truncate', !lt.active && 'text-muted-foreground line-through')}>
               {lt.name}
             </span>
+            {lt.isContractorDefault && (
+              <span className="shrink-0 text-primary" title="B2B default leave type">
+                <Shield className="h-3.5 w-3.5" />
+              </span>
+            )}
           </div>
         );
       },
@@ -175,19 +190,28 @@ export function getLeaveTypeColumns(opts: {
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[180px]">
+              <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuItem onClick={() => opts.onEdit(lt)}>
                   <Pencil className="mr-2 h-3.5 w-3.5" />
                   Edit
                 </DropdownMenuItem>
+                {!lt.isContractorDefault && (
+                  <DropdownMenuItem onClick={() => opts.onSetContractorDefault(lt)}>
+                    <Shield className="mr-2 h-3.5 w-3.5" />
+                    Set as B2B default
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 {lt.active ? (
                   <DropdownMenuItem
                     onClick={() => opts.onToggleActive(lt)}
-                    className="text-destructive focus:text-destructive"
+                    disabled={lt.isContractorDefault}
+                    className={cn(
+                      !lt.isContractorDefault && 'text-destructive focus:text-destructive',
+                    )}
                   >
                     <XCircle className="mr-2 h-3.5 w-3.5" />
-                    Deactivate
+                    {lt.isContractorDefault ? 'Cannot deactivate' : 'Deactivate'}
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onClick={() => opts.onToggleActive(lt)}>

@@ -9,6 +9,8 @@ export interface SelectPopoverItem {
   value: string;
   label: string;
   color?: string;
+  /** Optional group label — items with the same group are rendered under a shared header */
+  group?: string;
 }
 
 interface SelectPopoverProps {
@@ -144,35 +146,54 @@ export function SelectPopover({
           ) : (
             filtered.map((item, i) => {
               const isSelected = value === item.value;
+              const prevGroup = i > 0 ? filtered[i - 1]?.group : undefined;
+              const showGroupHeader = item.group && item.group !== prevGroup;
               return (
-                <motion.button
-                  key={item.value}
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
-                    isSelected
-                      ? 'bg-primary/8 text-foreground'
-                      : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
+                <div key={item.value}>
+                  {showGroupHeader && (
+                    <div
+                      className={cn(
+                        'px-2.5 pb-1 pt-2 text-muted-foreground',
+                        i > 0 && 'mt-1 border-t border-border',
+                      )}
+                      style={{
+                        fontSize: scaled(9),
+                        fontWeight: 600,
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {item.group}
+                    </div>
                   )}
-                  style={{ fontSize: scaled(12) }}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.02, duration: 0.15 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    onChange(item.value);
-                    setOpen(false);
-                  }}
-                >
-                  {item.color && (
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: item.color }}
-                    />
-                  )}
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
-                </motion.button>
+                  <motion.button
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
+                      isSelected
+                        ? 'bg-primary/8 text-foreground'
+                        : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground',
+                    )}
+                    style={{ fontSize: scaled(12) }}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.02, duration: 0.15 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onChange(item.value);
+                      setOpen(false);
+                    }}
+                  >
+                    {item.color && (
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: item.color }}
+                      />
+                    )}
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                  </motion.button>
+                </div>
               );
             })
           )}

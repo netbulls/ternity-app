@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { useImpersonation } from '@/providers/impersonation-provider';
+import type { EmploymentType } from './use-admin-users';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ export interface LeaveType {
   groupId: string | null;
   active: boolean;
   visibility: LeaveVisibility;
+  isContractorDefault: boolean;
   groupName: string | null;
   groupColor: string | null;
 }
@@ -39,6 +41,7 @@ export interface AdminLeaveType {
   groupId: string | null;
   active: boolean;
   visibility: LeaveVisibility;
+  isContractorDefault: boolean;
 }
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'autoconfirmed';
@@ -91,11 +94,16 @@ export interface BookLeaveInput {
 
 // ── Hooks ──────────────────────────────────────────────────────────────────
 
-/** Fetch all leave types */
+interface LeaveTypesResponse {
+  types: LeaveType[];
+  employmentType: EmploymentType;
+}
+
+/** Fetch leave types visible to the current user + their employment type */
 export function useLeaveTypes() {
   return useQuery({
     queryKey: ['leave-types'],
-    queryFn: () => apiFetch<LeaveType[]>('/leave/types'),
+    queryFn: () => apiFetch<LeaveTypesResponse>('/leave/types'),
     staleTime: 5 * 60 * 1000, // 5 min — leave types rarely change
   });
 }
@@ -297,6 +305,7 @@ export function useUpdateAdminLeaveType() {
       visibility?: string;
       color?: string | null;
       name?: string;
+      isContractorDefault?: boolean;
     }) =>
       apiFetch<AdminLeaveType>(`/admin/leave-types/${id}`, {
         method: 'PATCH',

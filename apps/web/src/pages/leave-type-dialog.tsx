@@ -174,10 +174,17 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
               items={[
                 { value: 'all', label: 'All' },
                 { value: 'contractor', label: 'B2B only' },
-                { value: 'employee', label: 'Employee only' },
+                ...(leaveType?.isContractorDefault
+                  ? []
+                  : [{ value: 'employee', label: 'Employee only' }]),
               ]}
               placeholder="All"
             />
+            {leaveType?.isContractorDefault && (
+              <p className="text-muted-foreground" style={{ fontSize: scaled(10) }}>
+                B2B default type must be visible to contractors
+              </p>
+            )}
           </div>
 
           {/* Deducted */}

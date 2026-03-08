@@ -5,11 +5,18 @@ import {
   Building2,
   Users,
   Eye,
+  Download,
   Save,
   Trash2,
   Star,
-  RefreshCw,
   Pencil,
+  MoreHorizontal,
+  Plus,
+  X,
+  Calendar,
+  FileText,
+  Clock,
+  User,
 } from 'lucide-react';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { scaled } from '@/lib/scaled';
@@ -17,7 +24,15 @@ import { apiFetch, apiFetchRaw } from '@/lib/api';
 import { useProjects, useUsers } from '@/hooks/use-reference-data';
 import { useAdminClients } from '@/hooks/use-admin-projects';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
+import { SelectPopover } from '@/components/ui/select-popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   PDF_TEMPLATES,
   PDF_TEMPLATE_META,
@@ -197,6 +212,16 @@ function PreviewIframe({ html, fit }: { html: string; fit: PreviewFit }) {
 
 // ── Component ────────────────────────────────────────────────────────────
 
+const TEMPLATE_SHORT_LABELS: Record<PdfTemplate, string> = {
+  'classic-corporate': 'Classic',
+  'dark-executive': 'Executive',
+  'minimal-swiss': 'Swiss',
+  'magazine-spread': 'Magazine',
+  'dashboard-print': 'Dashboard',
+  'invoice-style': 'Invoice',
+  'cover-chapters': 'Chapters',
+};
+
 const PRESET_LABELS: Record<DateRangePreset, string> = {
   'this-month': 'This Month',
   'last-month': 'Last Month',
@@ -216,6 +241,7 @@ export function ClientReportsPage() {
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PdfTemplate>('classic-corporate');
   const [showStartTime, setShowStartTime] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'excel'>('pdf');
 
   // Track which saved template is currently loaded (null = fresh/unsaved)
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -289,7 +315,6 @@ export function ClientReportsPage() {
   // ── Rename template state ────────────────────────────────────
   const [renamingTemplateId, setRenamingTemplateId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const renameTemplateMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) =>
@@ -303,18 +328,8 @@ export function ClientReportsPage() {
     },
   });
 
-  const startRename = useCallback((id: string, currentName: string) => {
-    setRenamingTemplateId(id);
-    setRenameValue(currentName);
-    // Focus the input after render
-    setTimeout(() => renameInputRef.current?.select(), 0);
-  }, []);
-
-  const commitRename = useCallback(() => {
-    if (!renamingTemplateId || !renameValue.trim()) {
-      setRenamingTemplateId(null);
-      return;
-    }
+  const handleRename = useCallback(() => {
+    if (!renamingTemplateId || !renameValue.trim()) return;
     renameTemplateMutation.mutate({ id: renamingTemplateId, name: renameValue.trim() });
   }, [renamingTemplateId, renameValue, renameTemplateMutation]);
 
@@ -356,41 +371,26 @@ export function ClientReportsPage() {
     ],
   );
 
-  /** Check if the active template has unsaved changes */
-  const activeTemplateHasChanges = useMemo(() => {
-    if (!activeTemplateId || !savedTemplates) return false;
-    const t = savedTemplates.find((t) => t.id === activeTemplateId);
-    if (!t) return false;
-
-    // Compare the parts that matter for config equality
-    const saved = t.config;
-    const savedPreset = saved.dateRangePreset ?? 'custom';
-
-    if (currentConfig.dateRangePreset !== savedPreset) return true;
-    // For custom presets, also compare actual dates
-    if (currentConfig.dateRangePreset === 'custom') {
-      if (currentConfig.dateFrom !== saved.dateFrom || currentConfig.dateTo !== saved.dateTo)
+  /** Check whether a saved template's config differs from current filters */
+  const templateHasChanges = useCallback(
+    (saved: ReportConfig): boolean => {
+      const savedPreset = saved.dateRangePreset ?? 'custom';
+      if (currentConfig.dateRangePreset !== savedPreset) return true;
+      if (currentConfig.dateRangePreset === 'custom') {
+        if (currentConfig.dateFrom !== saved.dateFrom || currentConfig.dateTo !== saved.dateTo)
+          return true;
+      }
+      if (currentConfig.pdfTemplate !== saved.pdfTemplate) return true;
+      if ((currentConfig.showStartTime ?? false) !== (saved.showStartTime ?? false)) return true;
+      if (JSON.stringify(currentConfig.projectIds) !== JSON.stringify(saved.projectIds))
         return true;
-    }
-    if (currentConfig.pdfTemplate !== saved.pdfTemplate) return true;
-    if ((currentConfig.showStartTime ?? false) !== (saved.showStartTime ?? false)) return true;
-    if (JSON.stringify(currentConfig.projectIds) !== JSON.stringify(saved.projectIds)) return true;
-    if (JSON.stringify(currentConfig.userIds) !== JSON.stringify(saved.userIds)) return true;
-    if (JSON.stringify(currentConfig.clientIds) !== JSON.stringify(saved.clientIds)) return true;
-    if (JSON.stringify(currentConfig.tagIds) !== JSON.stringify(saved.tagIds)) return true;
-
-    return false;
-  }, [activeTemplateId, savedTemplates, currentConfig]);
-
-  const activeTemplateName = useMemo(() => {
-    if (!activeTemplateId || !savedTemplates) return null;
-    return savedTemplates.find((t) => t.id === activeTemplateId)?.name ?? null;
-  }, [activeTemplateId, savedTemplates]);
-
-  const handleUpdateTemplate = useCallback(() => {
-    if (!activeTemplateId) return;
-    updateTemplateMutation.mutate({ id: activeTemplateId, config: currentConfig });
-  }, [activeTemplateId, currentConfig, updateTemplateMutation]);
+      if (JSON.stringify(currentConfig.userIds) !== JSON.stringify(saved.userIds)) return true;
+      if (JSON.stringify(currentConfig.clientIds) !== JSON.stringify(saved.clientIds)) return true;
+      if (JSON.stringify(currentConfig.tagIds) !== JSON.stringify(saved.tagIds)) return true;
+      return false;
+    },
+    [currentConfig],
+  );
 
   const handleSaveTemplate = useCallback(() => {
     if (!saveTemplateName.trim()) return;
@@ -494,7 +494,17 @@ export function ClientReportsPage() {
     } finally {
       setIsLoadingPreview(false);
     }
-  }, [dateFrom, dateTo, dateRangePreset, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
+  }, [
+    dateFrom,
+    dateTo,
+    dateRangePreset,
+    projectIds,
+    userIds,
+    clientIds,
+    tagIds,
+    showStartTime,
+    selectedTemplate,
+  ]);
 
   // Auto-refresh preview when template or options change (if preview is already open)
   const prevConfigRef = useRef({ selectedTemplate, showStartTime });
@@ -552,28 +562,30 @@ export function ClientReportsPage() {
   }, [dateFrom, dateTo, dateRangePreset, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Page header */}
-      <div>
+      <div className="mb-5">
         <h1
           className="font-brand font-semibold tracking-wide text-foreground"
           style={{ fontSize: scaled(18) }}
         >
           Client Reports
         </h1>
-        <p className="mt-1 text-muted-foreground" style={{ fontSize: scaled(12) }}>
+        <p className="mt-0.5 text-muted-foreground" style={{ fontSize: scaled(12) }}>
           Generate branded PDF time reports for your clients
         </p>
       </div>
 
       {/* Filter bar */}
       <div
-        className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4"
+        className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4"
         style={{ fontSize: scaled(12) }}
       >
         {/* Date range preset toggle group */}
         <div className="flex rounded-md border border-border overflow-hidden">
-          {DATE_RANGE_PRESETS.filter((p) => p !== 'custom').map((preset) => (
+          {DATE_RANGE_PRESETS.filter(
+            (p) => p !== 'custom' && p !== 'this-week' && p !== 'last-week',
+          ).map((preset) => (
             <button
               key={preset}
               onClick={() => selectPreset(preset)}
@@ -633,10 +645,85 @@ export function ClientReportsPage() {
           searchPlaceholder="Search users..."
           emptyMessage="No users found."
         />
+
+        <div className="h-5 w-px bg-border" />
+
+        <SelectPopover
+          value={exportFormat}
+          onChange={(v) => setExportFormat(v as 'pdf' | 'csv' | 'excel')}
+          items={[
+            { value: 'pdf', label: 'PDF' },
+            { value: 'csv', label: 'CSV' },
+            { value: 'excel', label: 'Excel' },
+          ]}
+          placeholder="Format"
+          compact
+        />
+
+        {exportFormat === 'pdf' && (
+          <SelectPopover
+            value={selectedTemplate}
+            onChange={(v) => setSelectedTemplate(v as PdfTemplate)}
+            items={[
+              ...PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'print').map(
+                (id) => ({
+                  value: id,
+                  label: TEMPLATE_SHORT_LABELS[id],
+                  group: 'Print',
+                }),
+              ),
+              ...PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'screen').map(
+                (id) => ({
+                  value: id,
+                  label: TEMPLATE_SHORT_LABELS[id],
+                  group: 'Screen',
+                }),
+              ),
+            ]}
+            placeholder="Template"
+            compact
+          />
+        )}
+
+        <label
+          className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+          style={{ fontSize: scaled(11) }}
+        >
+          <input
+            type="checkbox"
+            checked={showStartTime}
+            onChange={(e) => setShowStartTime(e.target.checked)}
+            className="accent-[#00D4AA]"
+          />
+          Times
+        </label>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            className="flex items-center justify-center rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+            disabled={!reportData || isLoadingPreview}
+            onClick={fetchPreview}
+            title="Preview"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
+          <button
+            className="flex items-center justify-center rounded-md border border-border p-1.5 transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-30"
+            style={{
+              color: isDownloading ? 'hsl(var(--muted-foreground))' : '#00D4AA',
+            }}
+            disabled={!reportData || isDownloading}
+            onClick={handleDownload}
+            title="Download"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Content area */}
-      <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) 320px' }}>
+      <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) 360px' }}>
         {/* Data preview */}
         <div className="min-w-0 space-y-4">
           {isLoading && (
@@ -718,7 +805,7 @@ export function ClientReportsPage() {
                   })}
                 </div>
 
-                {/* Legend table */}
+                {/* Legend table (static) */}
                 <div className="space-y-2">
                   {reportData.userBreakdown.map((u, i) => {
                     const colors = [
@@ -730,9 +817,10 @@ export function ClientReportsPage() {
                       '#3498DB',
                     ];
                     return (
-                      <div
+                      <a
                         key={u.userId}
-                        className="flex items-center gap-3"
+                        href={`#user-${u.userId}`}
+                        className="flex items-center gap-3 rounded px-1 py-0.5 hover:bg-accent/50"
                         style={{ fontSize: scaled(12) }}
                       >
                         <div
@@ -749,17 +837,21 @@ export function ClientReportsPage() {
                         >
                           {u.percentage}%
                         </span>
-                      </div>
+                      </a>
                     );
                   })}
                 </div>
               </div>
 
-              {/* User details (collapsed by default, first user expanded) */}
-              {reportData.userDetails.map((user, idx) => (
-                <details key={user.userId} open={idx === 0} className="min-w-0">
+              {/* User details (all collapsed by default) */}
+              {reportData.userDetails.map((user) => (
+                <details
+                  key={user.userId}
+                  id={`user-${user.userId}`}
+                  className="min-w-0 rounded-lg border border-border bg-card"
+                >
                   <summary
-                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 hover:bg-accent/50"
+                    className="flex cursor-pointer items-center gap-3 p-3 hover:bg-accent/50 rounded-lg"
                     style={{ fontSize: scaled(12) }}
                   >
                     <div
@@ -787,14 +879,14 @@ export function ClientReportsPage() {
                       </div>
                     </div>
                   </summary>
-                  <div className="mt-2 min-w-0 space-y-1 overflow-hidden pl-11">
+                  <div className="min-w-0 space-y-1 overflow-hidden border-t border-border px-3 pb-3 pt-2">
                     {user.dayGroups.map((dg) => (
                       <div key={dg.date}>
                         <div
-                          className="flex items-center justify-between rounded bg-accent/30 px-2 py-1"
+                          className="flex items-center justify-between gap-2 rounded bg-accent/30 px-2 py-1"
                           style={{ fontSize: scaled(11) }}
                         >
-                          <span className="font-semibold text-foreground">
+                          <span className="min-w-0 truncate font-semibold text-foreground">
                             {new Date(dg.date + 'T12:00:00Z').toLocaleDateString('en-US', {
                               weekday: 'long',
                               day: 'numeric',
@@ -802,14 +894,17 @@ export function ClientReportsPage() {
                               year: 'numeric',
                             })}
                           </span>
-                          <span className="font-brand font-semibold" style={{ color: '#00D4AA' }}>
+                          <span
+                            className="flex-shrink-0 whitespace-nowrap font-brand font-semibold"
+                            style={{ color: '#00D4AA' }}
+                          >
                             {formatDuration(dg.dayTotalSeconds)}
                           </span>
                         </div>
                         {dg.entries.map((entry) => (
                           <div
                             key={entry.id}
-                            className="flex items-center gap-2 border-b border-border/50 px-2 py-1.5"
+                            className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden border-b border-border/50 px-2 py-1.5"
                             style={{ fontSize: scaled(11) }}
                           >
                             <span
@@ -835,15 +930,15 @@ export function ClientReportsPage() {
                             </span>
                             {entry.jiraIssueKey && (
                               <span
-                                className="flex-shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-primary"
+                                className="flex-shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-primary"
                                 style={{ fontSize: scaled(9) }}
                               >
                                 {entry.jiraIssueKey}
                               </span>
                             )}
                             <span
-                              className="flex-shrink-0 font-brand font-semibold text-foreground"
-                              style={{ width: 50, textAlign: 'right' }}
+                              className="flex-shrink-0 whitespace-nowrap font-brand font-semibold text-foreground"
+                              style={{ width: 60, textAlign: 'right' }}
                             >
                               {formatDuration(entry.durationSeconds)}
                             </span>
@@ -858,131 +953,8 @@ export function ClientReportsPage() {
           )}
         </div>
 
-        {/* Template gallery + download */}
+        {/* Sidebar: favourites + save */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <label className="flex-shrink-0 text-muted-foreground" style={{ fontSize: scaled(11) }}>
-              PDF Template
-            </label>
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value as PdfTemplate)}
-              className="flex-1 rounded border border-border bg-background px-2 py-1.5 text-foreground"
-              style={{ fontSize: scaled(11) }}
-            >
-              <optgroup label="Print">
-                {PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'print').map(
-                  (id) => (
-                    <option key={id} value={id}>
-                      {PDF_TEMPLATE_META[id].name}
-                    </option>
-                  ),
-                )}
-              </optgroup>
-              <optgroup label="Screen">
-                {PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'screen').map(
-                  (id) => (
-                    <option key={id} value={id}>
-                      {PDF_TEMPLATE_META[id].name}
-                    </option>
-                  ),
-                )}
-              </optgroup>
-            </select>
-          </div>
-
-          <label
-            className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-            style={{ fontSize: scaled(11) }}
-          >
-            <input
-              type="checkbox"
-              checked={showStartTime}
-              onChange={(e) => setShowStartTime(e.target.checked)}
-              className="accent-[#00D4AA]"
-            />
-            Show entry start times
-          </label>
-
-          {/* Preview + Download buttons */}
-          <div className="flex gap-2">
-            <button
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 font-brand font-semibold tracking-wide transition-colors hover:bg-accent"
-              style={{ fontSize: scaled(13) }}
-              disabled={!reportData || isLoadingPreview}
-              onClick={fetchPreview}
-            >
-              <Eye className="h-4 w-4" />
-              {isLoadingPreview ? 'Loading...' : 'Preview'}
-            </button>
-            <button
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 font-brand font-semibold tracking-wide transition-colors"
-              style={{
-                backgroundColor: isDownloading ? 'hsl(var(--muted))' : '#00D4AA',
-                color: isDownloading ? 'hsl(var(--muted-foreground))' : '#0a0a0a',
-                fontSize: scaled(13),
-              }}
-              disabled={!reportData || isDownloading}
-              onClick={handleDownload}
-            >
-              {isDownloading ? 'Generating...' : 'Download PDF'}
-            </button>
-          </div>
-
-          {/* Save / Update template buttons */}
-          <div className="flex gap-2">
-            <button
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 font-brand font-semibold tracking-wide transition-colors hover:bg-accent"
-              style={{ fontSize: scaled(12) }}
-              onClick={() => setShowSaveDialog(true)}
-            >
-              <Save className="h-3.5 w-3.5" />
-              Save as New
-            </button>
-            {activeTemplateId && activeTemplateHasChanges && (
-              <button
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-brand font-semibold tracking-wide transition-colors"
-                style={{
-                  fontSize: scaled(12),
-                  backgroundColor: '#00D4AA',
-                  color: '#0a0a0a',
-                  opacity: updateTemplateMutation.isPending ? 0.5 : 1,
-                }}
-                disabled={updateTemplateMutation.isPending}
-                onClick={handleUpdateTemplate}
-              >
-                <RefreshCw
-                  className="h-3.5 w-3.5"
-                  style={{
-                    animation: updateTemplateMutation.isPending
-                      ? 'spin 1s linear infinite'
-                      : 'none',
-                  }}
-                />
-                Update
-              </button>
-            )}
-          </div>
-
-          {/* Active template indicator */}
-          {activeTemplateName && (
-            <div
-              className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-primary"
-              style={{ fontSize: scaled(11) }}
-            >
-              <span className="truncate">
-                Editing: <strong>{activeTemplateName}</strong>
-              </span>
-              <button
-                className="flex-shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                style={{ fontSize: scaled(10) }}
-                onClick={() => setActiveTemplateId(null)}
-              >
-                Detach
-              </button>
-            </div>
-          )}
-
           {downloadError && (
             <div
               className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive"
@@ -992,122 +964,394 @@ export function ClientReportsPage() {
             </div>
           )}
 
-          {/* Saved templates */}
-          {savedTemplates && savedTemplates.length > 0 && (
-            <div className="rounded-lg border border-border bg-card p-4">
+          {/* Favourites card */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-2 flex items-center gap-2">
               <h3
-                className="font-brand mb-2 font-semibold tracking-wide text-foreground"
+                className="font-brand flex-1 font-semibold tracking-wide text-foreground"
                 style={{ fontSize: scaled(12) }}
               >
-                Saved Templates
+                Favourites
               </h3>
+              {activeTemplateId ? (
+                (() => {
+                  const activeTpl = savedTemplates?.find((t) => t.id === activeTemplateId);
+                  const hasChanges = activeTpl ? templateHasChanges(activeTpl.config) : false;
+                  return (
+                    <button
+                      className="flex items-center gap-1.5 rounded px-2 py-1 transition-colors"
+                      style={{
+                        fontSize: scaled(10),
+                        color: hasChanges ? '#00D4AA' : 'hsl(var(--muted-foreground) / 0.3)',
+                        cursor: hasChanges ? 'pointer' : 'default',
+                      }}
+                      disabled={!hasChanges || updateTemplateMutation.isPending}
+                      onClick={() => {
+                        if (hasChanges && activeTpl) {
+                          updateTemplateMutation.mutate({
+                            id: activeTpl.id,
+                            config: currentConfig,
+                          });
+                        }
+                      }}
+                      title={hasChanges ? 'Save changes to this favourite' : 'No changes to save'}
+                    >
+                      <Save className="h-3 w-3" />
+                      Save
+                    </button>
+                  );
+                })()
+              ) : (
+                <button
+                  className="flex items-center gap-1.5 rounded px-2 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  style={{ fontSize: scaled(10) }}
+                  onClick={() => setShowSaveDialog(true)}
+                  title="Save current filters as new favourite"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add new
+                </button>
+              )}
+            </div>
+            {savedTemplates && savedTemplates.length > 0 ? (
               <div className="space-y-1">
                 {savedTemplates.map((t) => {
                   const isActive = t.id === activeTemplateId;
-                  const tPreset = t.config.dateRangePreset ?? 'custom';
+                  const cfg = t.config;
+
                   return (
                     <div
                       key={t.id}
-                      className="flex items-center gap-1 rounded border px-2 py-1.5 transition-colors"
+                      className="cursor-pointer rounded border px-2 py-1.5 transition-colors hover:bg-accent/30"
                       style={{
                         fontSize: scaled(11),
-                        borderColor: isActive
-                          ? 'hsl(var(--primary) / 0.5)'
-                          : 'hsl(var(--border) / 0.5)',
-                        backgroundColor: isActive ? 'hsl(var(--primary) / 0.05)' : 'transparent',
+                        borderColor: isActive ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)',
+                      }}
+                      onClick={() => {
+                        if (isActive) {
+                          setActiveTemplateId(null);
+                          return;
+                        }
+                        const preset = cfg.dateRangePreset ?? 'custom';
+                        if (preset !== 'custom') {
+                          const { from, to } = resolveDateRangePreset(preset);
+                          setDateFrom(from);
+                          setDateTo(to);
+                        } else {
+                          setDateFrom(cfg.dateFrom);
+                          setDateTo(cfg.dateTo);
+                        }
+                        setDateRangePreset(preset);
+                        setProjectIds(cfg.projectIds);
+                        setUserIds(cfg.userIds);
+                        setClientIds(cfg.clientIds);
+                        setTagIds(cfg.tagIds);
+                        setShowStartTime(cfg.showStartTime ?? false);
+                        setSelectedTemplate(cfg.pdfTemplate);
+                        setActiveTemplateId(t.id);
                       }}
                     >
-                      <button
-                        className="flex-shrink-0 transition-colors hover:text-yellow-400"
-                        onClick={() =>
-                          toggleFavoriteMutation.mutate({
-                            id: t.id,
-                            isFavorite: !t.isFavorite,
-                          })
-                        }
-                        title={t.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                      >
-                        <Star
-                          className="h-3.5 w-3.5"
-                          style={{
-                            fill: t.isFavorite ? '#facc15' : 'none',
-                            color: t.isFavorite ? '#facc15' : 'hsl(var(--muted-foreground))',
-                          }}
-                        />
-                      </button>
-                      {renamingTemplateId === t.id ? (
-                        <input
-                          ref={renameInputRef}
-                          type="text"
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onBlur={commitRename}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitRename();
-                            if (e.key === 'Escape') setRenamingTemplateId(null);
-                          }}
-                          className="flex-1 min-w-0 bg-transparent border-b border-primary text-foreground outline-none px-0 py-0"
-                          style={{ fontSize: scaled(11) }}
-                          autoFocus
-                        />
-                      ) : (
+                      <div className="flex items-center gap-1">
                         <button
-                          className="flex flex-1 items-center gap-1 truncate text-left text-foreground"
-                          onClick={() => {
-                            const preset = t.config.dateRangePreset ?? 'custom';
-                            if (preset !== 'custom') {
-                              const { from, to } = resolveDateRangePreset(preset);
-                              setDateFrom(from);
-                              setDateTo(to);
-                            } else {
-                              setDateFrom(t.config.dateFrom);
-                              setDateTo(t.config.dateTo);
-                            }
-                            setDateRangePreset(preset);
-                            setProjectIds(t.config.projectIds);
-                            setUserIds(t.config.userIds);
-                            setClientIds(t.config.clientIds);
-                            setTagIds(t.config.tagIds);
-                            setShowStartTime(t.config.showStartTime ?? false);
-                            setSelectedTemplate(t.config.pdfTemplate);
-                            setActiveTemplateId(t.id);
+                          className="flex-shrink-0 transition-colors hover:text-yellow-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavoriteMutation.mutate({
+                              id: t.id,
+                              isFavorite: !t.isFavorite,
+                            });
                           }}
+                          title={t.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                         >
-                          <span className="truncate">{t.name}</span>
-                          {tPreset !== 'custom' && (
-                            <span
-                              className="flex-shrink-0 rounded px-1 py-0.5"
-                              style={{
-                                fontSize: scaled(8),
-                                backgroundColor: 'hsl(var(--primary) / 0.1)',
-                                color: 'hsl(var(--primary))',
-                              }}
-                            >
-                              {PRESET_LABELS[tPreset]}
-                            </span>
-                          )}
+                          <Star
+                            className="h-3.5 w-3.5"
+                            style={{
+                              fill: t.isFavorite ? '#facc15' : 'none',
+                              color: t.isFavorite ? '#facc15' : 'hsl(var(--muted-foreground))',
+                            }}
+                          />
                         </button>
-                      )}
-                      <button
-                        className="flex-shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                        onClick={() => startRename(t.id, t.name)}
-                        title="Rename template"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        className="flex-shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                        onClick={() => deleteTemplateMutation.mutate(t.id)}
-                        title="Delete template"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                        <span className="flex flex-1 items-center gap-1 truncate text-left text-foreground">
+                          {t.name}
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="flex-shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                              title="More actions"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-3 w-3" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-36">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setRenamingTemplateId(t.id);
+                                setRenameValue(t.name);
+                              }}
+                              style={{ fontSize: scaled(11) }}
+                            >
+                              <Pencil className="mr-2 h-3 w-3" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => deleteTemplateMutation.mutate(t.id)}
+                              style={{ fontSize: scaled(11) }}
+                            >
+                              <Trash2 className="mr-2 h-3 w-3" />
+                              Delete
+                            </DropdownMenuItem>
+                            {isActive && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setActiveTemplateId(null)}
+                                  style={{ fontSize: scaled(11) }}
+                                >
+                                  <X className="mr-2 h-3 w-3" />
+                                  Close
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      {isActive &&
+                        (() => {
+                          const savedPreset = cfg.dateRangePreset ?? 'custom';
+                          const dateChanged =
+                            dateRangePreset !== savedPreset ||
+                            (dateRangePreset === 'custom' &&
+                              (dateFrom !== cfg.dateFrom || dateTo !== cfg.dateTo));
+                          const templateChanged = selectedTemplate !== cfg.pdfTemplate;
+                          const timesChanged = showStartTime !== (cfg.showStartTime ?? false);
+
+                          // Projects: current, saved, added, removed
+                          const savedProjSet = new Set(cfg.projectIds);
+                          const curProjSet = new Set(projectIds);
+                          const removedProjects = cfg.projectIds.filter(
+                            (id) => !curProjSet.has(id),
+                          );
+                          const addedProjects = projectIds.filter((id) => !savedProjSet.has(id));
+                          const keptProjects = projectIds.filter((id) => savedProjSet.has(id));
+
+                          // Clients
+                          const savedCliSet = new Set(cfg.clientIds);
+                          const curCliSet = new Set(clientIds);
+                          const removedClients = cfg.clientIds.filter((id) => !curCliSet.has(id));
+                          const addedClients = clientIds.filter((id) => !savedCliSet.has(id));
+                          const keptClients = clientIds.filter((id) => savedCliSet.has(id));
+
+                          // Users
+                          const savedUsrSet = new Set(cfg.userIds);
+                          const curUsrSet = new Set(userIds);
+                          const removedUsers = cfg.userIds.filter((id) => !curUsrSet.has(id));
+                          const addedUsers = userIds.filter((id) => !savedUsrSet.has(id));
+                          const keptUsers = userIds.filter((id) => savedUsrSet.has(id));
+
+                          const badgeBase = 'inline-flex items-center gap-1 rounded px-1.5 py-0.5';
+                          const unchanged = `${badgeBase} bg-accent/50 text-muted-foreground`;
+                          const added = `${badgeBase} bg-primary/15 text-primary`;
+                          const removed = `${badgeBase} bg-destructive/10 text-muted-foreground/50 line-through`;
+
+                          return (
+                            <div
+                              className="mt-1.5 flex flex-wrap gap-1"
+                              style={{ fontSize: scaled(9) }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Date range */}
+                              <span className={dateChanged ? added : unchanged}>
+                                <Calendar className="h-2 w-2 flex-shrink-0" />
+                                {dateRangePreset !== 'custom'
+                                  ? PRESET_LABELS[dateRangePreset]
+                                  : `${dateFrom} — ${dateTo}`}
+                              </span>
+
+                              {/* Template */}
+                              <span className={templateChanged ? added : unchanged}>
+                                <FileText className="h-2 w-2 flex-shrink-0" />
+                                {PDF_TEMPLATE_META[selectedTemplate]?.name ?? selectedTemplate}
+                              </span>
+
+                              {/* Times */}
+                              {showStartTime && (
+                                <span className={timesChanged ? added : unchanged}>
+                                  <Clock className="h-2 w-2 flex-shrink-0" />
+                                  Times
+                                  <button
+                                    className="hover:text-foreground"
+                                    onClick={() => setShowStartTime(false)}
+                                  >
+                                    <X className="h-2 w-2" />
+                                  </button>
+                                </span>
+                              )}
+                              {!showStartTime && (cfg.showStartTime ?? false) && (
+                                <span className={removed}>
+                                  <Clock className="h-2 w-2 flex-shrink-0" />
+                                  Times
+                                </span>
+                              )}
+
+                              {/* Projects — kept */}
+                              {keptProjects.map((id) => {
+                                const name = projects?.find((p) => p.id === id)?.name ?? id;
+                                return (
+                                  <span key={`p-${id}`} className={unchanged}>
+                                    <FolderKanban className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setProjectIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {/* Projects — added */}
+                              {addedProjects.map((id) => {
+                                const name = projects?.find((p) => p.id === id)?.name ?? id;
+                                return (
+                                  <span key={`p-${id}`} className={added}>
+                                    <FolderKanban className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setProjectIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {/* Projects — removed */}
+                              {removedProjects.map((id) => {
+                                const name = projects?.find((p) => p.id === id)?.name ?? id;
+                                return (
+                                  <span key={`p-${id}`} className={removed}>
+                                    <FolderKanban className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                  </span>
+                                );
+                              })}
+
+                              {/* Clients — kept */}
+                              {keptClients.map((id) => {
+                                const name = clients?.find((c) => c.id === id)?.name ?? id;
+                                return (
+                                  <span key={`c-${id}`} className={unchanged}>
+                                    <Building2 className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setClientIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {addedClients.map((id) => {
+                                const name = clients?.find((c) => c.id === id)?.name ?? id;
+                                return (
+                                  <span key={`c-${id}`} className={added}>
+                                    <Building2 className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setClientIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {removedClients.map((id) => {
+                                const name = clients?.find((c) => c.id === id)?.name ?? id;
+                                return (
+                                  <span key={`c-${id}`} className={removed}>
+                                    <Building2 className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                  </span>
+                                );
+                              })}
+
+                              {/* Users — kept */}
+                              {keptUsers.map((id) => {
+                                const name = users?.find((u) => u.id === id)?.displayName ?? id;
+                                return (
+                                  <span key={`u-${id}`} className={unchanged}>
+                                    <User className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setUserIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {addedUsers.map((id) => {
+                                const name = users?.find((u) => u.id === id)?.displayName ?? id;
+                                return (
+                                  <span key={`u-${id}`} className={added}>
+                                    <User className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                    <button
+                                      className="hover:text-foreground"
+                                      onClick={() =>
+                                        setUserIds((prev) => prev.filter((x) => x !== id))
+                                      }
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                              {removedUsers.map((id) => {
+                                const name = users?.find((u) => u.id === id)?.displayName ?? id;
+                                return (
+                                  <span key={`u-${id}`} className={removed}>
+                                    <User className="h-2 w-2 flex-shrink-0" />
+                                    {name}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <div
+                className="flex flex-col items-center gap-2 py-6 text-center text-muted-foreground"
+                style={{ fontSize: scaled(11) }}
+              >
+                <Star className="h-5 w-5" style={{ color: 'hsl(var(--muted-foreground) / 0.3)' }} />
+                <p>No favourites yet</p>
+                <p style={{ fontSize: scaled(9) }}>
+                  Save your current filters to quickly load them later.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1216,6 +1460,62 @@ export function ClientReportsPage() {
                 onClick={handleSaveTemplate}
               >
                 {saveTemplateMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Rename dialog ────────────────────────────────────────────── */}
+      <Dialog
+        open={!!renamingTemplateId}
+        onOpenChange={(open) => !open && setRenamingTemplateId(null)}
+      >
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="font-brand tracking-wide">Rename Favourite</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label
+                className="mb-1.5 block text-muted-foreground"
+                style={{ fontSize: scaled(11) }}
+              >
+                Name
+              </label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="e.g. Acme Corp — Monthly"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                style={{ fontSize: scaled(12) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRename();
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                className="rounded-lg border border-border px-4 py-2 transition-colors hover:bg-accent"
+                style={{ fontSize: scaled(12) }}
+                onClick={() => setRenamingTemplateId(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-lg px-4 py-2 font-semibold transition-colors"
+                style={{
+                  backgroundColor: '#00D4AA',
+                  color: '#0a0a0a',
+                  fontSize: scaled(12),
+                  opacity: !renameValue.trim() || renameTemplateMutation.isPending ? 0.5 : 1,
+                }}
+                disabled={!renameValue.trim() || renameTemplateMutation.isPending}
+                onClick={handleRename}
+              >
+                {renameTemplateMutation.isPending ? 'Renaming...' : 'Rename'}
               </button>
             </div>
           </div>

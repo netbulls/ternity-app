@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, asc, sql } from 'drizzle-orm';
+import { eq, asc, sql, and, ne } from 'drizzle-orm';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { leaveTypes, leaveTypeGroups } from '../db/schema.js';
@@ -138,9 +138,10 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
         groupId: leaveTypes.groupId,
         active: leaveTypes.active,
         visibility: leaveTypes.visibility,
+        isContractorDefault: leaveTypes.isContractorDefault,
       })
       .from(leaveTypes)
-      .orderBy(asc(leaveTypes.name));
+      .orderBy(sql`${leaveTypes.isContractorDefault} DESC`, asc(leaveTypes.name));
 
     return types;
   });
@@ -192,13 +193,36 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const { groupId, active, visibility, color, name } = request.body as {
+    const { groupId, active, visibility, color, name, isContractorDefault } = request.body as {
       groupId?: string | null;
       active?: boolean;
       visibility?: string;
       color?: string | null;
       name?: string;
+      isContractorDefault?: boolean;
     };
+
+    // Check if this type is currently the contractor default (for protection rules)
+    const [existing] = await db
+      .select({ isContractorDefault: leaveTypes.isContractorDefault })
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, id));
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Leave type not found' });
+    }
+
+    // Protect the contractor default from being deactivated
+    if (existing.isContractorDefault && active === false) {
+      return reply.code(400).send({ error: 'Cannot deactivate the contractor default leave type' });
+    }
+
+    // Protect the contractor default from having visibility set to employee-only
+    if (existing.isContractorDefault && visibility === 'employee') {
+      return reply
+        .code(400)
+        .send({ error: 'Contractor default leave type must be visible to contractors' });
+    }
 
     const updates: Record<string, unknown> = {};
     if (groupId !== undefined) updates.groupId = groupId;
@@ -211,6 +235,30 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     }
     if (color !== undefined) updates.color = color;
     if (name !== undefined) updates.name = name.trim();
+
+    // Handle contractor default toggle (radio-style: only one can be true)
+    if (isContractorDefault === true) {
+      // Clear the flag from any other leave type first
+      await db
+        .update(leaveTypes)
+        .set({ isContractorDefault: false })
+        .where(and(eq(leaveTypes.isContractorDefault, true), ne(leaveTypes.id, id)));
+      updates.isContractorDefault = true;
+      // Ensure the type is active and visible to contractors
+      updates.active = true;
+      if (visibility === 'employee') {
+        return reply
+          .code(400)
+          .send({ error: 'Contractor default leave type must be visible to contractors' });
+      }
+    } else if (isContractorDefault === false) {
+      // Cannot unset the contractor default — must set another type instead
+      if (existing.isContractorDefault) {
+        return reply
+          .code(400)
+          .send({ error: 'Cannot unset contractor default — set another type as default instead' });
+      }
+    }
 
     if (Object.keys(updates).length === 0) {
       return reply.code(400).send({ error: 'No fields to update' });
@@ -246,6 +294,21 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'ids array is required' });
     }
 
+    // Protect contractor default from bulk deactivation or visibility change
+    if (active === false || visibility === 'employee') {
+      const [defaultInBatch] = await db
+        .select({ id: leaveTypes.id })
+        .from(leaveTypes)
+        .where(sql`${leaveTypes.id} = ANY(${ids}) AND ${leaveTypes.isContractorDefault} = true`);
+      if (defaultInBatch) {
+        const msg =
+          active === false
+            ? 'Cannot deactivate the contractor default leave type'
+            : 'Contractor default leave type must be visible to contractors';
+        return reply.code(400).send({ error: msg });
+      }
+    }
+
     const updates: Record<string, unknown> = {};
     if (groupId !== undefined) updates.groupId = groupId;
     if (active !== undefined) updates.active = active;
@@ -266,5 +329,32 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       .where(sql`${leaveTypes.id} = ANY(${ids})`);
 
     return { updated: rowCount };
+  });
+
+  /** DELETE /api/admin/leave-types/:id — delete a leave type (contractor default is protected) */
+  fastify.delete('/api/admin/leave-types/:id', async (request, reply) => {
+    if (!isRealAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin access required' });
+    }
+
+    const { id } = request.params as { id: string };
+
+    // Check if this is the contractor default
+    const [existing] = await db
+      .select({ isContractorDefault: leaveTypes.isContractorDefault })
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, id));
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Leave type not found' });
+    }
+
+    if (existing.isContractorDefault) {
+      return reply.code(400).send({ error: 'Cannot delete the contractor default leave type' });
+    }
+
+    await db.delete(leaveTypes).where(eq(leaveTypes.id, id));
+
+    return { ok: true };
   });
 }

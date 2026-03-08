@@ -281,6 +281,7 @@ export const leaveTypes = pgTable('leave_types', {
   groupId: uuid('group_id').references(() => leaveTypeGroups.id),
   active: boolean('active').notNull().default(true),
   visibility: text('visibility').notNull().default('all'), // 'all' | 'contractor' | 'employee'
+  isContractorDefault: boolean('is_contractor_default').notNull().default(false),
 });
 
 // ── Leave Allowances ───────────────────────────────────────────────────────
