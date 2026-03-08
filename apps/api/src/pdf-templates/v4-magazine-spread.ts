@@ -293,7 +293,7 @@ body {
 
 /* User header row (inline in table) */
 .user-header-row td {
-  padding: 10px 8px 8px 8px !important;
+  padding: 10px 8px 4px 8px !important;
   background: #f7f8f9 !important;
   border-bottom: 2px solid #e5e5e5 !important;
   position: relative;
@@ -348,7 +348,13 @@ body {
   font-size: 8px;
   color: #999;
 }
-.user-header-row.has-divider td { padding-top: 16px !important; border-top: 1px dashed #ddd; }
+.user-spacer-row td {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  height: 20px;
+  border-top: 1px dashed #ddd !important;
+}
 
 /* Day groups & entries */
 .entries-table {
@@ -467,7 +473,11 @@ function generateStackedBar(data: ReportData): string {
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV4(data: ReportData): string {
+export function renderV4(
+  data: ReportData,
+  options?: import('./index.js').TemplateRenderOptions,
+): string {
+  const showTime = options?.showStartTime ?? false;
   // Collect pages, assemble at end when totalPages known
   const pages: Array<{ type: 'cover' | 'inner'; html: string }> = [];
 
@@ -594,17 +604,22 @@ export function renderV4(data: ReportData): string {
   }
 
   // ── Build all data rows as HTML ──────────────────────────────────
-  const COLGROUP = `<colgroup><col style="width:55px"><col style="width:110px"><col><col style="width:70px"><col style="width:60px"></colgroup>`;
+  const COLGROUP = showTime
+    ? `<colgroup><col style="width:55px"><col style="width:110px"><col><col style="width:70px"><col style="width:60px"></colgroup>`
+    : `<colgroup><col style="width:110px"><col><col style="width:70px"><col style="width:60px"></colgroup>`;
 
   const allRowsHtml: string[] = [];
 
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
     const color = CHART_COLORS[ui % CHART_COLORS.length];
-    const dividerCls = ui > 0 ? ' has-divider' : '';
+    if (ui > 0) {
+      const colCount = showTime ? 5 : 4;
+      allRowsHtml.push(`<tr class="user-spacer-row"><td colspan="${colCount}"></td></tr>`);
+    }
 
-    allRowsHtml.push(`<tr class="user-header-row${dividerCls}" data-sticky>
-  <td colspan="5"><div class="user-header-inner">
+    allRowsHtml.push(`<tr class="user-header-row" data-sticky>
+  <td colspan="${showTime ? 5 : 4}"><div class="user-header-inner">
     <div class="user-avatar" style="background: ${color}">${esc(initials(user.userName))}</div>
     <div class="user-meta">
       <div class="user-name">${esc(user.userName)}</div>
@@ -619,7 +634,7 @@ export function renderV4(data: ReportData): string {
 
     for (const dg of user.dayGroups) {
       allRowsHtml.push(`<tr class="day-group-row" data-sticky>
-  <td colspan="5"><div class="day-group-inner"><span class="day-group-date">${esc(formatDate(dg.date))}</span><span class="day-group-total">${formatDuration(dg.dayTotalSeconds)}</span></div></td>
+  <td colspan="${showTime ? 5 : 4}"><div class="day-group-inner"><span class="day-group-date">${esc(formatDate(dg.date))}</span><span class="day-group-total">${formatDuration(dg.dayTotalSeconds)}</span></div></td>
 </tr>`);
 
       for (const entry of dg.entries) {
@@ -627,7 +642,7 @@ export function renderV4(data: ReportData): string {
           ? `<span class="jira-pill">${esc(entry.jiraIssueKey)}</span>`
           : `<span class="jira-empty">&mdash;</span>`;
         allRowsHtml.push(`<tr>
-  <td class="time-cell">${esc(entry.startTime)}</td>
+  ${showTime ? `<td class="time-cell">${esc(entry.startTime)}</td>` : ''}
   <td><div class="project-cell-inner"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td>${jiraCell}</td>
@@ -743,9 +758,13 @@ export function renderV4(data: ReportData): string {
     var usedH = 0;
     while (idx < heights.length) {
       var rowH = heights[idx].h;
-      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      if (usedH + rowH > availableH) break;
       pageRows.push(heights[idx]);
       usedH += rowH;
+      idx++;
+    }
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
     while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {
@@ -780,7 +799,8 @@ export function renderV4(data: ReportData): string {
     table.innerHTML = colgroup;
     var tbody = document.createElement('tbody');
     for (var r = 0; r < dataPages[p].length; r++) {
-      if (r === 0) dataPages[p][r].el.classList.remove('has-divider');
+      // Skip spacer row at start of a new page
+      if (r === 0 && dataPages[p][r].el.classList.contains('user-spacer-row')) continue;
       tbody.appendChild(dataPages[p][r].el);
     }
     table.appendChild(tbody);

@@ -12,13 +12,21 @@ import { renderV5 } from './v5-dashboard-print.js';
 import { renderV6 } from './v6-invoice-style.js';
 import { renderV7 } from './v7-cover-chapters.js';
 
-export type TemplateRenderer = (data: ReportData) => string;
+export interface TemplateRenderOptions {
+  showStartTime?: boolean;
+}
+
+export type TemplateRenderer = (data: ReportData, options?: TemplateRenderOptions) => string;
 
 /**
  * Render report data into a self-contained HTML document
  * suitable for Gotenberg HTML→PDF conversion.
  */
-export function renderReportHtml(template: PdfTemplate, data: ReportData): string {
+export function renderReportHtml(
+  template: PdfTemplate,
+  data: ReportData,
+  options?: TemplateRenderOptions,
+): string {
   const renderers: Record<PdfTemplate, TemplateRenderer> = {
     'classic-corporate': renderV1,
     'dark-executive': renderV2,
@@ -30,5 +38,5 @@ export function renderReportHtml(template: PdfTemplate, data: ReportData): strin
   };
 
   const render = renderers[template] ?? renderV1;
-  return render(data);
+  return render(data, options);
 }

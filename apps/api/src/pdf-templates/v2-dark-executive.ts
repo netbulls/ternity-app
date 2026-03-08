@@ -147,7 +147,7 @@ body {
 .legend-pct { color: rgba(255,255,255,0.5); min-width: 40px; text-align: right; }
 
 .section-header-row td {
-  padding: 10px 8px 8px 8px !important;
+  padding: 10px 8px 4px 8px !important;
   border-bottom: 2px solid #222 !important;
   background: #111 !important;
 }
@@ -173,7 +173,7 @@ body {
 .section-header-row .user-total .total-label {
   font-size: 8px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px;
 }
-.section-header-row.has-divider td { padding-top: 16px !important; border-top: 1px solid #222; }
+.section-header-row.has-divider td { padding-top: 24px !important; border-top: 1px solid #222; }
 
 .entries-table {
   width: 100%; border-collapse: collapse;
@@ -233,7 +233,11 @@ function pageFooter(data: ReportData, pageNum: number, totalPages: number): stri
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV2(data: ReportData): string {
+export function renderV2(
+  data: ReportData,
+  options?: import('./index.js').TemplateRenderOptions,
+): string {
+  const showTime = options?.showStartTime ?? false;
   // We'll collect pages, then assemble at the end when we know totalPages
   const pages: Array<{ html: string; subtitle?: string }> = [];
 
@@ -307,7 +311,9 @@ export function renderV2(data: ReportData): string {
 </div>`;
 
   // ── Build all data rows as HTML ──────────────────────────────────
-  const COLGROUP = `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
+  const COLGROUP = showTime
+    ? `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`
+    : `<colgroup><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
 
   const allRowsHtml: string[] = [];
 
@@ -334,13 +340,13 @@ export function renderV2(data: ReportData): string {
     for (const dg of user.dayGroups) {
       // Day group header — sticky
       allRowsHtml.push(`<tr class="day-group-row" data-sticky>
-  <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
+  <td colspan="${showTime ? 4 : 3}"><strong>${esc(formatDate(dg.date))}</strong></td>
   <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
 </tr>`);
 
       for (const entry of dg.entries) {
         allRowsHtml.push(`<tr>
-  <td class="date-cell">${esc(entry.startTime)}</td>
+  ${showTime ? `<td class="date-cell">${esc(entry.startTime)}</td>` : ''}
   <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td style="color: ${entry.jiraIssueKey ? '#6c8eef' : 'rgba(255,255,255,0.25)'}; font-size: 8px">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
@@ -426,9 +432,13 @@ export function renderV2(data: ReportData): string {
     var usedH = 0;
     while (idx < heights.length) {
       var rowH = heights[idx].h;
-      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      if (usedH + rowH > availableH) break;
       pageRows.push(heights[idx]);
       usedH += rowH;
+      idx++;
+    }
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
     while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {

@@ -1,6 +1,17 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FolderKanban, Building2, Users, Eye, Save, Trash2, Star } from 'lucide-react';
+import {
+  FolderKanban,
+  Building2,
+  Users,
+  Eye,
+  Save,
+  Trash2,
+  Star,
+  RefreshCw,
+  Pencil,
+} from 'lucide-react';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { scaled } from '@/lib/scaled';
 import { apiFetch, apiFetchRaw } from '@/lib/api';
 import { useProjects, useUsers } from '@/hooks/use-reference-data';
@@ -10,7 +21,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   PDF_TEMPLATES,
   PDF_TEMPLATE_META,
+  DATE_RANGE_PRESETS,
+  resolveDateRangePreset,
   type PdfTemplate,
+  type DateRangePreset,
   type ReportData,
   type ReportConfig,
   type SavedReportTemplate,
@@ -25,18 +39,9 @@ function formatDuration(seconds: number): string {
 }
 
 function formatHours(seconds: number): string {
-  return (seconds / 3600).toFixed(1) + 'h';
-}
-
-function getMonthPreset(offset: number): { from: string; to: string } {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + offset; // 0-indexed
-  const d = new Date(year, month, 1);
-  const from = d.toISOString().slice(0, 10);
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  const to = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-  return { from, to };
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
 // ── API hooks ────────────────────────────────────────────────────────────
@@ -192,15 +197,40 @@ function PreviewIframe({ html, fit }: { html: string; fit: PreviewFit }) {
 
 // ── Component ────────────────────────────────────────────────────────────
 
+const PRESET_LABELS: Record<DateRangePreset, string> = {
+  'this-month': 'This Month',
+  'last-month': 'Last Month',
+  'this-week': 'This Week',
+  'last-week': 'Last Week',
+  custom: 'Custom',
+};
+
 export function ClientReportsPage() {
-  const lastMonth = getMonthPreset(0);
-  const [dateFrom, setDateFrom] = useState(lastMonth.from);
-  const [dateTo, setDateTo] = useState(lastMonth.to);
+  const initialRange = resolveDateRangePreset('this-month');
+  const [dateFrom, setDateFrom] = useState(initialRange.from);
+  const [dateTo, setDateTo] = useState(initialRange.to);
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('this-month');
   const [projectIds, setProjectIds] = useState<string[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [clientIds, setClientIds] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PdfTemplate>('classic-corporate');
+  const [showStartTime, setShowStartTime] = useState(false);
+
+  // Track which saved template is currently loaded (null = fresh/unsaved)
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
+  /** Select a date range preset — resolves dates and updates both preset + date state */
+  const selectPreset = useCallback((preset: DateRangePreset) => {
+    if (preset === 'custom') {
+      setDateRangePreset('custom');
+      return;
+    }
+    const { from, to } = resolveDateRangePreset(preset);
+    setDateRangePreset(preset);
+    setDateFrom(from);
+    setDateTo(to);
+  }, []);
 
   const {
     data: reportData,
@@ -228,18 +258,20 @@ export function ClientReportsPage() {
         method: 'POST',
         body: JSON.stringify(body),
       }),
-    onSuccess: () => {
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['reports', 'templates'] });
       setShowSaveDialog(false);
       setSaveTemplateName('');
+      setActiveTemplateId(saved.id);
     },
   });
 
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: string) =>
       apiFetch<void>(`/reports/templates/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
+    onSuccess: (_result, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['reports', 'templates'] });
+      if (activeTemplateId === deletedId) setActiveTemplateId(null);
     },
   });
 
@@ -254,16 +286,124 @@ export function ClientReportsPage() {
     },
   });
 
-  const handleSaveTemplate = useCallback(() => {
-    if (!saveTemplateName.trim()) return;
-    const config: ReportConfig = {
+  // ── Rename template state ────────────────────────────────────
+  const [renamingTemplateId, setRenamingTemplateId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const renameTemplateMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+      apiFetch<SavedReportTemplate>(`/reports/templates/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports', 'templates'] });
+      setRenamingTemplateId(null);
+    },
+  });
+
+  const startRename = useCallback((id: string, currentName: string) => {
+    setRenamingTemplateId(id);
+    setRenameValue(currentName);
+    // Focus the input after render
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  }, []);
+
+  const commitRename = useCallback(() => {
+    if (!renamingTemplateId || !renameValue.trim()) {
+      setRenamingTemplateId(null);
+      return;
+    }
+    renameTemplateMutation.mutate({ id: renamingTemplateId, name: renameValue.trim() });
+  }, [renamingTemplateId, renameValue, renameTemplateMutation]);
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, config }: { id: string; config: ReportConfig }) =>
+      apiFetch<SavedReportTemplate>(`/reports/templates/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ config }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports', 'templates'] });
+    },
+  });
+
+  /** Build the current config snapshot */
+  const currentConfig = useMemo(
+    (): ReportConfig => ({
       dateFrom,
       dateTo,
+      dateRangePreset,
       projectIds,
       userIds,
       clientIds,
       tagIds,
       groupBy: 'user',
+      showStartTime,
+      pdfTemplate: selectedTemplate,
+    }),
+    [
+      dateFrom,
+      dateTo,
+      dateRangePreset,
+      projectIds,
+      userIds,
+      clientIds,
+      tagIds,
+      showStartTime,
+      selectedTemplate,
+    ],
+  );
+
+  /** Check if the active template has unsaved changes */
+  const activeTemplateHasChanges = useMemo(() => {
+    if (!activeTemplateId || !savedTemplates) return false;
+    const t = savedTemplates.find((t) => t.id === activeTemplateId);
+    if (!t) return false;
+
+    // Compare the parts that matter for config equality
+    const saved = t.config;
+    const savedPreset = saved.dateRangePreset ?? 'custom';
+
+    if (currentConfig.dateRangePreset !== savedPreset) return true;
+    // For custom presets, also compare actual dates
+    if (currentConfig.dateRangePreset === 'custom') {
+      if (currentConfig.dateFrom !== saved.dateFrom || currentConfig.dateTo !== saved.dateTo)
+        return true;
+    }
+    if (currentConfig.pdfTemplate !== saved.pdfTemplate) return true;
+    if ((currentConfig.showStartTime ?? false) !== (saved.showStartTime ?? false)) return true;
+    if (JSON.stringify(currentConfig.projectIds) !== JSON.stringify(saved.projectIds)) return true;
+    if (JSON.stringify(currentConfig.userIds) !== JSON.stringify(saved.userIds)) return true;
+    if (JSON.stringify(currentConfig.clientIds) !== JSON.stringify(saved.clientIds)) return true;
+    if (JSON.stringify(currentConfig.tagIds) !== JSON.stringify(saved.tagIds)) return true;
+
+    return false;
+  }, [activeTemplateId, savedTemplates, currentConfig]);
+
+  const activeTemplateName = useMemo(() => {
+    if (!activeTemplateId || !savedTemplates) return null;
+    return savedTemplates.find((t) => t.id === activeTemplateId)?.name ?? null;
+  }, [activeTemplateId, savedTemplates]);
+
+  const handleUpdateTemplate = useCallback(() => {
+    if (!activeTemplateId) return;
+    updateTemplateMutation.mutate({ id: activeTemplateId, config: currentConfig });
+  }, [activeTemplateId, currentConfig, updateTemplateMutation]);
+
+  const handleSaveTemplate = useCallback(() => {
+    if (!saveTemplateName.trim()) return;
+    const config: ReportConfig = {
+      dateFrom,
+      dateTo,
+      dateRangePreset,
+      projectIds,
+      userIds,
+      clientIds,
+      tagIds,
+      groupBy: 'user',
+      showStartTime,
       pdfTemplate: selectedTemplate,
     };
     saveTemplateMutation.mutate({ name: saveTemplateName.trim(), config });
@@ -271,10 +411,12 @@ export function ClientReportsPage() {
     saveTemplateName,
     dateFrom,
     dateTo,
+    dateRangePreset,
     projectIds,
     userIds,
     clientIds,
     tagIds,
+    showStartTime,
     selectedTemplate,
     saveTemplateMutation,
   ]);
@@ -329,11 +471,13 @@ export function ClientReportsPage() {
       const config: ReportConfig = {
         dateFrom,
         dateTo,
+        dateRangePreset,
         projectIds,
         userIds,
         clientIds,
         tagIds,
         groupBy: 'user',
+        showStartTime,
         pdfTemplate: selectedTemplate,
       };
 
@@ -350,16 +494,21 @@ export function ClientReportsPage() {
     } finally {
       setIsLoadingPreview(false);
     }
-  }, [dateFrom, dateTo, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
+  }, [dateFrom, dateTo, dateRangePreset, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
 
-  // Auto-refresh preview when template changes (if preview is already open)
-  const prevTemplateRef = useRef(selectedTemplate);
+  // Auto-refresh preview when template or options change (if preview is already open)
+  const prevConfigRef = useRef({ selectedTemplate, showStartTime });
   useEffect(() => {
-    if (prevTemplateRef.current !== selectedTemplate && showPreview && reportData) {
-      prevTemplateRef.current = selectedTemplate;
+    const prev = prevConfigRef.current;
+    if (
+      (prev.selectedTemplate !== selectedTemplate || prev.showStartTime !== showStartTime) &&
+      showPreview &&
+      reportData
+    ) {
+      prevConfigRef.current = { selectedTemplate, showStartTime };
       fetchPreview();
     }
-  }, [selectedTemplate, showPreview, reportData, fetchPreview]);
+  }, [selectedTemplate, showStartTime, showPreview, reportData, fetchPreview]);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -371,11 +520,13 @@ export function ClientReportsPage() {
       const config: ReportConfig = {
         dateFrom,
         dateTo,
+        dateRangePreset,
         projectIds,
         userIds,
         clientIds,
         tagIds,
         groupBy: 'user',
+        showStartTime,
         pdfTemplate: selectedTemplate,
       };
 
@@ -398,15 +549,7 @@ export function ClientReportsPage() {
     } finally {
       setIsDownloading(false);
     }
-  }, [dateFrom, dateTo, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
-
-  const presets = useMemo(
-    () => [
-      { label: 'This Month', ...getMonthPreset(0) },
-      { label: 'Last Month', ...getMonthPreset(-1) },
-    ],
-    [],
-  );
+  }, [dateFrom, dateTo, dateRangePreset, projectIds, userIds, clientIds, tagIds, selectedTemplate]);
 
   return (
     <div className="space-y-6">
@@ -428,45 +571,36 @@ export function ClientReportsPage() {
         className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4"
         style={{ fontSize: scaled(12) }}
       >
-        <div className="flex items-center gap-2">
-          <label className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-            From
-          </label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded border border-border bg-background px-2 py-1 text-foreground"
-            style={{ fontSize: scaled(12) }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-muted-foreground" style={{ fontSize: scaled(11) }}>
-            To
-          </label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="rounded border border-border bg-background px-2 py-1 text-foreground"
-            style={{ fontSize: scaled(12) }}
-          />
-        </div>
-        <div className="flex gap-1">
-          {presets.map((p) => (
+        {/* Date range preset toggle group */}
+        <div className="flex rounded-md border border-border overflow-hidden">
+          {DATE_RANGE_PRESETS.filter((p) => p !== 'custom').map((preset) => (
             <button
-              key={p.label}
-              onClick={() => {
-                setDateFrom(p.from);
-                setDateTo(p.to);
+              key={preset}
+              onClick={() => selectPreset(preset)}
+              className="px-2.5 py-1 transition-colors border-r border-border last:border-r-0"
+              style={{
+                fontSize: scaled(11),
+                backgroundColor:
+                  dateRangePreset === preset ? 'hsl(var(--primary) / 0.15)' : 'transparent',
+                color: dateRangePreset === preset ? '#00D4AA' : 'hsl(var(--muted-foreground))',
+                fontWeight: dateRangePreset === preset ? 600 : 400,
               }}
-              className="rounded border border-border px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              style={{ fontSize: scaled(11) }}
             >
-              {p.label}
+              {PRESET_LABELS[preset]}
             </button>
           ))}
         </div>
+
+        <DateRangePicker
+          from={dateFrom}
+          to={dateTo}
+          onChange={(from, to) => {
+            setDateFrom(from);
+            setDateTo(to);
+            setDateRangePreset('custom');
+          }}
+          className="w-auto"
+        />
 
         <div className="h-5 w-px bg-border" />
 
@@ -726,84 +860,49 @@ export function ClientReportsPage() {
 
         {/* Template gallery + download */}
         <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h3
-              className="font-brand mb-3 font-semibold tracking-wide text-foreground"
-              style={{ fontSize: scaled(13) }}
-            >
+          <div className="flex items-center gap-2">
+            <label className="flex-shrink-0 text-muted-foreground" style={{ fontSize: scaled(11) }}>
               PDF Template
-            </h3>
-
-            <div className="grid grid-cols-2 gap-2">
-              {PDF_TEMPLATES.map((id) => {
-                const meta = PDF_TEMPLATE_META[id];
-                const isSelected = id === selectedTemplate;
-                return (
-                  <button
-                    key={id}
-                    onClick={() => setSelectedTemplate(id)}
-                    className="group relative rounded-lg border-2 p-2 text-left transition-all"
-                    style={{
-                      borderColor: isSelected ? '#00D4AA' : 'hsl(var(--border))',
-                      backgroundColor: isSelected ? 'hsl(var(--primary) / 0.05)' : 'transparent',
-                    }}
-                  >
-                    {/* Mini preview placeholder */}
-                    <div
-                      className="mb-2 flex h-20 items-center justify-center rounded"
-                      style={{
-                        backgroundColor:
-                          id === 'dark-executive' || id === 'cover-chapters'
-                            ? '#0a0a0a'
-                            : '#f5f6f8',
-                        border: '1px solid hsl(var(--border))',
-                      }}
-                    >
-                      <svg
-                        viewBox="0 0 100 120"
-                        fill="none"
-                        width="20"
-                        height="24"
-                        style={{ opacity: 0.3 }}
-                      >
-                        <path
-                          d="M18 5 L82 5 L62 48 L82 95 L18 95 L38 48Z"
-                          stroke="#00D4AA"
-                          strokeWidth="5"
-                          strokeLinejoin="round"
-                          fill="none"
-                        />
-                        <circle cx="50" cy="32" r="6" fill="#00D4AA" />
-                        <circle cx="49" cy="52" r="7.5" fill="#00D4AA" />
-                      </svg>
-                    </div>
-                    <div
-                      className="text-foreground"
-                      style={{ fontSize: scaled(10), fontWeight: 600 }}
-                    >
-                      {meta.name}
-                    </div>
-                    <div
-                      className="mt-0.5 inline-block rounded px-1 py-0.5"
-                      style={{
-                        fontSize: scaled(8),
-                        backgroundColor:
-                          meta.medium === 'print'
-                            ? 'hsl(var(--primary) / 0.1)'
-                            : 'hsl(var(--accent))',
-                        color:
-                          meta.medium === 'print'
-                            ? 'hsl(var(--primary))'
-                            : 'hsl(var(--muted-foreground))',
-                      }}
-                    >
-                      {meta.medium === 'print' ? 'Print' : 'Screen'}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            </label>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value as PdfTemplate)}
+              className="flex-1 rounded border border-border bg-background px-2 py-1.5 text-foreground"
+              style={{ fontSize: scaled(11) }}
+            >
+              <optgroup label="Print">
+                {PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'print').map(
+                  (id) => (
+                    <option key={id} value={id}>
+                      {PDF_TEMPLATE_META[id].name}
+                    </option>
+                  ),
+                )}
+              </optgroup>
+              <optgroup label="Screen">
+                {PDF_TEMPLATES.filter((id) => PDF_TEMPLATE_META[id].medium === 'screen').map(
+                  (id) => (
+                    <option key={id} value={id}>
+                      {PDF_TEMPLATE_META[id].name}
+                    </option>
+                  ),
+                )}
+              </optgroup>
+            </select>
           </div>
+
+          <label
+            className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+            style={{ fontSize: scaled(11) }}
+          >
+            <input
+              type="checkbox"
+              checked={showStartTime}
+              onChange={(e) => setShowStartTime(e.target.checked)}
+              className="accent-[#00D4AA]"
+            />
+            Show entry start times
+          </label>
 
           {/* Preview + Download buttons */}
           <div className="flex gap-2">
@@ -830,15 +929,59 @@ export function ClientReportsPage() {
             </button>
           </div>
 
-          {/* Save template button */}
-          <button
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 font-brand font-semibold tracking-wide transition-colors hover:bg-accent"
-            style={{ fontSize: scaled(12) }}
-            onClick={() => setShowSaveDialog(true)}
-          >
-            <Save className="h-3.5 w-3.5" />
-            Save Configuration
-          </button>
+          {/* Save / Update template buttons */}
+          <div className="flex gap-2">
+            <button
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 font-brand font-semibold tracking-wide transition-colors hover:bg-accent"
+              style={{ fontSize: scaled(12) }}
+              onClick={() => setShowSaveDialog(true)}
+            >
+              <Save className="h-3.5 w-3.5" />
+              Save as New
+            </button>
+            {activeTemplateId && activeTemplateHasChanges && (
+              <button
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-brand font-semibold tracking-wide transition-colors"
+                style={{
+                  fontSize: scaled(12),
+                  backgroundColor: '#00D4AA',
+                  color: '#0a0a0a',
+                  opacity: updateTemplateMutation.isPending ? 0.5 : 1,
+                }}
+                disabled={updateTemplateMutation.isPending}
+                onClick={handleUpdateTemplate}
+              >
+                <RefreshCw
+                  className="h-3.5 w-3.5"
+                  style={{
+                    animation: updateTemplateMutation.isPending
+                      ? 'spin 1s linear infinite'
+                      : 'none',
+                  }}
+                />
+                Update
+              </button>
+            )}
+          </div>
+
+          {/* Active template indicator */}
+          {activeTemplateName && (
+            <div
+              className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-primary"
+              style={{ fontSize: scaled(11) }}
+            >
+              <span className="truncate">
+                Editing: <strong>{activeTemplateName}</strong>
+              </span>
+              <button
+                className="flex-shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                style={{ fontSize: scaled(10) }}
+                onClick={() => setActiveTemplateId(null)}
+              >
+                Detach
+              </button>
+            </div>
+          )}
 
           {downloadError && (
             <div
@@ -859,53 +1002,109 @@ export function ClientReportsPage() {
                 Saved Templates
               </h3>
               <div className="space-y-1">
-                {savedTemplates.map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center gap-1 rounded border border-border/50 px-2 py-1.5 hover:bg-accent/50 transition-colors"
-                    style={{ fontSize: scaled(11) }}
-                  >
-                    <button
-                      className="flex-shrink-0 transition-colors hover:text-yellow-400"
-                      onClick={() =>
-                        toggleFavoriteMutation.mutate({
-                          id: t.id,
-                          isFavorite: !t.isFavorite,
-                        })
-                      }
-                      title={t.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      <Star
-                        className="h-3.5 w-3.5"
-                        style={{
-                          fill: t.isFavorite ? '#facc15' : 'none',
-                          color: t.isFavorite ? '#facc15' : 'hsl(var(--muted-foreground))',
-                        }}
-                      />
-                    </button>
-                    <button
-                      className="flex-1 truncate text-left text-foreground"
-                      onClick={() => {
-                        setDateFrom(t.config.dateFrom);
-                        setDateTo(t.config.dateTo);
-                        setProjectIds(t.config.projectIds);
-                        setUserIds(t.config.userIds);
-                        setClientIds(t.config.clientIds);
-                        setTagIds(t.config.tagIds);
-                        setSelectedTemplate(t.config.pdfTemplate);
+                {savedTemplates.map((t) => {
+                  const isActive = t.id === activeTemplateId;
+                  const tPreset = t.config.dateRangePreset ?? 'custom';
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-1 rounded border px-2 py-1.5 transition-colors"
+                      style={{
+                        fontSize: scaled(11),
+                        borderColor: isActive
+                          ? 'hsl(var(--primary) / 0.5)'
+                          : 'hsl(var(--border) / 0.5)',
+                        backgroundColor: isActive ? 'hsl(var(--primary) / 0.05)' : 'transparent',
                       }}
                     >
-                      {t.name}
-                    </button>
-                    <button
-                      className="flex-shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                      onClick={() => deleteTemplateMutation.mutate(t.id)}
-                      title="Delete template"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        className="flex-shrink-0 transition-colors hover:text-yellow-400"
+                        onClick={() =>
+                          toggleFavoriteMutation.mutate({
+                            id: t.id,
+                            isFavorite: !t.isFavorite,
+                          })
+                        }
+                        title={t.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <Star
+                          className="h-3.5 w-3.5"
+                          style={{
+                            fill: t.isFavorite ? '#facc15' : 'none',
+                            color: t.isFavorite ? '#facc15' : 'hsl(var(--muted-foreground))',
+                          }}
+                        />
+                      </button>
+                      {renamingTemplateId === t.id ? (
+                        <input
+                          ref={renameInputRef}
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={commitRename}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitRename();
+                            if (e.key === 'Escape') setRenamingTemplateId(null);
+                          }}
+                          className="flex-1 min-w-0 bg-transparent border-b border-primary text-foreground outline-none px-0 py-0"
+                          style={{ fontSize: scaled(11) }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className="flex flex-1 items-center gap-1 truncate text-left text-foreground"
+                          onClick={() => {
+                            const preset = t.config.dateRangePreset ?? 'custom';
+                            if (preset !== 'custom') {
+                              const { from, to } = resolveDateRangePreset(preset);
+                              setDateFrom(from);
+                              setDateTo(to);
+                            } else {
+                              setDateFrom(t.config.dateFrom);
+                              setDateTo(t.config.dateTo);
+                            }
+                            setDateRangePreset(preset);
+                            setProjectIds(t.config.projectIds);
+                            setUserIds(t.config.userIds);
+                            setClientIds(t.config.clientIds);
+                            setTagIds(t.config.tagIds);
+                            setShowStartTime(t.config.showStartTime ?? false);
+                            setSelectedTemplate(t.config.pdfTemplate);
+                            setActiveTemplateId(t.id);
+                          }}
+                        >
+                          <span className="truncate">{t.name}</span>
+                          {tPreset !== 'custom' && (
+                            <span
+                              className="flex-shrink-0 rounded px-1 py-0.5"
+                              style={{
+                                fontSize: scaled(8),
+                                backgroundColor: 'hsl(var(--primary) / 0.1)',
+                                color: 'hsl(var(--primary))',
+                              }}
+                            >
+                              {PRESET_LABELS[tPreset]}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        className="flex-shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                        onClick={() => startRename(t.id, t.name)}
+                        title="Rename template"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        className="flex-shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                        onClick={() => deleteTemplateMutation.mutate(t.id)}
+                        title="Delete template"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -987,7 +1186,10 @@ export function ClientReportsPage() {
                 Configuration includes:
               </div>
               <div className="text-muted-foreground">
-                Date range: {dateFrom} to {dateTo}
+                Date range:{' '}
+                {dateRangePreset !== 'custom'
+                  ? `${PRESET_LABELS[dateRangePreset]} (resolves dynamically)`
+                  : `${dateFrom} to ${dateTo}`}
                 {projectIds.length > 0 && ` · ${projectIds.length} project(s)`}
                 {clientIds.length > 0 && ` · ${clientIds.length} client(s)`}
                 {userIds.length > 0 && ` · ${userIds.length} user(s)`}

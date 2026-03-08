@@ -165,8 +165,9 @@ body {
 .section-header-row .user-total .total-label {
   font-size: 8px; color: #999; text-transform: uppercase; letter-spacing: 1px;
 }
-/* Extra top margin for non-first user headers */
-.section-header-row.has-divider td { padding-top: 16px !important; border-top: 1px solid #e5e5e5; }
+/* User section header sits close to its own content, with more space above */
+.section-header-row td { padding-bottom: 4px !important; }
+.section-header-row.has-divider td { padding-top: 24px !important; border-top: 1px solid #e5e5e5; }
 
 .entries-table {
   width: 100%; border-collapse: collapse;
@@ -217,7 +218,11 @@ function pageFooter(data: ReportData, pageNum: number, totalPages: number): stri
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV1(data: ReportData): string {
+export function renderV1(
+  data: ReportData,
+  options?: import('./index.js').TemplateRenderOptions,
+): string {
+  const showTime = options?.showStartTime ?? false;
   // We'll collect pages, then assemble at the end when we know totalPages
   const pages: Array<{ html: string; subtitle?: string }> = [];
 
@@ -293,7 +298,9 @@ export function renderV1(data: ReportData): string {
   pages.push({ html: page1, subtitle: `Generated: ${formatGeneratedAt(data.generatedAt)}` });
 
   // ── Build all data rows as HTML ──────────────────────────────────
-  const COLGROUP = `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
+  const COLGROUP = showTime
+    ? `<colgroup><col style="width:70px"><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`
+    : `<colgroup><col style="width:120px"><col><col style="width:60px"><col style="width:65px"></colgroup>`;
 
   const allRowsHtml: string[] = [];
 
@@ -320,13 +327,13 @@ export function renderV1(data: ReportData): string {
     for (const dg of user.dayGroups) {
       // Day group header — sticky
       allRowsHtml.push(`<tr class="day-group-row" data-sticky>
-  <td colspan="4"><strong>${esc(formatDate(dg.date))}</strong></td>
+  <td colspan="${showTime ? 4 : 3}"><strong>${esc(formatDate(dg.date))}</strong></td>
   <td class="duration-cell"><span class="day-total">${formatDuration(dg.dayTotalSeconds)}</span></td>
 </tr>`);
 
       for (const entry of dg.entries) {
         allRowsHtml.push(`<tr>
-  <td class="date-cell">${esc(entry.startTime)}</td>
+  ${showTime ? `<td class="date-cell">${esc(entry.startTime)}</td>` : ''}
   <td><div class="project-cell"><span class="project-dot" style="background: ${entry.projectColor}"></span>${esc(entry.projectName)}</div></td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td style="color: ${entry.jiraIssueKey ? '#6c8eef' : '#666'}; font-size: 8px">${entry.jiraIssueKey ? esc(entry.jiraIssueKey) : '—'}</td>
@@ -417,9 +424,15 @@ export function renderV1(data: ReportData): string {
 
     while (idx < heights.length) {
       var rowH = heights[idx].h;
-      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      if (usedH + rowH > availableH) break;
       pageRows.push(heights[idx]);
       usedH += rowH;
+      idx++;
+    }
+
+    // If nothing fits (e.g. a single row taller than page), force it to avoid infinite loop
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
 

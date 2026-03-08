@@ -32,7 +32,9 @@ export const CHART_COLORS = [
 // ── Formatters ───────────────────────────────────────────────────────────
 
 export function formatHours(seconds: number): string {
-  return (seconds / 3600).toFixed(1) + 'h';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
 export function formatDuration(seconds: number): string {

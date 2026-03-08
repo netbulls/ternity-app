@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { ProjectSelector } from '@/components/timer/project-selector';
 import { TagSelector } from '@/components/timer/tag-selector';
 import { useCreateEntry } from '@/hooks/use-entries';
@@ -129,29 +130,15 @@ export function ManualEntryDialog({ open, onOpenChange }: Props) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
-              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="start">Start Time</Label>
-                <Input
-                  id="start"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="end">End Time</Label>
-                <Input
-                  id="end"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
+              <Label>Date & Time</Label>
+              <DateTimePicker
+                date={date}
+                startTime={startTime}
+                endTime={endTime}
+                onDateChange={setDate}
+                onStartTimeChange={setStartTime}
+                onEndTimeChange={setEndTime}
+              />
             </div>
 
             {durationSec > 0 && (

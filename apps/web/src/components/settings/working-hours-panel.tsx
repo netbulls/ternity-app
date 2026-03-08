@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Clock2Icon } from 'lucide-react';
 import {
   DEFAULT_WEEKLY_WORKING_HOURS,
   type WeeklyWorkingHours,
@@ -8,6 +8,7 @@ import {
 import { useWorkingHours, useUpdateWorkingHours } from '@/hooks/use-working-hours';
 import { scaled } from '@/lib/scaled';
 import { cn } from '@/lib/utils';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Switch } from '@/components/ui/switch';
 
 const DAY_ROWS: Array<{ key: WorkingDayKey; shortLabel: string; label: string }> = [
@@ -279,53 +280,75 @@ export function WorkingHoursPanel() {
               {isExpanded && (
                 <div className="border-t border-border px-3 py-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={(element) => {
-                        inputRefs.current[`${dayMeta.key}:start`] = element;
-                      }}
-                      type="time"
-                      value={draftStart}
-                      onChange={(e) => setDraftTime(dayMeta.key, 'start', e.target.value)}
-                      onBlur={() => commitDraftTime(dayMeta.key)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          commitDraftTime(dayMeta.key);
-                          focusInput(dayMeta.key, 'end');
-                        }
-                      }}
-                      disabled={!day.enabled}
+                    <InputGroup
+                      data-disabled={!day.enabled || undefined}
                       className={cn(
-                        'w-[110px] rounded-md border border-border bg-background px-2 py-1 text-foreground focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        isDraftInvalid && day.enabled && 'border-destructive text-destructive',
+                        'h-8 w-[130px]',
+                        isDraftInvalid && day.enabled && 'border-destructive',
                       )}
-                      style={{ fontSize: scaled(12) }}
-                    />
+                    >
+                      <InputGroupAddon>
+                        <Clock2Icon className="text-muted-foreground" />
+                      </InputGroupAddon>
+                      <InputGroupInput
+                        ref={(element) => {
+                          inputRefs.current[`${dayMeta.key}:start`] = element;
+                        }}
+                        type="time"
+                        value={draftStart}
+                        onChange={(e) => setDraftTime(dayMeta.key, 'start', e.target.value)}
+                        onBlur={() => commitDraftTime(dayMeta.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            commitDraftTime(dayMeta.key);
+                            focusInput(dayMeta.key, 'end');
+                          }
+                        }}
+                        disabled={!day.enabled}
+                        className={cn(
+                          'appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none',
+                          isDraftInvalid && day.enabled && 'text-destructive',
+                        )}
+                        style={{ fontSize: scaled(12) }}
+                      />
+                    </InputGroup>
                     <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
                       -&gt;
                     </span>
-                    <input
-                      ref={(element) => {
-                        inputRefs.current[`${dayMeta.key}:end`] = element;
-                      }}
-                      type="time"
-                      value={draftEnd}
-                      onChange={(e) => setDraftTime(dayMeta.key, 'end', e.target.value)}
-                      onBlur={() => commitDraftTime(dayMeta.key)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          commitDraftTime(dayMeta.key);
-                          focusNextDayStart(dayMeta.key);
-                        }
-                      }}
-                      disabled={!day.enabled}
+                    <InputGroup
+                      data-disabled={!day.enabled || undefined}
                       className={cn(
-                        'w-[110px] rounded-md border border-border bg-background px-2 py-1 text-foreground focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        isDraftInvalid && day.enabled && 'border-destructive text-destructive',
+                        'h-8 w-[130px]',
+                        isDraftInvalid && day.enabled && 'border-destructive',
                       )}
-                      style={{ fontSize: scaled(12) }}
-                    />
+                    >
+                      <InputGroupAddon>
+                        <Clock2Icon className="text-muted-foreground" />
+                      </InputGroupAddon>
+                      <InputGroupInput
+                        ref={(element) => {
+                          inputRefs.current[`${dayMeta.key}:end`] = element;
+                        }}
+                        type="time"
+                        value={draftEnd}
+                        onChange={(e) => setDraftTime(dayMeta.key, 'end', e.target.value)}
+                        onBlur={() => commitDraftTime(dayMeta.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            commitDraftTime(dayMeta.key);
+                            focusNextDayStart(dayMeta.key);
+                          }
+                        }}
+                        disabled={!day.enabled}
+                        className={cn(
+                          'appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none',
+                          isDraftInvalid && day.enabled && 'text-destructive',
+                        )}
+                        style={{ fontSize: scaled(12) }}
+                      />
+                    </InputGroup>
                     <span className="text-muted-foreground" style={{ fontSize: scaled(12) }}>
                       =
                     </span>

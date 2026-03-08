@@ -387,7 +387,9 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       tagIds: config.tagIds,
     });
 
-    const html = renderReportHtml(body.template, reportData);
+    const html = renderReportHtml(body.template, reportData, {
+      showStartTime: config.showStartTime,
+    });
     reply.header('Content-Type', 'text/html; charset=utf-8').send(html);
   });
 
@@ -407,7 +409,9 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       tagIds: config.tagIds,
     });
 
-    const html = renderReportHtml(body.template, reportData);
+    const html = renderReportHtml(body.template, reportData, {
+      showStartTime: config.showStartTime,
+    });
 
     // ── Send to Gotenberg ─────────────────────────────────────────
     const gotenbergUrl = process.env.GOTENBERG_URL ?? 'http://localhost:3030';

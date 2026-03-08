@@ -57,16 +57,80 @@ export const PDF_TEMPLATE_META: Record<
   },
 };
 
+// ── Date range presets ─────────────────────────────────────────────────────
+
+export const DATE_RANGE_PRESETS = [
+  'this-month',
+  'last-month',
+  'this-week',
+  'last-week',
+  'custom',
+] as const;
+
+export type DateRangePreset = (typeof DATE_RANGE_PRESETS)[number];
+
+export const DateRangePresetSchema = z.enum(DATE_RANGE_PRESETS);
+
+/** Resolve a preset to concrete ISO date strings (YYYY-MM-DD). */
+export function resolveDateRangePreset(preset: DateRangePreset): { from: string; to: string } {
+  const now = new Date();
+  switch (preset) {
+    case 'this-month': {
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const from = new Date(y, m, 1);
+      const to = new Date(y, m + 1, 0);
+      return { from: isoDate(from), to: isoDate(to) };
+    }
+    case 'last-month': {
+      const y = now.getFullYear();
+      const m = now.getMonth() - 1;
+      const from = new Date(y, m, 1);
+      const to = new Date(y, m + 1, 0);
+      return { from: isoDate(from), to: isoDate(to) };
+    }
+    case 'this-week': {
+      const day = now.getDay(); // 0=Sun
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((day + 6) % 7));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { from: isoDate(monday), to: isoDate(sunday) };
+    }
+    case 'last-week': {
+      const day = now.getDay();
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() - ((day + 6) % 7));
+      const lastMonday = new Date(thisMonday);
+      lastMonday.setDate(thisMonday.getDate() - 7);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      return { from: isoDate(lastMonday), to: isoDate(lastSunday) };
+    }
+    case 'custom':
+      throw new Error('Cannot resolve "custom" preset — use explicit dateFrom/dateTo');
+  }
+}
+
+function isoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ── Report config (saved template shape) ──────────────────────────────────
 
 export const ReportConfigSchema = z.object({
   dateFrom: z.string(), // ISO date YYYY-MM-DD
   dateTo: z.string(), // ISO date YYYY-MM-DD
+  dateRangePreset: DateRangePresetSchema.optional().default('custom'),
   projectIds: z.array(z.string().uuid()),
   userIds: z.array(z.string().uuid()),
   clientIds: z.array(z.string().uuid()),
   tagIds: z.array(z.string().uuid()),
   groupBy: z.enum(['user', 'project', 'date']).default('user'),
+  showStartTime: z.boolean().optional().default(false),
   pdfTemplate: PdfTemplateSchema.default('classic-corporate'),
 });
 

@@ -11,6 +11,8 @@ import {
   Calendar,
   CalendarDays,
 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { scaled } from '@/lib/scaled';
@@ -1260,46 +1262,41 @@ function BookTimeOffDialog({
           </label>
 
           {/* Date(s) */}
-          <div className={cn('grid gap-3', isPartial ? 'grid-cols-1' : 'grid-cols-2')}>
+          {isPartial ? (
             <div>
               <label
                 className="mb-1 block font-brand text-muted-foreground"
                 style={{ fontSize: scaled(11) }}
               >
-                {isPartial ? 'Date' : 'Start date'}
+                Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (isPartial || !endDate) setEndDate(e.target.value);
+                onChange={(v) => {
+                  setStartDate(v);
+                  setEndDate(v);
                 }}
-                required
-                className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-foreground focus:border-primary/40 focus:outline-none"
-                style={{ fontSize: scaled(12) }}
+                placeholder="Pick a date"
               />
             </div>
-            {!isPartial && (
-              <div>
-                <label
-                  className="mb-1 block font-brand text-muted-foreground"
-                  style={{ fontSize: scaled(11) }}
-                >
-                  End date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                  min={startDate}
-                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-foreground focus:border-primary/40 focus:outline-none"
-                  style={{ fontSize: scaled(12) }}
-                />
-              </div>
-            )}
-          </div>
+          ) : (
+            <div>
+              <label
+                className="mb-1 block font-brand text-muted-foreground"
+                style={{ fontSize: scaled(11) }}
+              >
+                Date range
+              </label>
+              <DateRangePicker
+                from={startDate || new Date().toISOString().slice(0, 10)}
+                to={endDate || new Date().toISOString().slice(0, 10)}
+                onChange={(from, to) => {
+                  setStartDate(from);
+                  setEndDate(to);
+                }}
+              />
+            </div>
+          )}
 
           {/* Start time + Duration for partial */}
           {isPartial && (

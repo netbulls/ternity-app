@@ -236,11 +236,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-bottom: 2mm;
+  padding-bottom: 1mm;
   border-bottom: 1px solid #1a1a1a;
-  margin-bottom: 4mm;
+  margin-bottom: 3mm;
 }
-.user-header.has-divider { padding-top: 6mm; border-top: 0.5px solid #ccc; }
+.user-header.has-divider { padding-top: 10mm; border-top: 0.5px solid #ccc; }
 .user-name {
   font-family: 'Oxanium', sans-serif;
   font-size: 13px;
@@ -410,7 +410,10 @@ function generateBarChart(data: ReportData): string {
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV3(data: ReportData): string {
+export function renderV3(
+  data: ReportData,
+  _options?: import('./index.js').TemplateRenderOptions,
+): string {
   const pages: Array<{ html: string; isCover?: boolean }> = [];
 
   // ── Page 1: Cover ───────────────────────────────────────────────
@@ -581,9 +584,13 @@ export function renderV3(data: ReportData): string {
     var usedH = 0;
     while (idx < heights.length) {
       var rowH = heights[idx].h;
-      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      if (usedH + rowH > availableH) break;
       pageRows.push(heights[idx]);
       usedH += rowH;
+      idx++;
+    }
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
     while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {

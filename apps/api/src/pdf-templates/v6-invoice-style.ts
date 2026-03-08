@@ -369,11 +369,20 @@ function pageFooter(data: ReportData, pageNum: number, totalPages: number): stri
 
 // ── Column widths (reusable for continuation pages) ──────────────────────
 
-const LOG_COLGROUP = `<colgroup><col style="width:38px"><col style="width:72px"><col style="width:90px"><col><col style="width:58px"><col style="width:44px"></colgroup>`;
+function getLogColgroup(showTime: boolean): string {
+  return showTime
+    ? `<colgroup><col style="width:38px"><col style="width:72px"><col style="width:90px"><col><col style="width:58px"><col style="width:44px"></colgroup>`
+    : `<colgroup><col style="width:38px"><col style="width:90px"><col><col style="width:58px"><col style="width:44px"></colgroup>`;
+}
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV6(data: ReportData): string {
+export function renderV6(
+  data: ReportData,
+  options?: import('./index.js').TemplateRenderOptions,
+): string {
+  const showTime = options?.showStartTime ?? false;
+  const LOG_COLGROUP = getLogColgroup(showTime);
   // ── Page 1: Invoice header + Summary + start of time log ──────
   const avgPerDay =
     data.summary.workingDays > 0
@@ -435,9 +444,15 @@ export function renderV6(data: ReportData): string {
   for (let ui = 0; ui < data.userDetails.length; ui++) {
     const user = data.userDetails[ui]!;
 
+    // Spacer row between users
+    if (ui > 0) {
+      allRowsHtml.push(
+        `<tr class="user-spacer-row"><td colspan="${showTime ? 6 : 5}" style="padding: 8px 0 0 0; border: none; background: transparent"></td></tr>`,
+      );
+    }
     // User header row (sticky)
     allRowsHtml.push(`<tr class="user-header-row" data-sticky>
-  <td colspan="5">${esc(user.userName.toUpperCase())}</td>
+  <td colspan="${showTime ? 5 : 4}">${esc(user.userName.toUpperCase())}</td>
   <td class="user-hours">${decimalHours(user.totalSeconds)}</td>
 </tr>`);
 
@@ -445,14 +460,13 @@ export function renderV6(data: ReportData): string {
     for (const dg of user.dayGroups) {
       const dateStr = fmtMMDD(dg.date);
       for (const entry of dg.entries) {
-        const timeRange = fmtTimeRange(entry.startTime, entry.durationSeconds);
         const jiraHtml = entry.jiraIssueKey
           ? `<span class="mono jira-cell">${esc(entry.jiraIssueKey)}</span>`
           : `<span class="jira-cell empty">&mdash;</span>`;
 
         allRowsHtml.push(`<tr>
   <td class="mono">${dateStr}</td>
-  <td class="mono">${timeRange}</td>
+  ${showTime ? `<td class="mono">${fmtTimeRange(entry.startTime, entry.durationSeconds)}</td>` : ''}
   <td>${esc(entry.projectName)}</td>
   <td class="desc-cell">${esc(entry.description)}</td>
   <td>${jiraHtml}</td>
@@ -623,16 +637,18 @@ export function renderV6(data: ReportData): string {
 
   // Page 1 (less space)
   var p1Rows = [];
-  var p1Used = 0;
-  while (idx < heights.length) {
-    if (p1Used + heights[idx].h > page1AvailH && p1Rows.length > 0) break;
-    p1Rows.push(heights[idx]);
-    p1Used += heights[idx].h;
-    idx++;
-  }
-  while (p1Rows.length > 1 && p1Rows[p1Rows.length - 1].sticky) {
-    idx--;
-    p1Rows.pop();
+  if (page1AvailH > 0) {
+    var p1Used = 0;
+    while (idx < heights.length) {
+      if (p1Used + heights[idx].h > page1AvailH) break;
+      p1Rows.push(heights[idx]);
+      p1Used += heights[idx].h;
+      idx++;
+    }
+    while (p1Rows.length > 1 && p1Rows[p1Rows.length - 1].sticky) {
+      idx--;
+      p1Rows.pop();
+    }
   }
   dataPages.push(p1Rows);
 
@@ -641,9 +657,13 @@ export function renderV6(data: ReportData): string {
     var pageRows = [];
     var usedH = 0;
     while (idx < heights.length) {
-      if (usedH + heights[idx].h > contAvailH && pageRows.length > 0) break;
+      if (usedH + heights[idx].h > contAvailH) break;
       pageRows.push(heights[idx]);
       usedH += heights[idx].h;
+      idx++;
+    }
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
     while (pageRows.length > 1 && pageRows[pageRows.length - 1].sticky) {

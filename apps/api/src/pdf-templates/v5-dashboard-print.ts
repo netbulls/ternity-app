@@ -229,10 +229,10 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 20px;
+  padding: 14px 20px 8px 20px;
   border-bottom: 1px solid var(--card-border);
 }
-.user-detail-header.has-divider { border-top: 1px solid var(--card-border); }
+.user-detail-header.has-divider { padding-top: 24px; border-top: 1px solid var(--card-border); }
 .user-detail-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -391,7 +391,10 @@ function pageFooter(data: ReportData, pageNum: number, totalPages: number): stri
 
 // ── Main render ──────────────────────────────────────────────────────────
 
-export function renderV5(data: ReportData): string {
+export function renderV5(
+  data: ReportData,
+  _options?: import('./index.js').TemplateRenderOptions,
+): string {
   const pages: string[] = [];
 
   // ── Page 1: Dashboard Overview ────────────────────────────────────
@@ -635,9 +638,13 @@ export function renderV5(data: ReportData): string {
     var usedH = 0;
     while (idx < heights.length) {
       var rowH = heights[idx].h;
-      if (usedH + rowH > availableH && pageRows.length > 0) break;
+      if (usedH + rowH > availableH) break;
       pageRows.push(heights[idx]);
       usedH += rowH;
+      idx++;
+    }
+    if (pageRows.length === 0 && idx < heights.length) {
+      pageRows.push(heights[idx]);
       idx++;
     }
     // Pull back trailing sticky rows
