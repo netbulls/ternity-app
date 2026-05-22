@@ -13,7 +13,7 @@ const IGNORED_EMAILS = new Set([
 const IGNORED_TT_NAMES = new Set(['Test User', 'Tester Tester']);
 
 /** Strip Polish diacritics to ASCII */
-function stripDiacritics(s: string): string {
+export function stripDiacritics(s: string): string {
   const map: Record<string, string> = {
     ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z',
     Ą: 'A', Ć: 'C', Ę: 'E', Ł: 'L', Ń: 'N', Ó: 'O', Ś: 'S', Ź: 'Z', Ż: 'Z',
@@ -22,7 +22,7 @@ function stripDiacritics(s: string): string {
 }
 
 /** Build email from TT display name: "Artur Adam Dzadz" → "artur.dzadz" (drop middle names) */
-function nameToLocalPart(name: string): string {
+export function nameToLocalPart(name: string): string {
   const parts = stripDiacritics(name).toLowerCase().split(/\s+/);
   if (parts.length < 2) return parts[0] ?? '';
   return `${parts[0]}.${parts[parts.length - 1]}`;
