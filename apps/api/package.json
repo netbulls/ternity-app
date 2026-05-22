@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --watch-path=.env.local --env-file=.env.local src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/",
@@ -37,6 +37,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^10.13.0",
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.30.0",
     "tsx": "^4.19.0",
