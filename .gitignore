@@ -42,3 +42,7 @@ secrets/*.md
 
 # Recordings (demo artifacts)
 recording/
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/mutation/
