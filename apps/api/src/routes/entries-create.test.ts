@@ -125,12 +125,17 @@ describe('POST /api/entries', () => {
     });
   });
 
-  it('crashes with 500 on a missing required field — body is not validated (audit S4)', async () => {
+  it('rejects a missing required field with 400 (body validated by CreateEntrySchema)', async () => {
     const u = await makeUser('admin');
-    // `note` is required by the CreateEntry schema, but the route only casts the body
-    // (request.body as CreateEntry) instead of parsing it, so body.note.trim() throws.
+    // `note` is required by CreateEntrySchema; the route parses the body, so a missing
+    // field is a ZodError → 400 (via the global error handler), not a 500 crash.
     const { startedAt, stoppedAt, description } = validBody();
     const { status } = await post(u.id, { startedAt, stoppedAt, description }); // no note
-    expect(status).toBe(500);
+    expect(status).toBe(400);
+  });
+
+  it('rejects an empty note with 400 (min length 1)', async () => {
+    const u = await makeUser('admin');
+    expect((await post(u.id, validBody({ note: '' }))).status).toBe(400);
   });
 });

@@ -24,7 +24,7 @@ import type {
   DayGroup,
   Entry,
 } from '@ternity/shared';
-import { GlobalRole } from '@ternity/shared';
+import { CreateEntrySchema, GlobalRole } from '@ternity/shared';
 
 // ── Timezone helpers ──────────────────────────────────────────────────────
 
@@ -663,7 +663,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const source = getAuditSource(request);
-    const body = request.body as CreateEntry;
+    // Validate at the boundary — invalid bodies become 400 (via the global ZodError handler)
+    const body = CreateEntrySchema.parse(request.body);
 
     // Project assignment check
     if (!isProjectAllowed(request, body.projectId ?? null)) {
