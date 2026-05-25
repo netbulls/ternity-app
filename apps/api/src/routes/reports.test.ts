@@ -351,7 +351,7 @@ describe('POST /api/reports/preview', () => {
     expect(res.body.length).toBeGreaterThan(100);
   });
 
-  it('rejects an unknown template — BUG: returns 500 not 400 (Zod error unhandled by Fastify)', async () => {
+  it('rejects an unknown template with 400', async () => {
     // BUG: GeneratePdfRequestSchema.parse() throws a ZodError which is not caught
     // and mapped to 400. Fastify treats unhandled errors as 500.
     // Expected: 400. Actual: 500.
@@ -360,17 +360,17 @@ describe('POST /api/reports/preview', () => {
       template: 'not-a-template',
       config: minConfig,
     });
-    expect(res.statusCode).toBe(500); // characterizing actual (buggy) behaviour
+    expect(res.statusCode).toBe(400); // ZodError mapped to 400 by the global error handler
   });
 
-  it('rejects missing config fields — BUG: returns 500 not 400 (Zod error unhandled by Fastify)', async () => {
+  it('rejects missing config fields with 400', async () => {
     // BUG: Same as above — ZodError from GeneratePdfRequestSchema.parse() surfaces as 500.
     const u = await makeUser();
     const res = await inject('POST', '/api/reports/preview', u.id, {
       template: 'classic-corporate',
       // config entirely omitted
     });
-    expect(res.statusCode).toBe(500); // characterizing actual (buggy) behaviour
+    expect(res.statusCode).toBe(400); // ZodError mapped to 400 by the global error handler
   });
 
   it('renders HTML containing the date range in some form', async () => {
@@ -451,7 +451,7 @@ describe('POST /api/reports/templates', () => {
     expect(typeof body.id).toBe('string');
   });
 
-  it('rejects a name longer than 200 characters — BUG: returns 500 not 400 (Zod error unhandled)', async () => {
+  it('rejects a name longer than 200 characters with 400', async () => {
     // BUG: CreateReportTemplateSchema.parse() throws ZodError for name > 200 chars.
     // No error handler maps ZodError → 400, so Fastify returns 500.
     const u = await makeUser();
@@ -459,17 +459,17 @@ describe('POST /api/reports/templates', () => {
       name: 'X'.repeat(201),
       config: minConfig,
     });
-    expect(res.statusCode).toBe(500); // characterizing actual (buggy) behaviour
+    expect(res.statusCode).toBe(400); // ZodError mapped to 400 by the global error handler
   });
 
-  it('rejects an empty name — BUG: returns 500 not 400 (Zod error unhandled)', async () => {
+  it('rejects an empty name with 400', async () => {
     // BUG: ZodError for empty name surfaces as 500, not 400.
     const u = await makeUser();
     const res = await inject('POST', '/api/reports/templates', u.id, {
       name: '',
       config: minConfig,
     });
-    expect(res.statusCode).toBe(500); // characterizing actual (buggy) behaviour
+    expect(res.statusCode).toBe(400); // ZodError mapped to 400 by the global error handler
   });
 });
 
