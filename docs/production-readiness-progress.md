@@ -75,6 +75,12 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Proposed flow: vibe-coded → production (v1, simple)
 
+**The goal is a production-ready app — measurably.** The test net is the *enabler*, not
+the destination: it makes code changes (security fixes, refactors) safe, but
+production-readiness also requires workstreams that have nothing to do with tests
+(backups, CI/CD, observability, secrets, rate-limiting). "Done" = meeting a defined
+bar (e.g. the `prodify` checklist/score), not "we have tests."
+
 Distilled from this effort. The order matters — each phase unlocks the next.
 
 **Phase 0 — Triage (once).** Map the app; rank modules by **risk × change-frequency**. Aim a net under what you'll change, not uniform coverage.
@@ -91,4 +97,13 @@ Distilled from this effort. The order matters — each phase unlocks the next.
 
 **Phase 6 — Guard intent (ongoing).** Spec-derived tests (from requirements), property-based invariants, dependency/secret scanning, observability as the prod feedback loop.
 
-**The point isn't "tests" as an asset — it's the recovered ability to change safely.**
+**Phase 7 -- Close the production-readiness bar (parallel track, partly test-independent).** Beyond the code fixes the net enables, an app is production-ready only when the operational and security dimensions are met -- and these do not need the test net:
+- **Security**: close the audit findings (injection, authz, secrets, CSP, rate-limit).
+- **Ops/continuity**: CI/CD, DB backups + restore drill, migration rollback, runbook.
+- **Observability**: error tracking (Sentry), metrics, deep /health, structured logs.
+- **Reliability**: connection pooling, resource limits, graceful shutdown.
+- **Supply chain**: dependency + secret scanning in CI.
+
+Measure against a **checklist with a score and a CI gate** (exactly what the stashed prodify pipeline provides) -- that defines "done", not a green suite.
+
+**The net (phases 1-4) buys the ability to change safely; production-readiness (phases 5-7) is the destination: code correct + secure + operable + observable, verified against a defined bar.**
