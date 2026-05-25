@@ -67,7 +67,7 @@ function mapJiraIssues(data: JiraSearchApiResponse): JiraIssue[] {
 /** Build JQL clauses for a text/key search term.
  *  `projects` is the list of selected project keys from the connection config —
  *  used to expand bare numbers (e.g. "2826") into key lookups ("YOS-2826", "DEV-2826"). */
-function buildTextJqlParts(text: string, projects: string[] = []): string[] {
+export function buildTextJqlParts(text: string, projects: string[] = []): string[] {
   // "YOS-2826" → exact key lookup
   if (/^[A-Z][A-Z0-9]+-\d+$/i.test(text)) {
     return [`key = "${text.toUpperCase()}"`];
@@ -87,7 +87,7 @@ function buildTextJqlParts(text: string, projects: string[] = []): string[] {
 }
 
 /** Build JQL from connection config + mode-specific clause */
-function buildSearchJql(
+export function buildSearchJql(
   config: JiraConnectionConfig,
   mode: 'assigned' | 'recent' | 'text',
   text?: string,
