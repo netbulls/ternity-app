@@ -10,7 +10,7 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~912 tests, all green** (shared **57**, api **855**), 57 test files. `tsc --noEmit` passes; build clean.
+- **~919 tests, all green** (shared **57**, api **862**), 58 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing**: Stryker pilot on `packages/shared` (`reports.ts`), score 70.83% → **85.42%**.
 
@@ -46,14 +46,20 @@ then fixing/hardening behind it. Pick up here in a new session.
 | — | `stats.ts` | filters by `time_entries.createdAt`, not segment start time | TODO (decide intent) |
 | — | drizzle journal | `0012/0013/0015` not registered → `drizzle-kit migrate` doesn't reproduce prod (harness works around it) | TODO: register in journal |
 
+## Done since (operational track)
+
+- **Seal by construction** — `body-validation.guard.test.ts` scans `src/routes` and fails if any handler reads `request.body` without `.parse`/`.safeParse` (or casts with `as`). Locks in S4.
+- **Deep health** — `/health` is now liveness-only (cheap; reports version + uptime); new `/health/ready` runs `SELECT 1` and returns 503 + per-dependency `checks` when the DB is down. Both public in logto mode. (audit O3/O6/S6)
+- **Dependency scan in CI** — new `audit` job: informational full report on every PR + a gate that fails only on **critical**. See the backlog below before ratcheting.
+
 ## What's left (suggested order)
 
-1. **Remaining discrete bug fix**: `leave.ts` PATCH past-date guard + `allowances.usedDays` auto-update (decide intended behavior first). NOTE: leave POST/PATCH now do *type-only* validation — the past-date guard exists on POST but not PATCH; the `usedDays` auto-update is still missing. This is a behavioral decision, not just validation.
-2. **Seal by construction**: now that every mutating route validates, add a lightweight gate that *enforces* it stays that way — a test/lint that fails if a POST/PATCH/PUT/DELETE handler reads `request.body` without a `.parse`/`.safeParse` (the `fastify-schema-coverage` idea from the stashed prodify tools, minimal — not the whole pipeline).
-5. **Register migrations 0012/0013/0015** in the drizzle journal (then the harness workaround becomes a no-op).
-6. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
-7. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
-8. **Observability / deps**: Sentry, `pnpm audit` in CI, deep `/health` (audit O3/O6/S6).
+1. **`high` dependency-advisory backlog (22)** — triage with `pnpm overrides` (e.g. `axios` ≥1.15.2 via twilio, `fast-uri` via fastify), then ratchet the CI audit gate from `critical` down to `high`. twilio/axios runtime is NOT covered by tests, so verify overrides don't break SMS before shipping.
+2. **`leave.ts` PATCH** past-date guard + `allowances.usedDays` auto-update (decide intended behavior first — leave validation is currently type-only). Behavioral, not just validation.
+3. **Register migrations 0012/0013/0015** in the drizzle journal (then the harness workaround becomes a no-op). `stats.ts` createdAt-vs-segment intent.
+4. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
+5. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
+6. **More operational hardening**: Sentry (error tracking), structured logs, rate-limiting, graceful shutdown, DB backups + restore drill. `APP_VERSION` env is read by `/health` but not yet injected at build/deploy — wire it.
 
 ## How to resume (environment)
 
