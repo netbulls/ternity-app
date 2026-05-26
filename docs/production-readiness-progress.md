@@ -10,7 +10,7 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~889 tests, all green** (shared **57**, api **832**), 56 test files. `tsc --noEmit` passes; build clean.
+- **~900 tests, all green** (shared **57**, api **843**), 56 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing**: Stryker pilot on `packages/shared` (`reports.ts`), score 70.83% → **85.42%**.
 
@@ -25,31 +25,37 @@ then fixing/hardening behind it. Pick up here in a new session.
    - sync HTTP clients (toggl/timetastic/jira — mocked fetch), extract pipelines, lib (audit, changelog-parser), services (notification-content), plugins (viewer-mode, error-simulation), retry-with-backoff, config, pdf-template dispatch
 4. **CI** wired (GitHub Actions).
 5. **Mutation pilot** (Stryker) on shared.
-6. **First fixes (S4)**: ZodError → 400 via shared error handler (step 1); `POST /api/entries` validated with `CreateEntrySchema.parse` (step 2).
+6. **Fixes done (fix phase)**:
+   - **S4 (body validation)**: shared `ZodError → 400` handler; all `entries.ts` mutating routes (POST/PATCH/adjust/move-block/split) and `timer.ts` (start, start-or-resume) now `.parse()` the body. Remaining: admin-* and leave routes (schemas may need adding).
+   - **admin-leave-types bulk PATCH**: was always 500 (`sql\`= ANY(${jsArray})\``) → now `inArray`.
+   - **error-simulation plugin**: now `fp()`-wrapped, so `X-Simulate-Error` actually fires (was a silent no-op in an encapsulated scope).
+   - **toggl extract**: single-day range (`from===to`) was skipped → loop bound `< end` changed to `<= end`.
+   - **S2 JQL injection**: `escapeJqlString` applied to free-text/config interpolation + property-based "no input breaks out" invariants.
 
 ## Bugs found & pinned (current behavior pinned in tests; fix flips the test)
 
 | # | Where | Issue | Status |
 |---|---|---|---|
 | S1 | `entries.ts` search | audit's "SQL injection" — **FALSE POSITIVE** (drizzle `sql\`\`` parameterizes); proven by injection tests | no action needed |
-| S2 | `jira.ts` JQL builders | **REAL** JQL injection — `text ~ "${text}"` + config values interpolate unescaped quotes | TODO: escape |
-| S4 | many routes | `request.body as Type` (no validation) → 500 instead of 400 | **in progress**: handler done (step 1), entries POST done (step 2); other routes TODO |
-| — | `admin-leave-types` bulk PATCH | always 500: `sql\`= ANY(${jsArray})\`` not serializable → use `inArray` | TODO |
-| — | `plugins/error-simulation.ts` | not `fp()`-wrapped → encapsulated scope → `X-Simulate-Error` silent no-op | TODO |
-| — | `sync/toggl/extract.ts` | single-day range (`from===to`) → 0 windows (`while < end` should be `<=`) | TODO |
+| S2 | `jira.ts` JQL builders | **REAL** JQL injection — `text ~ "${text}"` + config values interpolate unescaped quotes | **DONE** (escapeJqlString + invariants) |
+| S4 | many routes | `request.body as Type` (no validation) → 500 instead of 400 | **partly done**: handler + all entries routes + timer done; admin-*/leave routes TODO |
+| — | `admin-leave-types` bulk PATCH | always 500: `sql\`= ANY(${jsArray})\`` not serializable → use `inArray` | **DONE** |
+| — | `plugins/error-simulation.ts` | not `fp()`-wrapped → encapsulated scope → `X-Simulate-Error` silent no-op | **DONE** |
+| — | `sync/toggl/extract.ts` | single-day range (`from===to`) → 0 windows (`while < end` should be `<=`) | **DONE** |
 | — | `leave.ts` PATCH | no past-date guard (POST has one); `allowances.usedDays` never auto-updated | TODO |
 | — | `stats.ts` | filters by `time_entries.createdAt`, not segment start time | TODO (decide intent) |
 | — | drizzle journal | `0012/0013/0015` not registered → `drizzle-kit migrate` doesn't reproduce prod (harness works around it) | TODO: register in journal |
 
 ## What's left (suggested order)
 
-1. **Finish S4 per route** (small steps, schemas already exist in `@ternity/shared`):
-   - `entries.ts`: PATCH (`UpdateEntrySchema`), adjust (`AdjustEntrySchema`), move-block (`MoveBlockSchema`), split (`SplitEntrySchema`)
-   - `timer.ts`: start / start-or-resume (`StartTimerSchema`)
-   - `admin-users.ts`, `leave.ts`, other admin routes
-2. **Other discrete bug fixes**: admin-leave-types bulk (`inArray`), error-simulation `fp()`, toggl extract `<=`, leave PATCH past-date guard.
-3. **S2 JQL escaping** — fix + add a property-based invariant ("no input breaks out of JQL").
-4. **Seal by construction**: a lightweight "every mutating route declares validation" gate (the `fastify-schema-coverage` idea from the stashed prodify tools, minimal — not the whole pipeline).
+1. **Finish S4 on the remaining routes** (entries + timer done). Need body validation on:
+   - `admin-users.ts` (set-project, employment-type, bulk activate/deactivate userIds)
+   - `admin-projects.ts` (bulk projectIds / clientIds)
+   - `admin-leave-types.ts` (create/update group + type, bulk)
+   - `leave.ts` (POST/PATCH request bodies), `jira.ts` exchange (`{ code }`)
+   - Schemas for these mostly DON'T exist yet in `@ternity/shared` — add them as part of the fix.
+2. **Remaining discrete bug fix**: `leave.ts` PATCH past-date guard + `allowances.usedDays` auto-update (decide intended behavior first).
+3. **Seal by construction**: a lightweight "every mutating route declares validation" gate (the `fastify-schema-coverage` idea from the stashed prodify tools, minimal — not the whole pipeline).
 5. **Register migrations 0012/0013/0015** in the drizzle journal (then the harness workaround becomes a no-op).
 6. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
 7. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
@@ -68,7 +74,8 @@ then fixing/hardening behind it. Pick up here in a new session.
 ## Production code changed so far (kept minimal & non-behavioral, except the S4 fix)
 
 - `export` added for test seams: `users.ts` (stripDiacritics, nameToLocalPart), `jira.ts` (JQL builders).
-- `lib/error-handler.ts` extracted + `ZodError → 400` (S4 step 1); `entries.ts` POST validates with Zod (S4 step 2).
+- `lib/error-handler.ts` extracted + `ZodError → 400`; `entries.ts` (all mutating routes) + `timer.ts` validate with Zod (S4).
+- `admin-leave-types.ts` bulk uses `inArray`; `error-simulation.ts` exported via `fp()`; `toggl/extract.ts` window loop `<=`; `jira.ts` adds exported `escapeJqlString` applied to all JQL string interpolation.
 - Test infra: vitest configs, tsconfig split (build excludes tests), Testcontainers harness, CI workflow, Stryker config.
 
 ---
