@@ -50,6 +50,17 @@ export const UpdateClientSchema = z.object({
 });
 export type UpdateClient = z.infer<typeof UpdateClientSchema>;
 
+// ── Bulk activate/deactivate payloads ───────────────────────────────────
+export const BulkProjectIdsSchema = z.object({
+  projectIds: z.array(z.string().uuid()).min(1),
+});
+export type BulkProjectIds = z.infer<typeof BulkProjectIdsSchema>;
+
+export const BulkClientIdsSchema = z.object({
+  clientIds: z.array(z.string().uuid()).min(1),
+});
+export type BulkClientIds = z.infer<typeof BulkClientIdsSchema>;
+
 // ── Preset Colors ───────────────────────────────────────────────────────
 export const PROJECT_COLORS = [
   '#00D4AA', // teal (brand)

@@ -6,6 +6,8 @@ import {
   UpdateProjectSchema,
   CreateClientSchema,
   UpdateClientSchema,
+  BulkProjectIdsSchema,
+  BulkClientIdsSchema,
 } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { projects, clients, timeEntries } from '../db/schema.js';
@@ -163,10 +165,7 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { projectIds } = request.body as { projectIds: string[] };
-    if (!projectIds?.length) {
-      return reply.code(400).send({ error: 'projectIds is required' });
-    }
+    const { projectIds } = BulkProjectIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx
@@ -185,10 +184,7 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { projectIds } = request.body as { projectIds: string[] };
-    if (!projectIds?.length) {
-      return reply.code(400).send({ error: 'projectIds is required' });
-    }
+    const { projectIds } = BulkProjectIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx
@@ -325,10 +321,7 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { clientIds } = request.body as { clientIds: string[] };
-    if (!clientIds?.length) {
-      return reply.code(400).send({ error: 'clientIds is required' });
-    }
+    const { clientIds } = BulkClientIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx
@@ -347,10 +340,7 @@ export async function adminProjectsRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { clientIds } = request.body as { clientIds: string[] };
-    if (!clientIds?.length) {
-      return reply.code(400).send({ error: 'clientIds is required' });
-    }
+    const { clientIds } = BulkClientIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx

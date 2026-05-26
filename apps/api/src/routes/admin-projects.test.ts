@@ -231,6 +231,13 @@ describe('POST /api/admin/projects/bulk-activate', () => {
     expect((await post('/api/admin/projects/bulk-activate', admin.id, {})).status).toBe(400);
   });
 
+  it('returns 400 for a malformed body (validated by BulkProjectIdsSchema)', async () => {
+    const admin = await makeUser();
+    // not an array, and array of non-UUID strings — both are ZodErrors → 400, not a 500
+    expect((await post('/api/admin/projects/bulk-activate', admin.id, { projectIds: 'nope' })).status).toBe(400);
+    expect((await post('/api/admin/projects/bulk-activate', admin.id, { projectIds: ['not-a-uuid'] })).status).toBe(400);
+  });
+
   it('activates multiple projects and returns count', async () => {
     const admin = await makeUser();
     const c = await makeClient();
@@ -418,6 +425,12 @@ describe('POST /api/admin/clients/bulk-activate', () => {
     const admin = await makeUser();
     expect((await post('/api/admin/clients/bulk-activate', admin.id, { clientIds: [] })).status).toBe(400);
     expect((await post('/api/admin/clients/bulk-activate', admin.id, {})).status).toBe(400);
+  });
+
+  it('returns 400 for a malformed body (validated by BulkClientIdsSchema)', async () => {
+    const admin = await makeUser();
+    expect((await post('/api/admin/clients/bulk-activate', admin.id, { clientIds: 'nope' })).status).toBe(400);
+    expect((await post('/api/admin/clients/bulk-activate', admin.id, { clientIds: ['not-a-uuid'] })).status).toBe(400);
   });
 
   it('activates multiple clients and returns count', async () => {
