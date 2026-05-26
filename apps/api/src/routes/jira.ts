@@ -9,11 +9,15 @@ import {
   jiraFetch,
   TokenExpiredError,
 } from '../lib/jira-client.js';
+import { z } from 'zod';
 import {
   JiraConnectionConfigSchema,
   type JiraIssue,
   type JiraConnectionConfig,
 } from '@ternity/shared';
+
+/** OAuth code-exchange payload — validated at the boundary (malformed → 400). */
+const JiraExchangeSchema = z.object({ code: z.string().min(1) });
 
 /** Helper: catch TokenExpiredError, mark connection as expired in DB, return 401. */
 async function handleJiraFetchError(
@@ -132,10 +136,7 @@ export function buildSearchJql(
 export async function jiraRoutes(fastify: FastifyInstance) {
   // ── POST /api/jira/exchange — Token exchange + store connections ────────
   fastify.post('/api/jira/exchange', async (request, reply) => {
-    const { code } = request.body as { code: string };
-    if (!code) {
-      return reply.code(400).send({ error: 'Missing authorization code' });
-    }
+    const { code } = JiraExchangeSchema.parse(request.body);
 
     const userId = request.auth.userId;
 
