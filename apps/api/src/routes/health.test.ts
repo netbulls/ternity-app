@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db, truncateAll } from '../../test/db.js';
 import { buildApp } from '../../test/app.js';
@@ -39,5 +39,42 @@ describe('GET /health', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json<{ status: string }>().status).toBe('ok');
+  });
+
+  it('reports version and uptime', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health' });
+    const body = res.json<{ version: string; uptimeSeconds: number }>();
+    expect(typeof body.version).toBe('string');
+    expect(body.uptimeSeconds).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('GET /health/ready', () => {
+  it('returns 200 + ready when the database is reachable', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health/ready' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ status: string; checks: { database: { ok: boolean } } }>();
+    expect(body.status).toBe('ready');
+    expect(body.checks.database.ok).toBe(true);
+  });
+
+  it('is public — no auth header required', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health/ready' });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('returns 503 + unavailable when the database check fails', async () => {
+    // Force the SELECT 1 to fail, simulating a DB outage.
+    const spy = vi.spyOn(db, 'execute').mockRejectedValueOnce(new Error('connection refused'));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/health/ready' });
+      expect(res.statusCode).toBe(503);
+      const body = res.json<{ status: string; checks: { database: { ok: boolean; error?: string } } }>();
+      expect(body.status).toBe('unavailable');
+      expect(body.checks.database.ok).toBe(false);
+      expect(body.checks.database.error).toMatch(/connection refused/);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

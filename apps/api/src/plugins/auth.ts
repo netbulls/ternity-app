@@ -258,8 +258,14 @@ async function authPlugin(fastify: FastifyInstance) {
     const jwks = createRemoteJWKSet(jwksUrl);
 
     fastify.addHook('onRequest', async (request, reply) => {
-      // Skip auth for public endpoints
-      if (request.url === '/health' || request.url === '/api/downloads') return;
+      // Skip auth for public endpoints (health probes are called by the
+      // orchestrator/load balancer without a token)
+      if (
+        request.url === '/health' ||
+        request.url === '/health/ready' ||
+        request.url === '/api/downloads'
+      )
+        return;
 
       const authHeader = request.headers.authorization;
       if (!authHeader?.startsWith('Bearer ')) {
@@ -317,7 +323,7 @@ async function authPlugin(fastify: FastifyInstance) {
 
   // ── Impersonation hook (runs after auth resolves the real user) ──
   fastify.addHook('onRequest', async (request, reply) => {
-    if (request.url === '/health') return;
+    if (request.url === '/health' || request.url === '/health/ready') return;
     if (!request.auth || request.auth.userId === 'unknown') return;
 
     const targetUserId = request.headers['x-impersonate-user-id'] as string | undefined;
