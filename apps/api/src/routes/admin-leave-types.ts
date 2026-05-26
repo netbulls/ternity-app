@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, asc, sql, and, ne } from 'drizzle-orm';
+import { eq, asc, sql, and, ne, inArray } from 'drizzle-orm';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { leaveTypes, leaveTypeGroups } from '../db/schema.js';
@@ -299,7 +299,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       const [defaultInBatch] = await db
         .select({ id: leaveTypes.id })
         .from(leaveTypes)
-        .where(sql`${leaveTypes.id} = ANY(${ids}) AND ${leaveTypes.isContractorDefault} = true`);
+        .where(and(inArray(leaveTypes.id, ids), eq(leaveTypes.isContractorDefault, true)));
       if (defaultInBatch) {
         const msg =
           active === false
@@ -326,7 +326,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     const { rowCount } = await db
       .update(leaveTypes)
       .set(updates)
-      .where(sql`${leaveTypes.id} = ANY(${ids})`);
+      .where(inArray(leaveTypes.id, ids));
 
     return { updated: rowCount };
   });

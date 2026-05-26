@@ -446,52 +446,44 @@ describe('PATCH /api/admin/leave-types/bulk', () => {
     expect((await patch('/api/admin/leave-types/bulk', admin.id, { ids: [lt.id], visibility: 'nope' })).status).toBe(400);
   });
 
-  // BUG: The bulk endpoint uses `sql\`${leaveTypes.id} = ANY(${ids})\`` with a raw JS
-  // array, which Drizzle's sql tag cannot serialize — it produces a 500 Internal Server
-  // Error for any request that reaches the WHERE clause (i.e. all non-validation paths).
-  // The fix is to use `inArray(leaveTypes.id, ids)` instead.
-  // Tests below pin the ACTUAL current behavior (500) so regressions are detectable.
-
-  it('BUG: bulk-assigns a group — currently returns 500 due to sql template array serialization', async () => {
+  it('bulk-assigns a group to multiple leave types', async () => {
     const admin = await makeUser();
     const g = await makeGroup();
     const lt1 = await makeLeaveType({ groupId: null });
     const lt2 = await makeLeaveType({ groupId: null });
 
-    const { status } = await patch('/api/admin/leave-types/bulk', admin.id, {
+    const { status, body } = await patch('/api/admin/leave-types/bulk', admin.id, {
       ids: [lt1.id, lt2.id],
       groupId: g.id,
     });
-    // BUG: should be 200 but crashes with 500 — see route for root cause
-    expect(status).toBe(500);
+    expect(status).toBe(200);
+    expect(body.updated).toBe(2);
 
-    // DB must be unchanged because the update never ran
     for (const id of [lt1.id, lt2.id]) {
       const [row] = await db.select().from(leaveTypes).where(eq(leaveTypes.id, id));
-      expect(row!.groupId).toBeNull();
+      expect(row!.groupId).toBe(g.id);
     }
   });
 
-  it('BUG: bulk-activates leave types — currently returns 500 due to sql template array serialization', async () => {
+  it('bulk-activates leave types', async () => {
     const admin = await makeUser();
     const lt1 = await makeLeaveType({ active: false });
     const lt2 = await makeLeaveType({ active: false });
 
-    const { status } = await patch('/api/admin/leave-types/bulk', admin.id, {
+    const { status, body } = await patch('/api/admin/leave-types/bulk', admin.id, {
       ids: [lt1.id, lt2.id],
       active: true,
     });
-    // BUG: should be 200 + updated:2
-    expect(status).toBe(500);
+    expect(status).toBe(200);
+    expect(body.updated).toBe(2);
 
-    // DB must still have the types inactive (update never ran)
     for (const id of [lt1.id, lt2.id]) {
       const [row] = await db.select().from(leaveTypes).where(eq(leaveTypes.id, id));
-      expect(row!.active).toBe(false);
+      expect(row!.active).toBe(true);
     }
   });
 
-  it('BUG: bulk deactivation protection check — currently returns 500 instead of 400', async () => {
+  it('blocks bulk deactivation when the batch contains the contractor default (400)', async () => {
     const admin = await makeUser();
     const defaultType = await makeLeaveType({ isContractorDefault: true, active: true });
     const normal = await makeLeaveType({ active: true });
@@ -500,16 +492,16 @@ describe('PATCH /api/admin/leave-types/bulk', () => {
       ids: [defaultType.id, normal.id],
       active: false,
     });
-    // BUG: the protection guard uses the same broken sql template → crashes before
-    // it can return 400. Should be 400 after fix.
-    expect(status).toBe(500);
+    expect(status).toBe(400);
 
-    // Row must be unmodified regardless
-    const [row] = await db.select().from(leaveTypes).where(eq(leaveTypes.id, defaultType.id));
-    expect(row!.active).toBe(true);
+    // Rows must be unmodified — the guard rejected the whole batch
+    for (const id of [defaultType.id, normal.id]) {
+      const [row] = await db.select().from(leaveTypes).where(eq(leaveTypes.id, id));
+      expect(row!.active).toBe(true);
+    }
   });
 
-  it('BUG: bulk visibility=employee protection check — currently returns 500 instead of 400', async () => {
+  it('blocks bulk visibility=employee when the batch contains the contractor default (400)', async () => {
     const admin = await makeUser();
     const defaultType = await makeLeaveType({ isContractorDefault: true });
     const normal = await makeLeaveType();
@@ -518,8 +510,7 @@ describe('PATCH /api/admin/leave-types/bulk', () => {
       ids: [defaultType.id, normal.id],
       visibility: 'employee',
     });
-    // BUG: same broken sql template → 500 instead of 400
-    expect(status).toBe(500);
+    expect(status).toBe(400);
   });
 });
 
