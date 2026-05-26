@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { eq, asc, sql, and, ne, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { leaveTypes, leaveTypeGroups } from '../db/schema.js';
@@ -9,6 +10,41 @@ function isRealAdmin(request: { auth: { globalRole: string; impersonating?: bool
   if (request.auth.impersonating) return true;
   return request.auth.globalRole === GlobalRole.Admin;
 }
+
+// Request-body schemas — validated at the boundary so malformed input is a 400
+// (via the global ZodError handler) instead of crashing with a 500.
+const VisibilityEnum = z.enum(['all', 'contractor', 'employee']);
+const CreateGroupSchema = z.object({
+  name: z.string().trim().min(1),
+  color: z.string().trim().min(1),
+});
+const UpdateGroupSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  color: z.string().trim().min(1).optional(),
+  sortOrder: z.number().int().optional(),
+});
+const CreateLeaveTypeSchema = z.object({
+  name: z.string().trim().min(1),
+  daysPerYear: z.number().min(0),
+  color: z.string().nullish(),
+  deducted: z.boolean().optional(),
+  groupId: z.string().uuid().nullish(),
+  visibility: VisibilityEnum.optional(),
+});
+const UpdateLeaveTypeSchema = z.object({
+  groupId: z.string().uuid().nullish(),
+  active: z.boolean().optional(),
+  visibility: VisibilityEnum.optional(),
+  color: z.string().nullish(),
+  name: z.string().trim().min(1).optional(),
+  isContractorDefault: z.boolean().optional(),
+});
+const BulkLeaveTypesSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1),
+  groupId: z.string().uuid().nullish(),
+  active: z.boolean().optional(),
+  visibility: VisibilityEnum.optional(),
+});
 
 export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
   // ── Groups ─────────────────────────────────────────────────────────────
@@ -43,10 +79,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { name, color } = request.body as { name: string; color: string };
-    if (!name?.trim() || !color?.trim()) {
-      return reply.code(400).send({ error: 'Name and color are required' });
-    }
+    const { name, color } = CreateGroupSchema.parse(request.body);
 
     // Auto-assign sort order as max + 1
     const maxOrder = await db
@@ -69,11 +102,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const { name, color, sortOrder } = request.body as {
-      name?: string;
-      color?: string;
-      sortOrder?: number;
-    };
+    const { name, color, sortOrder } = UpdateGroupSchema.parse(request.body);
 
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name.trim();
@@ -152,24 +181,8 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { name, daysPerYear, color, deducted, groupId, visibility } = request.body as {
-      name: string;
-      daysPerYear: number;
-      color?: string | null;
-      deducted?: boolean;
-      groupId?: string | null;
-      visibility?: string;
-    };
-
-    if (!name?.trim()) {
-      return reply.code(400).send({ error: 'Name is required' });
-    }
-    if (daysPerYear == null || daysPerYear < 0) {
-      return reply.code(400).send({ error: 'Days per year must be 0 or greater' });
-    }
-    if (visibility && !['all', 'contractor', 'employee'].includes(visibility)) {
-      return reply.code(400).send({ error: 'Invalid visibility value' });
-    }
+    const { name, daysPerYear, color, deducted, groupId, visibility } =
+      CreateLeaveTypeSchema.parse(request.body);
 
     const [created] = await db
       .insert(leaveTypes)
@@ -193,14 +206,8 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const { groupId, active, visibility, color, name, isContractorDefault } = request.body as {
-      groupId?: string | null;
-      active?: boolean;
-      visibility?: string;
-      color?: string | null;
-      name?: string;
-      isContractorDefault?: boolean;
-    };
+    const { groupId, active, visibility, color, name, isContractorDefault } =
+      UpdateLeaveTypeSchema.parse(request.body);
 
     // Check if this type is currently the contractor default (for protection rules)
     const [existing] = await db
@@ -227,12 +234,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     const updates: Record<string, unknown> = {};
     if (groupId !== undefined) updates.groupId = groupId;
     if (active !== undefined) updates.active = active;
-    if (visibility !== undefined) {
-      if (!['all', 'contractor', 'employee'].includes(visibility)) {
-        return reply.code(400).send({ error: 'Invalid visibility value' });
-      }
-      updates.visibility = visibility;
-    }
+    if (visibility !== undefined) updates.visibility = visibility;
     if (color !== undefined) updates.color = color;
     if (name !== undefined) updates.name = name.trim();
 
@@ -283,16 +285,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { ids, groupId, active, visibility } = request.body as {
-      ids: string[];
-      groupId?: string | null;
-      active?: boolean;
-      visibility?: string;
-    };
-
-    if (!ids?.length) {
-      return reply.code(400).send({ error: 'ids array is required' });
-    }
+    const { ids, groupId, active, visibility } = BulkLeaveTypesSchema.parse(request.body);
 
     // Protect contractor default from bulk deactivation or visibility change
     if (active === false || visibility === 'employee') {
@@ -312,12 +305,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
     const updates: Record<string, unknown> = {};
     if (groupId !== undefined) updates.groupId = groupId;
     if (active !== undefined) updates.active = active;
-    if (visibility !== undefined) {
-      if (!['all', 'contractor', 'employee'].includes(visibility)) {
-        return reply.code(400).send({ error: 'Invalid visibility value' });
-      }
-      updates.visibility = visibility;
-    }
+    if (visibility !== undefined) updates.visibility = visibility;
 
     if (Object.keys(updates).length === 0) {
       return reply.code(400).send({ error: 'No fields to update' });

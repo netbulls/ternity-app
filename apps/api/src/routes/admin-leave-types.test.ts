@@ -300,6 +300,15 @@ describe('POST /api/admin/leave-types', () => {
       (await post('/api/admin/leave-types', admin.id, { name: 'X', daysPerYear: 10, visibility: 'alien' })).status,
     ).toBe(400);
   });
+
+  it('returns 400 for a malformed body type (validated by CreateLeaveTypeSchema)', async () => {
+    const admin = await makeUser();
+    // daysPerYear as a string and groupId as a non-UUID are ZodErrors → 400, not 500
+    expect((await post('/api/admin/leave-types', admin.id, { name: 'X', daysPerYear: '10' })).status).toBe(400);
+    expect(
+      (await post('/api/admin/leave-types', admin.id, { name: 'X', daysPerYear: 10, groupId: 'not-a-uuid' })).status,
+    ).toBe(400);
+  });
 });
 
 // ── PATCH /api/admin/leave-types/:id ───────────────────────────────────────
