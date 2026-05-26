@@ -205,17 +205,40 @@ describe('extractTogglTags', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('extractTogglTimeEntries', () => {
-  // BUG FOUND: single-day range (from === to) produces 0 windows — nothing fetched.
-  // The while loop is `windowStart < end`, not `windowStart <= end`.
-  // If you call extractTogglTimeEntries('2024-01-10', '2024-01-10'), it silently
-  // does nothing and returns 0. Use a multi-day range to actually process entries.
+  // Window loop is `windowStart <= end`, so a single-day range (from === to) still
+  // produces one window and is processed — see the dedicated test below. (It used to
+  // be `< end`, which silently skipped single-day ranges and fetched nothing.)
+
+  it('processes a single-day range (from === to) — produces one window, not zero', async () => {
+    fetchMock.mockResolvedValueOnce(
+      okJson([
+        {
+          description: 'Single day',
+          project_id: null,
+          user_id: 101,
+          username: 'Alice',
+          tag_ids: [],
+          billable: false,
+          time_entries: [
+            { id: 5001, start: '2024-03-15T08:00:00Z', stop: '2024-03-15T09:00:00Z', seconds: 3600, at: '2024-03-15T09:00:00Z' },
+          ],
+        },
+      ]),
+    );
+
+    const count = await extractTogglTimeEntries('2024-03-15', '2024-03-15');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1); // one window was fetched
+    expect(count).toBe(1);
+    const rows = await db.select().from(stgTogglTimeEntries);
+    expect(rows.map((r) => r.externalId)).toEqual(['5001']);
+  });
 
   // The Reports Search API returns GROUPED rows where `time_entries` is a nested
   // array. The client's flattenSearchResults() must expand them — each nested
   // entry becomes a separate staging row with its own `id` as externalId.
   it('flattens grouped search results: each nested time_entries[] item becomes its own staging row', async () => {
     // One top-level row with 2 nested entries — the documented gotcha.
-    // Use a 2-day range to avoid the single-day window-skipping bug.
     // 1 grouped row = res.length (1) < PAGE_SIZE (200) → loop stops after first page call.
     // No second mock needed.
     fetchMock.mockResolvedValueOnce(
@@ -236,7 +259,6 @@ describe('extractTogglTimeEntries', () => {
       ]),
     );
 
-    // Use 2-day range — single-day range is silently skipped due to `while (start < end)` bug
     const count = await extractTogglTimeEntries('2024-01-10', '2024-01-11');
 
     // 2 entries flattened from 1 grouped row
@@ -284,7 +306,6 @@ describe('extractTogglTimeEntries', () => {
       .mockResolvedValueOnce(okJson(page1))
       .mockResolvedValueOnce(okJson(page2));
 
-    // 2-day range to work around the single-day window skip bug
     const count = await extractTogglTimeEntries('2024-02-01', '2024-02-02');
 
     expect(count).toBe(201); // 200 + 1
@@ -305,8 +326,7 @@ describe('extractTogglTimeEntries', () => {
       ],
     };
 
-    // First run — 2-day range to avoid single-day skip bug.
-    // 1 grouped row = 1 entry = res.length (1) < PAGE_SIZE (200) → loop stops after
+    // First run — 1 grouped row = 1 entry = res.length (1) < PAGE_SIZE (200) → loop stops after
     // the first call, so we only need one mockResolvedValueOnce here.
     fetchMock.mockResolvedValueOnce(okJson([groupedRow]));
     await extractTogglTimeEntries('2024-03-01', '2024-03-02');
