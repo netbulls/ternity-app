@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import type { JiraConnectionConfig } from '@ternity/shared';
-import { buildSearchJql, buildTextJqlParts } from './jira.js';
+import { buildSearchJql, buildTextJqlParts, escapeJqlString } from './jira.js';
 
-// Characterization tests for the JQL builders — the logic the audit flagged as S2
-// (JQL injection). These pin the regex-guarded "safe" branches AND document the
-// genuinely unescaped branches: unlike SQL (drizzle parameterizes), JQL is sent to
-// Jira's API as a raw string, so a quote in user text / config breaks out. S2 is a
-// REAL finding here (contrast with S1, which was a false positive).
+// Tests for the JQL builders — the logic the audit flagged as S2 (JQL injection).
+// Unlike SQL (drizzle parameterizes), JQL is sent to Jira's API as a raw string, so a
+// quote in user text / config would break out. The builders now escape quotes and
+// backslashes via escapeJqlString; the tests below pin both the safe regex-guarded
+// branches and the escaped injection surface. S2 is a REAL finding (contrast with S1,
+// which was a false positive).
+
+/** The security property of the escaper: after removing every valid escape sequence
+ *  (`\\` or `\"`), no bare double-quote may remain — i.e. the value cannot break out
+ *  of its surrounding `"..."` literal. Handles `\\"` correctly (escaped backslash then
+ *  delimiter), which a naive one-char lookbehind would miscount. */
+function hasNoBareQuote(escaped: string): boolean {
+  return !escaped.replace(/\\[\\"]/g, '').includes('"');
+}
 
 const cfg = (over: Partial<JiraConnectionConfig> = {}): JiraConnectionConfig => ({
   selectedProjects: [],
@@ -42,19 +51,31 @@ describe('buildTextJqlParts — safe (regex-guarded) branches', () => {
   });
 });
 
-describe('buildTextJqlParts — injection surface (S2, unescaped)', () => {
-  it('does NOT escape quotes in the free-text fallback — a payload breaks out of the string', () => {
-    // Current behavior: the double-quote is interpolated verbatim, producing JQL that
-    // closes the `text ~ "..."` string early. A fix would escape/strip the quote.
+describe('buildTextJqlParts — injection surface (S2, escaped)', () => {
+  it('escapes quotes in the free-text fallback so a payload cannot break out', () => {
+    // The quote is escaped (\"), so the whole payload stays inside the text literal.
     expect(buildTextJqlParts('foo" OR project = "ADMIN')).toEqual([
-      'text ~ "foo" OR project = "ADMIN"',
+      'text ~ "foo\\" OR project = \\"ADMIN"',
     ]);
   });
 
-  it('the key/project regex branches cannot be injected (no quotes can match them)', () => {
-    // A payload with a quote never matches the key/prefix regexes, so it can only ever
-    // reach the (still-unescaped) text fallback — never the key/project branches.
-    expect(buildTextJqlParts('YOS-1" OR "1"="1')).toEqual(['text ~ "YOS-1" OR "1"="1"']);
+  it('escapes a quoted payload that reaches the text fallback', () => {
+    expect(buildTextJqlParts('YOS-1" OR "1"="1')).toEqual(['text ~ "YOS-1\\" OR \\"1\\"=\\"1"']);
+  });
+
+  it('escapes backslashes too (so \\" cannot be smuggled in)', () => {
+    expect(buildTextJqlParts('a\\"b')).toEqual(['text ~ "a\\\\\\"b"']);
+  });
+
+  it('invariant: no input breaks out of the text literal', () => {
+    const payloads = ['plain', 'foo" OR x', '"', '\\', '\\"', 'a"b"c', '" OR "1"="1', 'end\\'];
+    for (const p of payloads) {
+      const [clause] = buildTextJqlParts(p);
+      // Strip the `text ~ "` prefix and trailing `"` delimiter, then the inner payload
+      // must contain no bare quote.
+      const inner = clause!.replace(/^text ~ "/, '').replace(/"$/, '');
+      expect(hasNoBareQuote(inner)).toBe(true);
+    }
   });
 });
 
@@ -83,8 +104,33 @@ describe('buildSearchJql', () => {
     );
   });
 
-  it('does not escape quotes in config-provided project/status values either (S2)', () => {
+  it('escapes quotes in config-provided project/status values (S2)', () => {
     const jql = buildSearchJql(cfg({ selectedProjects: ['A" OR "1"="1'] }), 'recent');
-    expect(jql).toBe('project IN ("A" OR "1"="1") ORDER BY updated DESC');
+    expect(jql).toBe('project IN ("A\\" OR \\"1\\"=\\"1") ORDER BY updated DESC');
+  });
+
+  it('invariant: a malicious config value cannot break out of its quoted literal', () => {
+    const jql = buildSearchJql(
+      cfg({ selectedProjects: ['ok', 'evil" OR "1"="1'], excludedStatuses: ['Done\\'] }),
+      'text',
+      'free" text',
+    );
+    // Removing the escape sequences and the in-list delimiters (`", "`) leaves a string
+    // whose only bare quotes are the outermost literal delimiters — the payloads stayed in.
+    expect(jql).not.toContain('OR "1"="1)'); // the payload did not escape its literal
+    expect(jql).toContain('"evil\\" OR \\"1\\"=\\"1"');
+    expect(jql).toContain('"Done\\\\"');
+  });
+});
+
+describe('escapeJqlString', () => {
+  it('escapes backslashes before quotes (order matters)', () => {
+    expect(escapeJqlString('a"b')).toBe('a\\"b');
+    expect(escapeJqlString('a\\b')).toBe('a\\\\b');
+    expect(escapeJqlString('\\"')).toBe('\\\\\\"');
+  });
+
+  it('leaves safe strings unchanged', () => {
+    expect(escapeJqlString('YOS-2826')).toBe('YOS-2826');
   });
 });
