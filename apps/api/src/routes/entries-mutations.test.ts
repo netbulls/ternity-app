@@ -81,6 +81,14 @@ describe('PATCH /api/entries/:id', () => {
     await call('PATCH', `/api/entries/${e.id}`, u.id, { description: 'same' });
     expect(await auditFor(e.id)).toHaveLength(0);
   });
+
+  it('400 on a malformed body (body validated by UpdateEntrySchema)', async () => {
+    const u = await makeUser();
+    const e = await makeEntry(u.id);
+    // tagIds must be an array of strings — a wrong type is a ZodError → 400, not a 500 crash
+    expect((await call('PATCH', `/api/entries/${e.id}`, u.id, { tagIds: 'nope' })).status).toBe(400);
+    expect((await call('PATCH', `/api/entries/${e.id}`, u.id, { description: 42 })).status).toBe(400);
+  });
 });
 
 describe('DELETE /api/entries/:id (soft-delete)', () => {
@@ -174,6 +182,14 @@ describe('POST /api/entries/:id/adjust', () => {
     const u = await makeUser();
     const e = await makeEntry(u.id);
     expect((await call('POST', `/api/entries/${e.id}/adjust`, u.id, { durationSeconds: 60 })).status).toBe(400);
+  });
+
+  it('400 when durationSeconds is the wrong type (body validated by AdjustEntrySchema)', async () => {
+    const u = await makeUser();
+    const e = await makeEntry(u.id);
+    expect(
+      (await call('POST', `/api/entries/${e.id}/adjust`, u.id, { durationSeconds: '60', note: 'x' })).status,
+    ).toBe(400);
   });
 
   it('404 inactive entry, 403 not owner', async () => {

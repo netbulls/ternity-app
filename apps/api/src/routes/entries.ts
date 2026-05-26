@@ -15,16 +15,15 @@ import {
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
 import { ORG_TIMEZONE } from '@ternity/shared';
-import type {
-  CreateEntry,
-  UpdateEntry,
-  AdjustEntry,
-  MoveBlock,
-  SplitEntry,
-  DayGroup,
-  Entry,
+import type { DayGroup, Entry } from '@ternity/shared';
+import {
+  CreateEntrySchema,
+  UpdateEntrySchema,
+  AdjustEntrySchema,
+  MoveBlockSchema,
+  SplitEntrySchema,
+  GlobalRole,
 } from '@ternity/shared';
-import { CreateEntrySchema, GlobalRole } from '@ternity/shared';
 
 // ── Timezone helpers ──────────────────────────────────────────────────────
 
@@ -737,7 +736,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const actorId = getActorId(request);
     const source = getAuditSource(request);
     const { id } = request.params as { id: string };
-    const body = request.body as UpdateEntry;
+    const body = UpdateEntrySchema.parse(request.body);
 
     // Owner check
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
@@ -936,7 +935,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as AdjustEntry;
+    const body = AdjustEntrySchema.parse(request.body);
 
     if (!body.note || body.note.trim().length === 0) {
       return reply.code(400).send({ error: 'Note is required for adjustments' });
@@ -986,7 +985,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as MoveBlock;
+    const body = MoveBlockSchema.parse(request.body);
 
     // Verify ownership + active
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
@@ -1132,7 +1131,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as SplitEntry;
+    const body = SplitEntrySchema.parse(request.body);
 
     // Verify entry exists and belongs to user
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);

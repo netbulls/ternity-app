@@ -146,6 +146,12 @@ describe('POST /api/timer/start', () => {
     const p = await makeProject();
     expect((await post('/api/timer/start', u.id, { projectId: p.id })).status).toBe(403);
   });
+
+  it('400 on a malformed body (body validated by StartTimerSchema)', async () => {
+    const u = await makeUser();
+    // tagIds must be an array of strings — a wrong type is a ZodError → 400, not a 500 crash
+    expect((await post('/api/timer/start', u.id, { tagIds: 'nope' })).status).toBe(400);
+  });
 });
 
 // ── POST /api/timer/resume/:id ──────────────────────────────────────────────

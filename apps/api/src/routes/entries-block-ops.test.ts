@@ -100,6 +100,12 @@ describe('POST /api/entries/:id/move-block', () => {
     const e = await makeEntry(owner.id);
     expect((await post(`/api/entries/${e.id}/move-block`, other.id, { segmentId: 'x' })).status).toBe(403);
   });
+
+  it('400 when segmentId is missing (body validated by MoveBlockSchema)', async () => {
+    const u = await makeUser();
+    const e = await makeEntry(u.id);
+    expect((await post(`/api/entries/${e.id}/move-block`, u.id, {})).status).toBe(400);
+  });
 });
 
 describe('POST /api/entries/:id/split', () => {
@@ -154,5 +160,13 @@ describe('POST /api/entries/:id/split', () => {
     expect((await post(`/api/entries/${inactive.id}/split`, owner.id, { durationSeconds: 1 })).status).toBe(404);
     const e = await entryWith3600(owner.id);
     expect((await post(`/api/entries/${e.id}/split`, other.id, { durationSeconds: 1 })).status).toBe(403);
+  });
+
+  it('400 on a malformed body (body validated by SplitEntrySchema)', async () => {
+    const u = await makeUser();
+    const e = await entryWith3600(u.id);
+    // durationSeconds is required and must be positive — missing or non-positive is a ZodError → 400
+    expect((await post(`/api/entries/${e.id}/split`, u.id, {})).status).toBe(400);
+    expect((await post(`/api/entries/${e.id}/split`, u.id, { durationSeconds: 0 })).status).toBe(400);
   });
 });

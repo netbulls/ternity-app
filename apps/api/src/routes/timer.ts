@@ -11,8 +11,8 @@ import {
   jiraConnections,
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
-import type { StartTimer, Entry, JiraIssueLink } from '@ternity/shared';
-import { GlobalRole } from '@ternity/shared';
+import type { Entry, JiraIssueLink } from '@ternity/shared';
+import { GlobalRole, StartTimerSchema } from '@ternity/shared';
 
 /** Build a full entry response with segments, project + tags joined */
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
@@ -222,7 +222,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   fastify.post('/api/timer/start', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
-    const body = (request.body ?? {}) as StartTimer;
+    const body = StartTimerSchema.parse(request.body ?? {});
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
     const tagIds = body.tagIds ?? [];
@@ -361,7 +361,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   fastify.post('/api/timer/start-or-resume', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
-    const body = (request.body ?? {}) as StartTimer;
+    const body = StartTimerSchema.parse(request.body ?? {});
     const description = body.description ?? '';
     const projectId = body.projectId ?? null;
     const tagIds = body.tagIds ?? [];
