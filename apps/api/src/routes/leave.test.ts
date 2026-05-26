@@ -668,6 +668,16 @@ describe('POST /api/leave/requests', () => {
     expect(body.error).toMatch(/YYYY-MM-DD/i);
   });
 
+  it('returns 400 for a malformed body type (validated by schema, not a 500)', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    await makeLeaveType({ isContractorDefault: true });
+    // wrong types: startDate as number, hours as string — ZodError → 400
+    expect((await post('/api/leave/requests', u.id, { startDate: 20260610, endDate: '2026-06-10' })).status).toBe(400);
+    expect(
+      (await post('/api/leave/requests', u.id, { startDate: getFutureDate(1), endDate: getFutureDate(1), hours: '4' })).status,
+    ).toBe(400);
+  });
+
   it('returns 400 for past startDate', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
@@ -1009,6 +1019,15 @@ describe('PATCH /api/leave/requests/:id', () => {
       { note: 'hi' },
     );
     expect(status).toBe(404);
+  });
+
+  it('returns 400 for a malformed body type (validated by schema before the lookup)', async () => {
+    const u = await makeUser();
+    const lt = await makeLeaveType();
+    const lr = await makeLeaveRequest(u.id, lt.id);
+    // hours as a string is a ZodError → 400, not a 500
+    expect((await patch(`/api/leave/requests/${lr.id}`, u.id, { hours: '4' })).status).toBe(400);
+    expect((await patch(`/api/leave/requests/${lr.id}`, u.id, { startDate: 42 })).status).toBe(400);
   });
 
   it("returns 403 when a non-admin user tries to update another user's request", async () => {

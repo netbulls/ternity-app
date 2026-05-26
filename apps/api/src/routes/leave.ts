@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, gte, lte, or, sql, ne } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '../db/index.js';
 import {
   leaveTypes,
@@ -11,6 +12,20 @@ import {
   workingSchedules,
 } from '../db/schema.js';
 import { DEFAULT_WEEKLY_WORKING_HOURS, ORG_TIMEZONE, type WorkingDayKey } from '@ternity/shared';
+
+// Request-body schemas — type-only validation at the boundary so a null/array body or
+// a wrong-typed field is a 400 (via the global ZodError handler) instead of a 500.
+// Domain rules (date format, range, hours increments, past-date) stay in the handlers
+// below so their specific 400 messages are preserved.
+const CreateLeaveRequestSchema = z.object({
+  leaveTypeId: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  hours: z.number().nullish(),
+  startHour: z.string().nullish(),
+  note: z.string().nullish(),
+});
+const UpdateLeaveRequestSchema = CreateLeaveRequestSchema;
 
 // ── Polish Public Holidays ────────────────────────────────────────────────
 
@@ -371,14 +386,7 @@ export async function leaveRoutes(fastify: FastifyInstance) {
    */
   fastify.post('/api/leave/requests', async (request, reply) => {
     const userId = request.auth.userId;
-    const body = request.body as {
-      leaveTypeId?: string;
-      startDate: string;
-      endDate: string;
-      hours?: number;
-      startHour?: string;
-      note?: string;
-    };
+    const body = CreateLeaveRequestSchema.parse(request.body);
 
     let { leaveTypeId, startDate, endDate, hours, startHour, note } = body;
 
@@ -591,14 +599,7 @@ export async function leaveRoutes(fastify: FastifyInstance) {
   fastify.patch('/api/leave/requests/:id', async (request, reply) => {
     const userId = request.auth.userId;
     const { id } = request.params as { id: string };
-    const body = request.body as {
-      leaveTypeId?: string;
-      startDate?: string;
-      endDate?: string;
-      hours?: number | null;
-      startHour?: string | null;
-      note?: string | null;
-    };
+    const body = UpdateLeaveRequestSchema.parse(request.body);
 
     // Find the booking
     const [booking] = await db
