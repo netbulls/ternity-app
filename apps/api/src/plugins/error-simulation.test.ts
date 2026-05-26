@@ -3,23 +3,16 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import errorSimulation from './error-simulation.js';
 
-// Characterization tests for the dev-only error-simulation plugin.
+// Tests for the dev-only error-simulation plugin.
 //
-// BUG FOUND: The plugin is NOT wrapped with fastify-plugin (fp), so Fastify
-// treats it as an encapsulated child scope. The onRequest hook is only visible
-// to routes registered inside that child scope. Routes registered on the parent
-// app AFTER app.register(errorSimulation) are in the parent scope and the hook
-// does NOT fire for them.
-//
-// Consequence: the plugin silently has no effect in the typical usage pattern
-// (register plugin → register routes on the same or parent app instance).
-//
-// To fix: wrap the plugin with fp(): `export default fp(errorSimulation)`.
-//
-// These tests pin ACTUAL behavior, including the bug.
+// The plugin is exported fp()-wrapped (fastify-plugin), so its onRequest hook
+// propagates to the parent scope and fires for routes registered on the parent
+// app — the typical usage pattern (register plugin → register routes). Before the
+// fix it was encapsulated and silently had no effect; see git history.
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actual behavior: plugin registered, routes on the SAME app (parent scope)
+// Typical usage: plugin registered, routes on the SAME app (parent scope).
+// Because the export is fp()-wrapped, the hook applies to these parent routes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('error-simulation — typical usage (routes on parent app)', () => {
@@ -28,7 +21,7 @@ describe('error-simulation — typical usage (routes on parent app)', () => {
   beforeAll(async () => {
     app = Fastify({ logger: false });
     await app.register(errorSimulation);
-    // Routes registered on the parent after register — outside the plugin scope
+    // Routes registered on the parent after register — fp() makes the hook reach them
     app.get('/resource', async () => ({ ok: true }));
     app.post('/resource', async () => ({ ok: true }));
     app.put('/resource', async () => ({ ok: true }));
@@ -51,38 +44,37 @@ describe('error-simulation — typical usage (routes on parent app)', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // BUG: the hook lives in a child scope; these routes are in the parent scope.
-  // X-Simulate-Error is ignored — all requests return 200.
-  it('POST WITH X-Simulate-Error — 200 (BUG: hook does not apply to parent-scope routes)', async () => {
+  it('POST WITH X-Simulate-Error — 500 (hook applies to parent-scope routes)', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/resource',
       headers: { 'x-simulate-error': 'true' },
     });
-    expect(res.statusCode).toBe(200); // expected 500 if the plugin worked
+    expect(res.statusCode).toBe(500);
   });
 
-  it('PUT WITH X-Simulate-Error — 200 (BUG: hook scoping)', async () => {
+  it('PUT WITH X-Simulate-Error — 500', async () => {
     const res = await app.inject({
       method: 'PUT',
       url: '/resource',
       headers: { 'x-simulate-error': 'true' },
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(500);
   });
 
-  it('DELETE WITH X-Simulate-Error — 200 (BUG: hook scoping)', async () => {
+  it('DELETE WITH X-Simulate-Error — 500', async () => {
     const res = await app.inject({
       method: 'DELETE',
       url: '/resource',
       headers: { 'x-simulate-error': 'true' },
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(500);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Correct behavior: plugin wrapped with fp() so the hook applies globally
+// Explicit fp() wrap at the call site — same result (idempotent), confirms the
+// hook applies globally regardless of how the already-fp-wrapped plugin is registered.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('error-simulation — fp()-wrapped (correct wiring)', () => {
@@ -90,7 +82,6 @@ describe('error-simulation — fp()-wrapped (correct wiring)', () => {
 
   beforeAll(async () => {
     app = Fastify({ logger: false });
-    // Wrap with fp so the hook propagates to the parent scope
     await app.register(fp(errorSimulation));
     app.get('/resource', async () => ({ ok: true }));
     app.post('/resource', async () => ({ ok: true }));
