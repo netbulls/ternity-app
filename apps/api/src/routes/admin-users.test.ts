@@ -166,6 +166,15 @@ describe('PATCH /api/admin/users/:id/team', () => {
     });
     expect(status).toBe(404);
   });
+
+  it('returns 400 for a non-UUID projectId (validated by schema)', async () => {
+    const admin = await makeUser('admin');
+    const target = await makeUser('user');
+    const { status } = await patch(`/api/admin/users/${target.id}/team`, admin.id, {
+      projectId: 'not-a-uuid',
+    });
+    expect(status).toBe(400);
+  });
 });
 
 // ── PATCH /api/admin/users/:id/employment-type ─────────────────────────────
@@ -203,12 +212,20 @@ describe('PATCH /api/admin/users/:id/employment-type', () => {
   it('returns 400 for an invalid employmentType', async () => {
     const admin = await makeUser('admin');
     const target = await makeUser('user');
-    // BUG NOTE: the body is cast as-is (`request.body as { employmentType: string }`)
-    // so no Zod schema validates — the validation is manual. 'freelancer' is invalid.
+    // Body is validated by SetEmploymentTypeSchema (enum), so 'freelancer' is a ZodError → 400.
     const { status } = await patch(`/api/admin/users/${target.id}/employment-type`, admin.id, {
       employmentType: 'freelancer',
     });
     expect(status).toBe(400);
+  });
+
+  it('returns 400 for a missing/malformed employmentType (validated by schema)', async () => {
+    const admin = await makeUser('admin');
+    const target = await makeUser('user');
+    expect((await patch(`/api/admin/users/${target.id}/employment-type`, admin.id, {})).status).toBe(400);
+    expect(
+      (await patch(`/api/admin/users/${target.id}/employment-type`, admin.id, { employmentType: 42 })).status,
+    ).toBe(400);
   });
 
   it('returns 404 when user does not exist', async () => {
@@ -286,6 +303,12 @@ describe('POST /api/admin/users/bulk-activate', () => {
   it('returns 400 when userIds is missing', async () => {
     const admin = await makeUser('admin');
     expect((await post('/api/admin/users/bulk-activate', admin.id, {})).status).toBe(400);
+  });
+
+  it('returns 400 for a malformed userIds (validated by schema)', async () => {
+    const admin = await makeUser('admin');
+    expect((await post('/api/admin/users/bulk-activate', admin.id, { userIds: 'nope' })).status).toBe(400);
+    expect((await post('/api/admin/users/bulk-activate', admin.id, { userIds: ['not-a-uuid'] })).status).toBe(400);
   });
 
   it('activates multiple users and returns count', async () => {
