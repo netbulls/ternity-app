@@ -32,3 +32,26 @@ jobs:
 
       - name: Run tests
         run: pnpm -r test
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Informational: print the full advisory report on every run so regressions are
+      # visible in the logs. Never fails the build (the gate below decides pass/fail).
+      - name: Dependency audit (report)
+        run: pnpm audit --audit-level moderate || true
+
+      # Gate: fail only on CRITICAL advisories for now. There is a known backlog of
+      # `high` transitive advisories (fast-uri via fastify, axios via twilio, …) to
+      # triage with `pnpm overrides`; once cleared, ratchet this down to `high`.
+      - name: Dependency audit (gate — critical)
+        run: pnpm audit --audit-level critical
