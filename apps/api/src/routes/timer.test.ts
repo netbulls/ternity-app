@@ -252,4 +252,10 @@ describe('POST /api/timer/stop', () => {
     const [row] = await db.select().from(timeEntries).where(eq(timeEntries.id, started.body.entry.id));
     expect(row!.description).toBe('final description');
   });
+
+  it('400 when description is the wrong type (body validated by StopTimerSchema)', async () => {
+    const u = await makeUser();
+    await post('/api/timer/start', u.id, { description: 'Work' });
+    expect((await post('/api/timer/stop', u.id, { description: 42 })).status).toBe(400);
+  });
 });

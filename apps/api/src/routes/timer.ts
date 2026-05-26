@@ -12,7 +12,7 @@ import {
 } from '../db/schema.js';
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import type { Entry, JiraIssueLink } from '@ternity/shared';
-import { GlobalRole, StartTimerSchema } from '@ternity/shared';
+import { GlobalRole, StartTimerSchema, StopTimerSchema } from '@ternity/shared';
 
 /** Build a full entry response with segments, project + tags joined */
 export async function buildEntryResponse(entryId: string, tx?: Database): Promise<Entry | null> {
@@ -492,7 +492,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
   fastify.post('/api/timer/stop', async (request, reply) => {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
-    const body = (request.body ?? {}) as { description?: string };
+    const body = StopTimerSchema.parse(request.body ?? {});
 
     // Find running segment via join
     const [runningRow] = await db
