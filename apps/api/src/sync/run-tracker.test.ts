@@ -58,8 +58,11 @@ describe('startRun', () => {
     const after = new Date();
     const row = await getRunById(run!.id);
 
-    expect(row!.startedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(row!.startedAt.getTime()).toBeLessThanOrEqual(after.getTime());
+    // startedAt is set by Postgres `now()`, so its clock can differ from the app clock by
+    // a few ms — allow a skew window on both bounds (otherwise this flakes by ~1ms).
+    const SKEW_MS = 1000;
+    expect(row!.startedAt.getTime()).toBeGreaterThanOrEqual(before.getTime() - SKEW_MS);
+    expect(row!.startedAt.getTime()).toBeLessThanOrEqual(after.getTime() + SKEW_MS);
     expect(row!.completedAt).toBeNull();
   });
 
