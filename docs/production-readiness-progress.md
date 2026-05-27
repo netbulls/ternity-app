@@ -10,7 +10,7 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~919 tests, all green** (shared **57**, api **862**), 58 test files. `tsc --noEmit` passes; build clean.
+- **~920 tests, all green** (shared **57**, api **863**), 59 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing**: Stryker pilot on `packages/shared` (`reports.ts`), score 70.83% → **85.42%**.
 
@@ -48,7 +48,9 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Done since (operational track)
 
-- **Seal by construction** — `body-validation.guard.test.ts` scans `src/routes` and fails if any handler reads `request.body` without `.parse`/`.safeParse` (or casts with `as`). Locks in S4.
+- **Portable guards in `tooling/`** (copy-paste reusable across Ternity-stack repos) — ESLint preset (`tooling/eslint`, bans casting `request.body`, in-editor) + dependency-free source scanners (`tooling/guards/source-guards.js`: unvalidated body, body casts, `sql ANY(${…})`, plugins missing `fp()`) + adoption README. Dogfooded here: root `eslint.config.js` spreads the preset; `body-validation.guard.test.ts` + new `architecture.guard.test.ts` call the scanners.
+- **Seal by construction** — the body-validation guard (now backed by `tooling/`) fails if any handler reads `request.body` without `.parse`/`.safeParse` (or casts with `as`). Locks in S4. The architecture guard additionally pins the `sql ANY(${…})` and plugin-`fp()` bug classes.
+- **Fixed flaky test** — `run-tracker.test.ts` startedAt assertion failed ~1ms intermittently (Postgres `now()` vs app clock); added a 1s skew window.
 - **Deep health** — `/health` is now liveness-only (cheap; reports version + uptime); new `/health/ready` runs `SELECT 1` and returns 503 + per-dependency `checks` when the DB is down. Both public in logto mode. (audit O3/O6/S6)
 - **Dependency scan in CI** — new `audit` job: informational full report on every PR + a gate that fails only on **critical**. See the backlog below before ratcheting.
 
