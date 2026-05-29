@@ -52,12 +52,12 @@ then fixing/hardening behind it. Pick up here in a new session.
 - **Seal by construction** — the body-validation guard (now backed by `tooling/`) fails if any handler reads `request.body` without `.parse`/`.safeParse` (or casts with `as`). Locks in S4. The architecture guard additionally pins the `sql ANY(${…})` and plugin-`fp()` bug classes.
 - **Fixed flaky test** — `run-tracker.test.ts` startedAt assertion failed ~1ms intermittently (Postgres `now()` vs app clock); added a 1s skew window.
 - **Deep health** — `/health` is now liveness-only (cheap; reports version + uptime); new `/health/ready` runs `SELECT 1` and returns 503 + per-dependency `checks` when the DB is down. Both public in logto mode. (audit O3/O6/S6)
-- **Dependency scan in CI** — new `audit` job: informational full report on every PR + a gate that fails only on **critical**. See the backlog below before ratcheting.
+- **Dependency scan in CI** — new `audit` job: informational full report on every PR + a gate that fails on **high** (and critical). All 22 high advisories cleared: direct deps bumped (fastify 5.8.5, drizzle-orm 0.45.2, vite 6.4.2) + surgical `pnpm.overrides` for transitive (minimatch/picomatch/flatted/rollup/undici/fast-uri/tmp/axios). 10 moderate remain (dev/build tooling). Verified: 863 api tests + builds green after the drizzle 0.38→0.45 jump.
+  - **Open caveats**: `drizzle-kit` left at ^0.30 (only used by `db:generate`/`db:migrate` CLI, not tests) — verify migration generation if you bump further. `twilio`→`axios` SMS path isn't covered by tests — run `pnpm --filter @ternity/api sms:test` to confirm SMS still sends.
 
 ## What's left (suggested order)
 
-1. **`high` dependency-advisory backlog (22)** — triage with `pnpm overrides` (e.g. `axios` ≥1.15.2 via twilio, `fast-uri` via fastify), then ratchet the CI audit gate from `critical` down to `high`. twilio/axios runtime is NOT covered by tests, so verify overrides don't break SMS before shipping.
-2. **`leave.ts` PATCH** past-date guard + `allowances.usedDays` auto-update (decide intended behavior first — leave validation is currently type-only). Behavioral, not just validation.
+1. **`leave.ts` PATCH** past-date guard + `allowances.usedDays` auto-update (decide intended behavior first — leave validation is currently type-only). Behavioral, not just validation.
 3. **Register migrations 0012/0013/0015** in the drizzle journal (then the harness workaround becomes a no-op). `stats.ts` createdAt-vs-segment intent.
 4. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
 5. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
