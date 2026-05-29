@@ -50,8 +50,9 @@ jobs:
       - name: Dependency audit (report)
         run: pnpm audit --audit-level moderate || true
 
-      # Gate: fail only on CRITICAL advisories for now. There is a known backlog of
-      # `high` transitive advisories (fast-uri via fastify, axios via twilio, …) to
-      # triage with `pnpm overrides`; once cleared, ratchet this down to `high`.
-      - name: Dependency audit (gate — critical)
-        run: pnpm audit --audit-level critical
+      # Gate: fail on HIGH (and critical) advisories. The earlier `high` backlog was
+      # cleared — direct deps bumped (fastify, drizzle-orm, vite) and transitive ones
+      # pinned via pnpm overrides in the root package.json. Remaining advisories are
+      # `moderate` (mostly dev/build tooling); revisit if they escalate.
+      - name: Dependency audit (gate — high)
+        run: pnpm audit --audit-level high
