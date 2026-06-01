@@ -13,6 +13,7 @@ then fixing/hardening behind it. Pick up here in a new session.
 - **~1003 tests, all green** (shared **140**, api **863**), 59 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing — phase 2 done on shared**: 74.50% baseline → **93.00%**. `notification-settings.ts` and `time-entries.ts` both at **100%**; `reports.ts` 85.42% (remaining 14 are equivalent mutants on display strings). Key lesson banked in `stryker.config.json`: never `parse()` in describe-scope — a thrown setup is reported as a "file failed" while individual `it()` results still count as passed, so Stryker marks the mutant as survived.
+- **Mutation testing — api skeleton ready**: harness URL handoff file moved to `process.cwd()` so each Stryker sandbox gets isolation for free (each spins its own Testcontainers Postgres on a random port — no collisions). `apps/api/stryker.config.json` mutates routes / lib / plugins / services / sync/transform with `concurrency: 2`. Smoke run on `lib/` worked end-to-end (~5 min, ~78% weighted on source files). CI runs the mutation job ONLY on push to `main` (not PRs) with a 120-min timeout, uploading the HTML report as an artifact. Informational only — does not fail the build on regressions yet (no stable baseline).
 
 ## What's done (by layer)
 
