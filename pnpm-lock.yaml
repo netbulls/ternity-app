@@ -70,6 +70,12 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
+      '@stryker-mutator/core':
+        specifier: ^8.7.0
+        version: 8.7.1
+      '@stryker-mutator/vitest-runner':
+        specifier: ^8.7.0
+        version: 8.7.1(@stryker-mutator/core@8.7.1)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@25.2.3)(jiti@1.21.7)(msw@2.12.10(@types/node@25.2.3)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.9.0))
       '@testcontainers/postgresql':
         specifier: ^10.13.0
         version: 10.28.0

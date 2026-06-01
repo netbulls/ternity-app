@@ -46,3 +46,6 @@ recording/
 # Stryker mutation testing
 .stryker-tmp/
 reports/mutation/
+
+# Test harness URL handoff (apps/api Testcontainers Postgres)
+.ternity-test-db-url

@@ -56,3 +56,41 @@ jobs:
       # `moderate` (mostly dev/build tooling); revisit if they escalate.
       - name: Dependency audit (gate — high)
         run: pnpm audit --audit-level high
+
+  # Mutation testing runs ONLY on push to main (i.e. after a PR merges), not on PRs.
+  # Rationale: it's expensive (each mutant re-runs covering tests; the api job spins
+  # its own Testcontainers Postgres per Stryker sandbox), so we don't want it in the
+  # PR feedback loop. The score is informational for now — the job uploads the HTML
+  # report as an artifact but does NOT fail the build on a regression.
+  mutation:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build @ternity/shared
+        run: pnpm --filter @ternity/shared build
+
+      - name: Mutation testing — @ternity/shared
+        run: pnpm --filter @ternity/shared test:mutation
+
+      - name: Mutation testing — @ternity/api
+        run: pnpm --filter @ternity/api test:mutation
+
+      - name: Upload mutation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: |
+            packages/shared/reports/mutation
+            apps/api/reports/mutation
+          if-no-files-found: ignore
+          retention-days: 30

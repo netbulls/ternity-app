@@ -11,6 +11,7 @@
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "vitest run",
+    "test:mutation": "stryker run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
@@ -37,6 +38,8 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^8.7.0",
+    "@stryker-mutator/vitest-runner": "^8.7.0",
     "@testcontainers/postgresql": "^10.13.0",
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.30.0",
