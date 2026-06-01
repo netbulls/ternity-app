@@ -1,9 +1,9 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "_comment": "Pilot: mutation-test the one file in @ternity/shared with real branching logic. TZ=UTC is set by the test:mutation script so resolveDateRangePreset date assertions are deterministic.",
+  "_comment": "Phase 2: mutate the @ternity/shared files that have direct tests in src/*.test.ts — others would score ~0 and tell us nothing. Test discipline learned the hard way: NEVER put parse() (or anything that can throw on a mutated schema) in describe-scope — Vitest treats a thrown describe-level setup as a 'file failed' but Stryker's vitest-runner only sees the surviving 'tests passed' count and marks the mutant as survived. Always parse inside it(). TZ=UTC is set by the test:mutation script.",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
-  "mutate": ["src/reports.ts"],
+  "mutate": ["src/reports.ts", "src/notification-settings.ts", "src/time-entries.ts"],
   "coverageAnalysis": "perTest",
   "reporters": ["clear-text", "progress"],
   "concurrency": 4,
