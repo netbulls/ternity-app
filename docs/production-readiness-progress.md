@@ -10,9 +10,9 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~920 tests, all green** (shared **57**, api **863**), 59 test files. `tsc --noEmit` passes; build clean.
+- **~1003 tests, all green** (shared **140**, api **863**), 59 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
-- **Mutation testing**: Stryker pilot on `packages/shared` (`reports.ts`), score 70.83% → **85.42%**.
+- **Mutation testing — phase 2 done on shared**: 74.50% baseline → **93.00%**. `notification-settings.ts` and `time-entries.ts` both at **100%**; `reports.ts` 85.42% (remaining 14 are equivalent mutants on display strings). Key lesson banked in `stryker.config.json`: never `parse()` in describe-scope — a thrown setup is reported as a "file failed" while individual `it()` results still count as passed, so Stryker marks the mutant as survived.
 
 ## What's done (by layer)
 
