@@ -10,7 +10,7 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~1027 tests, all green** (shared **140**, api **887**), 61 test files. `tsc --noEmit` passes; build clean.
+- **~1040 tests, all green** (shared **140**, api **900**), 61 test files. `tsc --noEmit` passes; build clean.
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing — phase 2 done on shared**: 74.50% baseline → **93.00%**. `notification-settings.ts` and `time-entries.ts` both at **100%**; `reports.ts` 85.42% (remaining 14 are equivalent mutants on display strings). Key lesson banked in `stryker.config.json`: never `parse()` in describe-scope — a thrown setup is reported as a "file failed" while individual `it()` results still count as passed, so Stryker marks the mutant as survived.
 - **Mutation testing — api skeleton ready + first full baseline**: harness URL handoff file moved to `process.cwd()` so each Stryker sandbox gets isolation for free (each spins its own Testcontainers Postgres on a random port — no collisions). `apps/api/stryker.config.json` mutates routes / lib / plugins / services / sync/transform with `concurrency: 2`. CI runs the mutation job ONLY on push to `main` (not PRs) with a 120-min timeout, uploading the HTML report as an artifact. Informational only — does not fail the build on regressions yet.
@@ -53,9 +53,10 @@ then fixing/hardening behind it. Pick up here in a new session.
 | — | `admin-leave-types` bulk PATCH | always 500: `sql\`= ANY(${jsArray})\`` not serializable → use `inArray` | **DONE** |
 | — | `plugins/error-simulation.ts` | not `fp()`-wrapped → encapsulated scope → `X-Simulate-Error` silent no-op | **DONE** |
 | — | `sync/toggl/extract.ts` | single-day range (`from===to`) → 0 windows (`while < end` should be `<=`) | **DONE** |
-| — | `leave.ts` PATCH | no past-date guard (POST has one); `allowances.usedDays` never auto-updated | TODO |
+| — | `leave.ts` PATCH | past-date guard added (admin bypasses, since admins retro-correct entries); `allowances.usedDays` now auto-updated on POST/PATCH/DELETE in a transaction (only adjusts existing rows — admin/HR still owns initial seeding). 13 new tests pin the accounting invariants and admin-vs-user past-date behavior. | **DONE** |
 | — | `stats.ts` | filters by `time_entries.createdAt`, not segment start time | TODO (decide intent) |
-| — | drizzle journal | `0012/0013/0015` not registered → `drizzle-kit migrate` doesn't reproduce prod (harness works around it) | TODO: register in journal |
+| — | drizzle journal | `0012_jira_connection_config`, `0013_jira_token_status`, `0015_pg_trgm_fuzzy_search` registered with sequential `idx` 12/13/15 and re-numbered later entries; `applyUnjournaledMigrations` workaround in `test/global-setup.ts` deleted. The three SQL files are idempotent (`DO $$ ... EXCEPTION WHEN duplicate_column`, `CREATE EXTENSION IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`) so prod re-runs are safe. The empty `0007_entry_segments.sql` stays as an inert historical artifact (not in the journal → not executed). | **DONE** |
+| — | `mappings.test.ts` updatedAt assertion | container `now()` vs JS `new Date()` clock drift — same flake class as `run-tracker.test.ts`. Same fix: 1s `SKEW_MS` window. | **DONE** |
 
 ## Done since (operational track)
 
@@ -68,11 +69,10 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## What's left (suggested order)
 
-1. **`leave.ts` PATCH** past-date guard + `allowances.usedDays` auto-update (decide intended behavior first — leave validation is currently type-only). Behavioral, not just validation.
-3. **Register migrations 0012/0013/0015** in the drizzle journal (then the harness workaround becomes a no-op). `stats.ts` createdAt-vs-segment intent.
-4. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
-5. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
-6. **More operational hardening**: Sentry (error tracking), structured logs, rate-limiting, graceful shutdown, DB backups + restore drill. `APP_VERSION` env is read by `/health` but not yet injected at build/deploy — wire it.
+1. **`stats.ts`** — decide whether the filter should be on `time_entries.createdAt` or on the segment start time (the audit flagged it; needs a product call, not just code).
+2. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
+3. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
+4. **More operational hardening**: Sentry (error tracking), structured logs, rate-limiting, graceful shutdown, DB backups + restore drill. `APP_VERSION` env is read by `/health` but not yet injected at build/deploy — wire it.
 
 ## How to resume (environment)
 
@@ -90,6 +90,8 @@ then fixing/hardening behind it. Pick up here in a new session.
 - `lib/error-handler.ts` extracted + `ZodError → 400`; **every mutating route validates its body with Zod** (S4) — entries, timer, admin-projects, admin-users, admin-leave-types, jira exchange, leave.
 - New shared schemas: `BulkProjectIdsSchema`, `BulkClientIdsSchema` (admin-projects), `StopTimerSchema` (time-entries). Inline zod schemas added in admin-users, admin-leave-types, jira, leave.
 - `admin-leave-types.ts` bulk uses `inArray`; `error-simulation.ts` exported via `fp()`; `toggl/extract.ts` window loop `<=`; `jira.ts` adds exported `escapeJqlString` applied to all JQL string interpolation.
+- `leave.ts`: past-date guard on PATCH with admin bypass (only fires when `body.startDate` is present, so note-only edits on past bookings still work); `leave_allowances.usedDays` reconciled transactionally on POST/PATCH/DELETE via the new `applyAllowanceDelta` helper. Lookup of the old + new leave-type's `deducted` flag moved before the transaction so validation 400s stay outside it.
+- `drizzle/meta/_journal.json`: entries for `0012_jira_connection_config`, `0013_jira_token_status`, `0015_pg_trgm_fuzzy_search` added; `applyUnjournaledMigrations` deleted from `test/global-setup.ts`.
 - Test infra: vitest configs, tsconfig split (build excludes tests), Testcontainers harness, CI workflow, Stryker config.
 
 ---
