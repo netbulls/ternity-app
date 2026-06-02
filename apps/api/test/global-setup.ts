@@ -46,42 +46,17 @@ export async function setup() {
     .start();
   const url = container.getConnectionUri();
 
-  // Apply migrations once for the whole suite.
+  // Apply migrations once for the whole suite. The journal lists every .sql file —
+  // see `drizzle/meta/_journal.json`. (Historical: 0012/0013/0015 were unjournaled
+  // and we ran them out-of-band here; now registered, so drizzle-kit handles them.)
   const pool = new pg.Pool({ connectionString: url });
   try {
     await migrate(drizzle(pool), { migrationsFolder: MIGRATIONS_DIR });
-    await applyUnjournaledMigrations(pool);
   } finally {
     await pool.end();
   }
 
   fs.writeFileSync(DB_URL_FILE, url, 'utf8');
-}
-
-/**
- * The drizzle journal (meta/_journal.json) has drifted from the migration files:
- * 0012/0013 (jira columns) and 0015 (pg_trgm extension + index) exist as .sql but
- * are NOT registered, so `drizzle-kit migrate` skips them — a fresh migrate does not
- * reproduce the production schema (notably the pg_trgm extension that /api/entries/
- * search relies on). Apply those unjournaled, idempotent files here so the test DB
- * matches prod. (See ternity-test-db-harness memory.)
- */
-async function applyUnjournaledMigrations(pool: pg.Pool) {
-  const journal = JSON.parse(
-    fs.readFileSync(path.join(MIGRATIONS_DIR, 'meta/_journal.json'), 'utf8'),
-  ) as { entries: { tag: string }[] };
-  const journaled = new Set(journal.entries.map((e) => e.tag));
-
-  const files = fs
-    .readdirSync(MIGRATIONS_DIR)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
-  for (const file of files) {
-    if (journaled.has(file.replace(/\.sql$/, ''))) continue;
-    const content = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8').trim();
-    if (!content) continue; // e.g. the empty 0007_entry_segments.sql
-    await pool.query(content);
-  }
 }
 
 export async function teardown() {
