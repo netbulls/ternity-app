@@ -30,6 +30,23 @@ jobs:
       - name: Build @ternity/shared
         run: pnpm --filter @ternity/shared build
 
+      # The E2E suite (e2e/) drives a real browser via Playwright. Browsers don't ship
+      # with @playwright/test on npm — they're downloaded to ~/.cache/ms-playwright by
+      # `playwright install`. Cache them across runs keyed on the lockfile, so we only
+      # re-download (~90 MB Chromium) when the pinned @playwright/test version changes.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # `--with-deps` apt-installs the runtime system libraries Chromium needs
+      # (libnss3, libdbus, libgbm, libasound, etc.). System libs aren't part of the
+      # cache, so we always re-run this — it's a fast apt no-op when packages exist.
+      - name: Install Playwright Chromium (with system deps)
+        run: pnpm --filter @ternity/e2e exec playwright install --with-deps chromium
+
       - name: Run tests
         run: pnpm -r test
 
