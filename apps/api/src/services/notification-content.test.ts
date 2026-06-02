@@ -183,6 +183,50 @@ describe('renderNotificationEmailTemplate — subject lines', () => {
   });
 });
 
+// ─── weekly report — delivery day reflects the configured day ─────────────────
+//
+// Without these, the day-of-week conditional (`day === 'monday' ? 'Monday' : 'Friday'`)
+// at notification-content.ts:85 and :88 is unverified. A Friday user could receive
+// an email whose preheader and meta say "Monday delivery" — a visible user-facing
+// bug that no existing test would catch (mutation testing flagged 4 survivors here).
+
+describe('renderNotificationEmailTemplate — weeklyReport delivery day', () => {
+  const baseInput = (day: 'monday' | 'friday') => ({
+    settings: {
+      ...BASE_SETTINGS,
+      weekly: {
+        ...BASE_SETTINGS.weekly,
+        hoursReport: { ...BASE_SETTINGS.weekly.hoursReport, day },
+      },
+    },
+    userName: 'Alex',
+    variant: 'v3' as const,
+    themeMode: 'light' as const,
+  });
+
+  it('says "Monday" when configured for Monday', () => {
+    const { html, text } = renderNotificationEmailTemplate({
+      ...baseInput('monday'),
+      type: 'weeklyReport',
+    });
+    expect(html).toContain('Monday delivery');
+    expect(html).not.toContain('Friday delivery');
+    expect(text).toContain('Delivery day: Monday');
+    expect(text).not.toContain('Delivery day: Friday');
+  });
+
+  it('says "Friday" when configured for Friday', () => {
+    const { html, text } = renderNotificationEmailTemplate({
+      ...baseInput('friday'),
+      type: 'weeklyReport',
+    });
+    expect(html).toContain('Friday delivery');
+    expect(html).not.toContain('Monday delivery');
+    expect(text).toContain('Delivery day: Friday');
+    expect(text).not.toContain('Delivery day: Monday');
+  });
+});
+
 // ─── renderNotificationEmailTemplate — text field ─────────────────────────────
 
 describe('renderNotificationEmailTemplate — plain text output', () => {
