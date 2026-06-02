@@ -126,6 +126,41 @@ function getDayKey(dateStr: string): WorkingDayKey {
   return keys[day]!;
 }
 
+/** Year-of-startDate, the partition we attribute usage to. */
+function yearOf(dateStr: string): number {
+  return parseInt(dateStr.slice(0, 4), 10);
+}
+
+/** Drizzle hands the transaction callback a PgTransaction, not a NodePgDatabase
+ *  (it has no `$client`). Both have the same query API though — this type covers both
+ *  so the helper accepts either. */
+type DbOrTx = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
+
+/**
+ * Adjust `usedDays` on an existing allowance row by `delta` (positive or negative).
+ * No-op when the row doesn't exist — admin/HR seeds allowances; this only keeps them
+ * in sync. Caller must already have checked `leaveType.deducted`.
+ */
+async function applyAllowanceDelta(
+  tx: DbOrTx,
+  userId: string,
+  leaveTypeId: string,
+  year: number,
+  delta: number,
+): Promise<void> {
+  if (delta === 0) return;
+  await tx
+    .update(leaveAllowances)
+    .set({ usedDays: sql`${leaveAllowances.usedDays} + ${delta}` })
+    .where(
+      and(
+        eq(leaveAllowances.userId, userId),
+        eq(leaveAllowances.leaveTypeId, leaveTypeId),
+        eq(leaveAllowances.year, year),
+      ),
+    );
+}
+
 /** Validate that startHour + hours fits within the user's schedule for the given date */
 function validatePartialAgainstSchedule(
   startHour: string,
@@ -561,21 +596,31 @@ export async function leaveRoutes(fastify: FastifyInstance) {
 
     // ── Create the booking ──
 
-    // Phase 1: all users are contractors, so status is autoconfirmed
-    const [created] = await db
-      .insert(leaveRequests)
-      .values({
-        userId,
-        leaveTypeId,
-        startDate,
-        endDate,
-        daysCount,
-        hours: hours ?? null,
-        startHour: startHour ?? null,
-        note: note ?? null,
-        status: 'autoconfirmed',
-      })
-      .returning();
+    // Phase 1: all users are contractors, so status is autoconfirmed.
+    // Wrap the insert + allowance bump in a transaction so the two stay in lock-step
+    // — if either fails, neither lands.
+    const created = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(leaveRequests)
+        .values({
+          userId,
+          leaveTypeId,
+          startDate,
+          endDate,
+          daysCount,
+          hours: hours ?? null,
+          startHour: startHour ?? null,
+          note: note ?? null,
+          status: 'autoconfirmed',
+        })
+        .returning();
+
+      if (leaveType.deducted) {
+        await applyAllowanceDelta(tx, userId, leaveTypeId, yearOf(startDate), daysCount);
+      }
+
+      return row!;
+    });
 
     reply.code(201);
     return created;
@@ -639,16 +684,25 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'startDate must be <= endDate' });
     }
 
-    // Validate leave type exists if changed
-    if (body.leaveTypeId) {
+    // Fetch the OLD leave type (for the allowance delta) and the NEW one if it changed.
+    // Both lookups happen here, before the transaction, so the validation 400s stay clean.
+    const [oldType] = await db
+      .select({ id: leaveTypes.id, deducted: leaveTypes.deducted })
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, booking.leaveTypeId))
+      .limit(1);
+
+    let newType = oldType;
+    if (body.leaveTypeId && body.leaveTypeId !== booking.leaveTypeId) {
       const [lt] = await db
-        .select()
+        .select({ id: leaveTypes.id, deducted: leaveTypes.deducted })
         .from(leaveTypes)
         .where(eq(leaveTypes.id, body.leaveTypeId))
         .limit(1);
       if (!lt) {
         return reply.code(400).send({ error: 'Invalid leave type' });
       }
+      newType = lt;
     }
 
     // Partial-day validation
@@ -678,6 +732,17 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       const scheduleError = validatePartialAgainstSchedule(startHour, hours, daySchedule);
       if (scheduleError) {
         return reply.code(400).send({ error: scheduleError });
+      }
+    }
+
+    // ── Past-date guard ──
+    // Block moving a booking's startDate into the past. Only fires when body.startDate
+    // is provided (so note-only/leaveType-only edits on historical bookings still work).
+    // Admins can backdate — they may need to correct or retro-enter past bookings.
+    if (body.startDate && request.auth.globalRole !== 'admin') {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: ORG_TIMEZONE });
+      if (body.startDate < today) {
+        return reply.code(400).send({ error: 'Cannot move leave to a past date' });
       }
     }
 
@@ -759,21 +824,50 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // ── Update ──
+    // ── Update + reconcile allowance usage ──
+    // The allowance contribution = `daysCount` against (user, leaveTypeId, year(startDate))
+    // when the leave type is `deducted` and the request isn't cancelled. On any patch we
+    // back out the old contribution and apply the new one — handling type changes and
+    // year-of-startDate changes naturally. Transactional so the two stay consistent.
 
-    const [updated] = await db
-      .update(leaveRequests)
-      .set({
-        leaveTypeId,
-        startDate,
-        endDate,
-        daysCount,
-        hours: hours ?? null,
-        startHour: startHour ?? null,
-        note: note ?? null,
-      })
-      .where(eq(leaveRequests.id, id))
-      .returning();
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(leaveRequests)
+        .set({
+          leaveTypeId,
+          startDate,
+          endDate,
+          daysCount,
+          hours: hours ?? null,
+          startHour: startHour ?? null,
+          note: note ?? null,
+        })
+        .where(eq(leaveRequests.id, id))
+        .returning();
+
+      // Old contribution counted only if the prior status wasn't cancelled (which we
+      // already rejected above) — i.e. it was always counted while alive.
+      if (oldType?.deducted) {
+        await applyAllowanceDelta(
+          tx,
+          booking.userId,
+          booking.leaveTypeId,
+          yearOf(booking.startDate),
+          -booking.daysCount,
+        );
+      }
+      if (newType?.deducted) {
+        await applyAllowanceDelta(
+          tx,
+          booking.userId,
+          leaveTypeId,
+          yearOf(startDate),
+          daysCount,
+        );
+      }
+
+      return row!;
+    });
 
     return updated;
   });
@@ -808,12 +902,35 @@ export async function leaveRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Already cancelled' });
     }
 
-    // Soft cancel
-    const [updated] = await db
-      .update(leaveRequests)
-      .set({ status: 'cancelled' })
-      .where(eq(leaveRequests.id, id))
-      .returning();
+    // Look up the leave type's `deducted` flag so we know whether to release the days
+    // back to the allowance. (We always reach this point with a non-cancelled booking,
+    // so the days were previously counted iff the type was deductible.)
+    const [type] = await db
+      .select({ deducted: leaveTypes.deducted })
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, booking.leaveTypeId))
+      .limit(1);
+
+    // Soft cancel + release allowance days, atomically.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(leaveRequests)
+        .set({ status: 'cancelled' })
+        .where(eq(leaveRequests.id, id))
+        .returning();
+
+      if (type?.deducted) {
+        await applyAllowanceDelta(
+          tx,
+          booking.userId,
+          booking.leaveTypeId,
+          yearOf(booking.startDate),
+          -booking.daysCount,
+        );
+      }
+
+      return row!;
+    });
 
     return updated;
   });

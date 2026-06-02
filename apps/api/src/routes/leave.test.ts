@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, truncateAll } from '../../test/db.js';
 import { buildApp } from '../../test/app.js';
 import {
@@ -539,9 +539,8 @@ describe('GET /api/leave/allowances', () => {
     expect(body[0].year).toBe(currentYear);
   });
 
-  // BUG NOTE: allowances.usedDays is never automatically updated when a leave request is
-  // created/cancelled — it appears to be manually managed. No increment/decrement logic
-  // exists in any of the leave routes.
+  // usedDays auto-update is exercised in the POST/PATCH/DELETE sections below
+  // ("usedDays accounting") — this endpoint just reads the current value.
 });
 
 // ── POST /api/leave/requests ──────────────────────────────────────────────
@@ -1191,10 +1190,7 @@ describe('PATCH /api/leave/requests/:id', () => {
     expect(dbRow!.leaveTypeId).toBe(lt2.id);
   });
 
-  // BUG NOTE: PATCH does NOT validate that the updated dates are not in the past.
-  // A user can move a booking to a past date via PATCH (no `today` check in PATCH).
-  // The POST route has this check but PATCH does not. This is a likely bug.
-  it('BUG: PATCH allows moving a booking to a past date (no past-date check)', async () => {
+  it('returns 400 when a non-admin tries to move a booking to a past date', async () => {
     const u = await makeUser({ role: 'user' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id, {
@@ -1203,14 +1199,50 @@ describe('PATCH /api/leave/requests/:id', () => {
       daysCount: 1,
     });
 
-    // Move to a past date — PATCH has no past-date guard
-    const { status } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-01-05', // Monday in the past
+    const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
+      startDate: '2026-01-05', // Monday in the past relative to test "today" 2026-06-02
       endDate: '2026-01-05',
     });
 
-    // Currently succeeds (no validation) — pinning actual buggy behavior
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/past/i);
+  });
+
+  it('admin can backdate a booking (past-date guard does not apply to admins)', async () => {
+    const owner = await makeUser({ role: 'user' });
+    const admin = await makeUser({ role: 'admin' });
+    const lt = await makeLeaveType();
+    const lr = await makeLeaveRequest(owner.id, lt.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      daysCount: 1,
+    });
+
+    // Admin retro-corrects an entry to a past date — allowed.
+    const { status, body } = await patch(`/api/leave/requests/${lr.id}`, admin.id, {
+      startDate: '2026-01-05',
+      endDate: '2026-01-05',
+    });
     expect(status).toBe(200);
+    expect(body.startDate).toBe('2026-01-05');
+  });
+
+  it('past-date guard does not fire when startDate is not in the body (note-only edit)', async () => {
+    // A booking whose stored startDate is already in the past must still be editable
+    // — only `body.startDate` triggers the guard, not the existing value.
+    const u = await makeUser({ role: 'user' });
+    const lt = await makeLeaveType();
+    const lr = await makeLeaveRequest(u.id, lt.id, {
+      startDate: '2026-01-05', // already past (seeded directly via DB)
+      endDate: '2026-01-05',
+      daysCount: 1,
+    });
+
+    const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
+      note: 'late note',
+    });
+    expect(status).toBe(200);
+    expect(body.note).toBe('late note');
   });
 
   // BUG NOTE: PATCH does not check that the status is not 'approved' — an approved
@@ -1322,6 +1354,230 @@ describe('DELETE /api/leave/requests/:id (soft-cancel)', () => {
       endDate: '2026-06-08',
     });
     expect(status).toBe(201);
+  });
+});
+
+// ── usedDays accounting (POST/PATCH/DELETE keep leave_allowances in sync) ───
+//
+// Invariant: `usedDays` = sum of daysCount across this user's non-cancelled requests
+// of this type/year, when leaveType.deducted=true. The endpoints only update existing
+// allowance rows (no auto-create) — admin/HR seeds them.
+
+describe('usedDays accounting', () => {
+  /** Read usedDays for (user, type, year). Returns null if no row. */
+  async function getUsed(userId: string, leaveTypeId: string, year: number) {
+    const [row] = await db
+      .select({ usedDays: leaveAllowances.usedDays })
+      .from(leaveAllowances)
+      .where(
+        and(
+          eq(leaveAllowances.userId, userId),
+          eq(leaveAllowances.leaveTypeId, leaveTypeId),
+          eq(leaveAllowances.year, year),
+        ),
+      );
+    return row?.usedDays ?? null;
+  }
+
+  it('POST increments usedDays on the allowance row of the deducted type', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    const lt = await makeLeaveType({ isContractorDefault: true, deducted: true });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
+
+    const { status, body } = await post('/api/leave/requests', u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-12', // 5 working days
+    });
+    expect(status).toBe(201);
+    expect(body.daysCount).toBe(5);
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(10); // 5 + 5
+  });
+
+  it('POST does not touch usedDays for a non-deducted type', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    const lt = await makeLeaveType({ isContractorDefault: true, deducted: false });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
+
+    await post('/api/leave/requests', u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+    });
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(5); // unchanged
+  });
+
+  it('POST is a no-op for usedDays when no allowance row exists (still creates the request)', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    const lt = await makeLeaveType({ isContractorDefault: true, deducted: true });
+    // No allowance row pre-seeded
+    const { status } = await post('/api/leave/requests', u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+    });
+    expect(status).toBe(201);
+    expect(await getUsed(u.id, lt.id, 2026)).toBeNull();
+  });
+
+  it('POST partial-day counts as +1 (matches daysCount semantics)', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    const lt = await makeLeaveType({ isContractorDefault: true, deducted: true });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
+
+    await post('/api/leave/requests', u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      hours: 2,
+      startHour: '09:00',
+    });
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(6); // partial deducts 1 day
+  });
+
+  it('PATCH recomputes usedDays when daysCount changes (extend 1d → 5d)', async () => {
+    const u = await makeUser({ role: 'user' });
+    const lt = await makeLeaveType({ deducted: true });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 0 });
+
+    const lr = await makeLeaveRequest(u.id, lt.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      daysCount: 1,
+    });
+
+    // POST didn't run, so seed usedDays by hand to match the makeLeaveRequest insert:
+    await db
+      .update(leaveAllowances)
+      .set({ usedDays: 1 })
+      .where(eq(leaveAllowances.userId, u.id));
+
+    await patch(`/api/leave/requests/${lr.id}`, u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-12',
+    });
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(5); // 1 − 1 + 5
+  });
+
+  it('PATCH shifts usedDays between leave types when leaveTypeId changes', async () => {
+    const u = await makeUser({ role: 'user' });
+    const ltA = await makeLeaveType({ name: 'Annual', deducted: true });
+    const ltB = await makeLeaveType({ name: 'Sick', deducted: true });
+    await db.insert(leaveAllowances).values([
+      { userId: u.id, leaveTypeId: ltA.id, year: 2026, totalDays: 20, usedDays: 3 },
+      { userId: u.id, leaveTypeId: ltB.id, year: 2026, totalDays: 14, usedDays: 0 },
+    ]);
+
+    const lr = await makeLeaveRequest(u.id, ltA.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      daysCount: 1,
+    });
+
+    await patch(`/api/leave/requests/${lr.id}`, u.id, { leaveTypeId: ltB.id });
+
+    expect(await getUsed(u.id, ltA.id, 2026)).toBe(2); // 3 − 1
+    expect(await getUsed(u.id, ltB.id, 2026)).toBe(1); // 0 + 1
+  });
+
+  it('PATCH releases usedDays on the old year when startDate crosses years', async () => {
+    const u = await makeUser({ role: 'admin' }); // admin so the past-date guard never fires
+    const lt = await makeLeaveType({ deducted: true });
+    await db.insert(leaveAllowances).values([
+      { userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 1 },
+      { userId: u.id, leaveTypeId: lt.id, year: 2027, totalDays: 20, usedDays: 0 },
+    ]);
+
+    const lr = await makeLeaveRequest(u.id, lt.id, {
+      startDate: '2026-12-28',
+      endDate: '2026-12-28',
+      daysCount: 1,
+    });
+
+    // Move into 2027 (admin to bypass past-date as well)
+    await patch(`/api/leave/requests/${lr.id}`, u.id, {
+      startDate: '2027-01-04',
+      endDate: '2027-01-04',
+    });
+
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(0); // 1 − 1
+    expect(await getUsed(u.id, lt.id, 2027)).toBe(1); // 0 + 1
+  });
+
+  it('PATCH leaves the non-deducted side untouched (deducted → non-deducted)', async () => {
+    const u = await makeUser({ role: 'user' });
+    const ltDed = await makeLeaveType({ name: 'Annual', deducted: true });
+    const ltFree = await makeLeaveType({ name: 'Unpaid', deducted: false });
+    await db.insert(leaveAllowances).values([
+      { userId: u.id, leaveTypeId: ltDed.id, year: 2026, totalDays: 20, usedDays: 1 },
+      { userId: u.id, leaveTypeId: ltFree.id, year: 2026, totalDays: 0, usedDays: 0 },
+    ]);
+
+    const lr = await makeLeaveRequest(u.id, ltDed.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      daysCount: 1,
+    });
+
+    await patch(`/api/leave/requests/${lr.id}`, u.id, { leaveTypeId: ltFree.id });
+
+    expect(await getUsed(u.id, ltDed.id, 2026)).toBe(0); // released
+    expect(await getUsed(u.id, ltFree.id, 2026)).toBe(0); // unchanged (non-deducted)
+  });
+
+  it('DELETE (cancel) decrements usedDays for a deducted type', async () => {
+    const u = await makeUser({ role: 'user' });
+    const lt = await makeLeaveType({ deducted: true });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 3 });
+
+    const lr = await makeLeaveRequest(u.id, lt.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-10', // 3 working days
+      daysCount: 3,
+    });
+
+    await del(`/api/leave/requests/${lr.id}`, u.id);
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(0);
+  });
+
+  it('DELETE is a no-op for usedDays when type is non-deducted', async () => {
+    const u = await makeUser({ role: 'user' });
+    const lt = await makeLeaveType({ deducted: false });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 3 });
+
+    const lr = await makeLeaveRequest(u.id, lt.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      daysCount: 1,
+    });
+
+    await del(`/api/leave/requests/${lr.id}`, u.id);
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(3); // unchanged
+  });
+
+  it('POST + DELETE round-trip nets to zero', async () => {
+    const u = await makeUser({ employmentType: 'contractor' });
+    const lt = await makeLeaveType({ isContractorDefault: true, deducted: true });
+    await db
+      .insert(leaveAllowances)
+      .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
+
+    const { body } = await post('/api/leave/requests', u.id, {
+      startDate: '2026-06-08',
+      endDate: '2026-06-12',
+    });
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(10);
+
+    await del(`/api/leave/requests/${body.id}`, u.id);
+    expect(await getUsed(u.id, lt.id, 2026)).toBe(5); // back to starting value
   });
 });
 
