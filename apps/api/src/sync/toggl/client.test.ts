@@ -24,6 +24,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.spyOn(console, 'log').mockReturnValue(undefined);
 vi.spyOn(console, 'warn').mockReturnValue(undefined);
 
+// `vi.mock` is hoisted regardless of where it appears, so a call in `beforeEach`
+// looks scoped but applies globally for the file. Vitest 4 will start erroring on
+// the misleading placement — keep it at the top so the actual order is honest.
+vi.mock('./../../sync/retry-with-backoff.js', () => ({
+  withRetry: async (fn: () => Promise<unknown>) => fn(),
+}));
+
 const WORKSPACE_ID = '4801777';
 const ORG_ID = '4775401';
 const API_TOKEN = 'test-token-abc';
@@ -160,11 +167,9 @@ describe('togglFetch — rate-limit (402) and Retry-After header', () => {
 
   beforeEach(() => {
     vi.resetModules();
-    // Mock withRetry to run fn() exactly once (no wait, no retry loop)
-    // This lets us inspect the TogglApiError thrown by a single attempt.
-    vi.mock('./../../sync/retry-with-backoff.js', () => ({
-      withRetry: async (fn: () => Promise<unknown>) => fn(),
-    }));
+    // `vi.mock('../../sync/retry-with-backoff.js')` is at the top of the file —
+    // hoisted, applies to all tests in this file. withRetry runs fn() once, no
+    // delay; lets us inspect the TogglApiError without waiting minutes.
     setEnv();
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

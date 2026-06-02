@@ -208,6 +208,10 @@ describe('jiraFetch — token refresh logic', () => {
 
   beforeEach(() => {
     vi.resetModules();
+    // Vitest 4: `restoreAllMocks` no longer clears call counts on module-mock
+    // `vi.fn()` instances (only restores spies). Explicitly clear so per-test
+    // `toHaveBeenCalledTimes` assertions see only this test's calls.
+    vi.clearAllMocks();
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     process.env.JIRA_CLIENT_ID = CLIENT_ID;

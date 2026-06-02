@@ -19,6 +19,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.spyOn(console, 'log').mockReturnValue(undefined);
 vi.spyOn(console, 'warn').mockReturnValue(undefined);
 
+// `vi.mock` is hoisted regardless of where it sits — keep it at top level so the
+// actual execution order is obvious (Vitest 4 errors on nested placement).
+// withRetry runs fn() once with no delay.
+vi.mock('./../../sync/retry-with-backoff.js', () => ({
+  withRetry: async (fn: () => Promise<unknown>) => fn(),
+}));
+
 const API_TOKEN = 'tt-token-xyz';
 
 function setEnv() {
@@ -229,10 +236,8 @@ describe('fetchTtAbsences — multi-window deduplication and chunking', () => {
 
   beforeEach(() => {
     vi.resetModules();
-    // Mock withRetry to skip actual retries and delays — run fn() exactly once
-    vi.mock('./../../sync/retry-with-backoff.js', () => ({
-      withRetry: async (fn: () => Promise<unknown>) => fn(),
-    }));
+    // `vi.mock('../../sync/retry-with-backoff.js')` is at the top of the file —
+    // hoisted, applies to the whole file (skip retries + delays).
     setEnv();
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

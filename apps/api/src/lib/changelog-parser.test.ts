@@ -7,6 +7,14 @@ import { getChangelogForVersion, parseNotes } from './changelog-parser.js';
 // behaviour is exercised through `getChangelogForVersion` by injecting
 // controlled file content via vi.mock on node:fs/promises.
 
+// `vi.mock` is hoisted regardless of placement; Vitest 4 errors if it appears
+// inside a hook. Mock once at the top — individual tests still control behavior
+// via `vi.mocked(stat).mockResolvedValue(...)` etc.
+vi.mock('node:fs/promises', () => ({
+  stat: vi.fn(),
+  readFile: vi.fn(),
+}));
+
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 const SAMPLE_CHANGELOG = `# Changelog
@@ -94,13 +102,6 @@ describe('parseNotes', () => {
 // touching the real file on disk.
 
 describe('getChangelogForVersion', () => {
-  beforeEach(() => {
-    vi.mock('node:fs/promises', () => ({
-      stat: vi.fn(),
-      readFile: vi.fn(),
-    }));
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
     // Clear the module-level cache between tests by re-importing fresh.
