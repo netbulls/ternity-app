@@ -10,7 +10,8 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## Status snapshot
 
-- **~1040 tests, all green** (shared **140**, api **900**), 61 test files. `tsc --noEmit` passes; build clean.
+- **~1040 unit/integration tests, all green** (shared **140**, api **900**), 61 test files. `tsc --noEmit` passes; build clean.
+- **E2E suite (Playwright)**: **5 happy paths**, 1 worker, ~8 s/run, all green. Each spec is anchored to a PRD section (`// Verifies: docs/prd/<file>.md#<section>`). Stack isolation via `scripts/test-instance.sh` (which also satisfies the `/test-instance` skill contract for ad-hoc dev use): Postgres on a random Docker port + api + web Vite on kernel-assigned ports, teardown stops the container and deletes the temp workdir. Seed (1 admin + 1 contractor + 1 client + 1 project + 1 deducible leave type + 1 allowance row) is written once per run and the seeded IDs surface in `meta.json` so specs don't hard-code any UUID. Found one real bug on the way in (see below).
 - **CI**: `.github/workflows/test.yml` runs the suite on push to `main` + every PR (Testcontainers works on `ubuntu-latest`).
 - **Mutation testing — phase 2 done on shared**: 74.50% baseline → **93.00%**. `notification-settings.ts` and `time-entries.ts` both at **100%**; `reports.ts` 85.42% (remaining 14 are equivalent mutants on display strings). Key lesson banked in `stryker.config.json`: never `parse()` in describe-scope — a thrown setup is reported as a "file failed" while individual `it()` results still count as passed, so Stryker marks the mutant as survived.
 - **Mutation testing — api skeleton ready + first full baseline**: harness URL handoff file moved to `process.cwd()` so each Stryker sandbox gets isolation for free (each spins its own Testcontainers Postgres on a random port — no collisions). `apps/api/stryker.config.json` mutates routes / lib / plugins / services / sync/transform with `concurrency: 2`. CI runs the mutation job ONLY on push to `main` (not PRs) with a 120-min timeout, uploading the HTML report as an artifact. Informational only — does not fail the build on regressions yet.
@@ -57,6 +58,8 @@ then fixing/hardening behind it. Pick up here in a new session.
 | — | `stats.ts` | filters by `time_entries.createdAt`, not segment start time | TODO (decide intent) |
 | — | drizzle journal | `0012_jira_connection_config`, `0013_jira_token_status`, `0015_pg_trgm_fuzzy_search` registered with sequential `idx` 12/13/15 and re-numbered later entries; `applyUnjournaledMigrations` workaround in `test/global-setup.ts` deleted. The three SQL files are idempotent (`DO $$ ... EXCEPTION WHEN duplicate_column`, `CREATE EXTENSION IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`) so prod re-runs are safe. The empty `0007_entry_segments.sql` stays as an inert historical artifact (not in the journal → not executed). | **DONE** |
 | — | `mappings.test.ts` updatedAt assertion | container `now()` vs JS `new Date()` clock drift — same flake class as `run-tracker.test.ts`. Same fix: 1s `SKEW_MS` window. | **DONE** |
+| — | `reports.ts` `aggregateReportData` | `projectBreakdown[].projectId` returns the project **name**, not the UUID. `projectSet` is keyed by `entry.projectName` and `id: key` uses the same string — two projects with the same name across clients would also be merged. Spec `e2e/specs/report-filter.spec.ts` pins the current (buggy) behavior by matching on `projectName`; flip the assertion to `projectId` when fixed. Fix needs `projectId` carried into the `entryMap` value type (not currently stored) plus re-keying `projectSet` on it. | TODO (caught by E2E) |
+| — | POST endpoint status codes | `POST /api/timer/start` and `POST /api/entries` return **200**; `POST /api/leave/requests` and `POST /api/admin/projects/clients` return **201**. The E2E specs assert `.ok()` to absorb the inconsistency. Standardise (probably all 201). | TODO |
 
 ## Done since (operational track)
 
@@ -69,10 +72,12 @@ then fixing/hardening behind it. Pick up here in a new session.
 
 ## What's left (suggested order)
 
-1. **`stats.ts`** — decide whether the filter should be on `time_entries.createdAt` or on the segment start time (the audit flagged it; needs a product call, not just code).
-2. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
-3. **Frontend `apps/web`**: zero tests — different stack (Vitest + React Testing Library / Playwright E2E).
-4. **More operational hardening**: Sentry (error tracking), structured logs, rate-limiting, graceful shutdown, DB backups + restore drill. `APP_VERSION` env is read by `/health` but not yet injected at build/deploy — wire it.
+1. **Two bugs surfaced by E2E**: fix `aggregateReportData` projectId-vs-name + standardise POST status codes (201 across the board). Flip the related E2E asserts after.
+2. **`stats.ts`** — decide whether the filter should be on `time_entries.createdAt` or on the segment start time (the audit flagged it; needs a product call, not just code).
+3. **More E2E coverage** beyond happy paths: edge cases (overlap-409 on leave, RBAC denial paths), and at least one full-UI flow (click-through of the leave booking dialog) to verify the React state machine, not just the API.
+4. **Mutation testing phase 2**: extend Stryker to more shared files; for api, either `concurrency: 1` or give the harness a per-process DB-URL path so Stryker can parallelize.
+5. **Frontend `apps/web` unit tests**: zero tests — Vitest + React Testing Library for hooks/providers, Playwright already covers cross-stack.
+6. **More operational hardening**: Sentry (error tracking), structured logs, rate-limiting, graceful shutdown, DB backups + restore drill. `APP_VERSION` env is read by `/health` but not yet injected at build/deploy — wire it.
 
 ## How to resume (environment)
 
