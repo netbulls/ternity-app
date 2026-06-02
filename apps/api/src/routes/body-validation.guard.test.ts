@@ -15,7 +15,12 @@ import {
 
 const routesDir = dirname(fileURLToPath(import.meta.url));
 
-describe('body-validation guard', () => {
+// Skip under Stryker: it copies sources into .stryker-tmp/sandbox-N and instruments
+// them with mutation-switching code that contains raw `request.body` references —
+// the guard would flag those as violations even though the real source is fine.
+const inStrykerSandbox = process.cwd().includes('.stryker-tmp');
+
+describe.skipIf(inStrykerSandbox)('body-validation guard', () => {
   it('no route reads request.body without a Zod .parse/.safeParse', () => {
     expect(findUnvalidatedRequestBody(routesDir)).toEqual([]);
   });

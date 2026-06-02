@@ -12,7 +12,10 @@ import {
 const srcDir = dirname(fileURLToPath(import.meta.url));
 const pluginsDir = join(srcDir, 'plugins');
 
-describe('architecture guards', () => {
+// Skip under Stryker — see comment in body-validation.guard.test.ts.
+const inStrykerSandbox = process.cwd().includes('.stryker-tmp');
+
+describe.skipIf(inStrykerSandbox)('architecture guards', () => {
   it('no `sql`… ANY(${…}) …`` — Drizzle cannot serialize a JS array (use inArray)', () => {
     // Caused admin-leave-types bulk PATCH to 500 before the fix.
     expect(findAnyInSqlTemplates(srcDir)).toEqual([]);
