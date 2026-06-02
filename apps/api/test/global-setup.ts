@@ -28,7 +28,22 @@ export const DB_URL_FILE = path.join(process.cwd(), '.ternity-test-db-url');
 let container: StartedPostgreSqlContainer | undefined;
 
 export async function setup() {
-  container = await new PostgreSqlContainer(IMAGE).start();
+  // Throw durability away for speed: the container is ephemeral, every test wipes
+  // the DB anyway, so a crash midway means nothing. fsync/synchronous_commit/full_page_writes
+  // are off → writes don't wait on disk; PGDATA on tmpfs → all DB state stays in RAM.
+  // Big win for the I/O-heavy tests (truncateAll + many INSERTs per test).
+  container = await new PostgreSqlContainer(IMAGE)
+    .withCommand([
+      'postgres',
+      '-c',
+      'fsync=off',
+      '-c',
+      'synchronous_commit=off',
+      '-c',
+      'full_page_writes=off',
+    ])
+    .withTmpFs({ '/var/lib/postgresql/data': 'rw' })
+    .start();
   const url = container.getConnectionUri();
 
   // Apply migrations once for the whole suite.
