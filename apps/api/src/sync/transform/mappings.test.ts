@@ -66,7 +66,13 @@ describe('upsertMapping', () => {
     const after = await findMapping('toggl', 'client', '100');
 
     expect(after!.createdAt).toEqual(before!.createdAt);
-    expect(after!.updatedAt.getTime()).toBeGreaterThanOrEqual(before!.updatedAt.getTime());
+    // `before.updatedAt` is Postgres `now()` at insert; `after.updatedAt` is `new Date()`
+    // at the subsequent update — two clocks. Allow a small skew window (same pattern as
+    // run-tracker.test.ts) so this doesn't flake on container/host clock drift.
+    const SKEW_MS = 1000;
+    expect(after!.updatedAt.getTime()).toBeGreaterThanOrEqual(
+      before!.updatedAt.getTime() - SKEW_MS,
+    );
   });
 
   it('creates distinct rows for distinct triples', async () => {
