@@ -14,3 +14,12 @@ export function findAnyInSqlTemplates(srcDir: string, opts?: ScanOptions): strin
 
 /** Plugin files that call `addHook` but aren't `fp()`-wrapped (hooks silently won't apply). */
 export function findPluginsMissingFp(pluginsDir: string, opts?: ScanOptions): string[];
+
+/**
+ * `fastify.post(...)` handlers that create a resource (call `.insert(...).returning(...)`)
+ * but neither set `reply.code(201)` nor opt out via a `// @status-code 200 — <reason>`
+ * comment inside the handler body. `.onConflictDoUpdate(...)` (upserts) are exempt.
+ *
+ * Each offender is returned as `"<file> POST <route-path>"`.
+ */
+export function findPostCreateMissing201(routesDir: string, opts?: ScanOptions): string[];
