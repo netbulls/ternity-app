@@ -81,21 +81,27 @@ Mutanty: `===` → `!==`, ternary zawsze do `'Monday'`, ternary zawsze do `'Frid
 
 **Wynik:** notification-content **63.16% → 68.42% covered**. Skok mały bo pozostałe 45 mutantów to equivalent — wytłumaczone niżej.
 
-### 3. `routes/me.ts` — cała ścieżka Logto nietestowana (NIE NAPRAWIONE w tej rundzie)
+### 3. `routes/me.ts` — cała ścieżka Logto nietestowana (NAPRAWIONE: **6.78% → 88.14%**)
 
-**Co znaleziono:** plik ma **6.78% total / 44.44% covered**. Pięć ocalałych mutantów na linii 11 (warunek wejścia w blok Logto) + **50 mutantów „no coverage"** w środku tego bloku.
+**Co znaleziono:** plik miał **6.78% total / 44.44% covered**. Pięć ocalałych mutantów na linii 11 (warunek wejścia w blok Logto) + **50 mutantów „no coverage"** w środku tego bloku.
 
-Diagnoza: blok pod `if (process.env.AUTH_MODE === 'logto' && logtoEndpoint)` odświeża awatar użytkownika z Logto (pobiera token managementu, robi fetch do Logto API, aktualizuje DB). W trybie testowym używamy `stub`, więc do tego bloku nigdy nie wchodzimy. Wszystkie testy `/api/me` testują tylko ścieżkę stub.
+Diagnoza: blok pod `if (process.env.AUTH_MODE === 'logto' && logtoEndpoint)` odświeża awatar użytkownika z Logto (pobiera token managementu, robi fetch do Logto API, aktualizuje DB). W trybie testowym używamy `stub`, więc do tego bloku nigdy nie wchodzimy. Wszystkie testy `/api/me` testowały tylko ścieżkę stub.
 
-Konsekwencja: gdyby ktoś jutro rozwalił logikę odświeżania awatara (np. źle skonstruował URL Logto, dał złe nagłówki, źle wyparsował response), testy nic by nie powiedziały. Bug objawiłby się dopiero u prawdziwego użytkownika Logto w produkcji.
+Konsekwencja byłaby taka: gdyby ktoś jutro rozwalił logikę odświeżania awatara (np. źle skonstruował URL Logto, dał złe nagłówki, źle wyparsował response), testy nic by nie powiedziały. Bug objawiłby się dopiero u prawdziwego użytkownika Logto w produkcji.
 
-**Dlaczego nie naprawiamy teraz:** to wymaga infrastruktury testowej:
-- przełączenie `AUTH_MODE` na `'logto'` na czas testu,
-- mock globalnego `fetch`,
-- mock `getManagementToken` z `auth.ts`,
-- przygotowanie fixture'ów odpowiedzi Logto API.
+**Co zrobiliśmy:** nowy `me-logto.test.ts` z 19 testami pokrywającymi:
+- gate (kombinacje `AUTH_MODE`/`LOGTO_ENDPOINT`),
+- wewnętrzne strażniki (`externalAuthId`, obecność tokena managementu),
+- prawidłowy URL i nagłówek `Authorization` w wywołaniu do Logto,
+- wybór awatara (top-level / fallback social-identity / null),
+- normalizację telefonu (zachowanie `+`, dopisanie `+`, trim, null),
+- dyscyplinę zapisu do DB (no-op gdy nic się nie zmieniło, kolumna-precyzyjnie przy zmianach częściowych),
+- ścieżki błędu (non-ok response → bez zapisu; rzucony fetch → caught, profil zwrócony),
+- edge case: identity bez `details` ma być bezpiecznie pominięte (kontrakt optional chaining).
 
-To godzina-dwie pracy, osobna decyzja. Recommendation: **najwyższy priorytet w kolejnej rundzie**, większy niż dobijanie pojedynczych survivorów w innych plikach.
+Infrastruktura: `vi.mock()` częściowy — podmieniony tylko `getManagementToken` z `'../plugins/auth.js'` (default export `authPlugin` realny, żeby `buildApp` mógł zarejestrować stub auth); `fetch` przez `vi.stubGlobal`; `AUTH_MODE`/`LOGTO_ENDPOINT` flipowane per-test i przywracane w `afterAll`. me.ts czyta `AUTH_MODE` inline w handlerze, więc zmiana po `buildApp()` przełącza route w tryb Logto, podczas gdy `request.auth` nadal jest budowane przez stub.
+
+**Wynik:** **6.78% → 88.14% covered**, **0 mutantów „no coverage"** (każda linia bloku Logto ma test). 52 zabite, 7 ocalałych — 3 to treść logów (observability, jak w error-handlerze), 2 to log-blocks strips (też observability), 1 to dziwny mutant na ścieżce trasy `'/api/me' → ""` (prawdopodobnie artefakt Strykera per-test dla trasy rejestrowanej w `beforeAll`), 1 edge case który dobity dodatkowym asertem był zbędny. Wszystkie pozostałe to mutanty równoważne pod kątem zachowania albo Stryker quirk.
 
 ### 4. `services/email.ts`, `services/sms.ts` — zerowe pokrycie (świadoma decyzja)
 
@@ -145,18 +151,21 @@ Test który czyta pliki źródłowe z dysku (jak nasz `body-validation.guard`) d
 ## Stan końcowy
 
 Co zrobione w tej rundzie:
-- 5 nowych testów (3 dla error-handler, 2 dla notification-content)
-- 9 realnych mutantów zabitych, w tym jeden ukryty bug logiczny (`?? → &&`)
-- `error-handler.ts` 44.44% → **88.89% covered**
-- `notification-content.ts` 4 realne bugi z dnia tygodnia załatane
+- **24 nowe testy** (3 dla error-handler, 2 dla notification-content, 19 dla me.ts Logto branch)
+- **Jeden ukryty bug logiczny zabity** (`?? → &&` w error-handler — klient dostałby `error: undefined` w produkcji gdyby ktoś jutro przeprowadził pozornie kosmetyczny refaktor)
+- **Cztery realne bugi day-of-week** w mailach cotygodniowych zaadresowane
+- **Cała ścieżka Logto refresh** awatar/telefon teraz pokryta end-to-end z mockowanym fetch
+- `lib/error-handler.ts` 44.44% → **88.89% covered**
+- `routes/me.ts` 44.44% → **88.14% covered** (z 0 mutantami „no coverage" — wszystkie linie bloku Logto teraz mają test)
+- api suite: 863 → 887 testów
 
 Co zostawiamy świadomie:
 - ~60 mutantów równoważnych (display strings) — zostają jako survivory, opisane wyżej
 - 2 mutanty na logach — observability, nie zachowanie
 
 Co wymaga osobnej decyzji:
-- **`routes/me.ts` ścieżka Logto** — największa luka pokrycia, wymaga infrastruktury mocków. Następny krok.
 - Wrappery `email.ts`/`sms.ts` — decyzja architektoniczna, prawdopodobnie zostają bez bezpośrednich testów.
+- Pozostałe pliki w pasmie 60–80% covered (`routes/timer.ts`, `routes/team.ts`, `routes/reference.ts`, kilka innych) — kolejna runda będzie pewnie miała mniejszy zwrot per godzinę pracy, ale jest gdzie iść.
 
 ## Co to wszystko mówi szerzej
 
