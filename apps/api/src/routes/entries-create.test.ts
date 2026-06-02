@@ -67,7 +67,7 @@ describe('POST /api/entries', () => {
     const u = await makeUser('admin');
     const { status, body } = await post(u.id, validBody());
 
-    expect(status).toBe(200);
+    expect(status).toBe(201);
     expect(body).toMatchObject({ description: 'Write tests', isActive: true, isRunning: false });
     expect(body.segments).toHaveLength(1);
     expect(body.segments[0]).toMatchObject({ type: 'manual', durationSeconds: 5400 });
@@ -88,7 +88,7 @@ describe('POST /api/entries', () => {
   it('allows a null project', async () => {
     const u = await makeUser('admin');
     const { status, body } = await post(u.id, validBody({ projectId: null }));
-    expect(status).toBe(200);
+    expect(status).toBe(201);
     expect(body.projectId).toBeNull();
   });
 
@@ -120,7 +120,7 @@ describe('POST /api/entries', () => {
       const p = await makeProject();
       await db.insert(projectMembers).values({ userId: u.id, projectId: p.id, role: 'user' });
       const { status, body } = await post(u.id, validBody({ projectId: p.id }));
-      expect(status).toBe(200);
+      expect(status).toBe(201);
       expect(body.projectId).toBe(p.id);
     });
   });

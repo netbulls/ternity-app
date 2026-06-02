@@ -92,6 +92,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       .values({ name: name.trim(), color: color.trim(), sortOrder })
       .returning();
 
+    reply.code(201);
     return group;
   });
 
@@ -196,6 +197,7 @@ export async function adminLeaveTypesRoutes(fastify: FastifyInstance) {
       })
       .returning();
 
+    reply.code(201);
     return created;
   });
 

@@ -727,6 +727,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       return buildEntryResponse(created!.id, tx);
     });
 
+    reply.code(201);
     return result;
   });
 

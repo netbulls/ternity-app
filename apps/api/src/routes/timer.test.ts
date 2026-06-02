@@ -112,7 +112,7 @@ describe('POST /api/timer/start', () => {
   it('creates an entry with an open clocked segment', async () => {
     const u = await makeUser();
     const { status, body } = await post('/api/timer/start', u.id, { description: 'Coding' });
-    expect(status).toBe(200);
+    expect(status).toBe(201);
     expect(body.running).toBe(true);
     expect(body.entry.isRunning).toBe(true);
     expect(body.entry.segments).toHaveLength(1);

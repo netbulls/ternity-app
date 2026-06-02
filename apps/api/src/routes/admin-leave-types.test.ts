@@ -106,7 +106,7 @@ describe('POST /api/admin/leave-type-groups', () => {
       name: 'Sick Leave',
       color: '#ff0000',
     });
-    expect(status).toBe(200);
+    expect(status).toBe(201);
     expect(body).toMatchObject({ name: 'Sick Leave', color: '#ff0000' });
     expect(body.sortOrder).toBe(1); // max(0) + 1
 
@@ -257,7 +257,7 @@ describe('POST /api/admin/leave-types', () => {
       name: 'Vacation',
       daysPerYear: 20,
     });
-    expect(status).toBe(200);
+    expect(status).toBe(201);
     expect(body).toMatchObject({ name: 'Vacation', daysPerYear: 20, active: true, deducted: true, visibility: 'all' });
 
     const [row] = await db.select().from(leaveTypes).where(eq(leaveTypes.id, body.id));

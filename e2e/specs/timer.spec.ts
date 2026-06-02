@@ -27,16 +27,14 @@ test('start → stop → entry appears in /api/entries with the chosen project',
   const start = await api.post('/api/timer/start', {
     data: { description, projectId: meta.seed.projectId },
   });
-  // POST /api/timer/start currently returns 200 (not 201) — inconsistent with
-  // POST /api/leave/requests which uses 201. Asserting `.ok()` pins the actual
-  // contract; the inconsistency is tracked in docs/production-readiness-progress.md.
-  expect(start.ok(), `start status=${start.status()} body=${await start.text()}`).toBeTruthy();
+  expect(start.status(), `start body=${await start.text()}`).toBe(201);
 
   // Let a real second tick so the segment has a measurable duration.
   await page.waitForTimeout(1100);
 
+  // /timer/stop is an action on an existing entry, not a create — stays 200.
   const stop = await api.post('/api/timer/stop', { data: {} });
-  expect(stop.ok(), `stop status=${stop.status()} body=${await stop.text()}`).toBeTruthy();
+  expect(stop.status(), `stop body=${await stop.text()}`).toBe(200);
 
   // /api/entries returns day groups: [{ date, totalSeconds, entries: [...] }].
   const today = new Date().toISOString().slice(0, 10);

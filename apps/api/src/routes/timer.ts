@@ -287,6 +287,7 @@ export async function timerRoutes(fastify: FastifyInstance) {
       return buildEntryResponse(created!.id, tx);
     });
 
+    reply.code(201);
     return { running: true, entry: result };
   });
 
