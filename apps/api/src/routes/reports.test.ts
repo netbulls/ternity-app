@@ -236,15 +236,41 @@ describe('GET /api/reports/data', () => {
     await makeSegmentAt(eB.id, '2026-03-15', 1000);
 
     const res = await inject('GET', '/api/reports/data?dateFrom=2026-03-01&dateTo=2026-03-31', u.id);
-    const projectBreak: Array<{ projectName: string; totalSeconds: number; percentage: number }> =
-      res.json().projectBreakdown;
+    const projectBreak: Array<{
+      projectId: string | null;
+      projectName: string;
+      totalSeconds: number;
+      percentage: number;
+    }> = res.json().projectBreakdown;
     expect(projectBreak).toHaveLength(2);
     // sorted desc
     expect(projectBreak[0]!.projectName).toBe('Alpha');
+    expect(projectBreak[0]!.projectId).toBe(pA.id); // real UUID, not the name
     expect(projectBreak[0]!.totalSeconds).toBe(3000);
     expect(projectBreak[0]!.percentage).toBe(75); // 3000/4000
     expect(projectBreak[1]!.projectName).toBe('Beta');
+    expect(projectBreak[1]!.projectId).toBe(pB.id);
     expect(projectBreak[1]!.percentage).toBe(25);
+  });
+
+  it('two projects with the same name in different clients stay separate', async () => {
+    // Pins the second half of the original bug — projectSet was keyed by name,
+    // so same-named projects across clients would have merged into one row.
+    const u = await makeUser('admin');
+    const { project: pA } = await makeProject('Shared Name', '#ff0000');
+    const { project: pB } = await makeProject('Shared Name', '#0000ff');
+    expect(pA.id).not.toBe(pB.id);
+
+    const eA = await makeEntry(u.id, { projectId: pA.id });
+    await makeSegmentAt(eA.id, '2026-03-15', 1800);
+    const eB = await makeEntry(u.id, { projectId: pB.id });
+    await makeSegmentAt(eB.id, '2026-03-15', 1800);
+
+    const res = await inject('GET', '/api/reports/data?dateFrom=2026-03-01&dateTo=2026-03-31', u.id);
+    const pb: Array<{ projectId: string | null }> = res.json().projectBreakdown;
+    expect(pb).toHaveLength(2);
+    const ids = pb.map((p) => p.projectId).sort();
+    expect(ids).toEqual([pA.id, pB.id].sort());
   });
 
   it('entries without a project appear under "No project" in projectBreakdown', async () => {
@@ -253,8 +279,10 @@ describe('GET /api/reports/data', () => {
     await makeSegmentAt(e.id, '2026-03-15', 1800);
 
     const res = await inject('GET', '/api/reports/data?dateFrom=2026-03-01&dateTo=2026-03-31', u.id);
-    const pb: Array<{ projectName: string; percentage: number }> = res.json().projectBreakdown;
+    const pb: Array<{ projectId: string | null; projectName: string; percentage: number }> =
+      res.json().projectBreakdown;
     expect(pb).toHaveLength(1);
+    expect(pb[0]!.projectId).toBeNull(); // sentinel for "no project"
     expect(pb[0]!.projectName).toBe('No project');
     expect(pb[0]!.percentage).toBe(100);
   });
@@ -444,7 +472,7 @@ describe('POST /api/reports/templates', () => {
       config: minConfig,
       isFavorite: false,
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.name).toBe('Q1 Report');
     expect(body.isFavorite).toBe(false);

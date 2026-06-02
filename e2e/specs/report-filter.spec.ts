@@ -33,8 +33,7 @@ test('report aggregates an entry on the seeded project and respects filters', as
       note: 'e2e',
     },
   });
-  // POST /api/entries currently returns 200 (not 201) — see timer.spec.ts.
-  expect(create.ok(), `status=${create.status()} body=${await create.text()}`).toBeTruthy();
+  expect(create.status(), `body=${await create.text()}`).toBe(201);
 
   // Pull the report — only this admin's data is in the DB, so totals are deterministic.
   const r = await api.get(
@@ -47,14 +46,13 @@ test('report aggregates an entry on the seeded project and respects filters', as
   expect(report.summary.totalSeconds).toBeGreaterThanOrEqual(expectedSeconds);
   expect(report.summary.projectCount).toBe(1);
   expect(report.summary.userCount).toBeGreaterThanOrEqual(1);
-  // BUG discovered by this E2E: aggregateReportData keys the `projectSet` map
-  // by `entry.projectName` and uses the name as `id`, so projectBreakdown[].projectId
-  // ends up being the project NAME, not a UUID. Two projects with the same name
-  // would also be merged. Reported in docs/production-readiness-progress.md.
-  // Pinning current (buggy) behavior — match by name until the fix lands.
+  // projectBreakdown carries the real project UUID (post-fix). Pre-fix this used
+  // to be the project name — see reports.ts's projectSet keyed by projectId now.
   expect(
-    report.projectBreakdown.some((p: { projectName: string }) => p.projectName === 'E2E Project'),
-    `projectBreakdown=${JSON.stringify(report.projectBreakdown)}`,
+    report.projectBreakdown.some(
+      (p: { projectId: string | null }) => p.projectId === meta.seed.projectId,
+    ),
+    `projectBreakdown=${JSON.stringify(report.projectBreakdown)} seed=${meta.seed.projectId}`,
   ).toBe(true);
 
   // Negative filter: a different (random) projectId returns nothing.
