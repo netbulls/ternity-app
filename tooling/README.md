@@ -53,6 +53,7 @@ guards a given project needs.
      findRequestBodyCasts,
      findAnyInSqlTemplates,
      findPluginsMissingFp,
+     findPostCreateMissing201,
    } from '../tooling/guards/source-guards.js'; // adjust the relative path
 
    describe('production-readiness guards', () => {
@@ -65,6 +66,11 @@ guards a given project needs.
      });
      it('plugins adding hooks are fp()-wrapped', () => {
        expect(findPluginsMissingFp('src/plugins')).toEqual([]);
+     });
+     it('resource-creating POSTs return 201', () => {
+       // Allowed opt-out for hybrid handlers: a `// @status-code 200 — <reason>` comment
+       // anywhere inside the handler body.
+       expect(findPostCreateMissing201('src/routes')).toEqual([]);
      });
    });
    ```

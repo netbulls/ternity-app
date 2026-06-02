@@ -983,6 +983,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
   /** POST /api/entries/:id/move-block — move a time block to a new entry */
   fastify.post('/api/entries/:id/move-block', async (request, reply) => {
+    // @status-code 200 — primarily a mutation on the *source* entry (split a segment
+    // off, audit log entries). The new entry inserted as a side-effect isn't the
+    // primary returned resource; the response is the updated source entry.
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
@@ -1129,6 +1132,9 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
   /** POST /api/entries/:id/split — split off time from an entry into a new entry */
   fastify.post('/api/entries/:id/split', async (request, reply) => {
+    // @status-code 200 — see move-block: a mutation on the source entry that *also*
+    // produces a derived entry as a side-effect. The response shape is the modified
+    // source entry, not the derived one.
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };

@@ -360,6 +360,9 @@ export async function timerRoutes(fastify: FastifyInstance) {
 
   /** POST /api/timer/start-or-resume — resume existing entry by jiraIssueKey, or start new */
   fastify.post('/api/timer/start-or-resume', async (request, reply) => {
+    // @status-code 200 — hybrid: may insert a brand-new entry OR resume an existing one
+    // by adding a fresh segment to it. Both paths return the same `{ running, entry }`
+    // shape; the caller can't tell which happened, so 200 is honest.
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const body = StartTimerSchema.parse(request.body ?? {});

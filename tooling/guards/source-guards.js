@@ -77,3 +77,56 @@ export function findPluginsMissingFp(pluginsDir, opts) {
     return /\.addHook\(/.test(src) && !/fastify-plugin|fp\(/.test(src);
   });
 }
+
+/**
+ * Split a routes file into per-`fastify.<verb>(...)` handler segments so we can run
+ * structural checks against individual handlers (and quote the offender's path).
+ *
+ * Naive but adequate for Fastify route files: take the substring from each
+ * `fastify.<verb>(` opening up to (but not including) the next `fastify.<verb>(` or end
+ * of file. False positives are possible if a handler contains code that *quotes*
+ * `fastify.<verb>(` literally — none of the Ternity routes do, but be aware.
+ */
+function splitFastifyHandlers(src) {
+  const re = /fastify\.(get|post|patch|delete|put|head|options)\(\s*['"`]([^'"`]+)['"`]/g;
+  const matches = [...src.matchAll(re)];
+  return matches.map((m, i) => {
+    const start = m.index ?? 0;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? src.length) : src.length;
+    return { verb: m[1], path: m[2], body: src.slice(start, end) };
+  });
+}
+
+/**
+ * Convention guard — every `fastify.post(...)` that creates a resource
+ * (calls `.insert(...).returning(...)`) must explicitly `reply.code(201)`.
+ *
+ * Caught: drift across route files (some endpoints landed on the Fastify-default 200
+ * while others used 201). Surfaced by an E2E spec; this scanner stops the regression at
+ * its source — write a creator-POST that forgets `reply.code(201)` and the guard test
+ * fails the build with a pointer.
+ *
+ * Exemptions, both intentional:
+ *   • `.onConflictDoUpdate(...)` in the handler → upsert (idempotent "ensure exists"),
+ *     not a created-resource POST. Returns 200 by convention.
+ *   • A `// @status-code 200 — <reason>` comment anywhere in the handler body documents
+ *     a deliberate 200 (e.g. start-or-resume hybrid that may create OR resume).
+ *
+ * Returns offenders as "<file> POST <route-path>".
+ */
+export function findPostCreateMissing201(routesDir, opts) {
+  const offenders = [];
+  for (const file of listSourceFiles(routesDir, opts)) {
+    const src = readFileSync(file, 'utf8');
+    for (const h of splitFastifyHandlers(src)) {
+      if (h.verb !== 'post') continue;
+      const insertsAndReturns = /\.insert\([^)]*\)[\s\S]{0,400}?\.returning\(/.test(h.body);
+      if (!insertsAndReturns) continue;
+      if (/\.onConflictDoUpdate\(/.test(h.body)) continue; // upsert opt-out
+      if (/@status-code\s+200/.test(h.body)) continue; // explicit opt-out
+      if (/reply\.code\(\s*201\s*\)/.test(h.body)) continue;
+      offenders.push(`${file} POST ${h.path}`);
+    }
+  }
+  return offenders;
+}
