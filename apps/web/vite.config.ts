@@ -33,12 +33,14 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // VITE_API_PROXY_TARGET lets the E2E harness point web at an ephemeral api
+      // port. Defaults to the standard dev port — no change for regular `pnpm dev`.
       '/api': {
-        target: 'http://localhost:3010',
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3010',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:3010',
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3010',
         changeOrigin: true,
       },
     },
