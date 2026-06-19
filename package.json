@@ -28,5 +28,21 @@
     "eslint": "^9.18.0",
     "prettier": "^3.4.0",
     "typescript-eslint": "^8.20.0"
+  },
+  "pnpm": {
+    "//": "Surgical security overrides — each key targets only the vulnerable range and bumps to the minimum patched version within the same major, so no incompatible major is pulled in. Direct deps (fastify, drizzle-orm, vite) are bumped in their own package.json instead.",
+    "overrides": {
+      "minimatch@<3.1.4": "3.1.4",
+      "minimatch@>=9.0.0 <9.0.7": "9.0.7",
+      "picomatch@<2.3.2": "2.3.2",
+      "picomatch@>=4.0.0 <4.0.4": "4.0.4",
+      "flatted@<=3.4.1": "3.4.2",
+      "rollup@>=4.0.0 <4.59.0": "4.59.0",
+      "undici@<6.24.0": "6.24.0",
+      "fast-uri@<=3.1.1": "3.1.2",
+      "tmp@<0.2.6": "0.2.6",
+      "axios@>=1.0.0 <1.16.0": "1.16.0",
+      "vite@>=6.0.0 <=6.4.1": "6.4.2"
+    }
   }
 }

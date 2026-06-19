@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import viewerModePlugin from './plugins/viewer-mode.js';
 import authPlugin from './plugins/auth.js';
+import { registerErrorHandler } from './lib/error-handler.js';
 import { healthRoutes } from './routes/health.js';
 import { meRoutes } from './routes/me.js';
 import { timerRoutes } from './routes/timer.js';
@@ -38,15 +39,8 @@ await fastify.register(cors, {
 await fastify.register(viewerModePlugin);
 await fastify.register(authPlugin);
 
-// Global error handler — structured JSON for all unhandled errors
-fastify.setErrorHandler((error: Error & { statusCode?: number; code?: string }, request, reply) => {
-  request.log.error(error);
-  const status = error.statusCode ?? 500;
-  reply.code(status).send({
-    error: error.message ?? 'Internal server error',
-    code: error.code ?? 'INTERNAL_ERROR',
-  });
-});
+// Global error handler — structured JSON for all unhandled errors (ZodError → 400)
+registerErrorHandler(fastify);
 
 // Error simulation (dev-only)
 if (process.env.NODE_ENV !== 'production') {

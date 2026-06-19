@@ -76,6 +76,7 @@ function aggregateReportData(rows: EntryRow[], dateFrom: string, dateTo: string)
       userId: string;
       userName: string;
       userAvatarUrl: string | null;
+      projectId: string | null;
       projectName: string;
       projectColor: string;
       clientName: string | null;
@@ -100,6 +101,7 @@ function aggregateReportData(rows: EntryRow[], dateFrom: string, dateTo: string)
         userId: row.user_id,
         userName: row.user_name,
         userAvatarUrl: row.user_avatar_url,
+        projectId: row.project_id,
         projectName: row.project_name ?? 'No project',
         projectColor: row.project_color ?? '#F59E0B',
         clientName: row.client_name,
@@ -166,11 +168,13 @@ function aggregateReportData(rows: EntryRow[], dateFrom: string, dateTo: string)
   const grandTotalSeconds = Array.from(userMap.values()).reduce((s, u) => s + u.totalSeconds, 0);
   const totalEntries = Array.from(userMap.values()).reduce((s, u) => s + u.entryCount, 0);
 
-  // Unique projects
+  // Unique projects — keyed by projectId so same-name projects in different
+  // clients stay separate, and the wire format carries the real UUID (or null
+  // for "no project"). The "__none__" sentinel only lives inside this Map.
   const projectSet = new Map<
     string,
     {
-      id: string;
+      id: string | null;
       name: string;
       color: string;
       clientName: string | null;
@@ -179,14 +183,14 @@ function aggregateReportData(rows: EntryRow[], dateFrom: string, dateTo: string)
     }
   >();
   for (const entry of entryMap.values()) {
-    const key = entry.projectName;
+    const key = entry.projectId ?? '__none__';
     const existing = projectSet.get(key);
     if (existing) {
       existing.totalSeconds += entry.totalSeconds;
       existing.entryCount += 1;
     } else {
       projectSet.set(key, {
-        id: key,
+        id: entry.projectId,
         name: entry.projectName,
         color: entry.projectColor,
         clientName: entry.clientName,
@@ -475,7 +479,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
   });
 
   // ── POST /api/reports/templates ───────────────────────────────────────
-  fastify.post('/api/reports/templates', async (request) => {
+  fastify.post('/api/reports/templates', async (request, reply) => {
     const userId = request.auth.userId;
     const body = CreateReportTemplateSchema.parse(request.body);
 
@@ -490,6 +494,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       .returning();
 
     const r = row!;
+    reply.code(201);
     return {
       id: r.id,
       name: r.name,

@@ -175,7 +175,9 @@ const ReportUserBreakdownSchema = z.object({
 });
 
 const ReportProjectBreakdownSchema = z.object({
-  projectId: z.string(),
+  // Real project UUID; null for entries with no project (the "No project"
+  // bucket). Matches dashboard's ProjectBreakdownItemSchema.
+  projectId: z.string().nullable(),
   projectName: z.string(),
   projectColor: z.string(),
   clientName: z.string().nullable(),

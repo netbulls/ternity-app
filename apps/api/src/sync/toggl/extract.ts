@@ -148,7 +148,7 @@ export async function extractTogglTimeEntries(from?: string, to?: string) {
     let windowStart = new Date(startDate);
     const end = new Date(endDate);
 
-    while (windowStart < end) {
+    while (windowStart <= end) {
       const windowEnd = new Date(windowStart);
       windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS - 1);
       if (windowEnd > end) windowEnd.setTime(end.getTime());

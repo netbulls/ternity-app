@@ -9,11 +9,15 @@ import {
   jiraFetch,
   TokenExpiredError,
 } from '../lib/jira-client.js';
+import { z } from 'zod';
 import {
   JiraConnectionConfigSchema,
   type JiraIssue,
   type JiraConnectionConfig,
 } from '@ternity/shared';
+
+/** OAuth code-exchange payload — validated at the boundary (malformed → 400). */
+const JiraExchangeSchema = z.object({ code: z.string().min(1) });
 
 /** Helper: catch TokenExpiredError, mark connection as expired in DB, return 401. */
 async function handleJiraFetchError(
@@ -64,10 +68,18 @@ function mapJiraIssues(data: JiraSearchApiResponse): JiraIssue[] {
   }));
 }
 
+/** Escape a value for safe interpolation inside a double-quoted JQL string literal.
+ *  Unlike SQL (where drizzle parameterizes), JQL is sent to Jira as a raw string, so a
+ *  bare `"` in user text or config would close the literal and inject clauses (S2).
+ *  JQL uses backslash as the escape char inside quoted strings. */
+export function escapeJqlString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 /** Build JQL clauses for a text/key search term.
  *  `projects` is the list of selected project keys from the connection config —
  *  used to expand bare numbers (e.g. "2826") into key lookups ("YOS-2826", "DEV-2826"). */
-function buildTextJqlParts(text: string, projects: string[] = []): string[] {
+export function buildTextJqlParts(text: string, projects: string[] = []): string[] {
   // "YOS-2826" → exact key lookup
   if (/^[A-Z][A-Z0-9]+-\d+$/i.test(text)) {
     return [`key = "${text.toUpperCase()}"`];
@@ -79,15 +91,15 @@ function buildTextJqlParts(text: string, projects: string[] = []): string[] {
   }
   // Pure number like "2826" → expand to key lookup across configured projects
   if (/^\d+$/.test(text) && projects.length > 0) {
-    const keys = projects.map((p) => `"${p}-${text}"`).join(', ');
+    const keys = projects.map((p) => `"${escapeJqlString(p)}-${text}"`).join(', ');
     return [`key IN (${keys})`];
   }
-  // Fallback: full-text search
-  return [`text ~ "${text}"`];
+  // Fallback: full-text search — escape user input so a quote can't break out
+  return [`text ~ "${escapeJqlString(text)}"`];
 }
 
 /** Build JQL from connection config + mode-specific clause */
-function buildSearchJql(
+export function buildSearchJql(
   config: JiraConnectionConfig,
   mode: 'assigned' | 'recent' | 'text',
   text?: string,
@@ -96,13 +108,13 @@ function buildSearchJql(
 
   // Project filter from config
   if (config.selectedProjects.length > 0) {
-    const projectList = config.selectedProjects.map((p) => `"${p}"`).join(', ');
+    const projectList = config.selectedProjects.map((p) => `"${escapeJqlString(p)}"`).join(', ');
     parts.push(`project IN (${projectList})`);
   }
 
   // Status exclusion from config
   if (config.excludedStatuses.length > 0) {
-    const statusList = config.excludedStatuses.map((s) => `"${s}"`).join(', ');
+    const statusList = config.excludedStatuses.map((s) => `"${escapeJqlString(s)}"`).join(', ');
     parts.push(`status NOT IN (${statusList})`);
   }
 
@@ -124,10 +136,7 @@ function buildSearchJql(
 export async function jiraRoutes(fastify: FastifyInstance) {
   // ── POST /api/jira/exchange — Token exchange + store connections ────────
   fastify.post('/api/jira/exchange', async (request, reply) => {
-    const { code } = request.body as { code: string };
-    if (!code) {
-      return reply.code(400).send({ error: 'Missing authorization code' });
-    }
+    const { code } = JiraExchangeSchema.parse(request.body);
 
     const userId = request.auth.userId;
 

@@ -89,82 +89,103 @@
     {
       "idx": 12,
       "version": "7",
+      "when": 1772294400000,
+      "tag": "0012_jira_connection_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772323200000,
+      "tag": "0013_jira_token_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
       "when": 1772352000000,
       "tag": "0014_jira_issue_linking",
       "breakpoints": true
     },
     {
-      "idx": 13,
+      "idx": 15,
+      "version": "7",
+      "when": 1772380800000,
+      "tag": "0015_pg_trgm_fuzzy_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
       "version": "7",
       "when": 1772438400000,
       "tag": "0016_entry_split_audit",
       "breakpoints": true
     },
     {
-      "idx": 14,
+      "idx": 17,
       "version": "7",
       "when": 1772524800000,
       "tag": "0017_labels_to_tags",
       "breakpoints": true
     },
     {
-      "idx": 15,
+      "idx": 18,
       "version": "7",
       "when": 1772611200000,
       "tag": "0018_working_schedules",
       "breakpoints": true
     },
     {
-      "idx": 16,
+      "idx": 19,
       "version": "7",
       "when": 1772697600000,
       "tag": "0019_notification_settings",
       "breakpoints": true
     },
     {
-      "idx": 17,
+      "idx": 20,
       "version": "7",
       "when": 1772784000000,
       "tag": "0020_notification_test_sms_rate_limit",
       "breakpoints": true
     },
     {
-      "idx": 18,
+      "idx": 21,
       "version": "7",
       "when": 1772870400000,
       "tag": "0021_leave_management_v1",
       "breakpoints": true
     },
     {
-      "idx": 19,
+      "idx": 22,
       "version": "7",
       "when": 1772956800000,
       "tag": "0022_leave_type_groups",
       "breakpoints": true
     },
     {
-      "idx": 20,
+      "idx": 23,
       "version": "7",
       "when": 1773043200000,
       "tag": "0023_user_default_project",
       "breakpoints": true
     },
     {
-      "idx": 21,
+      "idx": 24,
       "version": "7",
       "when": 1773129600000,
       "tag": "0024_partial_leave_start_hour",
       "breakpoints": true
     },
     {
-      "idx": 22,
+      "idx": 25,
       "version": "7",
       "when": 1773216000000,
       "tag": "0025_report_templates",
       "breakpoints": true
     },
     {
-      "idx": 23,
+      "idx": 26,
       "version": "7",
       "when": 1773302400000,
       "tag": "0026_contractor_default_leave_type",

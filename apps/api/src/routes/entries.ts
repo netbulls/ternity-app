@@ -15,16 +15,15 @@ import {
 import { recordAudit, resolveProjectName } from '../lib/audit.js';
 import { buildEntryResponse } from './timer.js';
 import { ORG_TIMEZONE } from '@ternity/shared';
-import type {
-  CreateEntry,
-  UpdateEntry,
-  AdjustEntry,
-  MoveBlock,
-  SplitEntry,
-  DayGroup,
-  Entry,
+import type { DayGroup, Entry } from '@ternity/shared';
+import {
+  CreateEntrySchema,
+  UpdateEntrySchema,
+  AdjustEntrySchema,
+  MoveBlockSchema,
+  SplitEntrySchema,
+  GlobalRole,
 } from '@ternity/shared';
-import { GlobalRole } from '@ternity/shared';
 
 // ── Timezone helpers ──────────────────────────────────────────────────────
 
@@ -663,7 +662,8 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const source = getAuditSource(request);
-    const body = request.body as CreateEntry;
+    // Validate at the boundary — invalid bodies become 400 (via the global ZodError handler)
+    const body = CreateEntrySchema.parse(request.body);
 
     // Project assignment check
     if (!isProjectAllowed(request, body.projectId ?? null)) {
@@ -727,6 +727,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
       return buildEntryResponse(created!.id, tx);
     });
 
+    reply.code(201);
     return result;
   });
 
@@ -736,7 +737,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const actorId = getActorId(request);
     const source = getAuditSource(request);
     const { id } = request.params as { id: string };
-    const body = request.body as UpdateEntry;
+    const body = UpdateEntrySchema.parse(request.body);
 
     // Owner check
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
@@ -935,7 +936,7 @@ export async function entriesRoutes(fastify: FastifyInstance) {
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as AdjustEntry;
+    const body = AdjustEntrySchema.parse(request.body);
 
     if (!body.note || body.note.trim().length === 0) {
       return reply.code(400).send({ error: 'Note is required for adjustments' });
@@ -982,10 +983,13 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
   /** POST /api/entries/:id/move-block — move a time block to a new entry */
   fastify.post('/api/entries/:id/move-block', async (request, reply) => {
+    // @status-code 200 — primarily a mutation on the *source* entry (split a segment
+    // off, audit log entries). The new entry inserted as a side-effect isn't the
+    // primary returned resource; the response is the updated source entry.
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as MoveBlock;
+    const body = MoveBlockSchema.parse(request.body);
 
     // Verify ownership + active
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
@@ -1128,10 +1132,13 @@ export async function entriesRoutes(fastify: FastifyInstance) {
 
   /** POST /api/entries/:id/split — split off time from an entry into a new entry */
   fastify.post('/api/entries/:id/split', async (request, reply) => {
+    // @status-code 200 — see move-block: a mutation on the source entry that *also*
+    // produces a derived entry as a side-effect. The response shape is the modified
+    // source entry, not the derived one.
     const userId = request.auth.userId;
     const actorId = getActorId(request);
     const { id } = request.params as { id: string };
-    const body = request.body as SplitEntry;
+    const body = SplitEntrySchema.parse(request.body);
 
     // Verify entry exists and belongs to user
     const [existing] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);

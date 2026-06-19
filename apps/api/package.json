@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --watch-path=.env.local --env-file=.env.local src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "vitest run",
+    "test:mutation": "stryker run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
@@ -26,8 +27,8 @@
   "dependencies": {
     "@fastify/cors": "^10.0.0",
     "@ternity/shared": "workspace:*",
-    "drizzle-orm": "^0.38.0",
-    "fastify": "^5.2.0",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
     "fastify-plugin": "^5.0.0",
     "jose": "^6.1.3",
     "pg": "^8.13.0",
@@ -37,10 +38,13 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^8.7.0",
+    "@stryker-mutator/vitest-runner": "^8.7.0",
+    "@testcontainers/postgresql": "^10.13.0",
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.30.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.0"
   }
 }

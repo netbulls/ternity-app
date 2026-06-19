@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing for @ternity/api. Each Stryker sandbox runs vitest's globalSetup independently → each gets its own Testcontainers Postgres (random port → no conflict). Per-sandbox isolation works because test/global-setup.ts writes the URL handoff file under `cwd`, and Stryker gives every sandbox its own cwd. Concurrency is conservative (2) — each running sandbox holds ~250MB for its container. testRunner is vitest, which inherits the harness's fileParallelism:false (the suite has one shared container per vitest run).",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "mutate": [
+    "src/routes/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/plugins/**/*.ts",
+    "src/services/**/*.ts",
+    "src/sync/transform/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.guard.test.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress", "html"],
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "concurrency": 2,
+  "timeoutMS": 60000,
+  "timeoutFactor": 2
+}

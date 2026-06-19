@@ -1,0 +1,6 @@
+# Sidecar written by globalSetup; consumed by globalTeardown + fixtures.
+.last-instance.json
+
+# Playwright outputs (videos, traces, screenshots from failed runs).
+test-results/
+playwright-report/

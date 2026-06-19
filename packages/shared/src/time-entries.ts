@@ -144,6 +144,14 @@ export const StartTimerSchema = z.object({
 
 export type StartTimer = z.infer<typeof StartTimerSchema>;
 
+/* ── Stop timer payload (optional final description) ─────────────── */
+
+export const StopTimerSchema = z.object({
+  description: z.string().optional(),
+});
+
+export type StopTimer = z.infer<typeof StopTimerSchema>;
+
 /* ── Audit event (returned from API) ───────────────────────────── */
 
 export const AuditEventSchema = z.object({

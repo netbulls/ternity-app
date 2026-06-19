@@ -1,0 +1,113 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # ubuntu-latest ships with Docker, which @ternity/api integration tests need:
+    # they spin up an ephemeral Postgres via Testcontainers (no `services:` block
+    # required — Testcontainers manages the container itself).
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the pinned version from the root package.json "packageManager" field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # @ternity/api imports @ternity/shared through its built dist (package "exports"),
+      # so the shared package must be compiled before the api tests run.
+      - name: Build @ternity/shared
+        run: pnpm --filter @ternity/shared build
+
+      # The E2E suite (e2e/) drives a real browser via Playwright. Browsers don't ship
+      # with @playwright/test on npm — they're downloaded to ~/.cache/ms-playwright by
+      # `playwright install`. Cache them across runs keyed on the lockfile, so we only
+      # re-download (~90 MB Chromium) when the pinned @playwright/test version changes.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # `--with-deps` apt-installs the runtime system libraries Chromium needs
+      # (libnss3, libdbus, libgbm, libasound, etc.). System libs aren't part of the
+      # cache, so we always re-run this — it's a fast apt no-op when packages exist.
+      - name: Install Playwright Chromium (with system deps)
+        run: pnpm --filter @ternity/e2e exec playwright install --with-deps chromium
+
+      - name: Run tests
+        run: pnpm -r test
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Informational: print the full advisory report on every run so regressions are
+      # visible in the logs. Never fails the build (the gate below decides pass/fail).
+      - name: Dependency audit (report)
+        run: pnpm audit --audit-level moderate || true
+
+      # Gate: fail on HIGH (and critical) advisories. The earlier `high` backlog was
+      # cleared — direct deps bumped (fastify, drizzle-orm, vite) and transitive ones
+      # pinned via pnpm overrides in the root package.json. Remaining advisories are
+      # `moderate` (mostly dev/build tooling); revisit if they escalate.
+      - name: Dependency audit (gate — high)
+        run: pnpm audit --audit-level high
+
+  # Mutation testing runs ONLY on push to main (i.e. after a PR merges), not on PRs.
+  # Rationale: it's expensive (each mutant re-runs covering tests; the api job spins
+  # its own Testcontainers Postgres per Stryker sandbox), so we don't want it in the
+  # PR feedback loop. The score is informational for now — the job uploads the HTML
+  # report as an artifact but does NOT fail the build on a regression.
+  mutation:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build @ternity/shared
+        run: pnpm --filter @ternity/shared build
+
+      - name: Mutation testing — @ternity/shared
+        run: pnpm --filter @ternity/shared test:mutation
+
+      - name: Mutation testing — @ternity/api
+        run: pnpm --filter @ternity/api test:mutation
+
+      - name: Upload mutation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: |
+            packages/shared/reports/mutation
+            apps/api/reports/mutation
+          if-no-files-found: ignore
+          retention-days: 30

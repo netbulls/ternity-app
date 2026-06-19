@@ -1,8 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { eq, sql, asc, ilike, or, and, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { GlobalRole } from '@ternity/shared';
 import { db } from '../db/index.js';
 import { users, timeEntries, projects, clients } from '../db/schema.js';
+
+// Request-body schemas — validated at the boundary so malformed input is a 400
+// (via the global ZodError handler) instead of crashing with a 500.
+const SetTeamSchema = z.object({ projectId: z.string().uuid().nullish() });
+const SetEmploymentTypeSchema = z.object({
+  employmentType: z.enum(['contractor', 'employee']),
+});
+const BulkUserIdsSchema = z.object({ userIds: z.array(z.string().uuid()).min(1) });
 
 /** Check that the REAL user (not impersonated) is admin */
 function isRealAdmin(request: { auth: { globalRole: string; impersonating?: boolean } }) {
@@ -76,7 +85,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const { projectId } = request.body as { projectId: string | null };
+    const { projectId } = SetTeamSchema.parse(request.body);
 
     // Validate project exists if setting (not clearing)
     if (projectId) {
@@ -110,11 +119,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
-    const { employmentType } = request.body as { employmentType: string };
-
-    if (!employmentType || !['contractor', 'employee'].includes(employmentType)) {
-      return reply.code(400).send({ error: 'employmentType must be "contractor" or "employee"' });
-    }
+    const { employmentType } = SetEmploymentTypeSchema.parse(request.body);
 
     const [updated] = await db
       .update(users)
@@ -181,11 +186,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { userIds } = request.body as { userIds: string[] };
-
-    if (!userIds?.length) {
-      return reply.code(400).send({ error: 'userIds is required' });
-    }
+    const { userIds } = BulkUserIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx
@@ -204,11 +205,7 @@ export async function adminUsersRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Admin access required' });
     }
 
-    const { userIds } = request.body as { userIds: string[] };
-
-    if (!userIds?.length) {
-      return reply.code(400).send({ error: 'userIds is required' });
-    }
+    const { userIds } = BulkUserIdsSchema.parse(request.body);
 
     const updated = await db.transaction(async (tx) => {
       return tx
