@@ -19,8 +19,30 @@ import { leaveRoutes } from './leave.js';
 // Tests pin ACTUAL behavior (including quirks). BUG comments flag likely issues.
 
 let app: FastifyInstance;
+
+// ── Relative date anchors ──────────────────────────────────────────────────
+// Dates are computed relative to "today" in beforeAll, never hardcoded — a fixed
+// future calendar date silently slides into the past and rots the suite. MON…SUN
+// are a future, holiday-free work week (so Mon–Fri is a clean 5 working days and
+// Sat/Sun a real weekend); H_* are a future week that *contains* a public holiday;
+// PAST is a weekday safely behind us. Holidays come from the app's own endpoint,
+// the same source the route uses, so test and route can never disagree.
+let MON = '';
+let TUE = '';
+let WED = '';
+let THU = '';
+let FRI = '';
+let SAT = '';
+let SUN = '';
+let H_MON = ''; // Monday of a week whose Mon–Fri contains ≥1 public holiday
+let H_FRI = ''; // Friday of that same week
+let H_WORKING_DAYS = 0; // working days in that holiday week (< 5)
+let PAST = '';
+const holidays = new Set<string>(); // public-holiday dates (this year + next)
+
 beforeAll(async () => {
   app = await buildApp(leaveRoutes);
+  await computeDateAnchors();
 });
 afterAll(async () => {
   await app.close();
@@ -29,11 +51,13 @@ beforeEach(truncateAll);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function makeUser(opts: {
-  role?: 'admin' | 'user';
-  employmentType?: string;
-  active?: boolean;
-} = {}) {
+async function makeUser(
+  opts: {
+    role?: 'admin' | 'user';
+    employmentType?: string;
+    active?: boolean;
+  } = {},
+) {
   const [u] = await db
     .insert(users)
     .values({
@@ -47,14 +71,16 @@ async function makeUser(opts: {
   return u!;
 }
 
-async function makeLeaveType(opts: {
-  name?: string;
-  daysPerYear?: number;
-  active?: boolean;
-  visibility?: string;
-  isContractorDefault?: boolean;
-  deducted?: boolean;
-} = {}) {
+async function makeLeaveType(
+  opts: {
+    name?: string;
+    daysPerYear?: number;
+    active?: boolean;
+    visibility?: string;
+    isContractorDefault?: boolean;
+    deducted?: boolean;
+  } = {},
+) {
   const [lt] = await db
     .insert(leaveTypes)
     .values({
@@ -343,7 +369,10 @@ describe('GET /api/leave/wallchart', () => {
   it('includes inactive users in the response — BUG: wallchart only shows active users', async () => {
     // The query uses `eq(users.active, true)`, so inactive users are excluded.
     const inactiveUser = await makeUser({ active: false });
-    const { body } = await get('/api/leave/wallchart?from=2026-06-01&to=2026-06-30', inactiveUser.id);
+    const { body } = await get(
+      '/api/leave/wallchart?from=2026-06-01&to=2026-06-30',
+      inactiveUser.id,
+    );
     const found = body.users.find((x: { id: string }) => x.id === inactiveUser.id);
     // Pinning actual behavior: inactive users are NOT in wallchart
     expect(found).toBeUndefined();
@@ -404,7 +433,11 @@ describe('GET /api/leave/requests', () => {
 
     const statuses = ['pending', 'approved', 'rejected', 'cancelled', 'autoconfirmed'] as const;
     for (const status of statuses) {
-      await makeLeaveRequest(u.id, lt.id, { status, startDate: '2026-06-02', endDate: '2026-06-02' });
+      await makeLeaveRequest(u.id, lt.id, {
+        status,
+        startDate: '2026-06-02',
+        endDate: '2026-06-02',
+      });
     }
 
     const { body } = await get('/api/leave/requests', u.id);
@@ -566,7 +599,10 @@ describe('POST /api/leave/requests', () => {
 
   it('ignores leaveTypeId from contractor and uses isContractorDefault type', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
-    const contractorDefault = await makeLeaveType({ isContractorDefault: true, name: 'B2B Time Off' });
+    const contractorDefault = await makeLeaveType({
+      isContractorDefault: true,
+      name: 'B2B Time Off',
+    });
     const other = await makeLeaveType({ isContractorDefault: false, name: 'Other' });
     const tomorrow = getFutureDate(1);
 
@@ -671,9 +707,18 @@ describe('POST /api/leave/requests', () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
     // wrong types: startDate as number, hours as string — ZodError → 400
-    expect((await post('/api/leave/requests', u.id, { startDate: 20260610, endDate: '2026-06-10' })).status).toBe(400);
     expect(
-      (await post('/api/leave/requests', u.id, { startDate: getFutureDate(1), endDate: getFutureDate(1), hours: '4' })).status,
+      (await post('/api/leave/requests', u.id, { startDate: 20260610, endDate: '2026-06-10' }))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await post('/api/leave/requests', u.id, {
+          startDate: getFutureDate(1),
+          endDate: getFutureDate(1),
+          hours: '4',
+        })
+      ).status,
     ).toBe(400);
   });
 
@@ -684,8 +729,8 @@ describe('POST /api/leave/requests', () => {
 
     const { status, body } = await post('/api/leave/requests', u.id, {
       leaveTypeId: lt[0]!.id,
-      startDate: '2026-01-01', // clearly in the past relative to test date (2026-05-25)
-      endDate: '2026-01-01',
+      startDate: PAST,
+      endDate: PAST,
     });
 
     expect(status).toBe(400);
@@ -696,10 +741,10 @@ describe('POST /api/leave/requests', () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
 
-    // 2026-06-06 is a Saturday, 2026-06-07 is a Sunday
+    // SAT/SUN are a real future weekend → no working days in range
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-06',
-      endDate: '2026-06-07',
+      startDate: SAT,
+      endDate: SUN,
     });
 
     expect(status).toBe(400);
@@ -710,16 +755,16 @@ describe('POST /api/leave/requests', () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
 
-    // 2026-06-08 Mon to 2026-06-12 Fri = 5 working days
+    // MON–FRI of a clean (holiday-free) future week = 5 working days
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-12',
+      startDate: MON,
+      endDate: FRI,
     });
 
     expect(status).toBe(201);
     expect(body.daysCount).toBe(5);
-    expect(body.startDate).toBe('2026-06-08');
-    expect(body.endDate).toBe('2026-06-12');
+    expect(body.startDate).toBe(MON);
+    expect(body.endDate).toBe(FRI);
   });
 
   it('stores note when provided', async () => {
@@ -742,10 +787,10 @@ describe('POST /api/leave/requests', () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
 
-    // 2026-06-08 is a Monday (working day per default schedule 08:30-16:30)
+    // MON is a Monday (working day per default schedule 08:30-16:30)
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 2,
       startHour: '09:00',
     });
@@ -762,8 +807,8 @@ describe('POST /api/leave/requests', () => {
     await makeLeaveType({ isContractorDefault: true });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 0.25,
       startHour: '09:00',
     });
@@ -777,8 +822,8 @@ describe('POST /api/leave/requests', () => {
     await makeLeaveType({ isContractorDefault: true });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 9,
       startHour: '09:00',
     });
@@ -792,8 +837,8 @@ describe('POST /api/leave/requests', () => {
     await makeLeaveType({ isContractorDefault: true });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 1.3,
       startHour: '09:00',
     });
@@ -807,8 +852,8 @@ describe('POST /api/leave/requests', () => {
     await makeLeaveType({ isContractorDefault: true });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-09',
+      startDate: MON,
+      endDate: TUE,
       hours: 2,
       startHour: '09:00',
     });
@@ -822,8 +867,8 @@ describe('POST /api/leave/requests', () => {
     await makeLeaveType({ isContractorDefault: true });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 2,
     });
 
@@ -837,8 +882,8 @@ describe('POST /api/leave/requests', () => {
     // Default schedule: Mon 08:30-16:30. startHour 07:00 is before work start.
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08', // Monday
-      endDate: '2026-06-08',
+      startDate: MON, // Monday
+      endDate: MON,
       hours: 2,
       startHour: '07:00',
     });
@@ -853,8 +898,8 @@ describe('POST /api/leave/requests', () => {
     // Default schedule: Mon 08:30-16:30. 3h from 15:00 = 18:00, beyond 16:30.
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08', // Monday
-      endDate: '2026-06-08',
+      startDate: MON, // Monday
+      endDate: MON,
       hours: 3,
       startHour: '15:00',
     });
@@ -868,42 +913,46 @@ describe('POST /api/leave/requests', () => {
   it('returns 409 when a full-day booking conflicts with existing full-day booking', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
-    // Create existing booking for 2026-06-08
+    // Create existing booking for MON
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       status: 'autoconfirmed',
     });
 
     // Try to book the same day
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
 
     expect(status).toBe(409);
     expect(body.error).toMatch(/full-day booking/i);
-    expect(body.conflictDates).toContain('2026-06-08');
+    expect(body.conflictDates).toContain(MON);
   });
 
   it('does not conflict with a cancelled booking on the same date', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       status: 'cancelled',
     });
 
     const { status } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
 
     expect(status).toBe(201);
@@ -912,11 +961,13 @@ describe('POST /api/leave/requests', () => {
   it('returns 409 when full-day booking conflicts with existing partial booking on that date', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       hours: 2,
       startHour: '09:00',
@@ -924,8 +975,8 @@ describe('POST /api/leave/requests', () => {
     });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
 
     expect(status).toBe(409);
@@ -935,12 +986,14 @@ describe('POST /api/leave/requests', () => {
   it('returns 409 when partial-day bookings would exceed 4h on the same date', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     // Create a 3h booking
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       hours: 3,
       startHour: '09:00',
@@ -949,8 +1002,8 @@ describe('POST /api/leave/requests', () => {
 
     // Try to add 2h more (total 5h > 4h limit)
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 2,
       startHour: '12:00',
     });
@@ -962,12 +1015,14 @@ describe('POST /api/leave/requests', () => {
   it('allows two partial bookings totalling ≤ 4h on the same date', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     // Create 2h booking
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       hours: 2,
       startHour: '09:00',
@@ -976,8 +1031,8 @@ describe('POST /api/leave/requests', () => {
 
     // Add another 2h (total = 4h, within limit)
     const { status } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 2,
       startHour: '11:00',
     });
@@ -988,17 +1043,16 @@ describe('POST /api/leave/requests', () => {
   it('persists new request to DB and can be read back', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     const { body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
 
-    const [dbRow] = await db
-      .select()
-      .from(leaveRequests)
-      .where(eq(leaveRequests.id, body.id));
+    const [dbRow] = await db.select().from(leaveRequests).where(eq(leaveRequests.id, body.id));
     expect(dbRow).toBeDefined();
     expect(dbRow!.userId).toBe(u.id);
     expect(dbRow!.leaveTypeId).toBe(lt.id);
@@ -1081,20 +1135,20 @@ describe('PATCH /api/leave/requests/:id', () => {
     const u = await makeUser({ role: 'user' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
     // Extend to full week (Mon-Fri = 5 working days)
     const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-12',
+      startDate: MON,
+      endDate: FRI,
     });
 
     expect(status).toBe(200);
     expect(body.daysCount).toBe(5);
-    expect(body.endDate).toBe('2026-06-12');
+    expect(body.endDate).toBe(FRI);
   });
 
   it('returns 400 when updated date range is invalid (startDate > endDate)', async () => {
@@ -1116,10 +1170,10 @@ describe('PATCH /api/leave/requests/:id', () => {
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id);
 
-    // 2026-06-06 is Saturday, 2026-06-07 is Sunday
+    // SAT/SUN are a real future weekend → no working days in range
     const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-06-06',
-      endDate: '2026-06-07',
+      startDate: SAT,
+      endDate: SUN,
     });
 
     expect(status).toBe(400);
@@ -1144,32 +1198,32 @@ describe('PATCH /api/leave/requests/:id', () => {
     const lt = await makeLeaveType();
     // Create the booking we'll update (June 9)
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-09',
-      endDate: '2026-06-09',
+      startDate: TUE,
+      endDate: TUE,
       daysCount: 1,
     });
     // Create another booking for June 8 (the date we'll try to move to)
     await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
     const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
 
     expect(status).toBe(409);
-    expect(body.conflictDates).toContain('2026-06-08');
+    expect(body.conflictDates).toContain(MON);
   });
 
   it('self-update (same dates) does not conflict with itself', async () => {
     const u = await makeUser({ role: 'user' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
@@ -1194,14 +1248,14 @@ describe('PATCH /api/leave/requests/:id', () => {
     const u = await makeUser({ role: 'user' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
     const { status, body } = await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-01-05', // Monday in the past relative to test "today" 2026-06-02
-      endDate: '2026-01-05',
+      startDate: PAST, // a weekday in the past
+      endDate: PAST,
     });
 
     expect(status).toBe(400);
@@ -1213,18 +1267,18 @@ describe('PATCH /api/leave/requests/:id', () => {
     const admin = await makeUser({ role: 'admin' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(owner.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
     // Admin retro-corrects an entry to a past date — allowed.
     const { status, body } = await patch(`/api/leave/requests/${lr.id}`, admin.id, {
-      startDate: '2026-01-05',
-      endDate: '2026-01-05',
+      startDate: PAST,
+      endDate: PAST,
     });
     expect(status).toBe(200);
-    expect(body.startDate).toBe('2026-01-05');
+    expect(body.startDate).toBe(PAST);
   });
 
   it('past-date guard does not fire when startDate is not in the body (note-only edit)', async () => {
@@ -1233,8 +1287,8 @@ describe('PATCH /api/leave/requests/:id', () => {
     const u = await makeUser({ role: 'user' });
     const lt = await makeLeaveType();
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-01-05', // already past (seeded directly via DB)
-      endDate: '2026-01-05',
+      startDate: PAST, // already past (seeded directly via DB)
+      endDate: PAST,
       daysCount: 1,
     });
 
@@ -1337,12 +1391,14 @@ describe('DELETE /api/leave/requests/:id (soft-cancel)', () => {
   it('after cancellation, the same date can be booked again', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
-    const lt = (await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true)))[0]!;
+    const lt = (
+      await db.select().from(leaveTypes).where(eq(leaveTypes.isContractorDefault, true))
+    )[0]!;
 
     // Book and then cancel
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
       status: 'autoconfirmed',
     });
@@ -1350,8 +1406,8 @@ describe('DELETE /api/leave/requests/:id (soft-cancel)', () => {
 
     // Should now be able to book the same date again
     const { status } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
     expect(status).toBe(201);
   });
@@ -1387,8 +1443,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
 
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-12', // 5 working days
+      startDate: MON,
+      endDate: FRI, // 5 working days
     });
     expect(status).toBe(201);
     expect(body.daysCount).toBe(5);
@@ -1403,8 +1459,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
 
     await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
     expect(await getUsed(u.id, lt.id, 2026)).toBe(5); // unchanged
   });
@@ -1414,8 +1470,8 @@ describe('usedDays accounting', () => {
     const lt = await makeLeaveType({ isContractorDefault: true, deducted: true });
     // No allowance row pre-seeded
     const { status } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
     });
     expect(status).toBe(201);
     expect(await getUsed(u.id, lt.id, 2026)).toBeNull();
@@ -1429,8 +1485,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
 
     await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       hours: 2,
       startHour: '09:00',
     });
@@ -1445,20 +1501,17 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 0 });
 
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
     // POST didn't run, so seed usedDays by hand to match the makeLeaveRequest insert:
-    await db
-      .update(leaveAllowances)
-      .set({ usedDays: 1 })
-      .where(eq(leaveAllowances.userId, u.id));
+    await db.update(leaveAllowances).set({ usedDays: 1 }).where(eq(leaveAllowances.userId, u.id));
 
     await patch(`/api/leave/requests/${lr.id}`, u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-12',
+      startDate: MON,
+      endDate: FRI,
     });
     expect(await getUsed(u.id, lt.id, 2026)).toBe(5); // 1 − 1 + 5
   });
@@ -1473,8 +1526,8 @@ describe('usedDays accounting', () => {
     ]);
 
     const lr = await makeLeaveRequest(u.id, ltA.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
@@ -1518,8 +1571,8 @@ describe('usedDays accounting', () => {
     ]);
 
     const lr = await makeLeaveRequest(u.id, ltDed.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
@@ -1537,8 +1590,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 3 });
 
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-10', // 3 working days
+      startDate: MON,
+      endDate: WED, // MON–WED = 3 working days
       daysCount: 3,
     });
 
@@ -1554,8 +1607,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 3 });
 
     const lr = await makeLeaveRequest(u.id, lt.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-08',
+      startDate: MON,
+      endDate: MON,
       daysCount: 1,
     });
 
@@ -1571,8 +1624,8 @@ describe('usedDays accounting', () => {
       .values({ userId: u.id, leaveTypeId: lt.id, year: 2026, totalDays: 20, usedDays: 5 });
 
     const { body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-12',
+      startDate: MON,
+      endDate: FRI,
     });
     expect(await getUsed(u.id, lt.id, 2026)).toBe(10);
 
@@ -1584,47 +1637,125 @@ describe('usedDays accounting', () => {
 // ── Date math helpers (unit-level) ────────────────────────────────────────
 
 describe('working day calculation (via POST behavior)', () => {
-  it('skips Polish public holidays in working day count', async () => {
+  it('skips Polish public holidays in working day count', async (ctx) => {
+    // No upcoming holiday in the calendar data → nothing to exercise (see beforeAll).
+    if (!H_MON) ctx.skip();
+
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
 
-    // 2026-11-11 is Independence Day (public holiday) — Wednesday
-    // 2026-11-09 Mon to 2026-11-13 Fri = 5 calendar weekdays, but 11/11 is a holiday
-    // So only 4 working days (Mon, Tue, Thu, Fri)
+    // H_MON–H_FRI is a future Mon–Fri week containing ≥1 public holiday, so the
+    // route's working-day count is < 5 (the 5 weekdays minus the holiday(s)).
+    expect(H_WORKING_DAYS).toBeGreaterThan(0);
+    expect(H_WORKING_DAYS).toBeLessThan(5);
+
     const { status, body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-11-09',
-      endDate: '2026-11-13',
+      startDate: H_MON,
+      endDate: H_FRI,
     });
 
     expect(status).toBe(201);
-    expect(body.daysCount).toBe(4);
+    expect(body.daysCount).toBe(H_WORKING_DAYS);
   });
 
   it('skips weekends in working day count', async () => {
     const u = await makeUser({ employmentType: 'contractor' });
     await makeLeaveType({ isContractorDefault: true });
 
-    // 2026-06-08 Mon to 2026-06-14 Sun = 7 calendar days, 5 working days
+    // MON–SUN = 7 calendar days spanning one clean week → 5 working days
     const { body } = await post('/api/leave/requests', u.id, {
-      startDate: '2026-06-08',
-      endDate: '2026-06-14',
+      startDate: MON,
+      endDate: SUN,
     });
 
     expect(body.daysCount).toBe(5);
   });
 });
 
-// ── Helper to get a future date string ───────────────────────────────────
+// ── Relative date helpers ─────────────────────────────────────────────────
+// All work in UTC (getUTCDay + ISO slice from the same instant) so the weekday
+// and the emitted string can't disagree across timezones. Anchored at noon UTC
+// to stay clear of any date rollover.
 
-function getFutureDate(daysAhead: number): string {
-  // Returns a weekday at least `daysAhead` days in the future.
-  // Tries up to 14 days to find a working day (avoids holidays for simplicity,
-  // but the route itself handles the holiday logic).
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  // Advance to Monday if weekend
-  while (d.getDay() === 0 || d.getDay() === 6) {
-    d.setDate(d.getDate() + 1);
-  }
+function iso(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+/** A working day at least `daysAhead` days in the future (skips weekends AND
+ *  public holidays, so single-day bookings never land on a non-working day). */
+function getFutureDate(daysAhead: number): string {
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + daysAhead);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6 || holidays.has(iso(d))) {
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return iso(d);
+}
+
+/** A weekday `daysBack` days in the past — for past-date-guard tests. */
+function getPastDate(daysBack: number): string {
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - daysBack);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+    d.setUTCDate(d.getUTCDate() - 1);
+  }
+  return iso(d);
+}
+
+/** First Monday ≥ ~1 week ahead whose Mon–Fri (days[0..4]) satisfy `predicate`.
+ *  Returns the full Mon–Sun span (7 ISO date strings). */
+function findWeek(predicate: (monToFri: string[]) => boolean): string[] {
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 7);
+  while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() + 1);
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const days: string[] = [];
+    const cur = new Date(d);
+    for (let i = 0; i < 7; i++) {
+      days.push(iso(cur));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    if (predicate(days.slice(0, 5))) return days;
+    d.setUTCDate(d.getUTCDate() + 7);
+  }
+  throw new Error('findWeek: no matching week within 120 weeks');
+}
+
+/** Populates the relative-date anchors. Fetches the public-holiday calendar from
+ *  the app's own endpoint (single source of truth), then derives a clean future
+ *  work week and a future holiday week from it. */
+async function computeDateAnchors(): Promise<void> {
+  const u = await makeUser(); // throwaway; beforeEach(truncateAll) clears it before test 1
+  const thisYear = new Date().getUTCFullYear();
+  for (const year of [thisYear, thisYear + 1]) {
+    const { body } = await get(`/api/leave/holidays?year=${year}`, u.id);
+    for (const date of Object.keys(body as Record<string, string>)) holidays.add(date);
+  }
+
+  const clean = findWeek((monToFri) => monToFri.every((day) => !holidays.has(day)));
+  MON = clean[0]!;
+  TUE = clean[1]!;
+  WED = clean[2]!;
+  THU = clean[3]!;
+  FRI = clean[4]!;
+  SAT = clean[5]!;
+  SUN = clean[6]!;
+
+  // A future week containing a public holiday only exists while the calendar has
+  // upcoming holiday data (this year + next are fetched above). If we ever run past
+  // the last known weekday-holiday, leave H_* empty and let the one dependent test
+  // skip itself — never throw here, or the whole file's beforeAll would fail.
+  try {
+    const holidayWeek = findWeek((monToFri) => monToFri.some((day) => holidays.has(day)));
+    H_MON = holidayWeek[0]!;
+    H_FRI = holidayWeek[4]!;
+    H_WORKING_DAYS = holidayWeek.slice(0, 5).filter((day) => !holidays.has(day)).length;
+  } catch {
+    H_MON = '';
+  }
+
+  PAST = getPastDate(30);
 }
